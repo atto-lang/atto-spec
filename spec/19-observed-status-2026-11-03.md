@@ -24,8 +24,11 @@ Limits of these results:
 | --- | --- | --- | --- |
 | Function, `: T { }` | `fnc add(int a, int b): int { ... }` | Ran | Ran |
 | Function, `-> T { }` | `fnc add(int a, int b) -> int { ... }` | Ran | Ran |
-| Function, `-> T :: end` | Free function | Rejected | Rejected: `'::' body requires a class method` |
-| Method, `-> T :: end` | Class method | Rejected | Rejected (other) |
+| Function, `: T` or `-> T` with `:: ... end` | Free function | Rejected | Rejected: `'::' body requires a class method` |
+| Function, `: T` or `-> T` with `:: { }` | Free function | Rejected | Rejected: `'::' body requires a class method` |
+| Function, `: T` or `-> T` with `... end` and no `::` | Free function | Rejected | Rejected: expects `{` |
+| Method, `-> T :: ... end` | Class method | Rejected | Parser accepted it, then rejected (other) |
+| Method, `-> T ... end` | Class method, no `::` | Rejected | Rejected: expects `{` |
 | `routine` | `pub routine main(): int` | Ran | Ran |
 | Nested comments | `/* a /* b */ c */` | Ran | Ran |
 | Typed local | `val x: int = 41` | Ran | Ran |

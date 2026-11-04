@@ -6,7 +6,7 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 
 | ID | Question | Proposed resolution / next proof |
 | --- | --- | --- |
-| S-01 | Canonical source return/block spelling `-> T ::` vs legacy `: T { }` | Publish a versioned formatter/grammar corpus for all five backends; preserve compatible legacy programs |
+| S-01 | Function forms | **Decided 2026-11-03:** `: T` and `-> T` are both valid, and `::` is optional. Open: confirm the [proposed parsing and formatter rules](16-lexical-and-grammar-reference.md#function-forms), then publish a versioned grammar corpus for all five backends |
 | S-02 | Implicit immutable class fields versus older explicit `val` binding grammar | Specify class-field grammar separately from local declaration grammar; compile mutation negatives |
 | S-03 | Match exclusivity/exhaustiveness versus ordered first-match arms | Define semantics of `match`, `match first`, `switch`, `over` and typed arm return; prove duplicate/overlap diagnostics |
 | S-04 | Whether `trap expr` returns `Option<T>` or `Result<T,E>` | Existing source contract is Option; requested actor-send trap Result must be a distinct typed API or an explicitly versioned change |
@@ -28,13 +28,13 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 | S-20 | `Actor.pipe(...)` versus `Actor.connect(...)`: constructor descriptor grammar, graph admission `Result`, typed endpoint handles and connection capabilities | Proposed initial API uses contextual unspawned actor constructors for `pipe` and live `ActorRef` operands for `connect`; reconcile syntax/variadics and test atomic publication on five backends; see [chapter 14](14-actor-pipeline-factories.md) |
 | S-22 | Which Unicode letters identifiers may use | The Java lexer accepts any Unicode letter. Compare the LLVM parser, then pick one rule and test it on every backend |
 | S-23 | `String` versus `string`, and template literal interpolation | Java accepts both type spellings. Choose one canonical spelling and specify templates; see [chapter 17](17-primitives-and-core-types.md) |
-| S-24 | Integer overflow and sized integers | Java wraps `int` and ignores sized ranges, while LLVM traps. Proposed: checked arithmetic, enforced ranges, explicit wrapping operations; see [chapter 17](17-primitives-and-core-types.md) |
+| S-24 | Integer overflow details | **Decided 2026-11-03:** overflow panics the actor, and wrapping needs explicitly named operations. Open: operation names, `bigint`, division by zero and the Java and LLVM changes; see [chapter 17](17-primitives-and-core-types.md) |
 | S-25 | Whether `int / int` gives `float` or an integer | Java gives `float`, and LLVM rejects it. Decide, then add a shared test |
 | S-26 | Mutable borrow spelling: `rt borrow mut`, `rt mut borrow` or `&mut` | Chapter 04, the Java diagnostic and the v0.6 grammar each differ. Pick one and update all three |
 | S-27 | Stored state for heap-backed actors | Fixed-size state is simple to commit, while arena memory can be half-written at a crash. Choose persistent structures, a per-turn scratch arena or another design, and check it against the zero-GC goal; see [chapter 18](18-runtime-guarantees.md) |
 | S-28 | Restart defaults, turn commit and instance-ID routing | Restart and queued mail carry-over are decided. Budget numbers, send-at-commit and pipeline stop after budget are proposed; see [chapter 18](18-runtime-guarantees.md) |
 
-**Observed on 2026-11-03** ([chapter 19](19-observed-status-2026-11-03.md)): for S-01, both Java and LLVM reject `-> T :: ... end` on free functions and accept `: T { }` and `-> T { }`. For S-14, the Java launcher refuses `.atto` files.
+**Observed on 2026-11-03** ([chapter 19](19-observed-status-2026-11-03.md)): for S-01, both Java and LLVM accept only `: T { }` and `-> T { }` on free functions. For S-14, the Java launcher refuses `.atto` files.
 
 ## Changes requiring special scrutiny
 

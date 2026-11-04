@@ -26,6 +26,7 @@ Every failure ends exactly one of these domains. A failure must never take down 
 | --- | --- | --- |
 | `throw` not caught, `raise` not recovered | Actor | Restart |
 | `panic`, including `unwrap()` on `None` | Actor | Restart |
+| Integer overflow | Actor | Restart |
 | Stack exhaustion | Actor | Restart |
 | Guest trap or out-of-bounds access | Actor | Restart |
 | Turn deadline exceeded | Actor | Restart |
@@ -33,7 +34,7 @@ Every failure ends exactly one of these domains. A failure must never take down 
 | Access outside the tenant's memory | Tenant VM | The tenant stops, with no restart, because the boundary itself failed |
 | Runtime bug, VM corruption, OS kill | Process | No recovery is promised |
 
-That an actor's failure restarts the actor, including on stack exhaustion, is **TARGET (decided)**, because one untrusted actor must not end hundreds or thousands of siblings. The exact class of each other row is **PROPOSED**. A backend that cannot contain an actor-level failure must not run untrusted actors directly on that path.
+That an actor's failure restarts the actor, including on stack exhaustion and integer overflow, is **TARGET (decided)**, because one untrusted actor must not end hundreds or thousands of siblings. The exact class of each other row is **PROPOSED**. A backend that cannot contain an actor-level failure must not run untrusted actors directly on that path.
 
 ## Stacks
 
@@ -169,5 +170,5 @@ These results are local observations, not conformance evidence. See [chapter 19]
 | LLVM: plain recursion with no tenant VM | The process dies with SIGSEGV | No |
 | LLVM tenant VM branch: guest recursion | That tenant fails, and other tenants and the process survive. Sibling actors in the tenant die with it | Partly |
 | LLVM tenant VM branch: recursion with a runtime call at each level | The process dies with a bus error | No |
-| LLVM: `int` overflow | The process traps | The arithmetic is checked, but the failure is not yet actor-level |
-| Java: `int` overflow | Wraps silently | No, under S-24 |
+| LLVM: `int` overflow | The process traps | Partly: the arithmetic is checked, but the failure is not yet actor-level |
+| Java: `int` overflow | Wraps silently | No |

@@ -1,6 +1,6 @@
 # 16 — Lexical Structure and Grammar Reference
 
-**Status: DRAFT.** This chapter records the syntax that compilers accept today, and it marks where that differs from the target spelling in [chapter 01](01-source-and-syntax.md). It does not choose a canonical spelling. That decision is tracked as S-01 in [open questions](12-open-questions.md).
+**Status: DRAFT.** This chapter records the syntax that compilers accept today, and it marks where that differs from the target spelling in [chapter 01](01-source-and-syntax.md).
 
 Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-source.java`, plus the local test runs in [chapter 19](19-observed-status-2026-11-03.md). "Java" and "LLVM" below always mean the revisions named in that chapter. Other backends were not tested.
 
@@ -75,6 +75,54 @@ From lowest to highest precedence, following the v0.6 grammar:
 
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
 
+## Function forms
+
+**TARGET (decided):** `: T` and `-> T` are both valid return spellings, and `::` may be included or omitted. No one form is the only correct one.
+
+As a grammar rule (**PROPOSED**, S-01), this reads:
+
+```ebnf
+callable_body = return_spec [ "::" ] ( block | { statement } "end" ) ;
+return_spec   = ":" type_ref | "->" type_ref ;
+```
+
+So these all declare the same function:
+
+```atto
+fnc add(int a, int b): int { return a + b; }
+fnc add(int a, int b) -> int { return a + b; }
+fnc add(int a, int b): int :: { return a + b; }
+fnc add(int a, int b) -> int :: { return a + b; }
+
+fnc add(int a, int b): int ::
+  return a + b;
+end
+
+fnc add(int a, int b) -> int ::
+  return a + b;
+end
+
+fnc add(int a, int b): int
+  return a + b;
+end
+
+fnc add(int a, int b) -> int
+  return a + b;
+end
+```
+
+The same rule applies to methods. A file may mix forms, since one declaration's form does not affect another's.
+
+Only the first two forms run on free functions today. See [chapter 19](19-observed-status-2026-11-03.md).
+
+**PROPOSED** parsing rules, because leaving out `::` can make the end of the return type unclear:
+
+1. The return type is read as far as it can go. Without `::`, the `|` in `-> int |x| ...` continues a union type, and the `[` in `-> Vector [const a] = f();` continues a sequence shape. In these cases the author writes `::` to end the type.
+2. A `{` right after the return type or `::` always opens a brace body, which then needs no `end`. A body in the `end` form therefore cannot start with a `{` destructure. Write `const {a} = f();` instead.
+3. Newlines do not separate the return type from the body, because AttoLang has no automatic semicolon insertion.
+
+**PROPOSED** formatter rule: the formatter keeps the form the author wrote and does not rewrite one into another.
+
 ## Statements and semicolons
 
 Semicolons are the formatter's canonical output. They may be omitted only where the parser has a clear structural boundary, such as just before `}`, `fi` or `end`. There is no JavaScript-style automatic insertion. Imports and `namespace` declarations always need one.
@@ -87,7 +135,7 @@ Each row was compiled and, where possible, run. See [chapter 19](19-observed-sta
 | --- | --- | --- | --- |
 | Function, colon return | `fnc add(int a, int b): int { ... }` | Runs | Runs |
 | Function, arrow return | `fnc add(int a, int b) -> int { ... }` | Runs | Runs |
-| Function, chapter 01 target | `fnc add(int a, int b) -> int :: ... end` | Rejected | Rejected |
+| Function, `::` or `end` forms | See [function forms](#function-forms) | Rejected | Rejected. The parser does accept `::` on class methods |
 | Entry point | `pub fnc main(): int` or `pub routine main(): int` | Runs | Runs |
 | Typed local | `val x: int = 41;` | Runs | Runs |
 | Untyped local | `val x = 41;` | Runs | Rejected |
@@ -125,4 +173,4 @@ pub fnc main(): int {
 
 ## Grammar source
 
-`docs/grammar.ebnf` in `oreslang-source.java` is the fullest grammar available, at about 740 lines. It describes the Java parser, not all backends, and it uses the v0.6 Oreslang spellings. It should be copied into this repository once S-01 is decided, and not before, so that this repository does not freeze a spelling that is still in question.
+`docs/grammar.ebnf` in `oreslang-source.java` is the fullest grammar available, at about 740 lines. It describes the Java parser, not all backends, and it uses the v0.6 Oreslang spellings. It does not yet include the `::` and `end` function forms. It should be updated and copied into this repository once the proposed parsing rules are confirmed.

@@ -37,14 +37,19 @@ The chapter 02 rule is that no backend may rely on unchecked host overflow when 
 | `5 % 0` | Fails with a host `ArithmeticException` | Rejected unless the divisor is a nonzero literal |
 | `1 eq 1.0` | True | Rejected: operands must have the same scalar type |
 
-**PROPOSED** (S-24), so that one source program means one thing on every backend:
+**TARGET (decided):** integer arithmetic is checked. Overflow is a panic, so it fails the actor, which is then restarted under [chapter 18](18-runtime-guarantees.md). It never wraps silently. Wrapping happens only through explicitly named operations, whose names are not chosen yet.
 
-1. Integer arithmetic on `int` and sized types is checked. Overflow is a panic, so it ends the actor and never wraps silently. LLVM's trap already points this way.
-2. Wrapping is available only through explicitly named operations.
-3. A literal outside its declared type's range is a compile-time error.
-4. Sized types are real types with enforced ranges, not aliases of `int`.
-5. `bigint` is either truly arbitrary precision or rejected. It must not silently act as 64-bit.
-6. Division by zero is a language-level failure with a defined class, never a host exception.
+This has a direct consequence: sized types must be real types with enforced ranges, not aliases of `int`, or `i8` could never overflow.
+
+Java needs real changes to meet this, and LLVM's trap needs to become an actor-level failure. Checks add some cost to arithmetic.
+
+**PROPOSED** (S-24):
+
+1. A literal or constant expression outside its declared type's range is a compile-time error.
+2. `bigint` is either truly arbitrary precision or rejected. It must not silently act as 64-bit.
+3. Division by zero is a language-level failure with a defined class, never a host exception.
+
+Outside an actor, an overflow panic ends the root invocation as described in [chapter 07](07-errors-and-failure.md).
 
 Whether `int / int` gives a `float` or an integer is a separate decision (S-25). Java's current behavior surprises anyone coming from C, Rust or Java itself.
 
