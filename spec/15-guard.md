@@ -34,6 +34,23 @@ literal or closure. Commas are top-level, left-associative guard-test
 separators, not tuple construction, value assignment or a generic
 comma expression. Parenthesized calls with commas remain one test.
 
+When a guard is the last statement inside a keyword-delimited outer
+`if ... then ... else ... fi`, the enclosing `else` or `fi` belongs
+to the **outer if**, not to the guard. The parser must not reject a legal
+outer delimiter merely because it follows a completed guard block:
+
+```atto
+if ready then
+  guard x > 0 { return 1; }
+else
+  return 2;
+fi
+return 42;
+```
+
+A standalone postfix `guard x { return; } else { ... }` remains
+invalid; `guard` never owns `else` or `fi`.
+
 The tests are evaluated **once, from left to right, with short-circuit
 semantics**. Only when **all** tests succeed does execution continue
 after `guard`. Any test failure executes the single failure block.
@@ -113,9 +130,11 @@ must produce diagnostics rather than runtime panics.
 - Java: boolean guards can lower through a checked inverted `IfStmt`;
   source `throw` and optional narrowing remain closed until independently
   enabled by effect/type/ownership checking.
-- LLVM: initial source lowering may admit scalar-only guard failures
-  ending in `return` and reject unsupported branches. No native payload
-  narrowing is implied.
+- LLVM: initial source lowering admits scalar-only guard failures
+  ending in `return`, including earlier side-effecting statements and
+  nested exhaustive conditionals with all paths returning. Other
+  terminating control transfers and Option payload narrowing remain
+  unimplemented. This is **authored**, not compiler-executed proof.
 - Wasm, .NET and Forge: fail closed until matching implementation and
   executed backend receipts exist.
 
