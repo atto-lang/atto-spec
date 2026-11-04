@@ -48,7 +48,7 @@ A `connect` argument naming a type rather than a live `ActorRef` is a type error
 
 ## Types and ports
 
-Each pipeline participant declares a nominal, statically known compatible role and its DATA input/output payload types. A linear factory has **at least two stages**. Source stages have an output port, sink stages an input port, and intermediate stages both. The compiler checks every adjacent edge:
+Each pipeline participant declares a nominal, statically known compatible role and its DATA input/output payload types. A linear factory has **at least two stages**. For the initial linear factory contract the first stage has the `readable` source role, the last has the `writable` sink role, and intermediate stages have compatible `transform` or `duplex` roles. A `duplex` terminal or upstream-only transform requires a separate explicit endpoint-exposure contract, not an implicit unconnected port. The compiler checks every adjacent edge:
 
 ```text
 Reader.Output == Transformer.Input
