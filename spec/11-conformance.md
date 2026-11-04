@@ -14,7 +14,7 @@ All five implementations target the **same language-level semantics**:
 | `oreslang-source.forge` | Forge independent JIT/AOT | Same language and actor contract |
 | `oreslang-source.net` | .NET/CIL | Full Native AOT deployment target |
 
-A source feature is not "five-backend parity" because a parser recognizes it, one backend passes a host-unit test, or different backends execute different reduced fixtures.
+A source feature is not "five-backend parity" because a parser recognizes it, one backend passes a host-unit test, or different backends execute different reduced fixtures. Hierarchical `define supervisor` is **TARGET / NOT_VERIFIED** across all five until equivalent nested guest trees, CONTROL events and restarts execute in exact-head builds. The [source-free topology model](13-supervisor-hierarchies.md) checks invariants but is not guest proof.
 
 ## Test classes
 

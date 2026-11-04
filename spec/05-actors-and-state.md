@@ -56,7 +56,7 @@ Conceptual lifecycle: allocate identity and quotas → initialize owned state �
 
 Panic and unhandled exceptional control are surfaced via a **separate bounded, authenticated CONTROL path**, not routed through the user DATA FIFO. An actor cannot intercept its own panic. Supervisor notices contain actor ID, parent/supervisor identity, failure kind, generation and bounded diagnostic data — **never** a mutable host exception/pointer graph.
 
-The supervisor decides whether to restart, stop, escalate or cancel children under a declared policy. CONTROL delivery must be possible when DATA is full, without unbounded priority starvation or running supervisor guest code inline inside the failing actor's carrier. Host-fatal process corruption is outside any supervisor recovery guarantee.
+The supervisor decides whether to restart, stop, escalate or cancel children under a declared policy. A supervisor may own actor children **and** supervisor children: only the direct parent receives authenticated child failure CONTROL, and restarting a child supervisor replaces its entire fenced subtree. One actor has exactly one controlling supervisor even if it joins multiple groups. See [hierarchical supervisor contract](13-supervisor-hierarchies.md). CONTROL delivery must be possible when DATA is full, without unbounded priority starvation or running supervisor guest code inline inside the failing actor's carrier. Host-fatal process corruption is outside any supervisor recovery guarantee.
 
 ## Kinds, groups and typed actor pipes
 

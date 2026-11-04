@@ -24,6 +24,7 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 | S-16 | GPU blocks, layouts, actor locality and hard-RT profiles | Qualify platform capabilities/latency; prohibit metadata-only claims |
 | S-17 | Synchronous convenience API suffix rules vs async-only I/O | Canonical normal I/O is async; any `_blocking` helper suspends guest without parking carrier; certify kernel readiness |
 | S-18 | Source permission flags and manifest schema parity | Version the flags-2-env mapping, manifest, enforcement and deny tests across all CLIs |
+| S-19 | Hierarchical `define supervisor`: typed spawn intrinsics, async hooks, policy configuration and root failure disposition | Fix exact signatures, static strategy declaration, cancellation/await semantics and runtime-owned generation-fenced CONTROL; execute nested supervision source on all backends; see [chapter 13](13-supervisor-hierarchies.md) |
 
 ## Changes requiring special scrutiny
 
