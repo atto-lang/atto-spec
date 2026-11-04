@@ -16,6 +16,10 @@ All five implementations target the **same language-level semantics**:
 
 A source feature is not "five-backend parity" because a parser recognizes it, one backend passes a host-unit test, or different backends execute different reduced fixtures. Hierarchical `define supervisor` is **TARGET / NOT_VERIFIED** across all five until equivalent nested guest trees, CONTROL events and restarts execute in exact-head builds. The [source-free topology model](13-supervisor-hierarchies.md) checks invariants but is not guest proof.
 
+## Named generic and named value-call conformance gate
+
+The normative target is specified in [generics](02-types-and-patterns.md) and [named value calls](03-functions-and-effects.md). The `oreslang-platform-conformance` named-generic-and-call-v1 corpus is a **source-level target and reference-model check only**, not executable guest certification. Every backend starts as `pending` until exact-commit, exact-tree parser/formatter diagnostics, positive and negative guest programs, ownership/effect/source-order checks, and an independent AOT run where applicable are evidenced. `Vector`, `Array` and `ArrayList` names must be resolved against actual exported declarations rather than guessed from other backend standard libraries. Distinguish pre-existing `Vector[int]` shape syntax, named type metadata, generic type binding, and value-call labels in all parser and formatter tests.
+
 ## Test classes
 
 Every normative feature should have:

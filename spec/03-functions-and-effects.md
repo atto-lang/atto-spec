@@ -26,6 +26,27 @@ end
 
 The `-> T :: ... end` style is a documentation target; compatibility spellings remain backend-dependent until grammar parity is proved.
 
+## Named function, method and constructor arguments (v1 target)
+
+Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
+
+```atto
+fnc combine(int first, int second) -> int ::
+  return first * 10 + second
+end
+
+val a = combine(second: 2, first: 1) // 12
+val b = combine(1, second: 2)         // 12
+// obj.set_value(value: 7, mode: #checked)
+// Pair(first: 1, second: 2) uses the same binder only if Pair exposes named constructor formals.
+```
+
+**Checked binding plan:** Resolve the callable by its established owner/name/arity and nominal policy; labels do not select an overload. Match each source argument to one uniquely declared formal slot. Positional arguments fill a leading prefix; reject positionals after the first named argument, missing/unknown/duplicate labels, collisions between positional and named bindings, wrong types, unsupported spreads, absent required slots and ambiguous overloads. Optional `T? param` slots, if admitted on a backend, are omitted only according to the independent optional-argument contract; omission is not an implicit shift and explicit `None` is not omission. Parameter labels are part of source/override/interface compatibility, not additional runtime dispatch keys.
+
+**Evaluation invariant:** evaluate the callee/receiver, then every supplied source argument expression **exactly once in lexical source order**, validating borrow/move/effects and cancellation along that order. Only after successful evaluation and checking may the compiler permute temporaries into declaration-order ABI slots. A named call cannot duplicate, skip or reorder side effects, or evade type/ownership/permission gates. Compile-time specialization, tail calls, suspendable/resumable methods, constructors and AOT code must consume the same checked plan; unsupported forms fail closed rather than becoming maps/records or dynamically reflected name lookup.
+
+**Compatibility boundary:** A readonly record, `Map<K,V>`, tuple spread, structural product, named type metadata and actor message field are not interchangeable named-call argument packs. Static record-to-named forwarding requires an independently checked closed-field expansion with proven evaluation/ownership semantics. Formatters preserve source argument order and labels rather than sorting expressions to declaration order.
+
 ## Effect types
 
 A callable can be annotated for potential `throws`, `raises`, `panics` or `suspends` effects. The compile-time effect set is an upper bound used for diagnostics and safe call admission; it is not a license to perform privileged operations. `trap` describes a non-throwing boundary for ordinary throw effects, but does not catch panics or cancellation. Precise declaration syntax and effect-polymorphic inference are still being reconciled.
