@@ -12,6 +12,8 @@ function ownValue(object, field) {
 function name(value, optional = false) {
   if (typeof value !== "string" || (!optional && !value) || value.includes("\0"))
     throw new TypeError("invalid actor factory name");
+  if (value.length > 256)
+    throw new RangeError("actor factory name byte budget");
   for (let i = 0; i < value.length; i++) {
     const u = value.charCodeAt(i);
     if (u >= 0xd800 && u <= 0xdbff) {
