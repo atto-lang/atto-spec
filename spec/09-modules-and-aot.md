@@ -20,16 +20,28 @@ This documents intended spelling; the exact source ordering, grammar and executa
 
 ## Project root and resolver safety
 
-The `+` import prefix refers to the project root resolved from the nearest applicable `.ores.pkg.toml`. `ORES_PATHS` supplies additional explicit source discovery directories under a versioned path-list contract. Existing `ORESLANG_PATH` and `.oreslangc.cfg.toml` behavior is a **legacy compatibility path** that must be reconciled rather than silently renamed.
+The `+` import prefix refers to the governed package root. Canonical AttoLang packages use the nearest applicable `.atto.pkg.toml`; `.ores.pkg.toml` is a migration-only fallback where permitted. An invalid canonical manifest MUST fail closed even if a legacy sibling exists. `ATTOLANG_PATH` is the canonical extra-root environment setting in compilers that implement it; legacy `ORESLANG_PATH`, `ORES_PATHS`, and `.oreslangc.cfg.toml` must be admitted only through separately documented compatibility modes. An explicitly present but empty canonical setting must not silently enable legacy roots. No environmental path list may grant capabilities to the guest.
 
 - `./` and `../` are relative to the importing file and cannot escape their governed physical package.
 - Unqualified names search declared project/source roots first, then admitted environmental paths; compiler and runtime must resolve the **same identity**.
 - An explicit `foo.atto` resolves only that file; explicit `foo.ores` resolves the legacy file when permitted.
-- An extensionless import with both `foo.atto` and `foo.ores` candidates is **ambiguous** and must fail rather than silently choose one.
-- Symlinks, hardlinks, nested packages, case/extension aliases and package-boundary traversals must be checked before foreign source is read or compiler IR is produced.
+- For a canonical `.atto` importer, extensionless `foo` resolves `foo.atto` **only** within the selected search root. The presence of `foo.ores` or `foo.java` beside `foo.atto` cannot change the result; if `foo.atto` does not exist, fail closed instead of falling through to legacy siblings. Explicit `foo.ores` remains a migration-only spelling when permitted.
+- A legacy `.ores` importer may use an explicitly versioned legacy resolver policy, but it must not silently change canonical `.atto` import behavior. Within a resolution tier, multiple distinct canonical candidates with equal priority must be diagnosed deterministically, not chosen by directory enumeration or filesystem race.
+- Symlinks, hardlinks, nested packages, case/extension aliases and package-boundary traversals must be checked before foreign source is read or compiler IR is produced. The linker, macro expander, formatter and incremental cache MUST consume the same canonical logical source-unit identity, with root/package authority attached. Host absolute paths (including drive letters, network shares and symlink aliases) may only be translated through a verified selected package root; they are not valid public import or macro source-unit IDs. An import cannot gain a new identity or a different permission set by spelling an alternate host path.
 - Import graphs can contain cycles when the language’s staged linking/initialization contract permits them; every peer in an SCC must be linked before its file initialization is run.
 
 No source path grants additional filesystem, FFI or network authority to runtime guest code.
+
+### Canonical import conformance examples
+
+| Importer | Import | Files present in the selected root | Required result |
+| --- | --- | --- | --- |
+| `main.atto` | `import ... from "./value"` | `value.atto`, `value.ores` | Resolve `value.atto` |
+| `main.atto` | `import ... from "./value"` | `value.ores` only | Reject (no implicit legacy fallback) |
+| `main.atto` | `import ... from "./value.ores"` | `value.ores` | Admit only in explicit legacy compatibility mode |
+| `main.atto` | `import ... from "+/value"` | Governed project root has `value.atto` | Resolve using the validated nearest canonical package root |
+
+Resolution, parsing, macro expansion and linked guest execution must each consume the **same selected file identity**. Tests must include symlink escape, malformed canonical/valid legacy manifest collision, case-fold collisions, root-import traversal and chained imported macros. A parser-only success is not a linked-execution receipt.
 
 ## Compilation modes
 
