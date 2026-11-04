@@ -55,6 +55,8 @@ val graph = spawn Reader() pipe spawn Transformer() pipe spawn Writer()
 
 `pipe` constructs an owned, typed connection graph. Only explicitly compatible actor pipeline roles may join it; supervisor/control messages cannot become data stages; cycle edges require separately bounded feedback channels. This is still a **source-lowering target**, not a claim that the pipeline expression executes on current LLVM/Java main.
 
+The proposed first-class `Actor.pipe(...)` factory also accepts **nested, unstarted** pipe builders as sequential segments, with typed boundary ports, local capacity overrides and optional nested supervisor scopes. `Actor.pipe(...)` returns a deferred builder; only its outermost `.start()` attempts actor creation. The existing `pipe` keyword remains the immediate-spawn spelling, with the same observable graph semantics after startup. See [nested pipeline contract](14-nested-actor-pipelines.md).
+
 ## Macros and compile-time evaluation
 
 `define macro` must expand or lower ahead of target runtime execution, be hygienic or explicitly expose controlled capture, produce source-mapped diagnostics, and be deterministic under a pinned toolchain. Macros cannot manufacture permissions or bypass import boundaries. Runtime reflection and runtime code evaluation are not implicit substitutes for macros. Cross-backend macro compilation and behavior require independent executable fixtures.
