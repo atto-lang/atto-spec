@@ -169,6 +169,6 @@ These results are local observations, not conformance evidence. See [chapter 19]
 | Java: an actor overflows its stack, and `main` does not await it | The process exits 1 instead of 42 | No |
 | LLVM: plain recursion with no tenant VM | The process dies with SIGSEGV | No |
 | LLVM tenant VM branch: guest recursion | That tenant fails, and other tenants and the process survive. Sibling actors in the tenant die with it | Partly |
-| LLVM tenant VM branch: recursion with a runtime call at each level | The process dies with a bus error | No |
+| LLVM tenant VM branch: recursion with a runtime call at each level, from C or a validated Wasm module | The process dies with a bus error. A fix is committed on a local branch and is not yet merged | No, until the fix merges |
 | LLVM: `int` overflow | The process traps | Partly: the arithmetic is checked, but the failure is not yet actor-level |
 | Java: `int` overflow | Wraps silently | No |
