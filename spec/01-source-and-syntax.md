@@ -78,7 +78,7 @@ while should_continue() do
 done
 ```
 
-An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.
+The **target** early-exit spelling is `guard condition { terminal_failure_path }` with **no `else` or `fi`**. A comma-separated guard list checks each clause once, left to right. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).\n\nAn `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.
 
 `match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. An expression-form `return match ...` must infer its enclosing return type where admitted. Typed variants such as `match<int>` and `select<int>` constrain arm results. Duplicate and unreachable arms should be compile errors; exhaustive/disjoint-vs-priority matching is still subject to [open questions](12-open-questions.md).
 
