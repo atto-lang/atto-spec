@@ -24,7 +24,7 @@ define class Ledger as
 end
 ```
 
-The `-> T :: ... end` style is a documentation target; compatibility spellings remain backend-dependent until grammar parity is proved.
+This `-> T :: ... end` style is one of the valid [function forms](16-lexical-and-grammar-reference.md#function-forms). Backend support differs until grammar parity is proved.
 
 ## Named function, method and constructor arguments (v1 target)
 

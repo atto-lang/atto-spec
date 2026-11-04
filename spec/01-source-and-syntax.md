@@ -33,7 +33,7 @@ define actor Worker as
 end
 ```
 
-The samples use target canonical spelling. Legacy/active compilers may currently require colon return annotations, braces, alternative declaration order, or other older forms. A formatter must preserve meaning and must not "upgrade" unlowered syntax into executable claims.
+The samples use one of several valid function forms: `: T` and `-> T` are both return spellings, `::` is optional, and a body uses braces or closes with `end`. See [function forms](16-lexical-and-grammar-reference.md#function-forms). Compilers do not accept all of these yet. A formatter must preserve meaning and must not "upgrade" unlowered syntax into executable claims.
 
 - Free-standing functions use `fnc`; an instance method ordinarily omits `fnc` and has implicit `self`. Legacy instance `fnc` may be accepted and formatted to the bare method.
 - Public declarations use `pub` in positions admitted by the grammar; canonical module spelling is `define pub module`. Module members are private unless exported.
@@ -77,6 +77,8 @@ while should_continue() do
   rt cooperate
 done
 ```
+
+The **target** early-exit spelling is `guard condition { terminal_failure_path }` with **no `else` or `fi`**. A comma-separated guard list checks each clause once, left to right. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
 
 An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.
 
