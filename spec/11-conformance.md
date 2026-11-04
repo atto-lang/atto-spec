@@ -82,7 +82,7 @@ Read-back confirms byte-identical Git blob SHAs across all five:
 - `canonical-scalar.atto`: `c86ac476e55074031c0bcda02f5eaf3cb1399477`
 - `reject-fallthrough.atto`: `1ff87aa95ed2537839347e80984c69ae46fdfa17`
 - `reject-else.atto`: `b2bbee98cd3b95ac19462b4efd95a2e98b469154`
-- `README.md`: `15246dd7aaa09b15116e5c1ec449c83b0cc24a27`
+- `README.md`: `431e343fa854910766cc22214e990d62628c4a90`
 
 The positive fixture MUST actually compile and execute to return `42`.
 A JVM guest returns 42 to its host; a native executable exits with status 42.
@@ -90,8 +90,8 @@ Each negative fixture MUST fail before emitting executable IR. No host
 simulation, source file existence, compiler fallback, workflow with zero steps,
 or shared blob SHA qualifies as actual guest parity.
 
-Java and LLVM have **authored** execution/negative tests. Wasm, .NET and
-Forge currently have **contract fixtures only**. None is certified
+Java and LLVM have **authored** execution/negative tests. Wasm currently has **contract fixtures only**. .NET and Forge have
+**authored rejection-only gates** that remain unexecuted (not positive guard support). None is certified
 on the exact source head without stepful runner receipts. Option narrowing
 (`guard name is Some`) is a separate NOT_IMPLEMENTED gate until ownership,
 typing, continuation and runtime evidence is available. All six PRs remain
