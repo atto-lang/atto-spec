@@ -1,0 +1,100 @@
+{
+  "schema": "attolang.guard.v1",
+  "status": "target-contract; scalar Java/LLVM implementation pending execution",
+  "purpose": "Cross-backend source fixtures; target-option examples are not executable implementation claims",
+  "cases": [
+    {
+      "id": "boolean-passes",
+      "kind": "execute",
+      "source": "pub fnc main(): int { guard true { return 1; } return 42; }",
+      "expected_exit": 42
+    },
+    {
+      "id": "boolean-fails",
+      "kind": "execute",
+      "source": "pub fnc main(): int { guard false { return 42; } return 1; }",
+      "expected_exit": 42
+    },
+    {
+      "id": "comma-all-pass",
+      "kind": "execute",
+      "source": "pub fnc main(): int { guard 3 > 0, 3 < 7 { return 1; } return 42; }",
+      "expected_exit": 42
+    },
+    {
+      "id": "comma-second-fails",
+      "kind": "execute",
+      "source": "pub fnc main(): int { guard 3 > 0, 3 > 7 { return 42; } return 1; }",
+      "expected_exit": 42
+    },
+    {
+      "id": "failed-else-syntax",
+      "kind": "reject",
+      "source": "pub fnc main(): int { guard true else { return 1; } return 42; }",
+      "reject": "missing failure block"
+    },
+    {
+      "id": "postfix-else-syntax",
+      "kind": "reject",
+      "source": "pub fnc main(): int { guard true { return 1; } else { return 2; } return 42; }",
+      "reject": "else forbidden"
+    },
+    {
+      "id": "postfix-fi-syntax",
+      "kind": "reject",
+      "source": "pub fnc main(): int { guard true { return 1; } fi return 42; }",
+      "reject": "fi forbidden"
+    },
+    {
+      "id": "empty-failure",
+      "kind": "reject",
+      "source": "pub fnc main(): int { guard true {} return 42; }",
+      "reject": "failure may fall through"
+    },
+    {
+      "id": "nonterminal-failure",
+      "kind": "reject",
+      "source": "pub fnc main(): int { guard true { 42; } return 42; }",
+      "reject": "failure may fall through"
+    },
+    {
+      "id": "nonbool-condition",
+      "kind": "reject",
+      "source": "pub fnc main(): int { guard 7 { return 1; } return 42; }",
+      "reject": "condition must be bool"
+    },
+    {
+      "id": "missing-condition",
+      "kind": "reject",
+      "source": "pub fnc main(): int { guard { return 1; } return 42; }",
+      "reject": "missing condition"
+    },
+    {
+      "id": "nested-conditional-incomplete",
+      "kind": "reject",
+      "source": "pub fnc main(): int { guard false { if true { return 1; } fi } return 42; }",
+      "reject": "not all failure paths exit"
+    },
+    {
+      "id": "option-present-narrowing",
+      "kind": "target-option",
+      "source": "fnc f(Option<string> username) -> string { guard username is Some { return \"missing\"; } return username; }",
+      "expected_type": "string",
+      "backend_status": "NOT_IMPLEMENTED"
+    },
+    {
+      "id": "option-nested-no-flatten",
+      "kind": "target-option",
+      "source": "fnc f(Option<Option<string>> username) -> Option<string> { guard username is Some { return None; } return username; }",
+      "expected_type": "Option<string>",
+      "backend_status": "NOT_IMPLEMENTED"
+    },
+    {
+      "id": "option-then-property",
+      "kind": "target-option",
+      "source": "fnc f(Option<string> username) -> int { guard username is Some, !username.isEmpty { return 0; } return username.count; }",
+      "expected_type": "int",
+      "backend_status": "NOT_IMPLEMENTED"
+    }
+  ]
+}
