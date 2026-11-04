@@ -63,3 +63,5 @@ The supervisor decides whether to restart, stop, escalate or cancel children und
 Shared, private/isolated and untrusted kinds select capacity, transport and policy, not a second object model. One actor may join multiple `ActorGroup` instances using authorized membership capabilities; group lifecycle cannot steal owned state. HTTP/TCP/WS actor shorthand and `extends ChildProcManager` style libraries are target desugarings over the base actor model. `serial http actor` requests serial request/message concurrency.
 
 `spawn A() pipe spawn B()` creates a typed, bounded actor data pipeline; a supervisor is not a data stage. Affinity, number of carrier threads, and mailbox size do not weaken supervision or sealed-state rules.
+
+The proposed `Actor.pipe(A(), B(), ...)` and zero-argument-type `Actor.pipe(A, B, ...)` are new-actor factory forms of that pipeline, while `Actor.connect(a_ref, b_ref)` connects existing actors without changing their supervisor. These must share the same admission, ownership, capacity and DATA/CONTROL separation guarantees. See [chapter 14](14-actor-pipeline-factories.md); all factory syntax remains **TARGET / NOT_VERIFIED**.

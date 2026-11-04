@@ -86,6 +86,18 @@ val graph = spawn Reader() pipe spawn Transformer() pipe spawn Writer()
 
 `pipe` constructs an owned, typed connection graph. Only explicitly compatible actor pipeline roles may join it; supervisor/control messages cannot become data stages; cycle edges require separately bounded feedback channels. This is still a **source-lowering target**, not a claim that the pipeline expression executes on current LLVM/Java main.
 
+The proposed factory spelling is `Actor.pipe(Reader(), Transformer(), Writer())`, with `Actor.pipe(Reader, Transformer, Writer)` as **zero-argument constructor sugar**. Both are compiler-lowered new-actor graph construction, distinct from `Actor.connect(reader_ref, writer_ref)`, which wires already-spawned actor references without adopting them:
+
+```atto
+val result = Actor.pipe(Reader(), Transformer(), Writer())
+val with_defaults = Actor.pipe(Reader, Transformer, Writer)
+val reader = spawn Reader()
+val writer = spawn Writer()
+val connection = Actor.connect(reader, writer)
+```
+
+All graph-construction spellings propose the same `Result<ActorGraph<In,Out>, PipelineError>` admission contract. The precise variadic type grammar is still under review; these expressions are **TARGET**, not independently verified guest execution. See [actor pipeline factory and connection contract](14-actor-pipeline-factories.md) for contextual constructor typing, ownership, transactional publication, denial and AOT requirements.
+
 ## Macros and compile-time evaluation
 
 `define macro` must expand or lower ahead of target runtime execution, be hygienic or explicitly expose controlled capture, produce source-mapped diagnostics, and be deterministic under a pinned toolchain. Macros cannot manufacture permissions or bypass import boundaries. Runtime reflection and runtime code evaluation are not implicit substitutes for macros. Cross-backend macro compilation and behavior require independent executable fixtures.

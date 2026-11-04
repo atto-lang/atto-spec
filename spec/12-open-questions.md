@@ -25,6 +25,7 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 | S-17 | Synchronous convenience API suffix rules vs async-only I/O | Canonical normal I/O is async; any `_blocking` helper suspends guest without parking carrier; certify kernel readiness |
 | S-18 | Source permission flags and manifest schema parity | Version the flags-2-env mapping, manifest, enforcement and deny tests across all CLIs |
 | S-19 | Hierarchical `define supervisor`: typed spawn intrinsics, async hooks, policy configuration and root failure disposition | Fix exact signatures, static strategy declaration, cancellation/await semantics and runtime-owned generation-fenced CONTROL; execute nested supervision source on all backends; see [chapter 13](13-supervisor-hierarchies.md) |
+| S-20 | `Actor.pipe(...)` versus `Actor.connect(...)`: constructor descriptor grammar, graph admission `Result`, typed endpoint handles and connection capabilities | Proposed initial API uses contextual unspawned actor constructors for `pipe` and live `ActorRef` operands for `connect`; reconcile syntax/variadics and test atomic publication on five backends; see [chapter 14](14-actor-pipeline-factories.md) |
 
 ## Changes requiring special scrutiny
 
