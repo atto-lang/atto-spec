@@ -58,6 +58,8 @@ Panic and unhandled exceptional control are surfaced via a **separate bounded, a
 
 The supervisor decides whether to restart, stop, escalate or cancel children under a declared policy. A supervisor may own actor children **and** supervisor children: only the direct parent receives authenticated child failure CONTROL, and restarting a child supervisor replaces its entire fenced subtree. One actor has exactly one controlling supervisor even if it joins multiple groups. See [hierarchical supervisor contract](13-supervisor-hierarchies.md). CONTROL delivery must be possible when DATA is full, without unbounded priority starvation or running supervisor guest code inline inside the failing actor's carrier. Host-fatal process corruption is outside any supervisor recovery guarantee.
 
+A failed actor is restarted from stored state by default, and its unstarted mail carries over. See [runtime guarantees](18-runtime-guarantees.md).
+
 ## Kinds, groups and typed actor pipes
 
 Shared, private/isolated and untrusted kinds select capacity, transport and policy, not a second object model. One actor may join multiple `ActorGroup` instances using authorized membership capabilities; group lifecycle cannot steal owned state. HTTP/TCP/WS actor shorthand and `extends ChildProcManager` style libraries are target desugarings over the base actor model. `serial http actor` requests serial request/message concurrency.
