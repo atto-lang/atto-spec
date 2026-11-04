@@ -24,6 +24,7 @@ This repository is the **language-level specification**, not the proof that a pa
 | [10 — DOP and real time](spec/10-dop-and-realtime.md) | Data layouts, affinity, GPU, real-time profiles |
 | [11 — Conformance](spec/11-conformance.md) | Required backend gates and evidence |
 | [12 — Open questions](spec/12-open-questions.md) | Unsettled decisions and compatibility risks |
+| [13 — Hierarchical supervisors](spec/13-supervisor-hierarchies.md) | Nested supervisors, restart boundaries, identity and CONTROL fences |
 
 ## Specification interpretation
 

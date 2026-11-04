@@ -40,6 +40,6 @@ The intended precedence is host fatal / forced termination, cancellation, panic,
 
 ## Supervisor failure contract
 
-A failed actor emits a bounded authenticated terminal notice with actor ID, parent ID, generation, error category and sanitized diagnostic. CONTROL delivery bypasses a full DATA mailbox and does not execute user supervisor code on the failing worker. It is bounded, generation-checked and at-most-once terminal publication. Independent actors remain runnable when the host/runtime can safely isolate the failing actor.
+A failed actor emits a bounded authenticated terminal notice with actor ID, parent ID, generation, error category and sanitized diagnostic. CONTROL delivery bypasses a full DATA mailbox and does not execute user supervisor code on the failing worker. It is bounded, generation-checked and at-most-once terminal publication. Independent actors remain runnable when the host/runtime can safely isolate the failing actor. A grandchild panic is handled by its **immediate** supervisor; escalation requires a new, generation-fenced failure receipt for the child supervisor itself, not relaying an untrusted grandchild token. See [hierarchy, escalation and restart](13-supervisor-hierarchies.md).
 
 No specification sentence means JVM virtual machine corruption, unsafe FFI, native memory corruption, or OS process death is recoverable.
