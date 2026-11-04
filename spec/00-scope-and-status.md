@@ -29,8 +29,19 @@ An implementation **MUST NOT** silently reinterpret unsupported syntax as a diff
 | PROPOSED | Unsettled design/API; do not count as language support |
 | IMPLEMENTED (backend + SHA) | Supported by compiler and actual guest tests at the stated revision |
 | VERIFIED PARITY | Same source and results executed on every required backend with independently checked evidence |
+| NOT_VERIFIED (backend list) | Explicit statement that no authenticated guest execution exists for the named backends; never weaker than the absence of IMPLEMENTED |
 
 All chapters in v0.1 remain DRAFT; no chapter grants an unconditional IMPLEMENTED or VERIFIED PARITY claim. A feature matrix belongs in [conformance](11-conformance.md), not in marketing prose.
+
+## Normative keywords and precedence
+
+The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RECOMMENDED, MAY and OPTIONAL are interpreted as described in BCP 14 ([RFC 2119](https://www.rfc-editor.org/rfc/rfc2119), [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174)) when they appear in capitals. Draft v0.1 prose also uses lowercase "must"/"must not" for requirements; until the editorial pass tracked as S-41 capitalizes them, a lowercase "must" in a rule sentence is a requirement, not a suggestion. All keywords bind the **draft target**, not current backend parity.
+
+When sources inside this specification disagree:
+
+1. Normative prose governs code examples. An example that contradicts a rule is an editorial defect; implementations follow the rule and the example is corrected by amendment.
+2. A more specific chapter governs a general summary of the same feature (for example, [chapter 14](14-actor-pipeline-factories.md) governs the pipeline summary in chapter 03).
+3. Two normative rules of equal specificity that conflict are a defect. The conflict MUST be recorded in [open questions](12-open-questions.md), and implementations MUST reject the affected construct until it is resolved rather than pick one reading.
 
 ## Source compatibility
 

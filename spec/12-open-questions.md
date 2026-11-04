@@ -26,6 +26,23 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 | S-18 | Source permission flags and manifest schema parity | Version the flags-2-env mapping, manifest, enforcement and deny tests across all CLIs |
 | S-19 | Hierarchical `define supervisor`: typed spawn intrinsics, async hooks, policy configuration and root failure disposition | Fix exact signatures, static strategy declaration, cancellation/await semantics and runtime-owned generation-fenced CONTROL; execute nested supervision source on all backends; see [chapter 13](13-supervisor-hierarchies.md) |
 | S-20 | `Actor.pipe(...)` versus `Actor.connect(...)`: constructor descriptor grammar, graph admission `Result`, typed endpoint handles and connection capabilities | Proposed initial API uses contextual unspawned actor constructors for `pipe` and live `ActorRef` operands for `connect`; reconcile syntax/variadics and test atomic publication on five backends; see [chapter 14](14-actor-pipeline-factories.md) |
+| S-41 | Lowercase "must" in v0.1 prose versus BCP 14 capitals | Editorial pass converting every lowercase requirement to MUST/SHOULD; until then lowercase "must" in rule sentences is normative ([chapter 00](00-scope-and-status.md)) |
+| S-42 | Which line breaks end a statement | Examples omit every semicolon, while open PR #7 records that compilers need them except before `}`, `fi` and `end`. Pick one testable rule covering lines that start with `\|>`, `.`, `-`, `+`, `(` and `[`; publish a lexer/formatter corpus with negatives |
+| S-43 | Reserved words as member names (`Actor.pipe` while chapter 01 calls `pipe` a keyword) | TARGET: permitted only directly after `.`; never as free identifiers or declaration names |
+| S-44 | `if e as const name` uses `const` for a runtime binding, unlike statement `const` | Documented contextual meaning (immutable runtime binding); decide whether to respell as `as val` with a formatter migration |
+| S-45 | Four meanings of `?` (optional type, omittable parameter, propagation, ternary) | TARGET disambiguation in chapter 01, parenthesized ternary inside argument lists; decide whether to keep the ternary |
+| S-46 | Typed local annotation order: `let Task<int> work` (chapter 06) versus `val box: Box<...>` (chapter 02, and what compilers accept today) | Pick one canonical order for locals; parameters are type-first in every chapter |
+| S-47 | Implicit constructors (`Point(...)`, `Increment(1)`) versus "constructors use an explicit `constructor(...)`" | Decide whether classes/records get a field-order constructor; until then reject calls that match no declared constructor |
+| S-48 | Shadowing of `val`/`let`/`const` in inner scopes | Same-scope redeclaration is an error; decide inner-scope shadowing with move/borrow interaction tests |
+| S-49 | Symbol literals containing spaces (`#with spaces` was lexically unterminated) | Unquoted symbols are identifier-shaped; settle the delimited form `#"with spaces"` (also recorded in open PR #7) and its interning identity |
+| S-50 | Value-parameter default syntax and the `_` / `omit` call-site markers | No chapter defines them; specify grammar, evaluation timing (declaration versus call site) and effect rules for default expressions |
+| S-51 | Failure disposition of detached `do nb { }` Tasks | TARGET in [chapter 06](06-async-and-scheduling.md): parent scope waits; unhandled failure becomes parent-scope failure; execute race fixtures |
+| S-52 | `recover` for `raise`: syntax, scope, effect typing and interaction with `defer` | Undefined; compilers reject `recover` until a contract exists |
+| S-53 | Unqualified import found in both a project root and an environmental root | TARGET in [chapter 09](09-modules-and-aot.md): ambiguous unless pinned by the manifest; same-tier collisions are already diagnosed |
+| S-54 | Infix `spawn A() pipe spawn B()`: staged descriptors (chapter 14 on main) versus immediate spawn (open PR #3) | Pick one; until then reject programs whose meaning depends on the difference |
+| S-55 | Dropping an unstopped `ActorGraph` | Proposed: drop requests graceful stop and the owning scope awaits completion; must-use diagnostic for a discarded admission `Result` |
+| S-56 | Equality operators `==` versus `eq` | Open PR #7 records `eq` as canonical and `==` as an alias; confirm, and define numeric (`1` versus `1.0`) behaviour |
+| S-57 | Synchronous calls to actor methods through an `ActorRef` | TARGET in [chapter 05](05-actors-and-state.md): rejected; only `send`/request messages cross the actor boundary; decide the typed request/reply API |
 
 ## Changes requiring special scrutiny
 

@@ -29,6 +29,8 @@ val admitted = counter.send(Increment(1))
 
 This is the intended **sealed-state target**, not proof that the displayed `state {}` and `handle_state` lowering execute on every backend. API casing/signatures are fixed only after a conformance amendment.
 
+**Who may call an actor method (TARGET, S-57).** A method such as `read_count()` above runs only **inside one of the same actor's own turns** (from `receive`, a lifecycle hook or another method already running in that turn). An `ActorRef` exposes no synchronous method calls: `counter.read_count()` from another actor, a Task or top-level code MUST be rejected at compile time. Code outside the actor interacts only through admitted messages (`send` and typed request/reply). A direct call would run guest code on the caller's carrier, outside the mailbox's serialization, and break the one-turn-at-a-time rule.
+
 ## State confinement
 
 At most one effective persistent guest state schema belongs to one actor. Direct reads/writes of actor state outside compiler-validated scoped callbacks (`handle_state(critical-read|write ...)` or equivalent admitted lexically scoped `using`) MUST fail compilation. The intrinsic is sealed; code cannot override it or forge an actor-state pointer.

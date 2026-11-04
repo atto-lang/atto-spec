@@ -12,11 +12,13 @@
 
 | Effect | Nearest permitted interception | If unhandled |
 | --- | --- | --- |
-| `throw Error` | Matching `try/catch` | Escalates out of its lexical scope (target: `raise`) |
-| `raise Error` | Explicit `defer/recover` or privileged recovery scope, not ordinary `catch` | Escalates to panic/failure supervision |
+| `throw Error` | Matching `try/catch` in the current callable or any caller | Propagates through callers; at an actor-turn, Task or root boundary it escalates (target: `raise`, then terminal panic per [chapter 13](13-supervisor-hierarchies.md)) |
+| `raise Error` | `recover` (semantics PROPOSED, S-52) or privileged recovery scope, not ordinary `catch` | Escalates to panic/failure supervision |
 | `panic Error` | Supervisor/runtime control only for an actor; never actor-local ordinary catch | Actor failure + CONTROL notice |
 | Cancellation | Structured scheduler cancellation boundary | Cancel enclosing computation/actor per policy |
 | Host fatal | No guest reliability guarantee | Host/runtime failure |
+
+An ordinary `throw` is not confined to its lexical block: it propagates up the call chain through every callable whose effect set admits `throws` until a matching `catch` handles it. Escalation happens only when it reaches an actor-turn, Task or root boundary uncaught. The exact escalation chain at that boundary is still S-05. `defer` is cleanup only and never intercepts a raise. The `recover` form that does intercept one has no defined syntax or semantics yet (S-52), and compilers MUST reject it until it does.
 
 `try` handles ordinary throws. `raise` bypasses ordinary catches. `panic` is not swallowed by user `catch` or `trap`. An actor **cannot intercept its own panic** and resume execution. A supervisor may choose a recovery policy for a *new actor incarnation* if the environment remains safe.
 
@@ -36,7 +38,7 @@ A separate requested design treats `trap worker.send(msg)` as a `Result<T,E>`-re
 
 `defer` runs in last-in-first-out order exactly once on admitted normal and exceptional unwind paths. `finally` runs once after a try/catch outcome. Cleanup failure must not demote a stronger panic/raise/cancellation to success; suppressed diagnostics preserve secondary failures. A cleanup callback cannot bypass an actor's CONTROL escalation policy.
 
-The intended precedence is host fatal / forced termination, cancellation, panic, raise, ordinary throw, normal return. An implementation must prove its unwind and resource release semantics on the relevant compiler/runtime, including suspended continuations and actor retirement.
+The intended precedence is host fatal / forced termination, cancellation, panic, raise, ordinary throw, normal return. Precedence selects the **primary** outcome; it never deletes a lower one. In particular, a panic raised during cancellation unwind MUST still be recorded as a suppressed failure and reach the owning supervisor on CONTROL with its origin intact, so a buggy cleanup path cannot be hidden by the cancellation that triggered it. An implementation must prove its unwind and resource release semantics on the relevant compiler/runtime, including suspended continuations and actor retirement.
 
 ## Supervisor failure contract
 

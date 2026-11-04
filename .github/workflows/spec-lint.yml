@@ -1,0 +1,28 @@
+name: Spec lint (links, fences, IDs, example syntax)
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - 'tools/spec-lint/**'
+      - '.github/workflows/spec-lint.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - 'tools/spec-lint/**'
+      - '.github/workflows/spec-lint.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  spec-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit-test the linter
+        run: cargo test --locked --manifest-path tools/spec-lint/Cargo.toml
+      - name: Lint the specification
+        run: cargo run --locked --quiet --manifest-path tools/spec-lint/Cargo.toml -- .

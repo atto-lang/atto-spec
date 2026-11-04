@@ -21,7 +21,11 @@ let Task<int> work = nb {
 val result = await work
 ```
 
-`do nb { ... }` explicitly discards a Task handle but not its supervision obligation. A Task has a structured parent, may be cancelled, and must not capture mutable actor state or escaping stack borrows. `await task` joins its result; a Task is not an actor and has no default mailbox.
+Inside an `nb { }` block, `return` completes **the Task**, not the enclosing callable, and postfix `?` likewise exits the Task body ([chapter 02](02-types-and-patterns.md)).
+
+`do nb { ... }` explicitly discards a Task handle but not its supervision obligation. A Task has a structured parent, may be cancelled, and must not capture mutable actor state or escaping stack borrows. `await task` joins its result and consumes the handle ([chapter 04](04-ownership-and-memory.md)); a Task is not an actor and has no default mailbox.
+
+For a detached `do nb` Task (TARGET, S-51): its parent scope MUST NOT complete (and an actor turn's owned resources MUST NOT retire) until the detached Task has settled or been cancelled and fenced. An unhandled throw, raise or panic in a detached Task is delivered to the parent scope as that scope's own failure, under the same precedence as [chapter 07](07-errors-and-failure.md). It is never silently dropped, and it is never turned into success because nobody kept the handle.
 
 ## Channels, select and backpressure
 
@@ -55,7 +59,7 @@ This is **not a portable guarantee of exactly two process threads**: JVM, CLR, G
 
 ## Asynchronous-only I/O
 
-Normal hosted I/O returns `Future<T>` or another explicit asynchronous result and is driven by kernel readiness/completion rather than blocking an actor worker. Canonical async operations need not carry an `_async` suffix. If a *source-level blocking convenience* exists, its name must end in `_blocking` and it still suspends the logical task instead of parking an actor carrier. An `_async` suffix is optional for ordinary async API names. Native syscall semantics must be verified separately; moving a blocking syscall to a worker thread is not equivalent to genuine nonblocking I/O.
+Normal hosted I/O returns `Future<T>` or another explicit asynchronous result and is driven by kernel readiness/completion rather than blocking an actor worker. Canonical standard-library async operations carry **no** `_async` suffix. An `_async`-suffixed name MAY exist only as a compatibility alias that denotes exactly the same operation and type as its unsuffixed name; two different operations MUST NOT differ only by that suffix. If a *source-level blocking convenience* exists, its name must end in `_blocking` and it still suspends the logical task instead of parking an actor carrier. Native syscall semantics must be verified separately; moving a blocking syscall to a worker thread is not equivalent to genuine nonblocking I/O.
 
 ## Failure and cancellation
 

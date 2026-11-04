@@ -1,0 +1,8 @@
+[package]
+name = "spec-lint"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Structural and example-syntax checks for the AttoLang specification Markdown"
+
+[dependencies]

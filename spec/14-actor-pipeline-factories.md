@@ -8,12 +8,18 @@ The existing `pipe` keyword remains the canonical infix actor pipeline expressio
 
 ```atto
 // Three construction spellings; same ordered graph and failure contract.
-val graph_result = spawn Reader() pipe spawn Transformer() pipe spawn Writer()
-val graph_result = Actor.pipe(Reader(), Transformer(), Writer())
-val graph_result = Actor.pipe(Reader, Transformer, Writer)
+val infix_result = spawn Reader() pipe spawn Transformer() pipe spawn Writer()
+val factory_result = Actor.pipe(Reader(), Transformer(), Writer())
+val sugar_result = Actor.pipe(Reader, Transformer, Writer)
 ```
 
-The first form uses explicit actor spawn operands, which require *staged* publication when used in a `pipe` expression. For the factory forms, `Reader(...)` is parsed **contextually** as an unspawned, statically resolved actor-constructor specification. It does not allocate a running actor, invoke `receive`, mint an actor identity or execute actor code when argument evaluation occurs. Constructor arguments may be evaluated as normal language expressions according to their declared effects, then copied/moved into an owned, immutable build plan. The compiler MUST reject an argument whose evaluation or capture would violate isolation, lifetime, permission or effect rules. In particular, construction arguments are not implicit capability grants.
+The first form uses explicit actor spawn operands, which require *staged* publication when used in a `pipe` expression. That means the infix chain is **one grammar production**, `spawn C(args) (pipe spawn C(args))+`, not a binary operator applied to already-evaluated `spawn` expressions. Inside the chain, each `spawn C(args)` is a constructor descriptor, exactly like an `Actor.pipe` operand. Outside a `pipe` chain, `spawn` publishes a live actor immediately (chapter 05). Consequences:
+
+- `pipe` binds more loosely than `spawn` and is flattened left to right into one N-stage graph, never nested two-stage graphs.
+- An operand that is not literally `spawn C(args)` (a variable holding an `ActorRef`, a parenthesized `(spawn A())`, a function call) is rejected; wire existing actors with `Actor.connect`.
+- Mixing `|>` and `pipe` in one expression without parentheses is rejected.
+
+PR #3 (nested pipelines, open) proposes that infix `spawn` operands spawn immediately instead. The two readings are incompatible; until S-54 resolves this, compilers MUST reject any program whose meaning depends on the difference. For the factory forms, `Reader(...)` is parsed **contextually** as an unspawned, statically resolved actor-constructor specification. It does not allocate a running actor, invoke `receive`, mint an actor identity or execute actor code when argument evaluation occurs. Constructor arguments may be evaluated as normal language expressions according to their declared effects, then copied/moved into an owned, immutable build plan. The compiler MUST reject an argument whose evaluation or capture would violate isolation, lifetime, permission or effect rules. In particular, construction arguments are not implicit capability grants. Constructor arguments of **all** stages are evaluated once, stage by stage, in lexical order, under the chapter 03 evaluation invariant. If any argument evaluation fails, no later argument is evaluated and nothing is admitted. If admission later fails, every argument already moved into the build plan is dropped in reverse evaluation order and is not returned to the caller.
 
 The bare `Reader` form is a **statically known nominal actor type** with an accessible zero-argument initializer. It is sugar for `Reader()` **only in the factory's actor-constructor argument position**; it does not introduce general runtime type values or host reflection. A type requiring arguments must use `Reader(args...)`.
 
@@ -34,7 +40,7 @@ These signatures are **conceptual**, not an assertion that AttoLang currently su
 // Construct and publish a new graph; errors are explicit.
 val graph = Actor.pipe(
   Reader("/tmp/source"),
-  Transformer(batch_size=256),
+  Transformer(batch_size: 256),
   Writer("/tmp/destination")
 )?
 
@@ -61,6 +67,8 @@ Existing typed pipeline semantics include **correlation-bound reverse DATA repli
 
 The result `ActorGraph<In,Out>` owns **only newly created** child actor refs, connection leases and lifecycle scope. It exposes bounded entry/exit handles where the graph role permits, a graceful `stop()`, and `get_done()` for physical completion; the exact source-level endpoint and return signatures remain subject to grammar/type admission tests. A `ConnectionRef<T>` owns only its connection lease; neither stopping it nor dropping it implicitly stops or reparents its endpoint actors.
 
+Dropping the last owner of an admitted `ActorGraph` (TARGET, S-55) MUST NOT silently detach its actors. The proposed rule is that the drop requests the same graceful `stop()` as an explicit call and that the owning scope waits for `get_done()` under structured rules. Discarding an `ActorGraph` or its admission `Result` without binding it SHOULD be a compile-time diagnostic. How the stage roles (`readable`, `writable`, `transform`, `duplex`) are declared in source is not yet specified (PROPOSED).
+
 ## Atomic publication, effects and concurrency
 
 - The compiler emits ordered `ActorStageSpec` and `ActorEdgeSpec` records with static initializer IDs, payload type IDs, constructor argument ownership plans, effect bounds, supervisor ownership context and required capabilities. No runtime host-reflection or runtime source evaluation is required, including in **full guest AOT**.
@@ -78,7 +86,7 @@ An implementation MAY choose optimized allocation or zero-copy routes when the s
 
 A portable `.atto` suite MUST cover:
 1. Positive 2-stage and 3-stage typed chains; non-default constructor parameters; zero-arg type sugar; explicit infix `pipe` equivalence; endpoint types, order and `Result` behavior.
-2. Negative mismatched payload and ownership, non-actor stage, supervisor/CONTROL stage, malformed/duplicate stage, zero/one stage, source-without-output, sink-without-input, spawned refs passed to `Actor.pipe`, bare types with required initializer args, `Actor.connect` passed types, capability forgery, cross-tenant and stale incarnations.
+2. Negative mismatched payload and ownership, non-actor stage, supervisor/CONTROL stage, malformed/duplicate stage, zero/one stage, source-without-output, sink-without-input, spawned refs passed to `Actor.pipe`, bare types with required initializer args, `Actor.connect` passed types, capability forgery, cross-tenant and stale incarnations, non-`spawn` operands in an infix `pipe` chain, unparenthesized `|>`/`pipe` mixtures, and `name=value` constructor arguments.
 3. Resource reservation limits, mid-stage initialization failure, cancellation during staging, concurrent stop/close/restart, full mailbox/backpressure, physical resource retirement, and no DATA visibility before publication.
 4. Real source compilation **and execution** from the same fixture on JVM/GraalVM, LLVM AOT, Wasm, Forge and .NET Native AOT with exact compiler/source SHA, runtime evidence and verified failure classes.
 

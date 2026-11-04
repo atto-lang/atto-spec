@@ -50,6 +50,14 @@ val x = build<A=int, C=bool>()
 
 A generic default can depend on an earlier parameter. Callable overload resolution is **arity first**, then admitted nominal distinctions (particularly nominal enum types), rather than guessing between shape-compatible structural candidates. Ambiguity must be rejected.
 
+"Arity" is a range, because of omittable and rest formals ([chapter 03](03-functions-and-effects.md)). A candidate with `r` required formals, `o` omittable formals and no rest formal accepts any supplied argument count `n` with `r ≤ n ≤ r + o`; with a trailing rest formal it accepts `n ≥ r`. A trailing closure counts as one supplied argument. Resolution is:
+
+1. Keep the candidates whose arity range contains `n`.
+2. Among those, keep the candidates whose formals admit the arguments' static nominal types.
+3. Exactly one candidate MUST remain. Zero is a "no matching overload" error; two or more is an ambiguity error. Labels, defaults and return types never break a tie.
+
+Declaring two overloads whose arity ranges overlap **and** whose formal types cannot be told apart nominally SHOULD be diagnosed at the declaration, not only at call sites.
+
 ## Named generic type parameters and specialization (v1 target)
 
 A **generic declaration** introduces *type-parameter identifiers*, optionally with type defaults. A **specialization** binds those identifiers to type arguments; it does not create a runtime object or perform an expression side effect. Illustrative source (not yet a five-backend execution claim):
@@ -78,7 +86,7 @@ The same generic-binding algorithm applies to class, interface, trait, actor, al
 
 ### Named-specialization negative and lifecycle cases
 
-Type arguments are **types**, not runtime expressions. In `Container<T=string, U=T>`, the right-hand `T` resolves in the available type environment; it is not an unevaluated runtime variable and is not automatically the name of the `T` formal being declared. Named-call labels such as `make<T=string>(value: x)` are runtime-value binding keys and belong to a distinct namespace. A generic type may declare a formal named `Item` instead of `T`; `Vector<T=int>` is legal only if that particular imported Vector declaration really exports a type formal spelled `T`.
+Type arguments are **types**, not runtime expressions. At a **use site** such as `Container<T=string, U=T>`, the right-hand `T` resolves in the type scope surrounding that use (for example an enclosing generic formal named `T`); it never refers to `Container`'s own `T` formal or to the `string` just bound to it. If no `T` is in scope at the use site, the specialization is rejected. Only a **declaration** default (such as `Second=First` in `Pair<First, Second=First>`) refers to the declaring type's earlier formals. Named-call labels such as `make<T=string>(value: x)` are runtime-value binding keys and belong to a distinct namespace. A generic type may declare a formal named `Item` instead of `T`; `Vector<T=int>` is legal only if that particular imported Vector declaration really exports a type formal spelled `T`.
 
 For example, for `Pair<First, Second=First>` the bindings `Pair<Second=string, First=int>` and `Pair<int, Second=string>` must yield the same ordered type vector. `Pair<First=int, First=string>`, `Pair<int, First=string>`, `Pair<Second=string, int>`, `Pair<Third=int>` and `Pair<First=42>` must be rejected. A declared default may reference earlier parameters after explicit bindings/inference, but may not reference a later formal, itself, or an unrelated runtime value.
 
@@ -88,9 +96,11 @@ For generic functions/methods, value-argument name binding and type-argument nam
 
 ## Option, Result and propagation
 
-`Option<T>` has `Some(T)` / `None`. `Result<T,E>` has `Ok(T)` / `Err(E)`. Operations include `map`, `and_then`, `map_err`, `unwrap_or`, `unwrap_safe` and explicit conversion. A failure represented as data is not an exception effect.
+`Option<T>` has `Some(T)` / `None`. `Result<T,E>` has `Ok(T)` / `Err(E)`. Operations include `map`, `and_then`, `map_err`, `unwrap_or` and explicit conversion. `unwrap_safe` is a reserved name whose semantics are not yet specified (PROPOSED); implementations MUST NOT ship it under that name until a contract exists. A failure represented as data is not an exception effect.
 
 Postfix `value?` is the target early-return operator: `None` or `Err(error)` exits the enclosing eligible callable without converting into `throw`, `raise`, or `panic`. `unwrap()` asserts presence and **panics** on absent/error variants. Do not silently flatten nested `Option` or `Result` types.
+
+**Eligibility of `?` (TARGET).** The *eligible callable* is the innermost enclosing `fnc`, method, lambda/callback or `nb { }` Task body. `?` never crosses that boundary: inside a `handle_state(critical-write |s| -> { ... })` callback it returns from the callback, not from the enclosing `receive`. With operand type `Option<U>` the eligible callable MUST return `Option<_>`. With `Result<U, E>` it MUST return `Result<_, E>` with the **same** `E`. There is no implicit error conversion and no `Option`↔`Result` conversion; mismatches are compile errors (use `map_err` or another explicit conversion). `?` is rejected inside `defer` and `finally` bodies, at module top level, and in `const` initializers. On early return, owned locals are dropped and `defer` blocks run exactly as for an ordinary `return`.
 
 ```atto
 fnc parse_port(string input) -> Result<int, ParseError> ::
@@ -103,7 +113,7 @@ Postfix `?` execution is not certified on all backends; see [conformance](11-con
 
 ## Symbols and matching
 
-Symbol literals use a leading `#`: `#ready`, `#with spaces`. A string `"#ready"` is a different value. Core/standard symbol identity may be shared across isolates; arbitrary user symbols are not cross-isolate-identical by default. `define pub symbol #ready;` is a target declaration form. Colon-prefixed symbols are not accepted.
+Symbol literals use a leading `#` followed by an identifier: `#ready`, `#one_for_all`. An unquoted symbol ends at the first character that cannot continue an identifier, so `#with spaces` is the symbol `#with` followed by the identifier `spaces`, never one symbol. A symbol that contains spaces or other non-identifier characters needs a delimited form; `#"with spaces"` is PROPOSED (S-49). A string `"#ready"` is a different value. Core/standard symbol identity may be shared across isolates; arbitrary user symbols are not cross-isolate-identical by default. `define pub symbol #ready;` is a target declaration form. Colon-prefixed symbols are not accepted.
 
 `match` destructures values/patterns, `switch` dispatches on equality/constant cases, and `if x is type Dog dog` performs nominal refinement. `x as T` is a checked cast; `x as? T` returns `Option<T>` on mismatch. No dynamic reflection is required merely to implement a source-level type test when static metadata is enough.
 

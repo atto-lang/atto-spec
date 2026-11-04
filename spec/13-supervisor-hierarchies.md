@@ -15,37 +15,39 @@ The single reserved declaration keyword is `supervisor` (including the existing 
 ~~~atto
 define supervisor ApiSupervisor as
   async on_start() -> void ::
-    await self.spawn_actor(HttpActor(), restart=#permanent)
-    await self.spawn_actor(AuthActor(), restart=#transient)
+    await self.spawn_actor(HttpActor(), restart: #permanent)
+    await self.spawn_actor(AuthActor(), restart: #transient)
   end
 
-  async on_panic(f: Failure) -> void ::
+  async on_panic(Failure f) -> void ::
     await self.restart(f.child)
   end
 end
 
 define supervisor DataSupervisor as
   async on_start() -> void ::
-    await self.spawn_supervisor(CacheSupervisor(), restart=#permanent)
-    await self.spawn_actor(DbActor(), restart=#permanent)
+    await self.spawn_supervisor(CacheSupervisor(), restart: #permanent)
+    await self.spawn_actor(DbActor(), restart: #permanent)
   end
 
-  async on_panic(f: Failure) -> void ::
+  async on_panic(Failure f) -> void ::
     await self.escalate(f)
   end
 end
 
 define supervisor RootSupervisor as
   async on_start() -> void ::
-    await self.spawn_supervisor(ApiSupervisor(), restart=#permanent)
-    await self.spawn_supervisor(DataSupervisor(), restart=#permanent)
+    await self.spawn_supervisor(ApiSupervisor(), restart: #permanent)
+    await self.spawn_supervisor(DataSupervisor(), restart: #permanent)
   end
 
-  async on_panic(f: Failure) -> void ::
+  async on_panic(Failure f) -> void ::
     await self.restart(f.child)
   end
 end
 ~~~
+
+Named value arguments use `label: value` and parameters put the type first, as in chapters 01 and 03. An earlier draft of this example used `restart=#permanent` and `f: Failure`, and both spellings MUST be rejected.
 
 The `self.spawn_actor`, `self.spawn_supervisor`, `self.restart` and `self.escalate` forms above are **proposed intrinsics**, not shipped library methods. Their admission/results, hook suspension and strategy configuration require typed compiler lowering; current restricted STOP-only Java lowering must continue to reject unsupported forms. A failed spawn/restart is never silently accepted; it fails the hook/operation and follows the enclosing supervisor's policy. Ordinary actor `spawn Worker()` inherits the authorized supervisor; it does not mint a new supervisor or let an actor designate a foreign parent.
 
@@ -60,7 +62,7 @@ The `self.spawn_actor`, `self.spawn_supervisor`, `self.restart` and `self.escala
 
 ## Failure propagation and restart policy
 
-A failed actor completes its terminal cleanup/physical-done barrier, then publishes an authenticated, immutable `Failure` on **its immediate supervisor's** reserved CONTROL lane. It never executes supervisor guest hooks on the failed actor's carrier. Ordinary handled throws and recovered raises do not generate terminal panic notices. Unhandled throw/raise becomes terminal panic with preserved origin. Cancellation is tracked distinctly from panic.
+A failed actor completes its terminal cleanup/physical-done barrier, then publishes an authenticated, immutable `Failure` on **its immediate supervisor's** reserved CONTROL lane. That barrier is **bounded**: if cleanup has not finished within the supervisor's declared cleanup deadline, the runtime MUST still publish the `Failure`, marked `cleanup_incomplete`, and keep the unretired resources quarantined. The supervisor MUST NOT restart that child's logical identity into the quarantined resources, and the runtime MUST NOT report them as retired. A hung `tear_down` or a native I/O loan that never completes may delay restart, but it can never hide the failure from the supervisor. It never executes supervisor guest hooks on the failed actor's carrier. Ordinary handled throws and recovered raises do not generate terminal panic notices. Unhandled throw/raise becomes terminal panic with preserved origin. Cancellation is tracked distinctly from panic.
 
 Only the direct supervising parent may act on a child failure. A supervisor can resolve it through STOP, RESTART, or ESCALATE. **Escalation is not forwarding an unverified raw grandchild notice**: the local supervisor fences its subtree and publishes one parent-facing terminal/escalation receipt for its *own* exact generation, with bounded sanitized cause/origin. The parent's policy treats that supervisor as one logical child. A grandparent cannot manipulate a living grandchild by forging or reinterpreting a descendant ID.
 

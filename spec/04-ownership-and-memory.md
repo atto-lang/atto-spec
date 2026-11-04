@@ -29,6 +29,8 @@ Borrow checking is not optional for a native backend. Aliased writes, use-after-
 
 A `Task<T>` result has an owner and exactly-once completion/drop semantics. Move-only arguments move into the Task at launch; merely capturing a pointer to a caller stack slot is forbidden.
 
+`await task` **consumes** the Task handle, as `rt take` does: a second `await`, or any later use of the same handle, is a compile-time use-after-move error. `Task<T>` is never Copy. A `Future<T>` whose `T` is not Copy also yields its value by move to exactly one awaiter. Observing a settled value from several places requires an explicit `rt share` to a shared/frozen `T` (or a Future type whose contract says it broadcasts), never an implicit duplicate of an owned value.
+
 ## Memory regions
 
 The **target topology** is a persistent allocation arena per actor, with separate scratch/task scopes and explicit frozen/read-only regions. Actor retirement drops its owned data once, after live continuation and native I/O loans retire. Shared actors do not implicitly share writable actor arenas.

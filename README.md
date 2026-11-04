@@ -26,10 +26,11 @@ This repository is the **language-level specification**, not the proof that a pa
 | [12 — Open questions](spec/12-open-questions.md) | Unsettled decisions and compatibility risks |
 | [13 — Hierarchical supervisors](spec/13-supervisor-hierarchies.md) | Nested supervisors, restart boundaries, identity and CONTROL fences |
 | [14 — Actor pipeline factories](spec/14-actor-pipeline-factories.md) | `Actor.pipe(...)` and `Actor.connect(...)`, typed ports, authority and graph admission |
+| [15 — Guard](spec/15-guard.md) | Else-free `guard` early exit and `Option` presence narrowing |
 
 ## Specification interpretation
 
-A chapter labelled **DRAFT** describes the intended language contract. **TARGET** means a required eventual behavior, not necessarily shipped. **IMPLEMENTED** must always be qualified by a named backend, immutable commit, fixture, and actual execution evidence. **PROPOSED** denotes a design that needs a decision. `MUST` and `SHOULD` have their ordinary normative RFC meaning **inside the draft target**, not as a claim of current parity.
+A chapter labelled **DRAFT** describes the intended language contract. **TARGET** means a required eventual behavior, not necessarily shipped. **IMPLEMENTED** must always be qualified by a named backend, immutable commit, fixture, and actual execution evidence. **PROPOSED** denotes a design that needs a decision. `MUST` and `SHOULD` have their BCP 14 (RFC 2119/8174) meaning **inside the draft target**, not as a claim of current parity; see [chapter 00](spec/00-scope-and-status.md#normative-keywords-and-precedence) for lowercase usage and for which source wins when an example and a rule disagree. The [2026-11-04 audit](docs/audit/2026-11-04-spec-hardening.md) lists the contradictions resolved so far.
 
 Examples are **illustrative** until associated with independently executed exact-head conformance fixtures. Unsupported syntax must fail closed: accepting a token, parser AST, host-only unit test, or CI job with zero executed steps is not guest execution.
 
