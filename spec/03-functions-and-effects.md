@@ -89,14 +89,14 @@ val graph = spawn Reader() pipe spawn Transformer() pipe spawn Writer()
 The proposed factory spelling is `Actor.pipe(Reader(), Transformer(), Writer())`, with `Actor.pipe(Reader, Transformer, Writer)` as **zero-argument constructor sugar**. Both are compiler-lowered new-actor graph construction, distinct from `Actor.connect(reader_ref, writer_ref)`, which wires already-spawned actor references without adopting them:
 
 ```atto
-val result = Actor.pipe(Reader(), Transformer(), Writer())
+val builder = Actor.pipe(Reader(), Transformer(), Writer())
 val with_defaults = Actor.pipe(Reader, Transformer, Writer)
 val reader = spawn Reader()
 val writer = spawn Writer()
 val connection = Actor.connect(reader, writer)
 ```
 
-All graph-construction spellings propose the same `Result<ActorGraph<In,Out>, PipelineError>` admission contract. The precise variadic type grammar is still under review; these expressions are **TARGET**, not independently verified guest execution. See [actor pipeline factory and connection contract](14-actor-pipeline-factories.md) for contextual constructor typing, ownership, transactional publication, denial and AOT requirements.
+**Reconciliation proposal:** `Actor.pipe(...)` returns an **unstarted, single-use builder** and the outer `.start()` attempts transactional actor admission, producing a typed start result (possibly suspendable). The infix `pipe` remains immediate-spawn syntax and shares the same post-start graph semantics. Thus the factory and the infix forms have equivalent constructed topology but **not** identical direct expression return types. Exact `start()` error/effect carriers remain under review. See [factory contract](14-actor-pipeline-factories.md) and [nested pipeline builder hardening](15-nested-actor-pipelines.md). Neither is yet executable backend parity.
 
 ## Macros and compile-time evaluation
 

@@ -26,6 +26,7 @@ This repository is the **language-level specification**, not the proof that a pa
 | [12 — Open questions](spec/12-open-questions.md) | Unsettled decisions and compatibility risks |
 | [13 — Hierarchical supervisors](spec/13-supervisor-hierarchies.md) | Nested supervisors, restart boundaries, identity and CONTROL fences |
 | [14 — Actor pipeline factories](spec/14-actor-pipeline-factories.md) | `Actor.pipe(...)` and `Actor.connect(...)`, typed ports, authority and graph admission |
+| [15 — Nested actor pipeline builders](spec/15-nested-actor-pipelines.md) | Recursive pipeline segments, capacity and supervisor scopes, move-only builders and restart fencing |
 | [16 — Lexical and grammar reference](spec/16-lexical-and-grammar-reference.md) | Keywords, literals, operators and the spellings compilers accept today |
 | [17 — Primitives and core types](spec/17-primitives-and-core-types.md) | Scalars, integer rules, aggregates, Option/Result and concurrency primitives |
 | [18 — Runtime guarantees](spec/18-runtime-guarantees.md) | Failure domains, stacks, actor restart, pipeline failure, and what is and is not guaranteed |

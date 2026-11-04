@@ -7,10 +7,10 @@
 The existing `pipe` keyword remains the canonical infix actor pipeline expression. The proposed nominal, compiler-recognized `Actor` factory API is an alternative expression spelling, **not another language keyword**:
 
 ```atto
-// Three construction spellings; same ordered graph and failure contract.
+// Infix starts immediately; factories are deferred until .start().
 val graph_result = spawn Reader() pipe spawn Transformer() pipe spawn Writer()
-val graph_result = Actor.pipe(Reader(), Transformer(), Writer())
-val graph_result = Actor.pipe(Reader, Transformer, Writer)
+val builder = Actor.pipe(Reader(), Transformer(), Writer())
+val configured_builder = Actor.pipe(Reader, Transformer, Writer)
 ```
 
 The first form uses explicit actor spawn operands, which require *staged* publication when used in a `pipe` expression. For the factory forms, `Reader(...)` is parsed **contextually** as an unspawned, statically resolved actor-constructor specification. It does not allocate a running actor, invoke `receive`, mint an actor identity or execute actor code when argument evaluation occurs. Constructor arguments may be evaluated as normal language expressions according to their declared effects, then copied/moved into an owned, immutable build plan. The compiler MUST reject an argument whose evaluation or capture would violate isolation, lifetime, permission or effect rules. In particular, construction arguments are not implicit capability grants.
@@ -24,19 +24,20 @@ The bare `Reader` form is a **statically known nominal actor type** with an acce
 | Surface | Operands | Effect and ownership | Result (conceptual) |
 | --- | --- | --- | --- |
 | `spawn A() pipe spawn B()` | Staged actor spawns | Creates a new owned graph | `Result<ActorGraph<In,Out>, PipelineError>` |
-| `Actor.pipe(A(), B())` | Unspawned actor constructor descriptors | Same graph construction and ownership | `Result<ActorGraph<In,Out>, PipelineError>` |
-| `Actor.pipe(A, B)` | Zero-argument actor type references | Exact sugar for preceding form | Same result |
+| `Actor.pipe(A(), B())` | Unspawned actor constructor descriptors | Deferred new-actor graph plan; one owner | `ActorPipelineBuilder<In,Out>` |
+| `Actor.pipe(A, B)` | Zero-argument actor type references | Exact sugar for preceding form | Same deferred builder |
 | `Actor.connect(a_ref, b_ref)` | Two already-spawned, live `ActorRef` values | Connects existing actors; does **not** adopt or spawn them | `Result<ConnectionRef<T>, PipelineError>` |
 
-These signatures are **conceptual**, not an assertion that AttoLang currently supports a specific variadic generic declaration grammar. Every factory and infix spelling MUST lower to the same typed graph IR and use the same runtime admission protocol. The `Result` carrier is the proposed explicit admission outcome; `?` can propagate failure in a compatible enclosing callable. Merely binding an unwrapped `Result` is not proof of successful actor startup.
+These signatures are **conceptual**, not an assertion that AttoLang currently supports a specific variadic generic declaration grammar. An outer builder's `.start()` and the immediate infix spelling MUST lower to the same typed graph IR and use the same runtime admission protocol. `Actor.pipe(...)` **alone neither spawns nor returns** an `ActorGraph`. The builder is move-only, including configuration methods; nesting consumes each inner builder exactly once. The `.start()` result is an explicit admission outcome that may require suspension/Future depending on verified async hook semantics; `?` can propagate a Result only in a compatible callable. Merely binding an unwrapped result is not proof of successful startup.
 
 ```atto
-// Construct and publish a new graph; errors are explicit.
-val graph = Actor.pipe(
+// Construct an unstarted graph plan; only start attempts publication.
+val graph_result = Actor.pipe(
   Reader("/tmp/source"),
   Transformer(batch_size=256),
   Writer("/tmp/destination")
-)?
+).start()
+// Check/propagate graph_result before using the graph.
 
 // Existing actors: no new actor ownership is created.
 val reader = spawn Reader()
@@ -44,11 +45,11 @@ val writer = spawn Writer()
 val link = Actor.connect(reader, writer)?
 ```
 
-A `connect` argument naming a type rather than a live `ActorRef` is a type error. Additional existing-actor varargs, arbitrary DAG builders, `Actor.pipe(...).start()`, graph reconfiguration and `Actor.connect(a,b,c)` are **not** accepted by this initial contract; these require separately reviewed typed lowering.
+A `connect` argument naming a type rather than a live `ActorRef` is a type error. Additional existing-actor varargs, arbitrary DAG/fan-out builders, live-graph reconfiguration and `Actor.connect(a,b,c)` remain unsupported by this initial contract. Nested sequential `Actor.pipe(...)` descriptors and `.start()` are a **new draft amendment** requiring coordinated source/ABI review; see [chapter 15](15-nested-actor-pipelines.md).
 
 ## Types and ports
 
-Each pipeline participant declares a nominal, statically known compatible role and its DATA input/output payload types. A linear factory has **at least two stages**. For the initial linear factory contract the first stage has the `readable` source role, the last has the `writable` sink role, and intermediate stages have compatible `transform` or `duplex` roles. A `duplex` terminal or upstream-only transform requires a separate explicit endpoint-exposure contract, not an implicit unconnected port. The compiler checks every adjacent edge:
+Each pipeline participant declares a nominal, statically known compatible role and its DATA input/output payload types. A **started** linear graph has **at least two actor stages**; a deferred subsegment may contain a single stage for composition but must not start alone. For the initial linear factory contract the first stage has the `readable` source role, the last has the `writable` sink role, and intermediate stages have compatible `transform` or `duplex` roles. A `duplex` terminal or upstream-only transform requires a separate explicit endpoint-exposure contract, not an implicit unconnected port. The compiler checks every adjacent edge:
 
 ```text
 Reader.Output == Transformer.Input
@@ -69,7 +70,7 @@ The result `ActorGraph<In,Out>` owns **only newly created** child actor refs, co
 - Graph publication occurs once, with consistent epoch/generation fencing and bounded transport credits. A failure during admission cannot expose half a graph, leak ownership or report success. Failure/cancellation must physically retire admitted native resources before reporting a completion barrier.
 - `Actor.connect(a,b)` checks both live actor incarnations and matching `T`, verifies explicit connection authority and tenant/isolation permits, reserves bounded credits, and installs the edge at one linearization point. A concurrent stop/restart/hot reload must either win before admission or cause a typed stale/closed failure; no pending DATA delivery may silently target a new actor generation.
 - Connection and factory results indicate **admission**, not the delivery or processing of every message. Backpressure, closure, cancellation and supervision follow chapters 05, 06 and 13.
-- The owning supervisor of a new actor is inherited from the authorized spawning context. A new graph is **not** a new supervisor. `connect` never changes controlling supervisor and cannot carry supervisor CONTROL traffic, bypass a private state boundary, or grant untrusted actors authority by wiring.
+- Without explicit `.with_supervision`, a new graph is **not** a new supervisor: new actors inherit the authorized spawning context's controlling supervisor. A builder with an explicit `.with_supervision(strategy)` requests a separate, authorized *child supervisor instance*; an explicitly supervised nested segment is one subordinate supervisor child, not a DATA stage. `connect` never changes controlling supervisor and cannot carry supervisor CONTROL traffic, bypass a private state boundary, or grant untrusted actors authority by wiring.
 - A simple factory constructs an acyclic, ordered chain. Cycles and feedback require an explicit, capacity-bounded, separately typed and approved feedback construction API.
 
 An implementation MAY choose optimized allocation or zero-copy routes when the same ownership, capability, closure and observable admission semantics hold. A platform that cannot provide transactional publication or the requested isolation MUST fail closed rather than silently running an unsafe partial implementation.
@@ -82,4 +83,4 @@ A portable `.atto` suite MUST cover:
 3. Resource reservation limits, mid-stage initialization failure, cancellation during staging, concurrent stop/close/restart, full mailbox/backpressure, physical resource retirement, and no DATA visibility before publication.
 4. Real source compilation **and execution** from the same fixture on JVM/GraalVM, LLVM AOT, Wasm, Forge and .NET Native AOT with exact compiler/source SHA, runtime evidence and verified failure classes.
 
-The host-only Wasm `actor-pipe-factory-plan.mjs` checks typed *metadata* and reuses the existing `ActorPipelineSelector`; it cannot spawn, wire, supervise, or prove source-language factory execution. This feature remains **NOT_VERIFIED on all five backends** until real `.atto` programs execute. See [chapter 11](11-conformance.md).
+The host-only Wasm `actor-pipe-factory-plan.mjs` checks typed *metadata* and reuses the existing `ActorPipelineSelector`; it cannot spawn, wire, supervise, or prove source-language factory execution. The same is true of the source-free nested plan test in [chapter 15](15-nested-actor-pipelines.md). This feature remains **NOT_VERIFIED on all five backends** until real `.atto` programs execute. See [chapter 11](11-conformance.md).
