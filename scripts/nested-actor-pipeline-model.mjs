@@ -5,6 +5,7 @@
 
 const stages = new WeakSet();
 const pipelines = new WeakSet();
+const verifiedPlans = new WeakSet();
 const policies = new Set(['#one_for_one', '#one_for_all', '#rest_for_one']);
 
 export const DEFAULT_LIMITS = Object.freeze({
@@ -15,6 +16,11 @@ export const DEFAULT_LIMITS = Object.freeze({
   maxScopes: 256,
   maxEdgeCapacity: 65536,
   maxTotalSlots: 1_000_000,
+});
+
+const HARD_LIMITS = Object.freeze({
+  defaultCapacity: 65536, maxDepth: 128, maxStages: 4096, maxEdges: 4095,
+  maxScopes: 1024, maxEdgeCapacity: 1_048_576, maxTotalSlots: 16_777_216,
 });
 
 function assertPort(port) {
@@ -72,7 +78,9 @@ function limitsFromOptions(options) {
     const descriptor = Object.getOwnPropertyDescriptor(options, key);
     if (!descriptor || !Object.hasOwn(descriptor, 'value')) throw new TypeError(`invalid limit property: ${key}`);
     const value = descriptor.value;
-    if (!Number.isSafeInteger(value) || value <= 0) throw new RangeError(`invalid limit: ${key}`);
+    if (!Number.isSafeInteger(value) || value <= 0 || value > HARD_LIMITS[key]) {
+      throw new RangeError(`invalid limit: ${key}`);
+    }
     limits[key] = value;
   }
   if (limits.defaultCapacity > limits.maxEdgeCapacity) throw new RangeError('default capacity exceeds maxEdgeCapacity');
@@ -85,13 +93,15 @@ function freezePlan(result) {
     ...s,
     children: freezeArray(s.children),
   }));
-  return Object.freeze({
+  const plan = Object.freeze({
     nodes: freezeArray(result.nodes),
     edges: freezeArray(result.edges),
     scopes: Object.freeze(scopes),
     ports: Object.freeze(result.ports),
     totalSlots: result.totalSlots,
   });
+  verifiedPlans.add(plan);
+  return plan;
 }
 
 // Analyze unstarted, owned, sequential pipeline descriptors. This is not start().
@@ -107,9 +117,9 @@ export function analyze_pipeline(root, options = {}) {
   const scopeMap = new Map();
   let totalSlots = 0n;
 
-  function recordScope(id, parent, policy) {
+  function recordScope(id, parent, policy, physical) {
     if (scopes.length >= limits.maxScopes) throw new RangeError('supervisor scope budget exceeded');
-    const value = {id, parent, policy, children: []};
+    const value = {id, parent, policy, physical, children: []};
     scopes.push(value);
     scopeMap.set(id, value);
     if (parent !== null) recordChild(parent, {id, kind: 'supervisor'});
@@ -151,7 +161,7 @@ export function analyze_pipeline(root, options = {}) {
     if (capacity > limits.maxEdgeCapacity) throw new RangeError('edge capacity limit exceeded');
     const realScope = path === 'root' || item.supervision !== null;
     const scope = realScope ? path : parentScope;
-    if (realScope) recordScope(scope, parentScope, item.supervision ?? '#one_for_one');
+    if (realScope) recordScope(scope, parentScope, item.supervision, item.supervision !== null);
 
     let first = null;
     let previous = null;
@@ -184,8 +194,10 @@ export function analyze_pipeline(root, options = {}) {
 
 // This is a direct-child policy model, not a runtime restart simulation.
 export function restart_targets(plan, scopeId, failedDirectChildId) {
+  if (!verifiedPlans.has(plan)) throw new TypeError('unverified source-free plan');
   const scope = plan.scopes.find(s => s.id === scopeId);
   if (!scope) throw new TypeError('unknown supervisor scope');
+  if (!scope.physical) throw new TypeError('inherited supervisor policy is not known to this model');
   const index = scope.children.findIndex(c => c.id === failedDirectChildId);
   if (index < 0) throw new TypeError('not a direct child of supervisor');
   if (scope.policy === '#one_for_one') return Object.freeze([failedDirectChildId]);

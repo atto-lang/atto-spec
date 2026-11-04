@@ -230,3 +230,28 @@ test('stable deterministic composition across a seeded variety of nested partiti
     }
   }
 });
+
+
+test('unsupervised graph inherits caller supervisor; plain grouping mints no supervisor', () => {
+  const p = analyze_pipeline(base());
+  assert.equal(p.scopes.length, 1);
+  assert.deepEqual([p.scopes[0].policy,p.scopes[0].physical], [null,false]);
+  assert.throws(() => restart_targets(p,'root','root/0'),/inherited supervisor/);
+});
+
+test('configured supervision is an explicit physical child-supervisor scope', () => {
+  const p = analyze_pipeline(configured());
+  assert.deepEqual([p.scopes[0].policy,p.scopes[0].physical], ['#one_for_all',true]);
+  assert.deepEqual(restart_targets(p,'root','root/0').length,4);
+});
+
+test('restart policy helper rejects spoofed analysis plans', () => {
+  assert.throws(() => restart_targets({scopes:[{id:'root',policy:'#one_for_all',children:[]}]}, 'root','bad'),/unverified/);
+});
+
+test('model limit overrides cannot disable hard upper safety budgets', () => {
+  const b=pipe(s('A',null,null));
+  for (const opts of [{maxDepth:100000},{maxStages:999999999},{maxTotalSlots:Number.MAX_SAFE_INTEGER},{maxEdgeCapacity:2**32}]) {
+    assert.throws(()=>analyze_pipeline(b,opts),/invalid limit/);
+  }
+});

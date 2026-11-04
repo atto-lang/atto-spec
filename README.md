@@ -25,7 +25,8 @@ This repository is the **language-level specification**, not the proof that a pa
 | [11 — Conformance](spec/11-conformance.md) | Required backend gates and evidence |
 | [12 — Open questions](spec/12-open-questions.md) | Unsettled decisions and compatibility risks |
 | [13 — Hierarchical supervisors](spec/13-supervisor-hierarchies.md) | Nested supervisors, restart boundaries, identity and CONTROL fences |
-| [14 — Nested actor pipelines](spec/14-nested-actor-pipelines.md) | Recursive `Actor.pipe` builders, typed edges, scoped capacity, supervision and atomic lifecycle |
+| [14 — Actor pipeline factories](spec/14-actor-pipeline-factories.md) | `Actor.pipe(...)` and `Actor.connect(...)`, typed ports, authority and graph admission |
+| [15 — Nested actor pipeline builders](spec/15-nested-actor-pipelines.md) | Recursive pipeline segments, capacity and supervisor scopes, move-only builders and restart fencing |
 
 ## Specification interpretation
 

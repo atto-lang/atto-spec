@@ -50,6 +50,42 @@ val x = build<A=int, C=bool>()
 
 A generic default can depend on an earlier parameter. Callable overload resolution is **arity first**, then admitted nominal distinctions (particularly nominal enum types), rather than guessing between shape-compatible structural candidates. Ambiguity must be rejected.
 
+## Named generic type parameters and specialization (v1 target)
+
+A **generic declaration** introduces *type-parameter identifiers*, optionally with type defaults. A **specialization** binds those identifiers to type arguments; it does not create a runtime object or perform an expression side effect. Illustrative source (not yet a five-backend execution claim):
+
+```atto
+define class Box<T, Alloc=DefaultAllocator> as
+  T value
+end
+
+val box: Box<Alloc=PoolAllocator, T=int>
+val vector: Vector<T=int>
+val array: Array<T=int>
+val list: ArrayList<T=string>
+val same: Box<int, Alloc=PoolAllocator>
+```
+
+`Vector<T=...>`, `Array<T=...>` and `ArrayList<T=...>` are **conditional on those nominal types actually declaring a generic parameter named `T`** in the imported standard library or package. The spelling is not a promise that all three are implemented or equivalent on every backend. Existing collection shape notation such as `Vector[int]` is a separate bracketed **sequence-shape** channel; it must not be silently rewritten as `Vector<T=int>`. Existing `<rank=2>`, `<messages=...>` and other type/storage metadata are likewise a separate, declaration-validated metadata channel, never an undeclared generic parameter.
+
+The same generic-binding algorithm applies to class, interface, trait, actor, alias, function and method type parameters, where those declarations are supported:
+
+1. Resolve the nominal declaration and its ordered generic formals before binding; compare parameter names **case-sensitively**. A `name=Type` binding is permitted only for a declared generic formal of that name; metadata keys are admitted only by their own explicit schema. Unknown keys, duplicate keys (including positional + named collisions), excess arguments, positional arguments after the first named argument, and ambiguous metadata/generic key collisions are errors.
+2. Positional arguments fill successive declaration slots from the beginning. Once a named argument occurs, all subsequent type arguments must be named. Named arguments can appear in any order after the positional prefix; canonical semantic identity is **declaration order**, never textual label order. `Box<T=int, Alloc=PoolAllocator>` and `Box<Alloc=PoolAllocator, T=int>` denote the same specialization.
+3. Apply explicit bindings first, infer only where inference is permitted and unambiguous, then expand defaults in declaration order. A default may reference only earlier declared formals (e.g. `C=B`). Reject missing required formals, conflicting inferred and explicit types, forward references and cycles. Non-trailing defaulted formals may be omitted by **name**; positional omission never shifts later supplied positional arguments into a different slot.
+4. Resolve defaults and type aliases in the defining module's type environment, then substitute already-bound earlier parameters. Reject unbound type names, non-type values in type slots, invalid constraints, arity mismatch and alias recursion before code generation. Type argument erasure or host-language reflection cannot change observable specialization identity.
+5. A formatter may canonicalize spelling only when proven semantically equivalent. It must preserve the identity of generic versus metadata versus sequence-shape parameters, source spans, and the declared type of each argument. Tree shaking, static registries, instantiation caching and AOT specialization keys must use the same fully resolved ordered type vector.
+
+### Named-specialization negative and lifecycle cases
+
+Type arguments are **types**, not runtime expressions. In `Container<T=string, U=T>`, the right-hand `T` resolves in the available type environment; it is not an unevaluated runtime variable and is not automatically the name of the `T` formal being declared. Named-call labels such as `make<T=string>(value: x)` are runtime-value binding keys and belong to a distinct namespace. A generic type may declare a formal named `Item` instead of `T`; `Vector<T=int>` is legal only if that particular imported Vector declaration really exports a type formal spelled `T`.
+
+For example, for `Pair<First, Second=First>` the bindings `Pair<Second=string, First=int>` and `Pair<int, Second=string>` must yield the same ordered type vector. `Pair<First=int, First=string>`, `Pair<int, First=string>`, `Pair<Second=string, int>`, `Pair<Third=int>` and `Pair<First=42>` must be rejected. A declared default may reference earlier parameters after explicit bindings/inference, but may not reference a later formal, itself, or an unrelated runtime value.
+
+A specialization cache key MUST include the resolved **nominal declaration identity** (module/package/version/visibility context, including hot-load generation as applicable), its ordered fully resolved type vector, and any independently declared compile-time layout metadata. A type-vector-only string key is not globally unique. Alias expansion, bounds and privacy checks occur before a specialization is published, and a failed binding must not leave a partially cached specialization. Compile-time defaults must never trigger runtime effects.
+
+For generic functions/methods, value-argument name binding and type-argument name binding are **separate phases**: first resolve the callable and bind labeled runtime values against its declared value formals; then infer any remaining type arguments from those matched formal/actual pairs. Explicit generic types cannot be silently overridden by inference. Calls whose type-argument or value-argument binding is not supported on a target backend must fail closed before emitting executable IR.
+
 ## Option, Result and propagation
 
 `Option<T>` has `Some(T)` / `None`. `Result<T,E>` has `Ok(T)` / `Err(E)`. Operations include `map`, `and_then`, `map_err`, `unwrap_or`, `unwrap_safe` and explicit conversion. A failure represented as data is not an exception effect.
