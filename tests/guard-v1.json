@@ -95,6 +95,30 @@
       "source": "fnc f(Option<string> username) -> int { guard username is Some, !username.isEmpty { return 0; } return username.count; }",
       "expected_type": "int",
       "backend_status": "NOT_IMPLEMENTED"
+    },
+    {
+      "id": "multi-action-failure",
+      "kind": "execute",
+      "source": "fnc one(): int { return 1; } pub fnc main(): int { guard false { one(); return 42; } return 1; }",
+      "expected_exit": 42
+    },
+    {
+      "id": "enclosing-if-else",
+      "kind": "execute",
+      "source": "pub fnc main(): int { if true; then guard false { return 42; } else return 1; fi return 2; }",
+      "expected_exit": 42
+    },
+    {
+      "id": "nested-all-paths-exit",
+      "kind": "execute",
+      "source": "pub fnc main(): int { guard false { if true { return 42; } else { return 42; } fi } return 1; }",
+      "expected_exit": 42
+    },
+    {
+      "id": "single-arm-nonterminal-guard",
+      "kind": "reject",
+      "source": "pub fnc main(): int { guard false { if true { return 42; } fi } return 42; }",
+      "reject": "not all failure paths exit"
     }
   ]
 }
