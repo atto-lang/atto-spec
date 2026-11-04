@@ -24,7 +24,7 @@ define class Ledger as
 end
 ```
 
-The `-> T :: ... end` style is a documentation target; compatibility spellings remain backend-dependent until grammar parity is proved.
+This `-> T :: ... end` style is one of the valid [function forms](16-lexical-and-grammar-reference.md#function-forms). Backend support differs until grammar parity is proved.
 
 ## Named function, method and constructor arguments (v1 target)
 
@@ -41,7 +41,7 @@ val b = combine(1, second: 2)         // 12
 // Pair(first: 1, second: 2) uses the same binder only if Pair exposes named constructor formals.
 ```
 
-**Checked binding plan:** Resolve the callable by its established owner/name/arity and nominal policy; labels do not select an overload. Match each source argument to one uniquely declared formal slot. Positional arguments fill a leading prefix; reject positionals after the first named argument, missing/unknown/duplicate labels, collisions between positional and named bindings, wrong types, unsupported spreads, absent required slots and ambiguous overloads. A required `T? name` has source type `Option<T>`; it is **not an omittable slot**. The independent `T name?` spelling marks an omittable formal, and `T? name?` combines both properties. Omission is permitted only with a statically checked declaration default (including `None` for an Option slot), never by inventing zero/null or shifting positional slots. Explicit `None` is a supplied typed expression, unlike absent slots or the separate contextual `_`/`omit` markers; any unsupported omission form fails closed. The source spelling of a value-parameter default, and the `_`/`omit` call-site markers, are not yet defined by any chapter (PROPOSED, S-50); until they are, compilers MUST reject both rather than invent a syntax. Parameter labels are part of source/override/interface compatibility, not additional runtime dispatch keys.
+**Checked binding plan:** Resolve the callable by its established owner/name/arity and nominal policy; labels do not select an overload. Match each source argument to one uniquely declared formal slot. Positional arguments fill a leading prefix; reject positionals after the first named argument, missing/unknown/duplicate labels, collisions between positional and named bindings, wrong types, unsupported spreads, absent required slots and ambiguous overloads. A required `T? name` has source type `Option<T>`; it is **not an omittable slot**. The independent `T name?` spelling marks an omittable formal, and `T? name?` combines both properties. Omission is permitted only with a statically checked declaration default (including `None` for an Option slot), never by inventing zero/null or shifting positional slots. Explicit `None` is a supplied typed expression, unlike absent slots or the separate contextual `_`/`omit` markers; any unsupported omission form fails closed. Parameter labels are part of source/override/interface compatibility, not additional runtime dispatch keys.
 
 **Evaluation invariant:** evaluate the callee/receiver, then every supplied source argument expression **exactly once in lexical source order**, validating borrow/move/effects and cancellation along that order. Only after successful evaluation and checking may the compiler permute temporaries into declaration-order ABI slots. A named call cannot duplicate, skip or reorder side effects, or evade type/ownership/permission gates. Compile-time specialization, tail calls, suspendable/resumable methods, constructors and AOT code must consume the same checked plan; unsupported forms fail closed rather than becoming maps/records or dynamically reflected name lookup.
 
@@ -81,22 +81,22 @@ val normalized = raw
 `|>` passes the previous value through a functional transformation. The target actor pipeline spelling is:
 
 ```atto
-val graph_result = spawn Reader() pipe spawn Transformer() pipe spawn Writer()
+val graph = spawn Reader() pipe spawn Transformer() pipe spawn Writer()
 ```
 
-The value is an admission `Result`, not a running graph (see [chapter 14](14-actor-pipeline-factories.md)). `pipe` constructs an owned, typed connection graph. Only explicitly compatible actor pipeline roles may join it; supervisor/control messages cannot become data stages; cycle edges require separately bounded feedback channels. This is still a **source-lowering target**, not a claim that the pipeline expression executes on current LLVM/Java main.
+`pipe` constructs an owned, typed connection graph. Only explicitly compatible actor pipeline roles may join it; supervisor/control messages cannot become data stages; cycle edges require separately bounded feedback channels. This is still a **source-lowering target**, not a claim that the pipeline expression executes on current LLVM/Java main.
 
 The proposed factory spelling is `Actor.pipe(Reader(), Transformer(), Writer())`, with `Actor.pipe(Reader, Transformer, Writer)` as **zero-argument constructor sugar**. Both are compiler-lowered new-actor graph construction, distinct from `Actor.connect(reader_ref, writer_ref)`, which wires already-spawned actor references without adopting them:
 
 ```atto
-val result = Actor.pipe(Reader(), Transformer(), Writer())
+val builder = Actor.pipe(Reader(), Transformer(), Writer())
 val with_defaults = Actor.pipe(Reader, Transformer, Writer)
 val reader = spawn Reader()
 val writer = spawn Writer()
 val connection = Actor.connect(reader, writer)
 ```
 
-All graph-construction spellings (infix `pipe` and both `Actor.pipe` forms) propose the same `Result<ActorGraph<In,Out>, PipelineError>` admission contract. `Actor.connect` is not graph construction and has its own result, `Result<ConnectionRef<T>, PipelineError>`. Chapter 14 governs where this summary and that chapter differ. The precise variadic type grammar is still under review; these expressions are **TARGET**, not independently verified guest execution. See [actor pipeline factory and connection contract](14-actor-pipeline-factories.md) for contextual constructor typing, ownership, transactional publication, denial and AOT requirements.
+**Reconciliation proposal:** `Actor.pipe(...)` returns an **unstarted, single-use builder** and the outer `.start()` attempts transactional actor admission, producing a typed start result (possibly suspendable). The infix `pipe` remains immediate-spawn syntax and shares the same post-start graph semantics. Thus the factory and the infix forms have equivalent constructed topology but **not** identical direct expression return types. Exact `start()` error/effect carriers remain under review. See [factory contract](14-actor-pipeline-factories.md) and [nested pipeline builder hardening](15-nested-actor-pipelines.md). Neither is yet executable backend parity.
 
 ## Macros and compile-time evaluation
 

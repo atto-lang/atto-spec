@@ -6,7 +6,7 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 
 | ID | Question | Proposed resolution / next proof |
 | --- | --- | --- |
-| S-01 | Canonical source return/block spelling `-> T ::` vs legacy `: T { }` | Publish a versioned formatter/grammar corpus for all five backends; preserve compatible legacy programs |
+| S-01 | Function forms | **Decided 2026-11-03:** `: T` and `-> T` are both valid, and `::` is optional. Open: confirm the [proposed parsing and formatter rules](16-lexical-and-grammar-reference.md#function-forms), then publish a versioned grammar corpus for all five backends |
 | S-02 | Implicit immutable class fields versus older explicit `val` binding grammar | Specify class-field grammar separately from local declaration grammar; compile mutation negatives |
 | S-03 | Match exclusivity/exhaustiveness versus ordered first-match arms | Define semantics of `match`, `match first`, `switch`, `over` and typed arm return; prove duplicate/overlap diagnostics |
 | S-04 | Whether `trap expr` returns `Option<T>` or `Result<T,E>` | Existing source contract is Option; requested actor-send trap Result must be a distinct typed API or an explicitly versioned change |
@@ -26,6 +26,14 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 | S-18 | Source permission flags and manifest schema parity | Version the flags-2-env mapping, manifest, enforcement and deny tests across all CLIs |
 | S-19 | Hierarchical `define supervisor`: typed spawn intrinsics, async hooks, policy configuration and root failure disposition | Fix exact signatures, static strategy declaration, cancellation/await semantics and runtime-owned generation-fenced CONTROL; execute nested supervision source on all backends; see [chapter 13](13-supervisor-hierarchies.md) |
 | S-20 | `Actor.pipe(...)` versus `Actor.connect(...)`: constructor descriptor grammar, graph admission `Result`, typed endpoint handles and connection capabilities | Proposed initial API uses contextual unspawned actor constructors for `pipe` and live `ActorRef` operands for `connect`; reconcile syntax/variadics and test atomic publication on five backends; see [chapter 14](14-actor-pipeline-factories.md) |
+| S-21 | Recursive `Actor.pipe` builder composition, deferred `.start()` ABI and explicit nested supervisor scopes | Draft reconciliation changes the initial immediate-return factory proposal to an unstarted, move-only descriptor; require review of compatibility, async start result, reverse DATA replies, bounded quotas and exact-head guest test parity; see [chapter 15](15-nested-actor-pipelines.md) |
+| S-22 | Which Unicode letters identifiers may use | The Java lexer accepts any Unicode letter. Compare the LLVM parser, then pick one rule and test it on every backend |
+| S-23 | `String` versus `string`, and template literal interpolation | Java accepts both type spellings. Choose one canonical spelling and specify templates; see [chapter 17](17-primitives-and-core-types.md) |
+| S-24 | Integer overflow details | **Decided 2026-11-03:** overflow panics the actor, and wrapping needs explicitly named operations. Open: operation names, `bigint`, division by zero and the Java and LLVM changes; see [chapter 17](17-primitives-and-core-types.md) |
+| S-25 | Whether `int / int` gives `float` or an integer | Java gives `float`, and LLVM rejects it. Decide, then add a shared test |
+| S-26 | Mutable borrow spelling: `rt borrow mut`, `rt mut borrow` or `&mut` | Chapter 04, the Java diagnostic and the v0.6 grammar each differ. Pick one and update all three |
+| S-27 | Stored state for heap-backed actors | Fixed-size state is simple to commit, while arena memory can be half-written at a crash. Choose persistent structures, a per-turn scratch arena or another design, and check it against the zero-GC goal; see [chapter 18](18-runtime-guarantees.md) |
+| S-28 | Restart defaults, turn commit and instance-ID routing | Restart and queued mail carry-over are decided. Budget numbers, send-at-commit and pipeline stop after budget are proposed; see [chapter 18](18-runtime-guarantees.md) |
 | S-41 | Lowercase "must" in v0.1 prose versus BCP 14 capitals | Editorial pass converting every lowercase requirement to MUST/SHOULD; until then lowercase "must" in rule sentences is normative ([chapter 00](00-scope-and-status.md)) |
 | S-42 | Which line breaks end a statement | Examples omit every semicolon, while open PR #7 records that compilers need them except before `}`, `fi` and `end`. Pick one testable rule covering lines that start with `\|>`, `.`, `-`, `+`, `(` and `[`; publish a lexer/formatter corpus with negatives |
 | S-43 | Reserved words as member names (`Actor.pipe` while chapter 01 calls `pipe` a keyword) | TARGET: permitted only directly after `.`; never as free identifiers or declaration names |
@@ -39,10 +47,12 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 | S-51 | Failure disposition of detached `do nb { }` Tasks | TARGET in [chapter 06](06-async-and-scheduling.md): parent scope waits; unhandled failure becomes parent-scope failure; execute race fixtures |
 | S-52 | `recover` for `raise`: syntax, scope, effect typing and interaction with `defer` | Undefined; compilers reject `recover` until a contract exists |
 | S-53 | Unqualified import found in both a project root and an environmental root | TARGET in [chapter 09](09-modules-and-aot.md): ambiguous unless pinned by the manifest; same-tier collisions are already diagnosed |
-| S-54 | Infix `spawn A() pipe spawn B()`: staged descriptors (chapter 14 on main) versus immediate spawn (open PR #3) | Pick one; until then reject programs whose meaning depends on the difference |
+| S-54 | Infix `spawn A() pipe spawn B()`: staged-descriptor versus immediate-spawn interpretation | UNRESOLVED. Preserve existing chapter 14–15 deferred `Actor.pipe(...).start()` semantics; reject ambiguous infix forms pending separate ratification and executed compiler fixtures |
 | S-55 | Dropping an unstopped `ActorGraph` | Proposed: drop requests graceful stop and the owning scope awaits completion; must-use diagnostic for a discarded admission `Result` |
 | S-56 | Equality operators `==` versus `eq` | Open PR #7 records `eq` as canonical and `==` as an alias; confirm, and define numeric (`1` versus `1.0`) behaviour |
 | S-57 | Synchronous calls to actor methods through an `ActorRef` | TARGET in [chapter 05](05-actors-and-state.md): rejected; only `send`/request messages cross the actor boundary; decide the typed request/reply API |
+
+**Observed on 2026-11-03** ([chapter 19](19-observed-status-2026-11-03.md)): for S-01, both Java and LLVM accept only `: T { }` and `-> T { }` on free functions. For S-14, the Java launcher refuses `.atto` files.
 
 ## Changes requiring special scrutiny
 

@@ -26,11 +26,18 @@ This repository is the **language-level specification**, not the proof that a pa
 | [12 — Open questions](spec/12-open-questions.md) | Unsettled decisions and compatibility risks |
 | [13 — Hierarchical supervisors](spec/13-supervisor-hierarchies.md) | Nested supervisors, restart boundaries, identity and CONTROL fences |
 | [14 — Actor pipeline factories](spec/14-actor-pipeline-factories.md) | `Actor.pipe(...)` and `Actor.connect(...)`, typed ports, authority and graph admission |
-| [15 — Guard](spec/15-guard.md) | Else-free `guard` early exit and `Option` presence narrowing |
+| [15 — Nested actor pipeline builders](spec/15-nested-actor-pipelines.md) | Recursive pipeline segments, capacity and supervisor scopes, move-only builders and restart fencing |
+| [16 — Lexical and grammar reference](spec/16-lexical-and-grammar-reference.md) | Keywords, literals, operators and the spellings compilers accept today |
+| [17 — Primitives and core types](spec/17-primitives-and-core-types.md) | Scalars, integer rules, aggregates, Option/Result and concurrency primitives |
+| [18 — Runtime guarantees](spec/18-runtime-guarantees.md) | Failure domains, stacks, actor restart, pipeline failure, and what is and is not guaranteed |
+| [19 — Observed status, 2026-11-03](spec/19-observed-status-2026-11-03.md) | Dated local test results for Java and LLVM. Not conformance evidence |
+| [20 — Guard](spec/20-guard.md) | Else-free `guard` early exit and `Option` flow narrowing; target, not compiler-certified |
+
+The [2026-11-04 semantic hardening audit](docs/audit/2026-11-04-spec-hardening.md) distinguishes adopted rules from proposals and documents outstanding compiler parity checks.
 
 ## Specification interpretation
 
-A chapter labelled **DRAFT** describes the intended language contract. **TARGET** means a required eventual behavior, not necessarily shipped. **IMPLEMENTED** must always be qualified by a named backend, immutable commit, fixture, and actual execution evidence. **PROPOSED** denotes a design that needs a decision. `MUST` and `SHOULD` have their BCP 14 (RFC 2119/8174) meaning **inside the draft target**, not as a claim of current parity; see [chapter 00](spec/00-scope-and-status.md#normative-keywords-and-precedence) for lowercase usage and for which source wins when an example and a rule disagree. The [2026-11-04 audit](docs/audit/2026-11-04-spec-hardening.md) lists the contradictions resolved so far.
+A chapter labelled **DRAFT** describes the intended language contract. **TARGET** means a required eventual behavior, not necessarily shipped. **IMPLEMENTED** must always be qualified by a named backend, immutable commit, fixture, and actual execution evidence. **PROPOSED** denotes a design that needs a decision. `MUST` and `SHOULD` have their ordinary normative RFC meaning **inside the draft target**, not as a claim of current parity.
 
 Examples are **illustrative** until associated with independently executed exact-head conformance fixtures. Unsupported syntax must fail closed: accepting a token, parser AST, host-only unit test, or CI job with zero executed steps is not guest execution.
 

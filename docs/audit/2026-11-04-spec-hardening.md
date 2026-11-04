@@ -1,6 +1,6 @@
 # Specification audit and hardening — 2026-11-04
 
-**Scope:** every Markdown file on `main` at `9e210e0` (README, CONTRIBUTING, chapters 00–15), plus the open draft PRs #3 (nested pipelines) and #7 (grammar, primitives, runtime and status chapters) for overlap. **Method:** a manual read of every chapter for contradictions between chapters, contradictions between rules and examples, ambiguous grammar, undefined terms, and safety or isolation gaps. Every external link was resolved through the GitHub API, and the source-free model suites were run locally. Mechanical findings are now enforced by [`tools/spec-lint`](../../tools/spec-lint).
+**Scope:** every Markdown file on `main` at `9e210e0` (README, CONTRIBUTING, chapters 00–15 at the audited historical snapshot), plus the open draft PRs #3 (nested pipelines) and #7 (grammar, primitives, runtime and status chapters) for overlap. **Method:** a manual read of every chapter for contradictions between chapters, contradictions between rules and examples, ambiguous grammar, undefined terms, and safety or isolation gaps. Every external link was resolved through the GitHub API, and the source-free model suites were run locally. Mechanical findings are now enforced by [`tools/spec-lint`](../../tools/spec-lint).
 
 **What "fixed" means here:** the spec text now states one precise rule, marked TARGET where it is a new design commitment. Every such commitment also has a row in [open questions](../../spec/12-open-questions.md) (S-41 to S-57), so that the compiler owners can overturn it. The IDs start at S-41 because open PR #7 adds its own rows in the S-2x range. Nothing in this audit claims backend execution.
 
@@ -48,13 +48,13 @@ Severity: **High** means two conforming implementations could accept the same pr
 
 ## Checked and left unchanged
 
-- **Chapters 08, 10, 11 and 15** had no contradictions with the rest of the spec. All external GitHub links resolve. The `flags-2-env` link points at a GitHub organization, not a specific repository; consider linking the parser repository directly.
+- **Chapters 08, 10 and 11** had no contradictions with the rest of the spec. All external GitHub links resolve. The `flags-2-env` link points at a GitHub organization, not a specific repository; consider linking the parser repository directly.
 - Chapters 08 and 11 include CI/source-export governance (private-source mirrors, Actions minutes). That is repository process rather than language semantics; consider moving it to a governance document, but that is outside this audit.
 
 ## Interaction with open PRs
 
 - **PR #7** adds chapters 16–19 and its own S-2x rows. This change uses S-41 onward so the IDs cannot collide. Where PR #7 records today's compiler behaviour (semicolons, `val x: int` locals, `eq`), this audit logs the disagreement instead of overriding it (S-42, S-46, S-56).
-- **PR #3** adds `spec/15-nested-actor-pipelines.md`, but chapter 15 is now `15-guard.md`. Once rebased it needs a new number; spec-lint reports the duplicate. Its immediate-spawn reading of infix `pipe` is S-54.
+- **Nested pipeline chapter 15** is preserved from current `main` as the deferred, move-only `Actor.pipe(...).start()` contract. This PR's earlier immediate-return factory proposal is not adopted; S-54 remains open for the infix-spawn interpretation. Guard is now chapter 20; the README index and chapter links were reconciled.
 
 ## Follow-ups for spec owners
 
@@ -62,3 +62,7 @@ Severity: **High** means two conforming implementations could accept the same pr
 2. Run the S-41 editorial pass (capitalize the normative lowercase "must").
 3. Turn the TARGET rules added here into positive/negative `.atto` fixtures in `oreslang-platform-conformance`. Each rejection rule maps directly to a negative test.
 4. Restore Actions billing so that the model suites and spec-lint run on GitHub.
+
+## Mainline semantic reconciliation (2026-11-04)
+
+This update brings the proposal onto the newer chapter 15–19 structure. It preserves S-01's decided `: T` / `-> T` compatibility and S-21's deferred move-only builder, retains the stricter named-call cleanup and purity rules as draft TARGET text, carries S-41–S-57 without erasing S-22–S-28, and renumbers Guard from 15 to 20. The infix-spawn alternative and ActorGraph automatic-drop rule remain PROPOSED in S-54/S-55; neither is a compiler-parity claim. Full `spec-lint` and guest/backend execution on the combined exact commit are still required; source-org zero-step runs are admission failures, not test failures.
