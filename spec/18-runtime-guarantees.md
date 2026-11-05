@@ -4,7 +4,7 @@
 
 Labels used here:
 
-- **TARGET (decided):** the language owner decided this on 2026-11-03.
+- **TARGET (decided):** the language owner decided this on 2026-11-03 or 2026-11-04.
 - **TARGET:** carried over from an earlier chapter or contract.
 - **PROPOSED:** a recommended design that has not been confirmed.
 
@@ -64,7 +64,7 @@ Durable replay of mail that had started remains an explicit protocol, and is nev
 
 **TARGET (decided):** state lives somewhere that outlives the actor, in the manner of an Erlang ETS table. The mechanism itself is not yet chosen.
 
-**PROPOSED:**
+**TARGET (decided):**
 
 | Tier | Survives | Mechanism |
 | --- | --- | --- |
@@ -77,7 +77,7 @@ Fixed-size state is straightforward. Heap-backed state is an open problem, becau
 
 ### Commit
 
-**PROPOSED:** a successful turn commits its state and its outbound mail together, and a failed turn commits neither.
+**TARGET (decided):** a successful turn commits its state and its outbound mail together, and a failed turn commits neither.
 
 A send during a turn reserves mailbox capacity and returns its admission result straight away. The message is published at commit, and a failed turn releases the reservation. Without this, a producer that sends sequence 5 and crashes before saving would restart at 4 and send 5 a second time.
 
@@ -85,10 +85,10 @@ Effects outside the language runtime, such as a network call already made, canno
 
 ### Restart limits and identity
 
-**PROPOSED:**
+**TARGET (decided):**
 
-- The default supervision is `one_for_one` with `#transient` children, so an actor that fails restarts and one that stops normally does not. This also needs to be reconciled with [chapter 13](13-supervisor-hierarchies.md), which leaves the default action open.
-- Each supervisor has a restart budget, with backoff between attempts. The starting numbers are 3 restarts in 10 seconds, which are placeholders and have not been measured.
+- The default supervision is `one_for_one` with `#transient` children, so an actor that fails restarts and one that stops normally does not.
+- Each supervisor has a restart budget, with backoff between attempts. The starting numbers are 3 restarts in 10 seconds and a 10 ms backoff that doubles. They have not been measured.
 - Restart work is charged to the tenant's CPU budget, so a crash loop cannot starve other tenants.
 
 The budget is essential, because stored state can itself cause the crash, and reloading it would otherwise loop forever.
@@ -101,7 +101,7 @@ The budget is essential, because stored state can itself cause the crash, and re
 
 **TARGET (decided):** pipeline behavior follows the principle of least surprise.
 
-**PROPOSED:** a stage's crash should not be visible to its neighbours while a restart can still succeed.
+**TARGET (decided):** a pipeline stops once a stage has spent its restart budget, and the rest of the tenant keeps running. The other rows below are **PROPOSED**. A stage's crash should not be visible to its neighbours while a restart can still succeed.
 
 | Event | Behavior |
 | --- | --- |
@@ -168,7 +168,9 @@ These results are local observations, not conformance evidence. See [chapter 19]
 | Java: an actor overflows its stack, and `main` awaits it | `get_done()` fails, `main` ends, and the process exits 1. A healthy actor in the same program never receives its message | No |
 | Java: an actor overflows its stack, and `main` does not await it | The process exits 1 instead of 42 | No |
 | LLVM: plain recursion with no tenant VM | The process dies with SIGSEGV | No |
-| LLVM tenant VM branch: guest recursion | That tenant fails, and other tenants and the process survive. Sibling actors in the tenant die with it | Partly |
-| LLVM tenant VM branch: recursion with a runtime call at each level | The process dies with a bus error | No |
-| LLVM: `int` overflow | The process traps | Partly: the arithmetic is checked, but the failure is not yet actor-level |
+| LLVM tenant VM branch: a source actor traps, overflows its stack or passes its deadline | Only that actor restarts, from its last finished turn, and queued mail stays in order | Yes for this case, with fields only as stored state |
+| LLVM tenant VM PR #1424: an actor spends its restart budget | Only that actor ends, and the tenant keeps running | Yes, once merged. There are no supervisors or pipelines at this level yet |
+| LLVM tenant VM branch: recursion with a runtime call at each level, from C or a validated Wasm module | The process dies with a bus error. Fixed in PR #1419, not yet merged | No, until the fix merges |
+| LLVM: `int` overflow, native | The process traps | Partly: the arithmetic is checked, but the failure is not actor-level |
+| LLVM tenant VM branch: `int` overflow in a source actor | Only that actor restarts | Yes |
 | Java: `int` overflow | Wraps silently | No |
