@@ -110,7 +110,7 @@ These are the building blocks. Semantics live in [chapter 05](05-actors-and-stat
 | Primitive | What it is | Spelling that ran on Java |
 | --- | --- | --- |
 | Actor | Confined state, a mailbox, and one turn at a time | `define actor W as ... end`, `spawn W()` |
-| `ActorRef` | Generation-bound handle to one actor incarnation | `w.send(v)`, `w.stop()`, `await w.get_done()` |
+| `ActorRef` | Reference to one actor instance, across its restarts | `w.send(v)`, `w.stop()`, `await w.get_done()` |
 | `ActorMail<T>` | A received message | `receive(ActorMail<int> mail): void { ... }` |
 | `Future<T>` | A value that settles later | `async fnc`, `await` |
 | CPU task | Explicit CPU work with a result | `let Future<int> t = cpu task { return 42; };` |
