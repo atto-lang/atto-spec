@@ -96,3 +96,7 @@ on the exact source head without stepful runner receipts. Option narrowing
 (`guard name is Some`) is a separate NOT_IMPLEMENTED gate until ownership,
 typing, continuation and runtime evidence is available. All six PRs remain
 draft until appropriate reviews and proof.
+
+## Semantic floor v1 (additive candidate lane)
+
+The [AttoLang semantic-floor amendment](21-semantic-floor-and-parity.md) and its versioned [machine contract](../contracts/attolang-semantic-floor-v1/contract.json) define six independently required targets, including Cranelift, for the new candidate lane. This corrects any implication above that the five-family table alone is an exhaustive compiler-parity list. The legacy 53-case `.ores` inventory remains separate. All four new `.atto` candidates are `AUTHORED_NOT_EXECUTED`; none can be called verified on a copied fixture, host-only run or zero-step job.
