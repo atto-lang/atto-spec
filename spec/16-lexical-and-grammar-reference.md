@@ -79,7 +79,7 @@ Ternary conditions must have static type `bool`. AttoLang has no truthiness conv
 
 **TARGET (decided):** `: T` and `-> T` are both valid return spellings, and `::` may be included or omitted. No one form is the only correct one.
 
-As a grammar rule (**PROPOSED**, S-01), this reads:
+As a grammar rule (**TARGET (decided)**), this reads:
 
 ```ebnf
 callable_body = return_spec [ "::" ] ( block | { statement } "end" ) ;

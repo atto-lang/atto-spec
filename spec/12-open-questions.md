@@ -6,7 +6,7 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 
 | ID | Question | Proposed resolution / next proof |
 | --- | --- | --- |
-| S-01 | Function forms | **Decided 2026-11-03:** `: T` and `-> T` are both valid, and `::` is optional. Open: confirm the [proposed parsing and formatter rules](16-lexical-and-grammar-reference.md#function-forms), then publish a versioned grammar corpus for all five backends |
+| S-01 | Function forms | **Decided 2026-11-03:** `: T` and `-> T` are both valid, and `::` is optional. `::` is optional before both brace and `end` bodies. Open: confirm the [proposed parsing and formatter rules](16-lexical-and-grammar-reference.md#function-forms), then publish a versioned grammar corpus for all five backends |
 | S-02 | Implicit immutable class fields versus older explicit `val` binding grammar | Specify class-field grammar separately from local declaration grammar; compile mutation negatives |
 | S-03 | Match exclusivity/exhaustiveness versus ordered first-match arms | Define semantics of `match`, `match first`, `switch`, `over` and typed arm return; prove duplicate/overlap diagnostics |
 | S-04 | Whether `trap expr` returns `Option<T>` or `Result<T,E>` | Existing source contract is Option; requested actor-send trap Result must be a distinct typed API or an explicitly versioned change |
@@ -33,7 +33,7 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 | S-25 | Whether `int / int` gives `float` or an integer | Java gives `float`, and LLVM rejects it. Decide, then add a shared test |
 | S-26 | Mutable borrow spelling: `rt borrow mut`, `rt mut borrow` or `&mut` | Chapter 04, the Java diagnostic and the v0.6 grammar each differ. Pick one and update all three |
 | S-27 | Stored state for heap-backed actors | Fixed-size state is simple to commit, while arena memory can be half-written at a crash. Choose persistent structures, a per-turn scratch arena or another design, and check it against the zero-GC goal; see [chapter 18](18-runtime-guarantees.md) |
-| S-28 | Restart defaults, turn commit and instance-ID routing | Restart and queued mail carry-over are decided. Budget numbers, send-at-commit and pipeline stop after budget are proposed; see [chapter 18](18-runtime-guarantees.md) |
+| S-28 | What a reference from `spawn` means across a restart | Chapter 18 and the actor contract say an `ActorRef` never reaches a replacement. In the LLVM tenant VM, the only reference a program has survives a restart, and without that every restart would strand its callers. Proposed: a reference from `spawn` is an instance route, and a separate incarnation-bound handle is added if one is needed; see [chapter 18](18-runtime-guarantees.md) |
 | S-41 | Lowercase "must" in v0.1 prose versus BCP 14 capitals | Editorial pass converting every lowercase requirement to MUST/SHOULD; until then lowercase "must" in rule sentences is normative ([chapter 00](00-scope-and-status.md)) |
 | S-42 | Which line breaks end a statement | Examples omit every semicolon, while open PR #7 records that compilers need them except before `}`, `fi` and `end`. Pick one testable rule covering lines that start with `\|>`, `.`, `-`, `+`, `(` and `[`; publish a lexer/formatter corpus with negatives |
 | S-43 | Reserved words as member names (`Actor.pipe` while chapter 01 calls `pipe` a keyword) | TARGET: permitted only directly after `.`; never as free identifiers or declaration names |

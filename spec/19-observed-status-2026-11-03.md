@@ -121,4 +121,4 @@ The draft marks these as targets, so this is expected. They should not be mistak
 - `spawn A() pipe spawn B()` (chapters 03, 05).
 - `define supervisor` (chapter 13).
 
-A separate test harness for the tenant VM branch produced the tenant results in [chapter 18](18-runtime-guarantees.md). That branch was not part of this table.
+A separate test harness for the tenant VM branch produced the tenant results in [chapter 18](18-runtime-guarantees.md). That branch was not part of this table. The runtime-call overflow result was retested on 2026-11-04 on macOS and Linux, on the old and fixed runtimes.
