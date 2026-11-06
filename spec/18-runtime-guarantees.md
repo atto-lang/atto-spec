@@ -93,9 +93,9 @@ Effects outside the language runtime, such as a network call already made, canno
 
 The budget is essential, because stored state can itself cause the crash, and reloading it would otherwise loop forever.
 
-**TARGET:** an `ActorRef` belongs to one incarnation. It never reaches a replacement, and a send through a stale ref fails as `TERMINATED`.
+**TARGET (decided):** a reference from `spawn` addresses the actor instance and resolves to its current incarnation, so a restart never strands its callers. Once the instance has ended, a send through the reference fails as `TERMINATED`, and it never reaches a later instance in the same slot. A handle bound to one incarnation may be added if a feature needs one.
 
-**PROPOSED:** pipeline edges and other supervisor-published routes address an instance ID, which resolves to the current incarnation, so a restart needs no rewiring. A reply addressed to a failed incarnation is rejected rather than handed to its replacement.
+Pipeline edges and other supervisor-published routes work the same way, so a restart needs no rewiring. **PROPOSED:** a reply addressed to a failed incarnation is rejected rather than handed to its replacement.
 
 ## Pipelines
 

@@ -32,6 +32,7 @@ This repository is the **language-level specification**, not the proof that a pa
 | [18 — Runtime guarantees](spec/18-runtime-guarantees.md) | Failure domains, stacks, actor restart, pipeline failure, and what is and is not guaranteed |
 | [19 — Observed status, 2026-11-03](spec/19-observed-status-2026-11-03.md) | Dated local test results for Java and LLVM. Not conformance evidence |
 | [20 — Guard](spec/20-guard.md) | Else-free `guard` early exit and `Option` flow narrowing; target, not compiler-certified |
+| [21 — Semantic floor and parity](spec/21-semantic-floor-and-parity.md) | Additive semantic floor over chapters 01–11 and 18, and the compiler parity handoff; target, not verified |
 
 The [2026-11-04 semantic hardening audit](docs/audit/2026-11-04-spec-hardening.md) distinguishes adopted rules from proposals and documents outstanding compiler parity checks.
 

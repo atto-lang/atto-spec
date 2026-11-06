@@ -2,7 +2,7 @@ name: Guard source-free contract model
 on:
   pull_request:
     paths:
-      - 'spec/15-guard.md'
+      - 'spec/20-guard.md'
       - 'spec/01-source-and-syntax.md'
       - 'tests/guard-*'
       - '.github/workflows/guard-model.yml'

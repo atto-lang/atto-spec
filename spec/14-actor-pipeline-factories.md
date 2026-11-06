@@ -34,7 +34,7 @@ These signatures are **conceptual**, not an assertion that AttoLang currently su
 // Construct an unstarted graph plan; only start attempts publication.
 val graph_result = Actor.pipe(
   Reader("/tmp/source"),
-  Transformer(batch_size=256),
+  Transformer(batch_size: 256),
   Writer("/tmp/destination")
 ).start()
 // Check/propagate graph_result before using the graph.
