@@ -762,6 +762,7 @@ fn check_workflow_paths(
 fn check_decision_statuses(docs: &BTreeMap<String, String>, findings: &mut Vec<Finding>) {
     let ledger_file = "spec/12-open-questions.md";
     let Some(ledger) = docs.get(ledger_file) else { return };
+    let mut present = BTreeSet::new();
     for (idx, line) in prose_lines(ledger) {
         let cells: Vec<_> = line.split('|').collect();
         let id = cells.get(1).map(|s| s.trim()).unwrap_or("");
@@ -769,6 +770,7 @@ fn check_decision_statuses(docs: &BTreeMap<String, String>, findings: &mut Vec<F
         if !(41..=57).contains(&n) {
             continue;
         }
+        present.insert(n);
         let resolution = cells.get(3).copied().unwrap_or("");
         let statuses = ["**DECIDED**", "**TARGET**", "**PROPOSED**", "**UNRESOLVED**"];
         let count = statuses.iter().filter(|s| resolution.contains(**s)).count();
@@ -789,6 +791,17 @@ fn check_decision_statuses(docs: &BTreeMap<String, String>, findings: &mut Vec<F
                 line: idx,
                 rule: "decision-status",
                 message: format!("{id} cannot become DECIDED without a Reviewed-by: GitHub review/decision link"),
+            });
+        }
+    }
+    // Deleting an audited question must not evade review by deleting its row.
+    for n in 41..=57 {
+        if !present.contains(&n) {
+            findings.push(Finding {
+                file: ledger_file.to_string(),
+                line: 1,
+                rule: "decision-status",
+                message: format!("S-{n} is missing from the audited decision ledger"),
             });
         }
     }
@@ -894,3 +907,6 @@ mod tests {
         assert_eq!(normalize("docs/audit", "../../spec/01-x.md"), "spec/01-x.md");
     }
 }
+
+#[cfg(test)]
+mod mutation_tests;
