@@ -133,6 +133,22 @@ fn mutation_missing_guard_push_trigger() {
     assert!(f.iter().any(|x| x.rule == "guard-trigger" && x.message.contains("push")), "{f:?}");
 }
 #[test]
+fn mutation_job_names_cannot_spoof_guard_triggers() {
+    let fake = "on:\n  workflow_dispatch:\n\njobs:\n  pull_request:\n    paths:\n      - 'spec/20-guard.md'\n  push:\n    paths:\n      - 'spec/20-guard.md'\n";
+    let mut f = Vec::new();
+    check_guard_trigger_paths("guard-model.yml", fake, &mut f);
+    for event in ["push", "pull_request"] {
+        assert!(f.iter().any(|x| x.rule == "guard-trigger" && x.message.contains(event)), "{f:?}");
+    }
+}
+#[test]
+fn mutation_duplicate_top_level_guard_on_blocks() {
+    let doubled = format!("{}\non:\n  workflow_dispatch:\n", guard_workflow());
+    let mut f = Vec::new();
+    check_guard_trigger_paths("guard-model.yml", &doubled, &mut f);
+    assert!(f.iter().any(|x| x.rule == "guard-trigger" && x.message.contains("exactly one")), "{f:?}");
+}
+#[test]
 fn mutation_duplicate_question_id() {
     let mut d = docs();
     d.get_mut("spec/12-open-questions.md").unwrap().push_str(

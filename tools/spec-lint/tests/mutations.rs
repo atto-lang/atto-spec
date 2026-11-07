@@ -173,6 +173,27 @@ fn missing_guard_push_trigger_is_rejected() {
 }
 
 #[test]
+fn fake_guard_event_job_names_are_rejected() {
+    let fx = Fixture::new();
+    fx.put(".github/workflows/guard-model.yml", concat!(
+        "on:\n  workflow_dispatch:\n\n",
+        "jobs:\n  pull_request:\n    paths:\n      - 'spec/20-guard.md'\n",
+        "  push:\n    paths:\n      - 'spec/20-guard.md'\n"
+    ));
+    fx.assert_rejected("guard-trigger");
+}
+
+#[test]
+fn duplicate_top_level_on_blocks_are_rejected() {
+    let fx = Fixture::new();
+    fx.put(".github/workflows/guard-model.yml", concat!(
+        "on:\n  pull_request:\n    paths:\n      - 'spec/20-guard.md'\n",
+        "  push:\n    paths:\n      - 'spec/20-guard.md'\n",
+        "on:\n  workflow_dispatch:\n"
+    ));
+    fx.assert_rejected("guard-trigger");
+}
+#[test]
 fn missing_guard_pr_trigger_is_rejected() {
     let fx = Fixture::new();
     fx.put(".github/workflows/guard-model.yml", concat!(

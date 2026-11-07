@@ -664,12 +664,31 @@ fn check_workflow_spec_refs(
 /// The Guard model must trigger for edits to chapter 20 on both PRs and main
 /// pushes. A stale path checker alone cannot catch someone removing a trigger.
 fn check_guard_trigger_paths(file: &str, workflow: &str, findings: &mut Vec<Finding>) {
+    // Count only events declared beneath the actual top-level on: key.
+    // A job named 'push' or 'pull_request' cannot impersonate a trigger.
+    let mut in_on = false;
+    let mut on_blocks = 0usize;
     let mut event: Option<&str> = None;
     let mut in_paths = false;
     let mut seen: BTreeSet<&str> = BTreeSet::new();
     for line in workflow.lines() {
         let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with('#') {
+            continue;
+        }
         let indent = line.len() - line.trim_start().len();
+        if indent == 0 {
+            in_on = trimmed == "on:";
+            event = None;
+            in_paths = false;
+            if in_on {
+                on_blocks += 1;
+            }
+            continue;
+        }
+        if !in_on {
+            continue;
+        }
         if indent == 2 && trimmed.ends_with(':') {
             event = match trimmed.trim_end_matches(':') {
                 "pull_request" => Some("pull_request"),
@@ -686,6 +705,14 @@ fn check_guard_trigger_paths(file: &str, workflow: &str, findings: &mut Vec<Find
                 seen.insert(e);
             }
         }
+    }
+    if on_blocks != 1 {
+        findings.push(Finding {
+            file: file.to_string(),
+            line: 1,
+            rule: "guard-trigger",
+            message: format!("Guard workflow must have exactly one top-level on: block (found {on_blocks})"),
+        });
     }
     for required in ["pull_request", "push"] {
         if !seen.contains(required) {
