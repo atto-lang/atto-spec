@@ -88,6 +88,20 @@ An `if expression as const/let name` binding tests **presence**, not truthiness.
 
 Arithmetic, checked comparison, assignment, function call, lambdas and generic arguments have distinct grammar slots. `|>` is the *value/function* pipeline operator. The keyword `pipe` is reserved for actor pipeline connections; neither is a synonym for bitwise `|`. `?` has context-dependent uses (optional type, parameter omission, postfix propagation, and ternary form) and must not be parsed with a global text replacement.
 
+### Logical word operators (v1 target)
+
+`and`, `or` and `xor` are lowercase reserved **infix keyword operators**, valid in ordinary boolean expressions, returns, guards, `if`/`while` conditions, assignments and call arguments. They are never calls to user-overloadable functions and never aliases for integer/bitwise operators.
+
+```atto
+fnc accepts(bool enabled, bool ready, bool forced): bool {
+  return enabled and ready or forced xor false;
+}
+```
+
+Precedence, from tightest to loosest, is `and`, `xor`, `or` (each left-associative), below equality/comparison and above ternary `?:`. Operands and result must be `bool`; no implicit coercion. Evaluation is left-to-right: `and` skips RHS on false, `or` skips RHS on true, and `xor` evaluates each operand exactly once even when the LHS is decisive for other operators. Both operands are type-checked even when one is a compile-time constant.
+
+The canonical same-byte portable fixture is `tests/logical-word-operators-v1/scalar-parity.atto`, with an expected exit status of 42 once a backend actually compiles and executes it. A source fixture or compiler-only test is not evidence of guest execution. Backends must independently report executed tests against exact commit heads.
+
 ## Rejection requirements
 
 Parser/type checker MUST reject: unsupported extension without migration permission; ambiguous dual-file imports; invalid compound keywords; actor declarations masquerading as classes; assignments as conditions; invalid mutable writes; invalid generic specializations; illegal source-lifetime escapes; and source features not lowerable on the selected backend before producing misleading executable IR.
