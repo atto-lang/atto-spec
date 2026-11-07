@@ -23,7 +23,35 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - name: Reject foreign or unrecognized workflow sources before checkout
+        env:
+          GH_EVENT_PATH: ${{ github.event_path }}
+          GH_EVENT_NAME: ${{ github.event_name }}
+          GH_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, sys
+          event_path = os.environ["GH_EVENT_PATH"]
+          name = os.environ["GH_EVENT_NAME"]
+          repo = os.environ["GH_REPOSITORY"]
+          with open(event_path, encoding="utf-8") as f:
+              event = json.load(f)
+          base = event.get("repository") or {}
+          if repo != "ores-truffle-oreslang/attolang-language-spec.md":
+              sys.exit("UNTRUSTED_REPOSITORY_NAME")
+          if base.get("full_name") != repo or base.get("id") != 1444921662:
+              sys.exit("UNTRUSTED_REPOSITORY_IDENTITY")
+          if name == "pull_request":
+              head = ((event.get("pull_request") or {}).get("head") or {}).get("repo") or {}
+              if head.get("full_name") != repo or head.get("id") != 1444921662:
+                  sys.exit("FOREIGN_PULL_REQUEST_HEAD_DENIED")
+          elif name != "push":
+              sys.exit("UNSUPPORTED_EVENT")
+          print("SOURCE_OWNER_ONLY=true")
+          PY
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
@@ -38,12 +66,14 @@ jobs:
           echo "RUN_ID=${GITHUB_RUN_ID}"
           echo "RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT}"
           test "$(git rev-parse HEAD)" = "${EXPECTED_HEAD}"
-      - uses: actions/setup-node@v4
+          test -z "$(git ls-files --others --exclude-standard)"
+          echo "SOURCE_FREE_SPEC_MODEL_ONLY=true"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
       - name: Unit-test linter and negative mutations
-        run: cargo test --locked --manifest-path tools/spec-lint/Cargo.toml
+        run: cargo test --locked --offline --manifest-path tools/spec-lint/Cargo.toml
       - name: Lint complete specification
-        run: cargo run --locked --quiet --manifest-path tools/spec-lint/Cargo.toml -- .
+        run: cargo run --locked --offline --quiet --manifest-path tools/spec-lint/Cargo.toml -- .
       - name: Run all source-free reference models (not guest execution)
         run: node --test tests/*.test.mjs
