@@ -680,7 +680,7 @@ fn check_guard_trigger_paths(file: &str, workflow: &str, findings: &mut Vec<Find
         } else if indent == 4 {
             in_paths = event.is_some() && trimmed == "paths:";
         } else if indent >= 6 && in_paths
-            && trimmed.strip_prefix("- ").is_some_and(|path| path.trim_matches(['\u{27}', '"']) == "spec/20-guard.md")
+            && trimmed.strip_prefix("- ").is_some_and(|path| path.trim_matches(|c| c == '\u{27}' || c == '"') == "spec/20-guard.md")
         {
             if let Some(e) = event {
                 seen.insert(e);
