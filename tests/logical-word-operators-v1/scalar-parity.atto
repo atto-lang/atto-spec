@@ -1,0 +1,17 @@
+pub fnc main(): int {
+  return (
+    (false and false) == false
+    and (false and true) == false
+    and (true and false) == false
+    and (true and true) == true
+    and (false or false) == false
+    and (false or true) == true
+    and (true or false) == true
+    and (true or true) == true
+    and (false xor false) == false
+    and (false xor true) == true
+    and (true xor false) == true
+    and (true xor true) == false
+    and (false or true xor true and false) == true
+  ) ? 42 : 7;
+}
