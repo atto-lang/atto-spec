@@ -99,6 +99,8 @@ fn lint_all(root: &Path, docs: &BTreeMap<String, String>) -> Vec<Finding> {
     check_chapters(docs, &mut findings);
     check_readme_index(docs, &mut findings);
     check_open_question_ids(docs, &mut findings);
+    check_workflow_paths(root, docs, &mut findings);
+    check_decision_statuses(docs, &mut findings);
     findings.sort();
     findings
 }
@@ -620,6 +622,131 @@ fn check_atto_block(file: &str, block: &CodeBlock, findings: &mut Vec<Finding>) 
                     message: format!("`{}` is redeclared in the same scope (first on line {prev})", key.1),
                 });
             }
+        }
+    }
+}
+
+// ---------------------------------------------------------------- workflow paths and decision maturity
+
+/// Find explicit numbered chapter paths in workflow text (not globs, comments,
+/// or external references).  This prevents stale path filters from silently
+/// suppressing tests when a chapter is moved or renumbered.
+fn check_workflow_spec_refs(
+    file: &str,
+    workflow: &str,
+    docs: &BTreeMap<String, String>,
+    findings: &mut Vec<Finding>,
+) {
+    for (idx, line) in workflow.lines().enumerate() {
+        if line.trim_start().starts_with('#') {
+            continue;
+        }
+        let mut rest = line;
+        while let Some(start) = rest.find("spec/") {
+            let candidate = &rest[start..];
+            let path = candidate
+                .split(|c: char| c.is_whitespace() || matches!(c, '\'' | '"' | ',' | ']' | '[' | '#' | ')'))
+                .next()
+                .unwrap_or("");
+            if chapter_number(path).is_some() && !docs.contains_key(path) {
+                findings.push(Finding {
+                    file: file.to_string(),
+                    line: idx + 1,
+                    rule: "workflow-path",
+                    message: format!("workflow references absent chapter `{path}`"),
+                });
+            }
+            rest = &candidate["spec/".len()..];
+        }
+    }
+}
+
+fn check_workflow_paths(
+    root: &Path,
+    docs: &BTreeMap<String, String>,
+    findings: &mut Vec<Finding>,
+) {
+    let dir = root.join(".github/workflows");
+    if !dir.exists() {
+        return;
+    }
+    let entries = match fs::read_dir(&dir) {
+        Ok(entries) => entries,
+        Err(e) => {
+            findings.push(Finding {
+                file: ".github/workflows".to_string(),
+                line: 1,
+                rule: "workflow-path",
+                message: format!("cannot read workflows: {e}"),
+            });
+            return;
+        }
+    };
+    for entry in entries {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(e) => {
+                findings.push(Finding {
+                    file: ".github/workflows".to_string(),
+                    line: 1,
+                    rule: "workflow-path",
+                    message: format!("cannot enumerate workflow: {e}"),
+                });
+                continue;
+            }
+        };
+        let path = entry.path();
+        if !matches!(path.extension().and_then(|s| s.to_str()), Some("yml" | "yaml")) {
+            continue;
+        }
+        let name = format!(".github/workflows/{}", entry.file_name().to_string_lossy());
+        match fs::read_to_string(&path) {
+            Ok(source) => check_workflow_spec_refs(&name, &source, docs, findings),
+            Err(e) => findings.push(Finding {
+                file: name,
+                line: 1,
+                rule: "workflow-path",
+                message: format!("cannot read workflow: {e}"),
+            }),
+        }
+    }
+}
+
+/// S-41..S-57 are *audit decisions*, not automatically ratified rules.
+/// Every row must name its maturity. A future DECIDED claim must link to
+/// independent compiler-owner review in the same row, to make status changes
+/// visible and reviewable rather than an unnoticed prose edit.
+fn check_decision_statuses(docs: &BTreeMap<String, String>, findings: &mut Vec<Finding>) {
+    let ledger_file = "spec/12-open-questions.md";
+    let Some(ledger) = docs.get(ledger_file) else { return };
+    for (idx, line) in prose_lines(ledger) {
+        let cells: Vec<_> = line.split('|').collect();
+        let id = cells.get(1).map(|s| s.trim()).unwrap_or("");
+        let Some(n) = id.strip_prefix("S-").and_then(|s| s.parse::<usize>().ok()) else { continue };
+        if !(41..=57).contains(&n) {
+            continue;
+        }
+        let resolution = cells.get(3).copied().unwrap_or("");
+        let statuses = ["**DECIDED**", "**TARGET**", "**PROPOSED**", "**UNRESOLVED**"];
+        let count = statuses.iter().filter(|s| resolution.contains(**s)).count();
+        if count != 1 {
+            findings.push(Finding {
+                file: ledger_file.to_string(),
+                line: idx,
+                rule: "decision-status",
+                message: format!("{id} must have exactly one explicit DECIDED/TARGET/PROPOSED/UNRESOLVED classification"),
+            });
+        }
+        if resolution.contains("**DECIDED**")
+            && !(resolution.contains("Reviewed-by:")
+                && (resolution.contains("/pull/") || resolution.contains("/issues/")))
+        {
+            findings.push(Finding {
+                file: ledger_file.to_string(),
+                line: idx,
+                rule: "decision-status",
+                message: format!("{id} cannot become DECIDED without a Reviewed-by: GitHub review/decision link"),
+            });
         }
     }
 }

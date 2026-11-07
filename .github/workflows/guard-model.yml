@@ -9,6 +9,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'spec/20-guard.md'
+      - 'spec/01-source-and-syntax.md'
       - 'tests/guard-*'
       - '.github/workflows/guard-model.yml'
 permissions:
