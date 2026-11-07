@@ -26,11 +26,16 @@ impl Fixture {
             "| [20](spec/20-guard.md) | Guard |\n"
         ));
         fx.put("spec/00-scope.md", "# 00 — Scope\n\n**Status: DRAFT.**\n");
-        fx.put("spec/12-open-questions.md", concat!(
+        let mut ledger = String::from(concat!(
             "# 12 — Open questions\n\n**Status: DRAFT.**\n\n",
-            "| ID | Question | Resolution |\n| --- | --- | --- |\n",
-            "| S-41 | Wording | **UNRESOLVED** — Needs review |\n"
+            "| ID | Question | Resolution |\n| --- | --- | --- |\n"
         ));
+        // Keep the clean CLI baseline aligned with the completeness rule.
+        // Tests mutate one property at a time, not a fixture missing 16 IDs.
+        for id in 41..=57 {
+            ledger.push_str(&format!("| S-{id} | Decision {id} | **UNRESOLVED** — Needs review |\n"));
+        }
+        fx.put("spec/12-open-questions.md", &ledger);
         fx.put("spec/15-nested-actor-pipelines.md",
             "# 15 — Nested actor pipelines\n\n**Status: TARGET.**\n");
         fx.put("spec/20-guard.md", "# 20 — Guard\n\n**Status: TARGET.**\n");
