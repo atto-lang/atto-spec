@@ -1,7 +1,7 @@
 //! End-to-end negative-mutation checks of the actual spec-lint executable.
 //! These are source-free structural checks, never compiler guest evidence.
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -155,4 +155,24 @@ fn unclassified_decision_is_rejected() {
         "| S-41 | A | We should consider this |\n"
     ));
     fx.assert_rejected("decision-status");
+}
+
+#[test]
+fn missing_guard_push_trigger_is_rejected() {
+    let fx = Fixture::new();
+    fx.put(".github/workflows/guard-model.yml", concat!(
+        "on:\n  pull_request:\n    paths:\n      - 'spec/20-guard.md'\n",
+        "  push:\n    paths:\n      - 'tests/guard-*'\n"
+    ));
+    fx.assert_rejected("guard-trigger");
+}
+
+#[test]
+fn missing_guard_pr_trigger_is_rejected() {
+    let fx = Fixture::new();
+    fx.put(".github/workflows/guard-model.yml", concat!(
+        "on:\n  pull_request:\n    paths:\n      - 'tests/guard-*'\n",
+        "  push:\n    paths:\n      - 'spec/20-guard.md'\n"
+    ));
+    fx.assert_rejected("guard-trigger");
 }

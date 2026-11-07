@@ -661,6 +661,44 @@ fn check_workflow_spec_refs(
     }
 }
 
+/// The Guard model must trigger for edits to chapter 20 on both PRs and main
+/// pushes. A stale path checker alone cannot catch someone removing a trigger.
+fn check_guard_trigger_paths(file: &str, workflow: &str, findings: &mut Vec<Finding>) {
+    let mut event: Option<&str> = None;
+    let mut in_paths = false;
+    let mut seen: BTreeSet<&str> = BTreeSet::new();
+    for line in workflow.lines() {
+        let trimmed = line.trim();
+        let indent = line.len() - line.trim_start().len();
+        if indent == 2 && trimmed.ends_with(':') {
+            event = match trimmed.trim_end_matches(':') {
+                "pull_request" => Some("pull_request"),
+                "push" => Some("push"),
+                _ => None,
+            };
+            in_paths = false;
+        } else if indent == 4 {
+            in_paths = event.is_some() && trimmed == "paths:";
+        } else if indent >= 6 && in_paths
+            && trimmed.strip_prefix("- ").is_some_and(|path| path.trim_matches(['\u{27}', '"']) == "spec/20-guard.md")
+        {
+            if let Some(e) = event {
+                seen.insert(e);
+            }
+        }
+    }
+    for required in ["pull_request", "push"] {
+        if !seen.contains(required) {
+            findings.push(Finding {
+                file: file.to_string(),
+                line: 1,
+                rule: "guard-trigger",
+                message: format!("{required}.paths must watch spec/20-guard.md"),
+            });
+        }
+    }
+}
+
 fn check_workflow_paths(
     root: &Path,
     docs: &BTreeMap<String, String>,
@@ -701,7 +739,12 @@ fn check_workflow_paths(
         }
         let name = format!(".github/workflows/{}", entry.file_name().to_string_lossy());
         match fs::read_to_string(&path) {
-            Ok(source) => check_workflow_spec_refs(&name, &source, docs, findings),
+            Ok(source) => {
+                check_workflow_spec_refs(&name, &source, docs, findings);
+                if name == ".github/workflows/guard-model.yml" {
+                    check_guard_trigger_paths(&name, &source, findings);
+                }
+            },
             Err(e) => findings.push(Finding {
                 file: name,
                 line: 1,
