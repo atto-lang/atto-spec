@@ -5,13 +5,15 @@ on:
     paths:
       - '**/*.md'
       - 'tools/spec-lint/**'
-      - '.github/workflows/spec-lint.yml'
+      - 'tests/**'
+      - '.github/workflows/**'
   push:
     branches: [main]
     paths:
       - '**/*.md'
       - 'tools/spec-lint/**'
-      - '.github/workflows/spec-lint.yml'
+      - 'tests/**'
+      - '.github/workflows/**'
 
 permissions:
   contents: read
@@ -22,7 +24,23 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Unit-test the linter
+        with:
+          persist-credentials: false
+      - name: Record exact checkout identity (not an execution receipt)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "SOURCE_HEAD=$(git rev-parse HEAD)"
+          echo "SOURCE_TREE=$(git rev-parse 'HEAD^{tree}')"
+          echo "RUN_ID=${GITHUB_RUN_ID}"
+          echo "RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT}"
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit-test linter and negative mutations
         run: cargo test --locked --manifest-path tools/spec-lint/Cargo.toml
-      - name: Lint the specification
+      - name: Lint complete specification
         run: cargo run --locked --quiet --manifest-path tools/spec-lint/Cargo.toml -- .
+      - name: Run all source-free reference models (not guest execution)
+        run: node --test tests/*.test.mjs
