@@ -25,8 +25,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - name: Record exact checkout identity (not an execution receipt)
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -34,7 +37,7 @@ jobs:
           echo "SOURCE_TREE=$(git rev-parse 'HEAD^{tree}')"
           echo "RUN_ID=${GITHUB_RUN_ID}"
           echo "RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT}"
-          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git rev-parse HEAD)" = "${EXPECTED_HEAD}"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
