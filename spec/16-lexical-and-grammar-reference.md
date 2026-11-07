@@ -25,7 +25,7 @@ The Java lexer reserves these words. The LLVM parser has its own keyword handlin
 | Errors | `try` `catch` `finally` `throw` `raise` `panic` `recover` `trap` `defer` |
 | Actors | `actor` `isoactor` `shared` `untrusted` `spawn` `stop` `rt` |
 | Async and channels | `await` `nb` `cb` `select` `readch` `writech` |
-| Operators | `eq` `neq` `is` `new` |
+| Operators | `eq` `neq` `is` `new` `and` `or` `xor` |
 | Literals and markers | `true` `false` `null` `void` `obj` `arr` |
 | Compute | `cpu` `gpu` `quantum` |
 
@@ -57,7 +57,9 @@ From lowest to highest precedence, following the v0.6 grammar:
 | Assignment | `=` | Right |
 | Pipeline | `\|>` | Left |
 | Conditional | `? :` | Right |
-| Logical OR | `\|` | Left |
+| Logical OR | `or` (legacy `||` and condition-only `|`) | Left |
+| Logical XOR | `xor` | Left |
+| Logical AND | `and` (legacy `&&` and condition-only `,`) | Left |
 | Equality and identity | `eq` `neq` `!eq` `==` `!=` `is` | Left |
 | Comparison and type tests | `<` `<=` `>` `>=` `is type` `matches` `as` `as?` | Left |
 | Additive | `+` `-` | Left |
@@ -67,8 +69,9 @@ From lowest to highest precedence, following the v0.6 grammar:
 
 - `eq` and `neq` are the canonical comparisons. `==` and `!=` are accepted aliases.
 - `is` tests identity. Type tests use `is type`, as in `if animal is type Dog dog then`.
-- Inside an `if` or `while` condition, `,` means AND and `|` means OR, and comma binds tighter.
-- The grammar has no `&&`, `||` or bitwise and shift operators.
+- The canonical boolean operators are lowercase, case-sensitive `and`, `or` and `xor`. They bind in increasing order `or < xor < and` and each is left associative. All require exactly two `bool` operands and produce `bool`; integers, implicit truthiness and operator overloading are forbidden. `and` and `or` evaluate the left operand first, skipping the right operand when the result is determined; `xor` evaluates both operands exactly once, left to right.
+- The historical `,` as AND and `|` as OR spellings are condition-only migration syntax, not a substitute for the canonical expression operators. The older `&&` and `||` spellings remain compatibility aliases where already implemented. A source `^` or `^^` is **not** a spelling for `xor` (those operators are removed).
+- The original v0.6 grammar omitted several later compatibility operators; the canonical logical operators are keyword tokens, not a textual rewrite of punctuation. Their admission on a backend must be established with compiler-backed tests.
 - Assignment is an expression, but `if x = y then` is rejected.
 - `name = value` in a call is never a named argument. Named value arguments use `name: value` ([chapter 03](03-functions-and-effects.md)).
 - `++` and `--` exist only in a `for` update clause.
