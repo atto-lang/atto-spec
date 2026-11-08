@@ -90,7 +90,7 @@ Arithmetic, checked comparison, assignment, function call, lambdas and generic a
 
 ### Logical word operators (v1 target)
 
-`and`, `or` and `xor` are lowercase reserved **infix keyword operators**, valid in ordinary boolean expressions, returns, guards, `if`/`while` conditions, assignments and call arguments. They are never calls to user-overloadable functions and never aliases for integer/bitwise operators.
+`and`, `or` and `xor` are lowercase reserved **infix keyword operators**, valid in ordinary boolean expressions, returns, guards, `if`/`while` conditions, assignments and call arguments. They are never calls to user-overloadable functions and never aliases for integer/bitwise operators. Boolean exclusive-or uses `xor`; the removed integer caret spelling is not overloaded for this purpose. Integer bitwise XOR, where a backend exposes it, uses the named `Integer.bitXor` API.
 
 ```atto
 fnc accepts(bool enabled, bool ready, bool forced): bool {
