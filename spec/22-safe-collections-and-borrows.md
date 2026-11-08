@@ -67,6 +67,35 @@ non-overflowing wide arithmetic before dereference; slice offset + extent,
 element stride, alignment and capacity also require overflow checks.
 Do not use an `Option` tag as an in-band magic index.
 
+## Compatibility and staged activation (2026-11 candidate)
+
+The signatures above define the **future normative target**, not the behavior
+silently enabled in every existing compiler or every `.ores` / `.atto` file.
+
+1. **Legacy deployed source:** `Array/List.get(int)` on existing Java/LLVM
+   compiler lanes returns a scalar element and uses its existing checked,
+   potentially trapping bounds behavior. Do not reinterpret old compiled
+   calls as `Option<ReadLoan<T>>` or silently change their ABI.
+2. **Additive checked-copy milestone:** `get_copy(index) -> Option<T>` is
+   admitted incrementally only for compiler-proven `Copy<T>` domains.
+   Initial implementation candidates Java #2688 and LLVM #1601 support
+   the restricted `Array<int>` / `Copy<int>` lane. Returned values are
+   **owned copies**, never borrowers or raw interior pointers. The standalone
+   source fixture is conformance #625. All these changes still require
+   exact-head executed guest evidence and independent review.
+3. **Borrowed-get migration:** `get(index) -> Option<ReadLoan<T>>` and
+   `get_mut(index) -> Option<WriteLoan<T>>` may become source APIs only
+   after compiler-authenticated root provenance, static lifetime/CFG
+   semantics, Option tags, and guest tests are proven. A future explicit
+   language-edition or core API selection mechanism must be specified
+   before changing the meaning of legacy `get`; **the file extension alone
+   does not opt an existing program in**. Unsupported configurations
+   continue to reject the new operation rather than returning raw data.
+
+No automatic conversion between legacy scalar `get`, owned `get_copy`,
+and borrowed `get` is permitted. These are distinct ownership contracts,
+not overloads differentiated solely by expected return type.
+
 ## Explicit Option semantics
 
 `Some(v)` and `None` are discriminated values. An empty collection has
