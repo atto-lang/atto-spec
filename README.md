@@ -8,6 +8,7 @@ AttoLang is an **actor-first, statically typed systems language** designed for o
 This repository is the **language-level specification**, not the proof that a particular backend already implements a feature. The five primary backends have the same target observable semantics: Java/GraalVM, native LLVM, WebAssembly, Forge, and .NET Native AOT.
 
 ## Read the specification
+| 20 — Virtual actors, logical identity, directory and inspection | `spec/20-virtual-actors-directory-inspection.md` | Stable IDs, activation fencing, supervisor lookup/inspection, proxy distinction and conformance gates |
 
 | Chapter | Subject |
 | --- | --- |
