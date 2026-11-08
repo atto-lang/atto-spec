@@ -11,9 +11,10 @@ AttoLang uses explicit rights operations, expressed as reserved `rt` forms:
 | `rt take value` | Move exclusive ownership; subsequent use of the old place is invalid |
 | `rt copy value` | Duplicate only when the type proves it is Copy |
 | `rt borrow value` | Acquire a bounded immutable loan |
-| `rt borrow mut value` | Acquire a bounded exclusive mutable loan |
+| `rt mut borrow value` | Acquire a bounded exclusive mutable loan |
 | `rt share value` | Convert to explicitly authorized shared/frozen ownership |
-| `rt ref` / `rt deref` / `rt unref` | Managed or checked handle operations, never unchecked cross-isolate escape |
+
+The public language does not admit pointer/ref/dereference intrinsics, `Pointer<T>` or pointer-sigil aliases. Opaque compiler/runtime handles may exist only behind capability-checked APIs, and are not permission to expose raw memory addresses in AttoLang source.
 
 ```atto
 val packet = make_packet()
@@ -44,7 +45,7 @@ A 32-bit compressed offset/handle inside actor-local regions may reduce footprin
 
 Each message transfer must have a provable ownership action (`take`, `copy`, or permitted `share`), validated payload graph, bounded bytes/depth/nodes, and type-correct domain admission. A mutable pointer, synchronized cell, closure with host capability, or foreign pointer cannot be smuggled across isolation merely because its in-memory representation is small.
 
-`Pointer<T>` transport is only admissible under a proof of pointee safety and a domain-specific copy, move, or immutable share strategy; a raw address is never a portable wire representation. `Sendable` and `Serializable` are distinct properties.
+Opaque runtime/FFI descriptors may cross domains only under a versioned, capability-checked copy, move, or immutable-share contract; a raw address is never a portable wire representation and public `Pointer<T>` is not source syntax. `Sendable` and `Serializable` are distinct properties.
 
 ## Resource lifecycle
 
