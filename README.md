@@ -49,3 +49,14 @@ The existing implementation/contracts are reference material to reconcile, not a
 - [Cross-backend conformance](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance) and its [execution evidence requirements](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/blob/main/docs/FIVE_BACKEND_EXECUTION_EVIDENCE.md)
 
 Change semantic rules through reviewed amendments, with corresponding positive, negative, ownership and backend execution tests. Keep all new source fixtures in `.atto`; accept `.ores` only through explicit migration compatibility.
+
+## Repository ownership and migration (2026-11-08)
+
+**Current repository:** `ores-truffle-oreslang/attolang-language-spec.md` (legacy organization). The language is publicly **AttoLang**, formerly Oreslang. Do not remove working `.ores` source support or rename old package/CLI/repository identifiers as an incidental side effect.
+
+- **This repo should contain:** normative AttoLang language syntax, typing, ownership/effects, AOT and concurrency semantics.
+- **Exclude or route elsewhere:** compiler backend implementation, cloud hosting or contradictory legacy definitions.
+- **Boundaries:** [`atto-lang`](https://github.com/atto-lang) owns language semantics, core/std, compilers, tooling, conformance and portable libraries. [`atto-co`](https://github.com/atto-co) owns separately governed hosted infrastructure, tenant cloud runtime, deployment, identity and billing. Existing new-org `atto-*` repos are distinct Git identities until reconciled; do not overwrite them.
+- **Proposed first destination:** `atto-lang/attolang-language-spec.md` via **reviewed transfer of this repository identity**, not a clone, rename or direct transfer to `atto-co`. Future AttoCo product carve-outs must be authorized separately.
+
+**Owner checklist:** coordinate in [migration issue #26](https://github.com/ores-truffle-oreslang/.github/issues/26) and review the private [transfer plan #25](https://github.com/ores-truffle-oreslang/.github/pull/25). Before any migration, document stable numeric repo ID, exact head SHA/tree, open PRs/issues, tags, consumers, packages, Pages, Actions and billing, branch/ruleset enforcement, secrets and app/webhook permissions, source/target administrators, independent security reviewer and rollback plan. No unapproved private-source mirror. After the authorized GitHub transfer, verify unchanged identity/history/tree and reinstate controls, then rerun exact-head tests. Zero executed CI steps (`steps=[]` or `null`) is `NOT_EXECUTED`; structural or host-only checks are not guest-runtime parity proof. Preserve old names and `.ores` compatibility while `.atto` source support is validated per compiler.
