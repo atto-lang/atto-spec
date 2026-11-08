@@ -138,6 +138,87 @@
       "op": "assign",
       "destination": "Option<Option<int>>",
       "expect": "Option<Option<int>>"
+    },
+    {
+      "id": "future-option-option-one-await",
+      "type": "Future<Option<Option<int>>>",
+      "op": "await",
+      "expect": "Option<Option<int>>"
+    },
+    {
+      "id": "future-nested-mixed-one-flatten",
+      "type": "Future<Future<Option<int>>>",
+      "op": "flatten",
+      "expect": "Future<Option<int>>"
+    },
+    {
+      "id": "option-nested-mixed-one-flatten",
+      "type": "Option<Option<Future<int>>>",
+      "op": "flatten",
+      "expect": "Option<Future<int>>"
+    },
+    {
+      "id": "option-future-future-one-unwrap",
+      "type": "Option<Future<Future<int>>>",
+      "op": "unwrap",
+      "expect": "Future<Future<int>>"
+    },
+    {
+      "id": "option-option-future-one-unwrap",
+      "type": "Option<Option<Future<int>>>",
+      "op": "unwrap",
+      "expect": "Option<Future<int>>"
+    },
+    {
+      "id": "future-option-future-one-await",
+      "type": "Future<Option<Future<int>>>",
+      "op": "await",
+      "expect": "Option<Future<int>>"
+    },
+    {
+      "id": "future-nested-same-shape-assignment",
+      "type": "Future<Future<int>>",
+      "op": "assign",
+      "expect": "Future<Future<int>>"
+    },
+    {
+      "id": "future-option-option-no-flatten",
+      "type": "Future<Option<Option<int>>>",
+      "op": "flatten",
+      "diagnostic": "FLATTEN_REQUIRES_SAME_WRAPPER"
+    },
+    {
+      "id": "option-future-future-no-flatten",
+      "type": "Option<Future<Future<int>>>",
+      "op": "flatten",
+      "diagnostic": "FLATTEN_REQUIRES_SAME_WRAPPER"
+    },
+    {
+      "id": "option-mixed-nested-implicit-flatten-forbidden",
+      "type": "Option<Option<Future<int>>>",
+      "op": "assign",
+      "destination": "Option<Future<int>>",
+      "diagnostic": "IMPLICIT_FLATTEN_FORBIDDEN"
+    },
+    {
+      "id": "future-mixed-nested-implicit-flatten-forbidden",
+      "type": "Future<Future<Option<int>>>",
+      "op": "assign",
+      "destination": "Future<Option<int>>",
+      "diagnostic": "IMPLICIT_FLATTEN_FORBIDDEN"
+    },
+    {
+      "id": "cross-kind-disguised-unwrap-forbidden",
+      "type": "Future<Option<int>>",
+      "op": "unwrap",
+      "diagnostic": "OPERATION_WRAPPER_MISMATCH"
+    },
+    {
+      "id": "future-to-option-implicit-adoption-forbidden",
+      "type": "Future<Option<int>>",
+      "op": "assign",
+      "destination": "Option<int>",
+      "diagnostic": "INCOMPATIBLE_TYPES"
     }
   ],
   "value_distinctions": [
