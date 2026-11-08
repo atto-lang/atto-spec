@@ -179,7 +179,8 @@
       "id": "future-nested-same-shape-assignment",
       "type": "Future<Future<int>>",
       "op": "assign",
-      "expect": "Future<Future<int>>"
+      "expect": "Future<Future<int>>",
+      "destination": "Future<Future<int>>"
     },
     {
       "id": "future-option-option-no-flatten",
