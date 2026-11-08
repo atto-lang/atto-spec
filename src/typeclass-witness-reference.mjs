@@ -16,9 +16,19 @@ function exact(obj, keys) {
   }
   if (Reflect.ownKeys(obj).some(k => !keys.includes(k))) err('SHAPE');
 }
+function dense(list, max=512) {
+  if (!Array.isArray(list) || Object.getPrototypeOf(list) !== Array.prototype ||
+      list.length > max || Reflect.ownKeys(list).length !== list.length + 1)
+    err('LIST');
+  // Inspect descriptors before reading values: holes, accessors and hidden keys fail closed.
+  for (let i=0; i<list.length; i++) {
+    const d=Object.getOwnPropertyDescriptor(list,String(i));
+    if (!d || !d.enumerable || !Object.hasOwn(d,'value')) err('LIST');
+  }
+}
 function distinct(list, valid, max=128) {
-  if (!Array.isArray(list) || list.length > max ||
-      list.some(v => !valid(v)) || new Set(list).size !== list.length)
+  dense(list,max);
+  if (list.some(v => !valid(v)) || new Set(list).size !== list.length)
     err('LIST');
 }
 export function resolveStaticTypeclassWitness(catalog, request) {
@@ -29,6 +39,9 @@ export function resolveStaticTypeclassWitness(catalog, request) {
       !Array.isArray(catalog.implementations) ||
       catalog.types.length > 256 || catalog.typeclasses.length > 256 ||
       catalog.implementations.length > 512) err('CATALOG');
+  dense(catalog.types,256);
+  dense(catalog.typeclasses,256);
+  dense(catalog.implementations,512);
   const seenTypes=new Set(), seenTypeclasses=new Set();
   for (const t of catalog.types) {
     exact(t,['name','owner']);
@@ -56,6 +69,7 @@ export function resolveStaticTypeclassWitness(catalog, request) {
     if (!mod.test(imp.module) ||
         !seenTypeclasses.has(imp.typeclass) || !seenTypes.has(imp.forType) ||
         !Array.isArray(imp.bindings) || imp.bindings.length > 64) err('IMPLEMENTATION');
+    dense(imp.bindings,64);
     const declaredTc=catalog.typeclasses.find(t=>t.name===imp.typeclass);
     const declaredType=catalog.types.find(t=>t.name===imp.forType);
     if (imp.module!==declaredTc.owner && imp.module!==declaredType.owner)
