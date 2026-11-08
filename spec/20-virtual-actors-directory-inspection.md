@@ -66,6 +66,8 @@ val count = await cart.get_count()
 
 A typed virtual actor reference is a restricted capability. It supports only the source methods explicitly exported for remote/logical invocation, plus safe metadata inspection. It does not expose a mutable activation, state pointer, mailbox internals, supervisor CONTROL handle or arbitrary host object. Functions, closures and lexical environments are never transported as invocation arguments.
 
+**Reference types are deliberately distinct.** An ordinary `ActorRef<T>` returned by `spawn` addresses one actor instance under the existing chapter 18 termination rule: after that instance is terminal, sends fail and never retarget a later instance in the same slot. A `VirtualActorRef<T>` addresses a persistent logical identity and may resolve to a newer activation after a restart, relocation or passivation, provided the logical identity has not been permanently tombstoned and the caller remains authorized. An `ActivationRef<T>` is bound to exactly one activation generation and becomes stale when that generation ends. No implicit conversion among these three reference types is permitted.
+
 ## 4. Directory and activation protocol
 
 The directory maps one logical identity to its current activation authority and fencing generation. It is a control-plane service, not an ordinary user actor and not a proxy.
