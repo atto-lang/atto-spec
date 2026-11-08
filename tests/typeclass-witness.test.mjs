@@ -59,3 +59,23 @@ test('no open-world, runtime reflection, prototype or hidden metadata admission'
  for(const mutate of changes){const c=catalog();mutate(c);denied(()=>resolve(c,request()),'E_WITNESS_');}
  denied(()=>resolve(catalog(),{...request(),visibleModules:['math','math']}),'E_WITNESS_LIST');
 });
+
+test('rejects sparse arrays, hidden metadata and accessor-backed witness catalogs',()=>{
+ const sparseRequest=request();
+ sparseRequest.visibleModules=['math',,'ops'];
+ denied(()=>resolve(catalog(),sparseRequest),'E_WITNESS_LIST');
+ const missingMethod=catalog();
+ missingMethod.typeclasses.find(t=>t.name==='ops.Show').methods=new Array(1);
+ denied(()=>resolve(missingMethod,request()),'E_WITNESS_LIST');
+ const decorated=catalog();
+ decorated.implementations.extra='unreviewed';
+ denied(()=>resolve(decorated,request()),'E_WITNESS_LIST');
+ const symbolMetadata=catalog();
+ symbolMetadata.types[Symbol('covert')]='hidden';
+ denied(()=>resolve(symbolMetadata,request()),'E_WITNESS_LIST');
+ const accessor=catalog();
+ Object.defineProperty(accessor.implementations[0].bindings,'0',{
+   enumerable:true,get(){throw new Error('EXECUTED_UNTRUSTED_GETTER');}
+ });
+ denied(()=>resolve(accessor,request()),'E_WITNESS_LIST');
+});
