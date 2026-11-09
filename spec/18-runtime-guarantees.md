@@ -38,7 +38,7 @@ That an actor's failure restarts the actor, including on stack exhaustion and in
 
 ## Stacks
 
-An actor does not need its own native stack for containment. Turns run to completion, so no native frames survive between turns, and a guarded stack per carrier thread is enough. A backend needs per-actor native stacks only if it suspends actors mid-frame.
+An actor does not require a dedicated OS-thread stack, but **each live receive invocation and independently scheduled child Task owns a distinct logical execution stack**. A suspended receive retains its invocation identity, live frames and bounded continuation roots even when its carrier thread is released. The default serial actor does not admit a second DATA receive while the first remains suspended. Explicit message concurrency admits separate stacks, never a shared mutable frame store. See [chapter 22](22-receive-invocation-stacks.md) for lifecycle, quotas, generation fencing and backend obligations.
 
 **TARGET:** every backend that runs untrusted actors MUST:
 
