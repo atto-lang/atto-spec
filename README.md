@@ -31,6 +31,7 @@ This repository is the **language-level specification**, not the proof that a pa
 | [17 — Primitives and core types](spec/17-primitives-and-core-types.md) | Scalars, integer rules, aggregates, Option/Result and concurrency primitives |
 | [18 — Runtime guarantees](spec/18-runtime-guarantees.md) | Failure domains, stacks, actor restart, pipeline failure, and what is and is not guaranteed |
 | [19 — Observed status, 2026-11-03](spec/19-observed-status-2026-11-03.md) | Dated local test results for Java and LLVM. Not conformance evidence |
+| [22 — Concurrency and shared ownership](spec/22-concurrency-and-shared-ownership.md) | Concurrent-default actors, serial opt-in, ref32 arenas, protected pipes, singletons and symbols |
 
 ## Specification interpretation
 

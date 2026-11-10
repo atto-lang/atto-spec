@@ -13,7 +13,7 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 | S-05 | `throw` without a catch: raise, supervisor notification or an ordinary terminal throw? | Define exact effect escalation and non-actor root exit; execute unwind/supervision fixtures |
 | S-06 | Actor `state {}`, `handle_state(critical-read/write ...)` and `using state...` equivalent spellings | Choose one canonical syntax and compiler-owned intrinsic; forbid direct sealed-state access |
 | S-07 | Actor send result/admission type, `ready`, `done`/`get_done()` and output streams | Lock typed API and admission linearization before declaring transport parity |
-| S-08 | Per-actor multi-turn READ and MaxActorThreads MEDIUM/HIGH | Default one turn; support parallel reads only after source/continuation proof and runtime lease tests |
+| S-08 | Concurrent-default actor scheduling and MaxActorThreads MEDIUM/HIGH | Default concurrency and `serial` opt-in are decided in [chapter 22](22-concurrency-and-shared-ownership.md); capacity, fairness and continuation admission still require proof and runtime lease tests |
 | S-09 | Exact initial runtime thread count on JVM/LLVM/.NET | Distinguish explicit bootstrap workers from host-created threads; measure each runtime and define profile-based budgets |
 | S-10 | Canonical project root/manifest (`.ores.pkg.toml`) and `ORES_PATHS` migration | Reconcile with `.oreslangc.cfg.toml` / `ORESLANG_PATH`; symlink and dual-extension fail-closed suite |
 | S-11 | `define macro` expansion, hygiene, compile-time API, import and capabilities | Static expansion IR with exact source maps; no runtime host reflection dependency |

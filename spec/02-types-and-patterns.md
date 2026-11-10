@@ -103,7 +103,9 @@ Postfix `?` execution is not certified on all backends; see [conformance](11-con
 
 ## Symbols and matching
 
-Symbol literals use a leading `#`: `#ready`, `#with spaces`. A string `"#ready"` is a different value. Core/standard symbol identity may be shared across isolates; arbitrary user symbols are not cross-isolate-identical by default. `define pub symbol #ready;` is a target declaration form. Colon-prefixed symbols are not accepted.
+Symbol literals use a leading `#`: `#ready`, `#with spaces`. A string `"#ready"` is a different value. Core/standard symbol identity may be shared across isolates; arbitrary user symbols are not cross-isolate-identical by default. `define pub symbol #ready;` is a target declaration form. Colon-prefixed symbols are not accepted. Shared symbol storage has one owning interning domain; published immutable values admit reader loans, and interning-table mutation requires exclusive authority. Shared storage does not change the equality or cross-isolate identity rules above.
+
+The singleton declaration keyword is `singleton`, not Scala-style `object`. Singletons and symbol storage use the shared-memory single-owner/reader-writer model; singleton identity alone grants no mutable access. See [chapter 22](22-concurrency-and-shared-ownership.md) for the ownership and lifetime target; full declaration grammar and backend admission must be tested before claiming support.
 
 `match` destructures values/patterns, `switch` dispatches on equality/constant cases, and `if x is type Dog dog` performs nominal refinement. `x as T` is a checked cast; `x as? T` returns `Option<T>` on mismatch. No dynamic reflection is required merely to implement a source-level type test when static metadata is enough.
 
