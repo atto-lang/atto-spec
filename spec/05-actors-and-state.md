@@ -29,6 +29,8 @@ val admitted = counter.send(Increment(1))
 
 This is the intended **sealed-state target**, not proof that the displayed `state {}` and `handle_state` lowering execute on every backend. API casing/signatures are fixed only after a conformance amendment.
 
+A durable actor opts in explicitly using `define persistent actor Counter as ... state {} ... end`. The state container remains actor-private and mutable; the `persistent` modifier adds a supervisor-selected storage adapter, fenced activation, durable inbox/state/outbox turn commits and commit-before-successful-reply semantics. See [chapter 22 — Persistent actors and storage adapters](22-persistent-actors-and-storage.md).
+
 ## State confinement
 
 At most one effective persistent guest state schema belongs to one actor. Direct reads/writes of actor state outside compiler-validated scoped callbacks (`handle_state(critical-read|write ...)` or equivalent admitted lexically scoped `using`) MUST fail compilation. The intrinsic is sealed; code cannot override it or forge an actor-state pointer.
