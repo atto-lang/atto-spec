@@ -39,6 +39,7 @@ The samples use one of several valid function forms: `: T` and `-> T` are both r
 - Public declarations use `pub` in positions admitted by the grammar; canonical module spelling is `define pub module`. Module members are private unless exported.
 - Classes are nominal. Class nesting inside classes is not permitted; constructors use an explicit `constructor(...)` declaration rather than a Java-style class-name constructor.
 - Actor declarations use `define actor Name as ... end`. Actors are specialized classes, not synonyms for threads, services or regular classes.
+- `define persistent actor Name as state {} ... end` is the target durable actor declaration with one mutable, sealed state container; `persistent` is contextual, not a globally reserved identifier. See [persistent actor storage contract](22-persistent-actors-and-storage.md).
 - `define supervisor Name as ... end` declares a distinct runtime-owned nominal supervisor (TARGET), not a class or actor. Supervisor **instances** may supervise instances of other supervisors; declarations are not lexically nested. See [supervisor hierarchy](13-supervisor-hierarchies.md).
 - `define macro` is an intended compile-time feature; expansion timing, hygiene, capabilities and backend admission remain PROPOSED rather than assumed.
 
