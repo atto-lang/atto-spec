@@ -68,3 +68,7 @@ Shared, private/isolated and untrusted kinds select capacity, transport and poli
 `spawn A() pipe spawn B()` creates a typed, bounded actor data pipeline; a supervisor is not a data stage. Affinity, number of carrier threads, and mailbox size do not weaken supervision or sealed-state rules.
 
 The proposed `Actor.pipe(A(), B(), ...)` and zero-argument-type `Actor.pipe(A, B, ...)` are new-actor factory forms of that pipeline, while `Actor.connect(a_ref, b_ref)` connects existing actors without changing their supervisor. These must share the same post-start admission, ownership, capacity and DATA/CONTROL separation guarantees. The deferred factory proposal returns a single-use builder; only `.start()` attempts to create the new graph. Nested builders can define explicit child-supervisor scopes without changing the owning supervisor of already-running actors. See [chapter 14](14-actor-pipeline-factories.md) and [chapter 15](15-nested-actor-pipelines.md); all factory syntax remains **TARGET / NOT_VERIFIED**.
+
+## Experimental browser compatibility profile
+
+The source-defined browser actor subset and current linear-memory execution evidence are documented in [chapter 23](23-browser-compiler-profile.md). Its direct field writes and serial receive loop are compatibility behavior; they do not weaken this chapter’s sealed-state or chapter 22 concurrency targets.

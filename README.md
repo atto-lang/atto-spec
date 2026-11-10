@@ -33,6 +33,8 @@ This repository is the **language-level specification**, not the proof that a pa
 | [19 — Observed status, 2026-11-03](spec/19-observed-status-2026-11-03.md) | Dated local test results for Java and LLVM. Not conformance evidence |
 | [22 — Concurrency and shared ownership](spec/22-concurrency-and-shared-ownership.md) | Concurrent-default actors, serial opt-in, ref32 arenas, protected pipes, singletons and symbols |
 
+| [23 — Browser compiler profile](spec/23-browser-compiler-profile.md) | Canonical Rust browser compiler, shared Wasm/ESM source actors, tenant memory and observed native parity gaps |
+
 ## Specification interpretation
 
 A chapter labelled **DRAFT** describes the intended language contract. **TARGET** means a required eventual behavior, not necessarily shipped. **IMPLEMENTED** must always be qualified by a named backend, immutable commit, fixture, and actual execution evidence. **PROPOSED** denotes a design that needs a decision. `MUST` and `SHOULD` have their ordinary normative RFC meaning **inside the draft target**, not as a claim of current parity.

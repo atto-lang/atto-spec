@@ -100,3 +100,7 @@ draft until appropriate reviews and proof.
 ## Semantic floor v1 (additive candidate lane)
 
 The [AttoLang semantic-floor amendment](21-semantic-floor-and-parity.md) and its versioned [machine contract](../contracts/attolang-semantic-floor-v1/contract.json) define six independently required targets, including Cranelift, for the new candidate lane. This corrects any implication above that the five-family table alone is an exhaustive compiler-parity list. The legacy 53-case `.ores` inventory remains separate. All four new `.atto` candidates are `AUTHORED_NOT_EXECUTED`; none can be called verified on a copied fixture, host-only run or zero-step job.
+
+## Browser compiler integration evidence
+
+[Chapter 23](23-browser-compiler-profile.md) records the canonical browser Wasm/ESM compiler and the explicit native/reference gaps. Same-frontend Wasm/ESM differential execution is useful target evidence, but does not establish independent Java/LLVM/native Cranelift parity. Positive actor cases that reject remain unsupported cells, not successful negative cases or parity passes.
