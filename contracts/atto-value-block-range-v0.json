@@ -1,0 +1,201 @@
+{
+  "schema": "attolang.value-block-range.v0",
+  "status": "PROPOSED_NOT_COMPILER_VERIFIED",
+  "description": "Forward-looking executable guest and negative compiler acceptance fixtures; none is claimed to pass until matched to an exact compiler head, backend, and run receipt.",
+  "requires_compiled_guest_for_pass": true,
+  "frontend_expectations": {
+    "ternary": "strict_bool_right_associative_single_selected_arm",
+    "block_tail": "unterminated_final_expression_returns_value;terminated_final_expression_is_Unit",
+    "range": "exclusive_or_inclusive_fixed_width_integral_bounds_only",
+    "iterator_binding": "fresh_immutable_per_iteration_by_default",
+    "effects": "borrow_and_effect_checks_not_bypassed",
+    "lexer": "longest_match_spread_inclusive_range_exclusive_range_dot"
+  },
+  "cases": [
+    {
+      "id": "block_tail_returns_value",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { const int value = { const int x = 20; x + 22 }; return value; }",
+      "expect": {
+        "exit_code": 42
+      }
+    },
+    {
+      "id": "ternary_block_true",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { return true ? { const int x = 40; x + 2 } : { 7 }; }",
+      "expect": {
+        "exit_code": 42
+      }
+    },
+    {
+      "id": "ternary_block_false",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { return false ? { 7 } : { const int n = 40; n + 2 }; }",
+      "expect": {
+        "exit_code": 42
+      }
+    },
+    {
+      "id": "nested_right_associative",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { return false ? { 1 } : true ? { 42 } : { 3 }; }",
+      "expect": {
+        "exit_code": 42
+      }
+    },
+    {
+      "id": "range_exclusive_count",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { let int sum = 0; for id in 1..5 { sum = sum + id; } return sum; }",
+      "expect": {
+        "exit_code": 10,
+        "visited": [
+          1,
+          2,
+          3,
+          4
+        ]
+      }
+    },
+    {
+      "id": "range_inclusive_count",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { let int sum = 0; for id in 1..=5 { sum = sum + id; } return sum; }",
+      "expect": {
+        "exit_code": 15,
+        "visited": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "id": "empty_descending_range",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { let int count = 0; for id in 5..1 { count = count + 1; } return count; }",
+      "expect": {
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "block_lexical_shadowing",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { const int x = 2; const int y = { const int x = 40; x + 2 }; return y; }",
+      "expect": {
+        "exit_code": 42
+      }
+    },
+    {
+      "id": "unselected_arm_not_evaluated",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { let int n = 0; const int a = true ? { n = n + 1; 42 } : { n = n + 100; 7 }; return a + n; }",
+      "expect": {
+        "exit_code": 43
+      }
+    },
+    {
+      "id": "empty_collection_context",
+      "kind": "accept_typecheck",
+      "source": "pub fnc main(): int { const Array<int> xs = true ? { [] } : { [1,2] }; return xs.size(); }",
+      "expect": {
+        "result_type": "Array<int>"
+      }
+    },
+    {
+      "id": "block_semicolon_discards_tail",
+      "kind": "reject_typecheck",
+      "source": "pub fnc main(): int { return true ? { 42; } : { 7 }; }",
+      "expect": {
+        "diagnostic": "ternary_arm_type_mismatch_Unit_vs_int"
+      }
+    },
+    {
+      "id": "block_local_reference_escape",
+      "kind": "reject_typecheck",
+      "source": "pub fnc main(): ref int { return { const int local = 42; &local }; }",
+      "expect": {
+        "diagnostic": "borrow_does_not_outlive_block"
+      }
+    },
+    {
+      "id": "non_bool_ternary",
+      "kind": "reject_typecheck",
+      "source": "pub fnc main(): int { return 1 ? { 42 } : { 7 }; }",
+      "expect": {
+        "diagnostic": "condition_not_bool"
+      }
+    },
+    {
+      "id": "range_chaining",
+      "kind": "reject_parse",
+      "source": "pub fnc main(): int { for id in 1..3..5 { } return 0; }",
+      "expect": {
+        "diagnostic": "non_associative_range"
+      }
+    },
+    {
+      "id": "double_dot_not_spread",
+      "kind": "accept_lex",
+      "source": "1..5 1..=80 1...2",
+      "expect": {
+        "token_prefix": [
+          "INT",
+          "RANGE_EXCLUSIVE",
+          "INT",
+          "INT",
+          "RANGE_INCLUSIVE",
+          "INT",
+          "INT",
+          "ELLIPSIS",
+          "INT"
+        ]
+      }
+    },
+    {
+      "id": "inclusive_max_endpoint",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { let int count = 0; for n in 9223372036854775807..=9223372036854775807 { count = count + 1; } return count; }",
+      "expect": {
+        "exit_code": 1,
+        "no_overflow": true
+      }
+    },
+    {
+      "id": "range_bounds_eval_once",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { let int x = 0; const int low = { x = x + 1; 1 }; const int high = { x = x + 1; 3 }; for id in low..=high { } return x; }",
+      "expect": {
+        "exit_code": 2
+      }
+    }
+  ],
+  "verification": {
+    "backend_matrix": [
+      "java-interpreter",
+      "java-native-image",
+      "llvm",
+      "net-native-aot",
+      "wasm",
+      "forge"
+    ],
+    "required": [
+      "parser",
+      "typechecker",
+      "formatter_roundtrip",
+      "compiled_guest",
+      "ownership_effects",
+      "min_max_bounds",
+      "allocation_behavior"
+    ],
+    "prohibit_claims": [
+      "parser_only_as_guest_pass",
+      "host_model_as_guest_pass",
+      "skipped_as_pass",
+      "compile_only_as_execution_pass"
+    ]
+  }
+}
