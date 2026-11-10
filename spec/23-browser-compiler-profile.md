@@ -44,7 +44,7 @@ Linear-memory actor fields do not prove a bounded guest stack, aggregate tenant 
 
 ## Executed snapshot and open parity gaps
 
-The immutable source snapshot `6c8c16975ab968da43266b21469a8ad7e0af9701`, root tree `412d55bb1565d4ad00e001514fb9ef436fc6b905`, was mirrored exactly into the verified-private `atto-lang/atto-source.rs` test branch at carrier commit `54f61853ff3f73191de45f14fd3d7647b02205bc`. [Carrier run 42920472681](https://github.com/atto-lang/atto-source.rs/actions/runs/42920472681) executed 13 job steps, 332 compiler/guest checks and real Chromium Wasm/ESM tests. The 274237-byte compiler SHA-256 was `1acd37c8f460aba821bfe791d268f37c5fa47599d152b2108cdacb90554ead9b`. These facts apply to that snapshot only. Carrier CI supplements origin checks; it does not bypass review or origin merge policy.
+The immutable source snapshot `9b40edd07e78c69f541408ad41d7349f34725f1c`, root tree `3937d26010d59d0648afe601c035afa7455557a2`, was mirrored exactly into the verified-private `atto-lang/atto-source.rs` test branch at carrier commit `3b898fd07b1571c0f08cfa99d5305aa0bbf8f53b`. [Carrier run 42921459862](https://github.com/atto-lang/atto-source.rs/actions/runs/42921459862) executed 13 job steps, 332 compiler/guest checks and real Chromium Wasm/ESM tests. The 274237-byte compiler SHA-256 was `1acd37c8f460aba821bfe791d268f37c5fa47599d152b2108cdacb90554ead9b`. These facts apply to that snapshot only. Carrier CI supplements origin checks; it does not bypass review or origin merge policy.
 
 | Backend/path | Observed result | Remaining work |
 | --- | --- | --- |
