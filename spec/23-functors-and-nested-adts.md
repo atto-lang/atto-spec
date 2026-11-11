@@ -61,6 +61,42 @@ No `traverse` or `sequence` universal extension is implicitly enabled by
 this rule. Future collections, asynchronous tasks and effectful applicatives
 need separate lowering, effects and ownership contracts.
 
+## Functor composition and user-defined ADTs
+
+For two already checked functors `F` and `G`, mapping a pure function
+`A => B` through their composition has the type equation:
+
+```text
+map_F(map_G(f)) : F<G<A>> -> F<G<B>>
+```
+
+This is nested use of existing, statically typed `map` operations, **not**
+automatic flattening or an implicit `F<G<T>>` special-cased runtime.
+The composition is lawful if each participating mapping obeys the identity
+and composition laws for pure functions and its own effect/ownership rules.
+
+For a user-declared tagged ADT, such as an illustrative
+`Tree<T> = Leaf(T) | Branch(Tree<T>,Tree<T>)`, a future functor
+implementation MUST preserve each constructor's tag and unmapped fields.
+`Tree<A>.map(A => B)` must return `Tree<B>`, recursively transform every
+positive, covariant occurrence of `A`, and be exhaustive over all
+constructors. All recursion must remain bounded by existing stack/fuel
+rules; generic specialization and generated code must be finite and AOT
+compatible. A `T` occurring in contravariant position (for example,
+as a function input `T => U`) **cannot** be automatically mapped with
+only `A => B`. Mutable/invariant fields, actor-owned state, borrowed
+payloads and capabilities likewise require separate admissibility proofs.
+Until those proofs and a coherent typeclass/derive syntax are implemented,
+author explicit `map` functions or methods; reject unsupported derived
+instances rather than silently skipping fields.
+
+Reordering two arbitrary functors is NOT guaranteed:
+`F<G<T>> -> G<F<T>>` normally requires a separately specified
+`traverse`/`sequence` contract and appropriate applicative/effect
+structure. The two `Option`/`Result` transpose signatures in this
+chapter are concrete admitted ADT operations, not a universal
+distributive law for every type constructor.
+
 ## Tagged-ADT operational contracts
 
 `Option<Result<A,E>>.transpose()`:
