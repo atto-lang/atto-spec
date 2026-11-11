@@ -38,3 +38,24 @@ Multiple readers of one channel are work-sharing, never implicit broadcast. `Obs
 - **Evidence:** identical `.atto` fixture blob SHA, precise diagnostics and real guest execution for Java/GraalVM, LLVM native AOT, Wasm, Forge and .NET Native AOT; native sanitizer traces and source/runner attestations. Host/reference model tests alone never satisfy guest parity.
 
 The [bounded source-free reference model](https://github.com/atto-lang/atto-rx-channels/pull/3) demonstrates a narrow single-threaded admission protocol, with 10 locally executed Node tests; it is not an AttoLang compiler, scheduler, production mailbox, real borrow checker or AOT proof. Backends without the relevant runtime intrinsics must reject unsupported constructs rather than silently approximate them.
+
+
+## Toolchain support tiers and honest conformance
+
+The `oreslang-source.*` namespace contains **nine** separate source toolchains.
+The primary full-runtime parity targets are Java/GraalVM, LLVM, Wasm, Forge,
+and .NET Native AOT. JavaScript is a separate browser/Node worker-adapter
+target. The Rust and Cranelift scalar subsets currently **must reject**
+`Flow<T>`, `Channel<T>`, subscriptions, suspension and affine moves until
+their parsers, type systems, native lowering and actual guest runtime implement
+those effects. The HDL combinational SystemVerilog subset has no actor scheduler:
+its conformance requirement is a correctly scoped *unsupported* diagnostic,
+not an invented RTL stream implementation.
+
+A host-side demand adapter is not compiler parity. Every backend's executable
+support claim must identify exactly which layer passed: syntax rejection,
+type-checking, host channel, compiled AttoLang guest, worker transport,
+Native AOT, or measured memory profile. Compiled guest results require an
+authenticated exact-head receipt for the real compiler and fixture.
+All nine toolchains are tracked separately in
+`atto-lang/atto-platform-conformance/contracts/pull-push-admission-v1.json`.
