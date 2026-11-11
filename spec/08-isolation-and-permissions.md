@@ -1,5 +1,8 @@
 # 08 — Isolation, Capabilities and Permission Admission
 
+**Canonical terminology (2026-11-11):** the per-tenant execution boundary is **TenantVM** in every toolchain, nested under the trusted **OresVM** root and enclosing all actors for exactly one tenant incarnation. Historical *IsolateVM* and *tenant isolate* refer to the same conceptual runtime unit. See [Chapter 23 — TenantVM](23-tenant-vm-terminology.md). This naming decision does not certify a sandbox or compiled untrusted guest execution.
+
+
 **Status: DRAFT; profile-dependent security contract.**
 
 ## Threat and authority model
