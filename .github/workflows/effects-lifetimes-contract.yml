@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - 'contracts/attolang-effects-lifetimes-v1/**'
+      - 'spec/04-ownership-and-memory.md'
+      - 'spec/23-effects-and-lifetimes.md'
       - 'tests/effects-lifetimes-contract.test.mjs'
       - '.github/workflows/effects-lifetimes-contract.yml'
   pull_request:
