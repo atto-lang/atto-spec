@@ -11,7 +11,7 @@ AttoLang uses explicit rights operations, expressed as reserved `rt` forms:
 | `rt take value` | Move exclusive ownership; subsequent use of the old place is invalid |
 | `rt copy value` | Duplicate only when the type proves it is Copy |
 | `rt borrow value` | Acquire a bounded immutable loan |
-| `rt borrow mut value` | Acquire a bounded exclusive mutable loan |
+| `rt mut borrow value` | Acquire a bounded exclusive mutable loan |
 | `rt share value` | Convert to explicitly authorized shared/frozen ownership |
 | `rt ref` / `rt deref` / `rt unref` | Managed or checked handle operations, never unchecked cross-isolate escape |
 
@@ -20,6 +20,8 @@ val packet = make_packet()
 val owned = rt take packet
 // using packet here is a compile-time use-after-move error
 ```
+
+**Canonical ordering:** the mutable form is `rt mut borrow value`; the historical `rt borrow mut value` ordering is invalid. This amendment changes documentation only; source parser admission and backend proofs are separate.
 
 Borrow checking is not optional for a native backend. Aliased writes, use-after-take, escaping stack borrows, double-drops, stale actor references, and mutable aliases crossing isolation domains MUST be rejected or safely represented with explicit runtime guards, never silently trusted.
 
