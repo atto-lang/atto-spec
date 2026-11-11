@@ -177,10 +177,14 @@
     "backend_matrix": [
       "java-interpreter",
       "java-native-image",
-      "llvm",
+      "llvm-native",
+      "wasm32",
+      "forge-native",
       "net-native-aot",
-      "wasm",
-      "forge"
+      "rs-native",
+      "cranelift-native",
+      "js-worker",
+      "hdl-rtl-simulation"
     ],
     "required": [
       "parser",
@@ -196,6 +200,12 @@
       "host_model_as_guest_pass",
       "skipped_as_pass",
       "compile_only_as_execution_pass"
-    ]
+    ],
+    "non_promoting_profiles": {
+      "hdl-rtl-simulation": "restricted_synthesizable_subset_requires_separate_RTL_vector_proof",
+      "wasm32": "real_pinned_compiler_to_wasm_guest_no_host_simulation",
+      "java-native-image": "separate_native_image_guest_exec_not_interpreter_only"
+    },
+    "receipt_policy": "Exact verified source and compiled guest required for each supported case; unsupported hardware cases are REJECTED_NOT_APPLICABLE but never scored as passed."
   }
 }
