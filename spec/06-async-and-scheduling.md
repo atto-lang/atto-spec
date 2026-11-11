@@ -60,3 +60,7 @@ Normal hosted I/O returns `Future<T>` or another explicit asynchronous result an
 ## Failure and cancellation
 
 Cancellation is a structured control effect, not a normal `throw` to be swallowed by `catch`. It must release owned message slots, wake waiters, settle or fence Futures and Tasks exactly once, run eligible cleanup, and delay resource reclamation until native operations physically retire. This includes timer, socket, channel and actor shutdown races.
+
+## Demand-driven collections and reactive adaptation (TARGET)
+
+The [pull/push amendment](23-pull-push-and-lazy-collections.md) extends channels with a single cross-backend demand/ownership contract for lazy iterators, asynchronous streams, observables and flow subscriptions. It requires explicit finite demand, bytes and waiters, no unbounded pending Tasks, ownership-preserving failed admission, one-shot terminal encoding, exclusive reader leases by default and generation-fenced cancellation. The separate `Flow<T>` name is proposed only; no compiler support is claimed by this paragraph.
