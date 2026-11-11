@@ -60,3 +60,7 @@ Normal hosted I/O returns `Future<T>` or another explicit asynchronous result an
 ## Failure and cancellation
 
 Cancellation is a structured control effect, not a normal `throw` to be swallowed by `catch`. It must release owned message slots, wake waiters, settle or fence Futures and Tasks exactly once, run eligible cleanup, and delay resource reclamation until native operations physically retire. This includes timer, socket, channel and actor shutdown races.
+
+## Browser carrier mapping
+
+The browser deployment maps each tenant to its own Web Worker and schedules that tenant’s actors and compiler-lowered task continuations inside it. A task does not allocate another Worker. A host turn may be scheduled with MessageChannel in browsers or an equivalent host-specific primitive such as Node setImmediate. Entry/suspension/resumption/ownership/cancellation are compiler/runtime responsibilities beyond the callback mechanism. See [chapter 23](23-browser-compiler-profile.md) for the implemented actor carrier and explicitly unimplemented source Task/await lowering.

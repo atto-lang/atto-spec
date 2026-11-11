@@ -38,7 +38,7 @@ In particular, direct `self.total` writes and serial mailbox processing in this 
 
 The integrated Wasm and ESM emitters place actor int/bool fields into eight-byte state slots in fixed private linear memory. String data precedes aligned state slots and the object heap starts after them. Every instance has a distinct backing store; actor initialization restores its declared state. A factory that shares a memory between actor instances violates this profile's isolation requirement.
 
-A real Chromium prototype executes compiler-emitted ESM with two source-defined actors inside one tenant Worker and verifies three private memories, including main. The playground's current Wasm host still uses one runner Worker and a dedicated child Worker for each actor; replacing that topology is separate runtime work. Both topologies need an independent parent deadline/cancellation path because an infinite synchronous guest loop cannot service its own termination message.
+A real Chromium prototype executes compiler-emitted ESM with two source-defined actors inside one tenant Worker and verifies three private memories, including main. The updated playground candidate uses one Worker per tenant run for both Wasm and JavaScript output; actors in that tenant share the Worker while keeping separate instance memories. The UI normally uses one tenant, and the host API supports several concurrent tenant runs. Public deployment remains a separate, unverified release step. Both topologies need an independent parent deadline/cancellation path because an infinite synchronous guest loop cannot service its own termination message.
 
 Linear-memory actor fields do not prove a bounded guest stack, aggregate tenant resource accounting, zero garbage collection, hard real time, native full AOT or OS-process isolation. JS temporaries and frames still use engine-managed storage; browser engines may JIT both Wasm and JavaScript. Web Workers are execution carriers, not cross-tenant OS security boundaries.
 
@@ -57,3 +57,21 @@ The immutable source snapshot `9b40edd07e78c69f541408ad41d7349f34725f1c`, root t
 | LLVM reference | LLVM19 compiler builds; same actor source rejects with zero IR | Reconcile native `pub on_message(int)` with `receive(ActorMail<int>)` source ABI |
 
 The Java snapshot was head `6d8eb70048eafc9a84c5aebe9c1bb06104f16e76`; LLVM was head `0ee037ca3e5dd9ac6ac1e9cc3d40f19ee6326a9c`. The compiler integration's `browser/INTEGRATION_EVIDENCE.md` names the exact differing fixtures. No failed or unsupported positive case is a parity pass. Acceptance requires byte-identical `.atto` sources through each real compiler, matching values/output/failure behavior, negative admission checks, actual execution and immutable provenance as specified in chapter 11. A hosted job with no executed steps is NOT EXECUTED.
+
+## Browser task carrier and suspension lowering
+
+Every browser actor MUST execute inside its owning tenant Worker. Multiple actors from one tenant may share that Worker; actors from different tenants use different Workers. Shared module code is allowed, but the current profile allocates a distinct non-shared Wasm memory for each actor instance. Disjoint arenas inside one common memory require independently enforced access confinement before they can replace this boundary. Separate actor heaps do not by themselves provide bounded or separate engine call stacks.
+
+The candidate tenant runtime in source.js commit `55538c49c5b221d57c492667b631d21b5f623f49` uses MessageChannel turns, round-robin actor admission and FIFO per actor. The source.wasm bridge vendors those exact runtime bytes with a receipt. The playground selects Wasm or JS and uses the same scheduler, memory accounting, mailbox budgets and parent-owned deadlines for both. Local real-browser tests execute two concurrent tenants and verify that one tenant can time out without stopping or contaminating the other. This is browser-carrier evidence, not native actor parity.
+
+Atto Tasks MUST lower to structured task records and resumable continuations. A Task is not a Worker and is not implemented merely by placing an entire function inside a callback. A host scheduling callback supplies the runnable turn mechanism; compiler lowering supplies the frame, program counter, ownership and cancellation semantics. Browser MessageChannel is an available scheduling hook; Node may use setImmediate behind an equivalent host adapter. Promise-only microtask chains do not establish a carrier/event-loop fairness checkpoint.
+
+| Source/runtime action | Required lowering | Current browser status |
+| --- | --- | --- |
+| `nb { ... }` | Allocate an owned Task record/frame with structured parent, result and cancellation identity; enqueue its entry continuation | Source compiler lowering remains unsupported |
+| `await task` / Future suspension | Save live locals and resume state, register a waiter, release the carrier; completion enqueues the continuation rather than running guest code inline | Source compiler lowering remains unsupported |
+| `rt cooperate` or inserted reduction checkpoint | Requeue the current continuation and return control to the tenant scheduler | MessageChannel carrier hook implemented; source/frame lowering remains unsupported |
+| Task cancellation | Fence queued/resumed work, settle once, wake waiters and honor cleanup/ownership obligations | Structured Task cancellation remains unsupported; tenant Worker termination is the hard-stop mechanism |
+| Actor DATA turn completion | Preserve actor FIFO, enqueue another ready actor and yield the carrier | Implemented in the browser runtime candidate |
+
+Suspended frames must retain only compiler-admitted owned data or legal immutable captures. Mutable actor-state loans and escaping stack borrows cannot survive a suspension without the required ownership proof. Task/Future identity and result typing remain distinct as specified in chapter 06; a JavaScript Promise is only a host observation mechanism. Tests of MessageChannel callbacks alone MUST NOT be reported as executable Atto Task parity.
