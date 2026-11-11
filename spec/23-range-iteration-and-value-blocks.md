@@ -88,3 +88,11 @@ Ranges are efficient first-class values with fixed-size bounds and an inclusive 
 The machine-readable acceptance vectors live in `contracts/atto-value-block-range-v0.json`. They are **TARGET**, not evidence of compiler success. Require real parser/AST tests, type-checker negatives, formatter round-trips, executable compiled-guest tests, branch side-effect tests, range MIN/MAX overflow tests, benchmark for allocation-free ranges, and ownership/effect tests. Run both interpreted and Native Image/AOT paths where applicable. Exact revision SHAs and job logs are required to label a backend verified.
 
 Do not collapse a passing syntax-only test or a host-language model into full guest conformance.
+
+## Existing compiler-draft semantic discrepancies (non-promoting)
+
+AttoLang Java [draft #2797](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2797) is an important **implementation candidate**, not yet compliant with this contract. As of the audited branch head, it accepts `BlockValueExpr` only as an immediate `ConditionalExpr` arm, normalizes `return expr;` inside those arms to an **arm-local** result, and auto-invokes a bare zero-argument `|| -> { ... }` arm lambda. Those are deliberate implementation behaviors but **not** the generic lexical-block semantics specified above. [Formatter #133](https://github.com/ores-truffle-oreslang/oreslang-format/pull/133) tests the narrower Java draft.
+
+For v0, the canonical target remains: a value block is a normal lexical **expression** allowed anywhere an expression is valid; it evaluates its last unterminated expression; `return` is not redefined and exits the enclosing callable; a lambda is a value unless the source explicitly calls it. Parser/AST checkers must reject unsupported forms rather than silently accepting a different meaning. Additional ternary-only arm-local-return or thunk sugar requires a separate versioned extension with user-facing syntax and corresponding conformance vectors. Do not mark divergent PRs as interoperable without an explicit spec update and compiled guest tests.
+
+The parity ledger is [platform conformance PR #697](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/697), which audits all **nine** `oreslang-source.*` toolchains and ten guest execution lanes, including the restricted HDL RTL simulation profile.
