@@ -90,7 +90,7 @@ For generic functions/methods, value-argument name binding and type-argument nam
 
 `Option<T>` has `Some(T)` / `None`. `Result<T,E>` has `Ok(T)` / `Err(E)`. Operations include `map`, `and_then`, `map_err`, `unwrap_or`, `unwrap_safe` and explicit conversion. A failure represented as data is not an exception effect.
 
-Postfix `value?` is the target early-return operator: `None` or `Err(error)` exits the enclosing eligible callable without converting into `throw`, `raise`, or `panic`. `unwrap()` asserts presence and **panics** on absent/error variants. Do not silently flatten nested `Option` or `Result` types.
+Postfix `value?` is the target early-return operator: `None` or `Err(error)` exits the enclosing eligible callable without converting into `throw`, `raise`, or `panic`. `unwrap()` asserts presence and **panics** on absent/error variants. Do not silently flatten nested `Option` or `Result` types. The precise one-layer `map`, `and_then`, `map_err`, nested-ADT `transpose`/`flatten` equations, and the requirements for error-domain identity are specified in [chapter 23](23-functors-and-nested-adts.md).
 
 ```atto
 fnc parse_port(string input) -> Result<int, ParseError> ::
