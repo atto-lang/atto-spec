@@ -32,6 +32,7 @@ This repository is the **language-level specification**, not the proof that a pa
 | [18 — Runtime guarantees](spec/18-runtime-guarantees.md) | Failure domains, stacks, actor restart, pipeline failure, and what is and is not guaranteed |
 | [19 — Observed status, 2026-11-03](spec/19-observed-status-2026-11-03.md) | Dated local test results for Java and LLVM. Not conformance evidence |
 | [22 — Concurrency and shared ownership](spec/22-concurrency-and-shared-ownership.md) | Concurrent-default actors, serial opt-in, ref32 arenas, protected pipes, singletons and symbols |
+| [23 — Pull/push and lazy collections](spec/23-pull-push-and-lazy-collections.md) | Iterators, demand-controlled streams, reactive flow, ownership-safe channel bridges, fusion and parity gates |
 
 ## Specification interpretation
 
