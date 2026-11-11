@@ -1,0 +1,10 @@
+// Candidate negative fixture: moving a live borrowed owner must fail.
+define class Box as
+  pub let int value = 42;
+end
+pub fnc main(): int {
+  let Box owner = new Box();
+  val view = rt borrow owner;
+  val moved = rt take owner;
+  return view.value;
+}
