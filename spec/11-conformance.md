@@ -100,3 +100,7 @@ draft until appropriate reviews and proof.
 ## Semantic floor v1 (additive candidate lane)
 
 The [AttoLang semantic-floor amendment](21-semantic-floor-and-parity.md) and its versioned [machine contract](../contracts/attolang-semantic-floor-v1/contract.json) define six independently required targets, including Cranelift, for the new candidate lane. This corrects any implication above that the five-family table alone is an exhaustive compiler-parity list. The legacy 53-case `.ores` inventory remains separate. All four new `.atto` candidates are `AUTHORED_NOT_EXECUTED`; none can be called verified on a copied fixture, host-only run or zero-step job.
+
+## Pull/push lazy collections and demand-controlled flow (TARGET / NOT VERIFIED)
+
+[Chapter 23](23-pull-push-and-lazy-collections.md) defines independent parser, ownership/borrow negative, guest execution, terminal, backpressure, cancellation, actor lifecycle, allocator and AOT gates for `Iterator`, `AsyncIterator`, `Observable`, `Flow/Subscription`, and `Channel` adapters. The [atto-rx-channels reference-model PR #3](https://github.com/atto-lang/atto-rx-channels/pull/3) is source-free Node.js validation only; do **not** record this as any backend's guest execution. Importing a shared fixture, running a zero-step workflow, or verifying Git blobs does not certify runtime parity. Unsupported paths must fail closed until exact-head guest tests are executed.
