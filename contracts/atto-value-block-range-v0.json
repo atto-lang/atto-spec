@@ -47,7 +47,7 @@
     {
       "id": "range_exclusive_count",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int { let int sum = 0; for id in 1..5 { sum = sum + id; } return sum; }",
+      "source": "pub fnc main(): int {\n  let int sum = 0;\n  let int needs_comma = 0;\n  stdio.stdout.write(\"[\");\n  for id in 1..5 {\n    if needs_comma eq 1 then\n      stdio.stdout.write(\",\");\n    fi\n    stdio.stdout.write(id);\n    needs_comma = 1;\n    sum = sum + id;\n  }\n  stdio.stdout.write(\"]\");\n  return sum;\n}",
       "expect": {
         "exit_code": 10,
         "visited": [
@@ -61,7 +61,7 @@
     {
       "id": "range_inclusive_count",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int { let int sum = 0; for id in 1..=5 { sum = sum + id; } return sum; }",
+      "source": "pub fnc main(): int {\n  let int sum = 0;\n  let int needs_comma = 0;\n  stdio.stdout.write(\"[\");\n  for id in 1..=5 {\n    if needs_comma eq 1 then\n      stdio.stdout.write(\",\");\n    fi\n    stdio.stdout.write(id);\n    needs_comma = 1;\n    sum = sum + id;\n  }\n  stdio.stdout.write(\"]\");\n  return sum;\n}",
       "expect": {
         "exit_code": 15,
         "visited": [
@@ -206,6 +206,7 @@
       "wasm32": "real_pinned_compiler_to_wasm_guest_no_host_simulation",
       "java-native-image": "separate_native_image_guest_exec_not_interpreter_only"
     },
-    "receipt_policy": "Exact verified source and compiled guest required for each supported case; unsupported hardware cases are REJECTED_NOT_APPLICABLE but never scored as passed."
+    "receipt_policy": "Exact verified source and compiled guest required for each supported case; unsupported hardware cases are REJECTED_NOT_APPLICABLE but never scored as passed.",
+    "range_witness": "When expect.visited is present, guest stdout must be the exact JSON array of visit values in order; a matching sum or exit code alone is not proof."
   }
 }
