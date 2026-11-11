@@ -68,3 +68,11 @@ test("candidate fixtures have distinct targeted oracles but no fake passes", () 
     }
   }
 });
+
+test("ownership spec uses canonical mutable borrow ordering", () => {
+  const chapter = readFileSync(path.join(root, "spec/04-ownership-and-memory.md"), "utf8");
+  assert.ok(chapter.includes("`rt mut borrow value`"));
+  assert.ok(chapter.includes("historical `rt borrow mut value` ordering is invalid"));
+  const target = readFileSync(path.join(root, "spec/23-effects-and-lifetimes.md"), "utf8");
+  assert.ok(target.includes("`rt mut borrow`"));
+});
