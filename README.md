@@ -1,5 +1,8 @@
 # AttoLang Language Specification
 
+**Runtime naming:** **TenantVM** is the canonical per-tenant VM name across all toolchains; see [Chapter 23 — TenantVM](spec/23-tenant-vm-terminology.md). Old *IsolateVM* identifiers remain compatible implementation spellings, not a distinct architecture.
+
+
 > **Draft v0.1 — design and conformance target, not an implementation certification.**
 > AttoLang was formerly called Oreslang. New sources and examples use `.atto`; legacy `.ores` is retained under the [versioned branding compatibility contract](https://github.com/ores-truffle-oreslang/oreslang-common-source/blob/main/contracts/v1/attolang-brand-compat-v1.json).
 
