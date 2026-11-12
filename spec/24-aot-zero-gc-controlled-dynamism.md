@@ -1,4 +1,4 @@
-# 22 — AOT, Zero-GC and Controlled Dynamism
+# 24 — AOT, Zero-GC and Controlled Dynamism
 
 **Status: TARGET / DRAFT; no backend is certified by this chapter.** This amendment refines [ownership and memory](04-ownership-and-memory.md), [modules and AOT](09-modules-and-aot.md), and [conformance](11-conformance.md). It does not retroactively change existing runtime modes or claim that any hosted backend has achieved strict full guest AOT or process-level zero GC.
 

@@ -4,14 +4,14 @@ on:
     paths:
       - 'contracts/aot-zero-gc-stage-gates-v1.json'
       - 'tests/aot-zero-gc-stage-gates.test.mjs'
-      - 'spec/22-aot-zero-gc-controlled-dynamism.md'
+      - 'spec/24-aot-zero-gc-controlled-dynamism.md'
       - '.github/workflows/aot-zero-gc-stage-gates.yml'
   push:
     branches: [main]
     paths:
       - 'contracts/aot-zero-gc-stage-gates-v1.json'
       - 'tests/aot-zero-gc-stage-gates.test.mjs'
-      - 'spec/22-aot-zero-gc-controlled-dynamism.md'
+      - 'spec/24-aot-zero-gc-controlled-dynamism.md'
       - '.github/workflows/aot-zero-gc-stage-gates.yml'
   workflow_dispatch:
 permissions:

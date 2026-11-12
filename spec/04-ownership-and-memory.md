@@ -38,7 +38,7 @@ The **target topology** is a persistent allocation arena per actor, with separat
 - **Wasm:** target deterministic linear-memory regions/ownership where feasible; host/browser garbage collection may remain outside the guest's control.
 - **Forge and .NET:** preserve identical source-level ownership and drop semantics, regardless of JIT/AOT and managed-memory implementation.
 
-A 32-bit compressed offset/handle inside actor-local regions may reduce footprint on 64-bit machines, but it is not universally a 32-bit machine pointer or a promise of 50% total memory reduction. Check bounds, generation, alignment and overflow before dereference.
+The target actor-heap reference representation uses checked **32-bit arena-relative offsets/handles**, including on 64-bit hosts. This is not a 32-bit host pointer or a promise of 50% total memory reduction. Each arena must stay within its representable range; reject exhaustion and arithmetic overflow instead of truncating or silently widening guest references. Check actor/arena identity, generation, bounds, allocation extent and alignment before dereference. Domain and generation metadata may live outside the 32-bit offset. See [chapter 22](22-concurrency-and-shared-ownership.md).
 
 ## Cross-actor transport
 

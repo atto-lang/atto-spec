@@ -42,7 +42,7 @@ This is proposed syntax; exact arm grammar and timeout handling need compiler fi
 
 - Actor DATA turns and Task continuations use bounded scheduling, cancellation fencing, and **cooperative reductions/time budgets**.
 - `rt cooperate` is a fairness checkpoint; compiler-inserted checkpoints for loops and expensive operations are desirable. A watchdog may detect noncooperation, but cannot guarantee safe preemption in arbitrary native code.
-- An actor normally runs at most one *conflicting* physical guest turn at once. A reader-sharing extension requires verified state loans and an explicit per-actor capacity contract.
+- Ordinary actors permit concurrent guest turns subject to verified state loans and bounded scheduler capacity. Conflicting access to the same region is excluded by `critical-read`/`critical-write`; `define serial actor` additionally permits at most one active guest turn. See [chapter 22](22-concurrency-and-shared-ownership.md).
 - CONTROL wakeups must have reserved scheduling capacity without starving ordinary DATA.
 - Actor logical affinity is not equivalent to OS CPU pinning. Affinity spill and work stealing must preserve safety and progress.
 - `await` of I/O must not execute guest code inside a reactor or completion callback.

@@ -4,7 +4,7 @@
 
 ## Actor identity
 
-An actor is a **special nominal class** with identity, runtime-owned inbox, lifecycle, supervisor, and actor-local persistent allocation domain. An actor is not a function, OS thread, independent heap by type, or automatically an OS process. A normal class cannot become an actor via an unapproved cast or inheritance trick.
+An actor is a **special nominal class** with identity, runtime-owned inbox, lifecycle, supervisor, and actor-local persistent allocation domain. Each actor owns a guest heap/allocation arena and logical stack domain; this does not require a dedicated OS thread, separate host address space, or OS process. A normal class cannot become an actor via an unapproved cast or inheritance trick.
 
 ```atto
 define actor Counter as
@@ -36,7 +36,8 @@ At most one effective persistent guest state schema belongs to one actor. Direct
 - **critical-read:** immutable ephemeral loan; concurrent readers may be admitted if the actor/profile supports them.
 - **critical-write:** exclusive mutation; any writer excludes conflicting readers/writers.
 - No state loan may escape its callback, be serialized, be captured by a child task, or cross a suspension without an explicit proven and runtime-enforced safe exception.
-- Ordinary actors execute at most one active guest turn at a time by default. Experimental multi-turn read-only capabilities require explicit compiler and runtime proof; they are not automatic from a pool size or attribute.
+- Ordinary actors are concurrent by default. `define serial actor Name as ... end` opts into at most one active guest turn at a time. Concurrent admission never permits conflicting state access: compatible `critical-read` loans may overlap, while `critical-write` excludes readers and writers of the same protected region. Backend scheduling capacity does not replace these proofs.
+- Serial actors retain the same sealed-state and borrow rules; serialization is not permission to leak mutable references into tasks, pipes, singletons or other actors. See the [concurrency and shared-memory amendment](22-concurrency-and-shared-ownership.md) for migration and execution gates.
 
 ## Mailboxes and sends
 
