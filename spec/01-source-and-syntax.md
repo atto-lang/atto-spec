@@ -88,6 +88,30 @@ An `if expression as const/let name` binding tests **presence**, not truthiness.
 
 Arithmetic, checked comparison, assignment, function call, lambdas and generic arguments have distinct grammar slots. `|>` is the *value/function* pipeline operator. The keyword `pipe` is reserved for actor pipeline connections; neither is a synonym for bitwise `|`. `?` has context-dependent uses (optional type, parameter omission, postfix propagation, and ternary form) and must not be parsed with a global text replacement.
 
+### Canonical boolean punctuation operators (target decision, 2026-11-12)
+
+Boolean conjunction, disjunction, and exclusive-or use the **punctuation** tokens `&&`, `||`, and `^^`. These supersede proposed lowercase word operators `and`, `or`, `xor` and historical condition-only comma/pipe shorthand. None of `and`, `or`, or `xor` becomes a reserved word solely by virtue of logical expression syntax; existing name-resolution restrictions unrelated to boolean operators are separate.
+
+```atto
+bool and = a && b;
+bool or  = a || b;
+bool xor = a ^^ b;
+```
+
+These are illustrative boolean declarations: each operand and the result must have type `bool`. There is no integer bitwise interpretation, truthiness, user-defined overloading, or implicit conversion. Bare `&` and `|` **must not** act as boolean AND/OR operators. A single `^` **must not** act as boolean or integer XOR; integer bitwise XOR remains an explicitly named API such as `Integer.bitXor` where supported. Other dedicated syntax (for example `|>` value pipelines, union-type `|`, and borrowing syntax) retains its own documented meaning.
+
+With decreasing precedence the expression grammar is `equality/comparison > && > ^^ > || > ?: > assignment` (subject to the existing distinct pipeline grammar). Each logical operator associates left-to-right:
+
+```ebnf
+logical_or  = logical_xor { "||" logical_xor } ;
+logical_xor = logical_and { "^^" logical_and } ;
+logical_and = equality { "&&" equality } ;
+```
+
+`&&` evaluates its left operand and skips the right operand if false. `||` evaluates its left operand and skips the right operand if true. `^^` evaluates each operand **exactly once, left to right**, without short-circuiting: it is true iff the operands differ. An operand that suspends retains this ordering through continuation; thrown errors propagate without evaluating later operands. The typechecker checks both operands even if one is a known constant. The tokenizer must match adjacent two-character punctuation atomically; `^ ^` is not `^^`.
+
+Positive and negative migration fixtures live in `contracts/logical-punctuation-v1/`. A backend MUST reject unsupported syntax before claiming executable IR and MUST record exact-head, executed compiler/typecheck, and guest test evidence before marking implementation or parity. Source-only contracts and zero-step CI are not execution evidence.
+
 ## Rejection requirements
 
 Parser/type checker MUST reject: unsupported extension without migration permission; ambiguous dual-file imports; invalid compound keywords; actor declarations masquerading as classes; assignments as conditions; invalid mutable writes; invalid generic specializations; illegal source-lifetime escapes; and source features not lowerable on the selected backend before producing misleading executable IR.

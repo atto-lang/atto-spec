@@ -81,6 +81,14 @@ From lowest to highest precedence, following the v0.6 grammar:
 
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
 
+### Canonical boolean punctuation target (2026-11-12 amendment)
+
+The table above is a **historical v0.6 grammar snapshot**, not the current target language decision. Canonical bool operations are `&&` (AND), `||` (OR), and `^^` (exclusive OR); all take exactly two `bool` operands and produce `bool`. From lowest to highest precedence: `||` < `^^` < `&&`, all left-associative and below comparisons. `&&` and `||` short-circuit; `^^` eagerly evaluates both operands once in source order. See [chapter 01](01-source-and-syntax.md#canonical-boolean-punctuation-operators-target-decision-2026-11-12).
+
+The historical `,` (conditional AND), bare `|` (conditional OR), and proposed keyword `and`/`or`/`xor` **are not canonical logical spellings**. Neither bare `&` nor bare `|` may serve as boolean conjunction/disjunction in target mode. Single `^` remains removed; double `^^` is **specifically reinstated for boolean XOR only**. A backend that still accepts a historical alias must flag it as migration-only, must not silently emit a different operation, and must not claim target conformance until the alias is removed or rejected in strict mode. Dedicated `|>` and type/borrow syntax are unaffected.
+
+Backends must test precedence, truth tables, rejection of integer operands, RHS suppression for `&&`/`||`, eager left-to-right `^^`, and lexical boundaries involving comments, strings, and spaced carets. Historical acceptance notes below remain tied to dated compiler revisions and do not certify current support.
+
 ## Function forms
 
 **TARGET (decided):** `: T` and `-> T` are both valid return spellings, and `::` may be included or omitted. No one form is the only correct one.
