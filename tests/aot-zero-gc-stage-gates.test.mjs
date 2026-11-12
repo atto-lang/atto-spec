@@ -135,7 +135,7 @@ test('proto tricks or getters cannot impersonate reviewed JSON inventory', () =>
 });
 
 test('canonical specification reserves all three distinct test stages', () => {
-  const chapter=readFileSync(fileURLToPath(new URL('../spec/22-aot-zero-gc-controlled-dynamism.md',import.meta.url)),'utf8');
+  const chapter=readFileSync(fileURLToPath(new URL('../spec/24-aot-zero-gc-controlled-dynamism.md',import.meta.url)),'utf8');
   const source=chapter.indexOf('**Negative source-admission tests');
   const lower=chapter.indexOf('**Lowering and artifact integrity tests');
   const runtime=chapter.indexOf('**Runtime negative and stress tests');
