@@ -41,6 +41,16 @@ Keywords may also be described linguistically as nouns (e.g. `actor`), relationa
 
 **This chapter's documented lexer inventory remains authoritative for its cited revisions.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
 
+**Target scoped-resource grammar (`using`):** AttoLang already designates
+`using` as a language keyword. Its accepted `using expression as identifier
+{ ... }` spelling is now required by the first-class resource-scope target in
+[chapter 03](03-functions-and-effects.md#existing-using-keyword-deterministic-scoped-resources-v1-target).
+The historical Java lexer keyword table above is the earlier audited snapshot
+and does **not** by itself establish that this new form parses in the cited
+compiler revisions. Add `using` to lexer/parser/compiler tests and formatter
+round-trip cases per backend; do not treat documenting a target as tested
+lexical support.
+
 ## Literals
 
 | Kind | Form | Notes |
