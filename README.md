@@ -25,3 +25,7 @@ This README records the intended role of this repository; it is not a claim of f
 - [AttoLang](https://github.com/atto-lang)
 - [Language specification](https://github.com/atto-lang/atto-spec)
 - [Cross-platform conformance](https://github.com/atto-lang/atto-platform-conformance)
+
+## Language contracts
+
+- [Canonical Boolean operators V1](docs/CANONICAL_BOOLEAN_OPERATORS_V1.md): `&&`, `||`, `^^`, uppercase infix aliases, evaluation-order rules, migration, and backend conformance requirements.
