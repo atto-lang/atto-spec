@@ -61,7 +61,7 @@ Backend status must use **passed / failed / unsupported / not executed**. Source
 ## Implementation status at the 2026-11-12 audit
 
 - Rust browser compiler: candidate implementation `atto-lang/atto-source.rs#53`, with native, Wasm guest and Chromium evidence against its recorded PR head. Not yet released into the public playground binary.
-- Java/Graal: `&&` and `||` already parsed as adjacent lexer tokens; at audit, parser explicitly rejected `^^`. Full parity **not verified**.
+- Java/Graal: `&&` and `||` already parsed as adjacent lexer tokens; at audit, parser explicitly rejected `^^`. Draft `ores-truffle-oreslang/oreslang-source.java#3019` adds `^^`, uppercase aliases, and typed guest tests. Source-org CI failed before executing job steps; full Java parity remains **not verified**.
 - LLVM: `oreslang-source.llvm/docs/BOOLEAN_LOGICAL_PARITY.md` describes incomplete typed Boolean lowering. Full parity **not verified**.
 - Other backends: not audited in this change.
 
