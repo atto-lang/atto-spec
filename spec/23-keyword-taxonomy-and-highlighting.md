@@ -52,9 +52,25 @@ These are **proposed descriptive scopes**, not mandatory colors and not a replac
 
 These scopes are a design vocabulary; no theme is required to adopt a particular color. An editor can group roles visually (for example entity words blue, relational words purple, modifiers teal) without making color an AttoLang language guarantee.
 
+**Context overrides naive lexical coloring.** Chapter 16 permits `worker.stop()`, `do()`, and `done()` as callable names, while a local declaration such as `val stop = 1` is disallowed. A static highlighter may supply only an approximation and MUST NOT claim the same accuracy as parser/LSP classifications. `new` is a construction operator, not a binding declaration. `#ready` is a Symbol literal, `|>` is an operator, and `read_blocking` is an identifier with a naming suffix, not a compound keyword. Unicode `critical–read` (en dash) must not be treated as ASCII `critical-read`.
+
 **Identifiers must remain identifiers.** In `declare actor Foo implements Runnable;`, the parser identifies `actor` and `implements` as keywords; semantic resolution can classify `Foo` as an actor type and `Runnable` as a contract/interface name. A lexical regex must not style either name as a keyword. String contents, comments, quoted Symbols such as `#"with spaces"`, and template literal text must not be keyword-highlighted just because they contain a matching spelling. Interpolation, where admitted, needs its own parse context.
 
-## Canonical keyword registry (proposed schema)
+## Canonical keyword registry (staged contract)
+
+The [versioned catalog](../contracts/keyword-taxonomy-v1/catalog.json) now stores a **documentation-derived snapshot** of the 93 words in chapter 16's recorded Java reserved-keyword table, all 12 words chapter 16 explicitly names as non-reserved, four recognized compounds, 10 additional *candidate/contextual* spellings, and special-case/non-keyword examples. Its status is `DRAFT_TOOLING_METADATA_NOT_COMPILER_VERIFIED`.
+
+The catalog's `reserved_groups` provide grouped metadata (`id`, `linguistic_role`, `semantic_role`, `highlight_scope`, `lsp_fallback`, `lexical_status`, and `words`). A group is a compact representation of per-word classification, **not** evidence of a compiler AST node or proof that every occurrence of a member has the same syntactic role. Context-sensitive spellings remain separately recorded. The catalog distinguishes:
+
+- `documented_java_reserved`: words in the chapter 16 historical inventory, **not** words newly verified against a current lexer.
+- `documented_java_not_reserved`: words chapter 16 specifically says are not reserved; parser admission must be determined contextually.
+- `documented_lexer_compound`: `nb-select` as singled out in chapter 16.
+- `documented_parser_contextual_compound`: `critical-read`, `critical-write`, and `transform-pipe`, which must never turn ordinary subtraction into hyphenated identifiers.
+- `not_listed_in_documented_java_reserved_inventory`: target/contextual candidates such as `declare`, `sealed`, and `singleton` whose presence in the catalog **does not** assert recognition.
+
+The [source-only Node contract tests](../tests/keyword-taxonomy-contract.test.mjs) compare the recorded reserved and non-reserved sets to chapter 16, reject duplicates and accidental promotion of proposed words, and check classification exceptions. The [20 reference lexical fixtures](../tests/fixtures/keyword-taxonomy-lexical-v1.json) and [test-only reference scanner suite](../tests/keyword-taxonomy-lexical-model.test.mjs) add executable checks for whole-word boundaries, capitalization, reserved/candidate separation, lexer compounds, parser-contextual compounds, quoted strings and Symbols, nested comments, callable-name ambiguity, and Unicode dash rejection. The scanner intentionally models lexical boundaries **only**, not parser interpretation or semantic highlighting. The [CI workflow](../.github/workflows/keyword-taxonomy-contract.yml) runs both Node suites when their inputs change. **These tests validate documentation and source-only reference-model consistency, not the live Java lexer, compiler correctness, editor output, or any backend parity.**
+
+Tooling SHOULD eventually consume one versioned, machine-readable registry maintained with the language specification rather than independently guessed keyword lists in each backend/editor. At minimum each expanded word entry needs:
 
 Tooling SHOULD eventually consume one versioned, machine-readable registry maintained with the language specification rather than independently guessed keyword lists in each backend/editor. At minimum each entry needs:
 
@@ -65,7 +81,7 @@ Tooling SHOULD eventually consume one versioned, machine-readable registry maint
 - `highlight_scope` and `lsp_fallback`: editor classification with standard-token fallback.
 - `evidence`: the grammar/lexer revision or conformance contract used to assert admission. Backend acceptance must remain separate from design status.
 
-Illustrative **metadata record**, not an implemented registry file:
+Illustrative **expanded per-word metadata record**; the staged catalog stores shared category metadata instead:
 
 ~~~json
 {
@@ -80,7 +96,7 @@ Illustrative **metadata record**, not an implemented registry file:
 }
 ~~~
 
-A registry must be generated/validated against actual lexer and grammar sources before it is claimed exhaustive. It MUST NOT auto-promote TARGET/contextual words to reserved tokens or confuse design metadata with five/six-backend implementation parity.
+The staged catalog is exhaustive **only against chapter 16's documented reserved-word table**, not against today's compiler source. To claim an authoritative lexer registry, generation or direct comparison against the lexer/grammar at exact immutable compiler revisions is still necessary. Neither this contract nor its source-only tests may auto-promote TARGET/contextual words to reserved tokens or serve as five/six-backend implementation parity.
 
 ## Highlighting and conformance gates
 
@@ -94,4 +110,4 @@ The following are **tooling acceptance criteria**, not claims of currently passi
 6. Keep ownership/effect distinctions clear: `rt` is documented; `borrow`/`take`/`copy`/`share` require grammar-context evidence; `suspends` is not interchangeable with `suspend`.
 7. For each required compiler backend, compare token classification and parser admission at exact immutable revisions; maintain positive, negative, formatter round-trip, and LSP semantic-token fixtures. Read-only/editor validation is not a substitute for executable guest conformance.
 
-**Status boundary:** This chapter introduces only a proposed taxonomy. Neither the registry nor the tests are claimed to exist until separately authored, reviewed and executed.
+**Status boundary:** The catalog, documentation-drift tests, test-only lexical model, reference fixtures, and CI workflow are authored as staged tooling artifacts. They do not establish actual parser admission, language-server semantic-token correctness, editor behavior, compiler execution, or cross-backend parity.
