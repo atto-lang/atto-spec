@@ -108,8 +108,9 @@ val connection = Actor.connect(reader, writer)
 **Decision:** make the spelling `using telemetry.span("checkout") as span { ... }`
 a first-class, compiler-checked AttoLang construct. This **reuses the existing
 `using` keyword**, not a new telemetry-specific keyword, decorator, macro
-or application instrumentation wrapper. Backend implementation remains a
-**TARGET** until demonstrated by actual guest compiler execution.
+or application instrumentation wrapper. An initial **restricted LLVM AOT**
+subset has passed compiler-built guest executable tests; this does not
+establish Java/Graal or fully asynchronous five-backend parity.
 
 ```atto
 using telemetry.span("checkout") as span {
@@ -133,6 +134,20 @@ unique handle nor its mutable borrowed view may escape the lexical scope.
 It cannot be sent through channels or actor mailboxes. Immutable,
 capability-free trace context may be propagated independently.
 
+**Verified implementation boundary (12 November 2026):** the native
+LLVM hosted-AOT parser, compiler and Clang-linked runtime have an executed
+non-suspending `telemetry.span("literal")` scope subset (three native
+guest cases at `-O0` and `-O2`, five compiler-denial cases on the
+[approved source-blob carrier](https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43322278786)).
+That subset intentionally forbids observable scope-handle methods and
+suspension. The Java/Graal PR uses a test-defined nominal `SpanScope`
+with `try/finally` lowering; its source-org CI has no executed steps,
+so this is *not yet* a trusted native provider or equivalent backend
+runtime proof. Trace-context migration, `await`/cancel, production
+OTLP export and authorized JIT attach remain unproven. See the
+[machine-readable feature/evidence matrix](https://github.com/ores-truffle-oreslang/oreslang-common-source/blob/feat/atto-native-auto-instrumentation-v1-20261112/contracts/v1/native-scoped-span-parity-v1.json).
+
+
 `close_scope` executes exactly once **after the body terminates** by
 fallthrough, `return`, `?` early propagation, `trap`, `throw`,
 `raise`, `panic`, cancellation or exceptional unwind. `using` is
@@ -141,6 +156,19 @@ suspension does **not** end the scope: its resource token and immutable
 parent context are kept in the continuation and completed when the body
 actually exits. Resource acquisition failure follows the expression's
 ordinary error semantics and cannot close a never-acquired resource.
+
+A `SpanScope` is **runtime-owned and nominally sealed at the trust
+boundary**: a guest module or class with the same names
+(`telemetry.span`, `SpanScope`, or `close_scope`) cannot impersonate
+the built-in tracing capability. The public source-level contract is one
+affine `ScopedResource<SpanScope>` abstraction, not a `uint64` token,
+heap object identity, or user-implementable duck-typed interface.
+A backend may implement its internal handle as a compiler-owned opaque
+token, a proven heap value, or a continuation-owned frame provided the
+*observable* lifetime, observer operations, and effects are equivalent.
+The scope alias cannot shadow another live owned scope. Guest calls to
+`close_scope` are forbidden; closure is generated and enforced by the
+compiler, not delegated to an ordinary method lookup.
 
 A telemetry `SpanScope` is a specialized scoped resource whose cleanup is
 non-throwing, non-suspending, nonblocking and cannot alter guest-visible
