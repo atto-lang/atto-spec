@@ -12,7 +12,7 @@ const reserved=new Set(catalog.reserved_groups.flatMap(g=>g.words));
 const proposed=new Set([...catalog.documented_not_reserved,...catalog.candidate_spellings].map(x=>x.spelling));
 const knownRoles=new Set([
  "declaration_keyword","entity_keyword","actor_type_identifier","contract_type_identifier",
- "target_declaration_marker","namespace_identifier","modifier_keyword","target_method_marker",
+ "target_declaration_marker","namespace_identifier","modifier_keyword","relationship_keyword","target_method_marker",
  "method_identifier","target_state_marker","target_relation_marker","binding_keyword",
  "variable_identifier","concurrency_keyword","target_pipeline_marker","pipeline_operator",
  "string_literal","symbol_literal","target_ownership_marker","target_critical_access_marker",
