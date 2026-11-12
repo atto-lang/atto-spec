@@ -6,6 +6,9 @@ on:
       - 'spec/16-lexical-and-grammar-reference.md'
       - 'spec/23-keyword-taxonomy-and-highlighting.md'
       - 'tests/keyword-taxonomy-contract.test.mjs'
+      - 'tests/keyword-taxonomy-lexical-model.test.mjs'
+      - 'tests/fixtures/keyword-taxonomy-lexical-v1.json'
+      - 'tests/helpers/keyword-taxonomy-lexical-reference.mjs'
       - '.github/workflows/keyword-taxonomy-contract.yml'
   pull_request:
     paths:
@@ -13,6 +16,9 @@ on:
       - 'spec/16-lexical-and-grammar-reference.md'
       - 'spec/23-keyword-taxonomy-and-highlighting.md'
       - 'tests/keyword-taxonomy-contract.test.mjs'
+      - 'tests/keyword-taxonomy-lexical-model.test.mjs'
+      - 'tests/fixtures/keyword-taxonomy-lexical-v1.json'
+      - 'tests/helpers/keyword-taxonomy-lexical-reference.mjs'
       - '.github/workflows/keyword-taxonomy-contract.yml'
   workflow_dispatch:
 permissions:
@@ -26,4 +32,4 @@ jobs:
         with:
           persist-credentials: false
       - name: Validate staged taxonomy metadata (source-only, not backend parity)
-        run: node --test tests/keyword-taxonomy-contract.test.mjs
+        run: node --test tests/keyword-taxonomy-contract.test.mjs tests/keyword-taxonomy-lexical-model.test.mjs
