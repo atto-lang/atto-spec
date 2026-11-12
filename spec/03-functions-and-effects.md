@@ -136,9 +136,9 @@ capability-free trace context may be propagated independently.
 
 **Verified implementation boundary (12 November 2026):** the native
 LLVM hosted-AOT parser, compiler and Clang-linked runtime have an executed
-non-suspending `telemetry.span("literal")` scope subset (three native
+non-suspending `telemetry.span("literal")` scope subset (five native
 guest cases at `-O0` and `-O2`, five compiler-denial cases on the
-[approved source-blob carrier](https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43322278786)).
+[approved source-blob carrier](https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43324098880)).
 That subset intentionally forbids observable scope-handle methods and
 suspension. The Java/Graal PR uses a test-defined nominal `SpanScope`
 with `try/finally` lowering; its source-org CI has no executed steps,
