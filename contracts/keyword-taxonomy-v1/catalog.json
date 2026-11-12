@@ -113,7 +113,17 @@
       "lsp_fallback": "keyword",
       "words": [
         "val",
-        "let",
+        "let"
+      ]
+    },
+    {
+      "id": "construction",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "action_verb",
+      "semantic_role": "construction_operator",
+      "highlight_scope": "keyword.operator.atto",
+      "lsp_fallback": "keyword",
+      "words": [
         "new"
       ]
     },
