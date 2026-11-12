@@ -78,7 +78,10 @@ required.
   statically typed boundary/function probe sites while tracing is off.
   Enabling recording at runtime does not require restart, new executable
   code, or weakening the program's security profile. `--instrument=none`
-  emits no optional probe sites and cannot turn those on through a flag.
+  emits no **static** optional probe sites and cannot enable those precompiled
+  sites through a flag. This does **not** preclude a separately admitted JIT
+  dynamic-attach feature if the runtime retained tagged AST/bytecode metadata;
+  strict stripped builds with no such metadata cannot add probes.
 - **Truffle guest JIT:** a registered trusted Atto Truffle instrument may
   dynamically attach execution-event nodes/listeners to tagged Atto
   functions or activate a predeclared Bytecode DSL instrumentation table
