@@ -1,0 +1,29 @@
+name: AttoLang keyword taxonomy contract
+on:
+  push:
+    paths:
+      - 'contracts/keyword-taxonomy-v1/**'
+      - 'spec/16-lexical-and-grammar-reference.md'
+      - 'spec/23-keyword-taxonomy-and-highlighting.md'
+      - 'tests/keyword-taxonomy-contract.test.mjs'
+      - '.github/workflows/keyword-taxonomy-contract.yml'
+  pull_request:
+    paths:
+      - 'contracts/keyword-taxonomy-v1/**'
+      - 'spec/16-lexical-and-grammar-reference.md'
+      - 'spec/23-keyword-taxonomy-and-highlighting.md'
+      - 'tests/keyword-taxonomy-contract.test.mjs'
+      - '.github/workflows/keyword-taxonomy-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  taxonomy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate staged taxonomy metadata (source-only, not backend parity)
+        run: node --test tests/keyword-taxonomy-contract.test.mjs
