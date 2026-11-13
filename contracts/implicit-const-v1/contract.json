@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "contract_id": "atto-implicit-const-v1",
+  "status": "PROPOSED_NOT_VERIFIED",
+  "spec_chapter": "27",
+  "source_extension": ".atto",
+  "required_backends": [
+    "java",
+    "llvm",
+    "wasm",
+    "dotnet",
+    "forge",
+    "cranelift"
+  ],
+  "evidence_policy": {
+    "baseline": "NOT_EXECUTED",
+    "compiler_parity_requires": "REAL_GUEST_COMPILE_EXECUTE_AND_TARGETED_DIAGNOSTICS",
+    "reject_evidence": [
+      "source_only_contract_test",
+      "host_only_model",
+      "generic_parser_error",
+      "simulated_guest_result",
+      "unverified_cross_org_mirror"
+    ]
+  },
+  "rules": {
+    "shorthand_equivalence": "type_first_local_equals_explicit_compile_time_const",
+    "non_const_initializer": "reject_not_val_fallback",
+    "const_mut": "explicit_fixed_binding_with_const_template_and_fresh_local_owned_mutable_instance",
+    "fields": "out_of_scope",
+    "global_const_mut": "reject",
+    "contextual_const": "runtime_immutable_binding_not_compile_time"
+  },
+  "fixtures": [
+    {
+      "id": "implicit-explicit-equivalence-positive",
+      "path": "contracts/implicit-const-v1/fixtures/implicit-explicit-equivalence-positive.atto",
+      "kind": "compile_and_execute",
+      "expected_exit": 42,
+      "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "val-let-runtime-positive",
+      "path": "contracts/implicit-const-v1/fixtures/val-let-runtime-positive.atto",
+      "kind": "compile_and_execute",
+      "expected_exit": 42,
+      "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "implicit-rebind-reject",
+      "path": "contracts/implicit-const-v1/fixtures/implicit-rebind-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "immutable_reassignment",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "explicit-rebind-reject",
+      "path": "contracts/implicit-const-v1/fixtures/explicit-rebind-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "immutable_reassignment",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "implicit-nonconst-reject",
+      "path": "contracts/implicit-const-v1/fixtures/implicit-nonconst-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "non_const_initializer",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "explicit-nonconst-reject",
+      "path": "contracts/implicit-const-v1/fixtures/explicit-nonconst-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "non_const_initializer",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "const-mut-scalar-reject",
+      "path": "contracts/implicit-const-v1/fixtures/const-mut-scalar-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "invalid_const_mut_target",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "const-mut-rebind-reject",
+      "path": "contracts/implicit-const-v1/fixtures/const-mut-rebind-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "immutable_reassignment",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "const-mut-global-reject",
+      "path": "contracts/implicit-const-v1/fixtures/const-mut-global-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "const_mut_storage_domain",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "const-mut-fresh-instance-positive",
+      "path": "contracts/implicit-const-v1/fixtures/const-mut-fresh-instance-positive.atto",
+      "kind": "compile_and_execute",
+      "expected_exit": 42,
+      "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    }
+  ],
+  "future_required_proofs": [
+    "const_eval_purity_budgets",
+    "const_mut_mutable_borrow_alias_reject",
+    "const_mut_actor_and_tenant_isolation",
+    "contextual_if_as_const_runtime_binding",
+    "field_grammar_separation",
+    "formatter_idempotence",
+    "same_source_native_guest_runs"
+  ]
+}
