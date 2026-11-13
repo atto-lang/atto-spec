@@ -38,7 +38,7 @@ That an actor's failure restarts the actor, including on stack exhaustion and in
 
 ## Stacks
 
-An actor does not require a dedicated OS-thread stack, but **each live receive invocation and independently scheduled child Task owns a distinct logical execution stack**. A suspended receive retains its invocation identity, live frames and bounded continuation roots even when its carrier thread is released. The default serial actor does not admit a second DATA receive while the first remains suspended. Explicit message concurrency admits separate stacks, never a shared mutable frame store. See [chapter 22](22-receive-invocation-stacks.md) for lifecycle, quotas, generation fencing and backend obligations.
+An actor does not require a dedicated OS-thread stack, but **each live receive invocation and independently scheduled child Task owns a distinct logical execution stack**. A suspended receive retains its invocation identity, live frames and bounded continuation roots even when its carrier thread is released. Ordinary actors are concurrent by default and admit several live receive invocations, each on a separate stack; a `define serial actor` does not admit a second DATA receive while the first remains suspended. Separate stacks never form a shared mutable frame store. See [chapter 25](25-receive-invocation-stacks.md) for lifecycle, quotas, generation fencing and backend obligations.
 
 **TARGET:** every backend that runs untrusted actors MUST:
 

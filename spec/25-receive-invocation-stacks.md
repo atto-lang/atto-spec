@@ -1,4 +1,4 @@
-# 22 — Receive-Invocation and Task-Owned Execution Stacks
+# 25 — Receive-Invocation and Task-Owned Execution Stacks
 
 **Status: DRAFT / TARGET, 2026-11-09.** This is a normative candidate, **not** proof of an executing compiler or cross-backend parity. It refines chapters 04, 05, 06 and 18 without changing actor state ownership or declaring a native thread per message.
 
@@ -12,11 +12,16 @@ A receive invocation begins at **mailbox admission to execution** (not merely DA
 
 ## Concurrency, suspension and cancellation
 
-* Default `messageConcurrency = 1`: one admitted live DATA receive invocation, including suspended invocations; later DATA remains queued. A wake resumes the same invocation rather than creating another receive stack. This preserves nonreentrancy by default.
-* With explicit `messageConcurrency = N`, up to N distinct receive invocations may be live, each with its own stack. This is an **opt-in** target and MUST NOT imply concurrent unsafe actor-state access; sealed state, reader/writer proofs and physical admission remain mandatory.
+* **Ordinary actors are concurrent by default.** Several admitted DATA receive invocations of the same actor may be live at once, each on its own logical stack, up to a runtime-configured, bounded per-actor live-invocation limit. Concurrency never grants concurrent unsafe actor-state access: sealed `state`, `critical-read` (shared readers) and `critical-write` (exclusive writer) proofs and physical admission remain mandatory.
+* **`define serial actor`** admits exactly one live DATA receive invocation at a time, including suspended invocations; later DATA stays queued, and a wake resumes the same invocation rather than creating another receive stack. A serial actor therefore needs only one active receive stack, which implementations MAY reuse across invocations after retirement and generation change.
+* There is deliberately **no single shared stack per ordinary actor**. Concurrent invocations and invocations suspended across `await` would otherwise either serialize the actor (contradicting the concurrent default) or interleave mutable frames.
 * An invocation that spawns or resumes a Task keeps its own stack. The Task gets a distinct stack and cannot retain an unpinned loan into parent stack locals. Cancellation request is not physical task retirement; parent stack reclamation waits for outstanding borrowed/pinned roots and structured child cleanup.
 * `await` or `select` suspends the same logical stack and can resume on a different carrier. Runtime bookkeeping MUST validate actor generation, invocation identity, wake ticket, cleanup state, and one-shot continuation ownership. Duplicated/stale wakes MUST fail closed.
 * A held `critical-read` / `critical-write` state loan cannot be laundered through suspension, child Task captures, or another invocation. Cross-suspension loans require explicit compiler and runtime proof; default is rejection. Actor heap and sealed state are not writable solely because frames belong to the actor.
+
+## Placement in the actor arena
+
+Logical stacks are owned by the actor incarnation and are allocated from, and charged to, that actor's private allocation domain. Stack segments and heap-lowered continuation frames are addressed by **32-bit actor-relative offsets or handles**, never by raw 64-bit host pointers exposed to guest code, and carry the actor generation for stale-reference detection. Growth is by bounded segments inside the arena. On incarnation retirement, every invocation and task stack of that incarnation is retired together. A physical backend may additionally run frames on a carrier native stack (see the table below), provided no guest-visible frame address escapes and the logical accounting above holds.
 
 ## Budgets and failure
 
@@ -38,8 +43,8 @@ There is no general promise of one physically allocated native stack per message
 
 ## Required conformance evidence
 
-1. Two live receives of one opt-in multi-message actor have disjoint mutable stack frames and different invocation IDs, even on the same carrier.
-2. Default-serial actor retains exactly one suspended invocation; DATA B cannot overtake A's suspended receive merely because A is awaiting I/O.
+1. Two live receives of one ordinary (concurrent-by-default) actor have disjoint mutable stack frames and different invocation IDs, even on the same carrier.
+2. A `define serial actor` retains exactly one suspended invocation; DATA B cannot overtake A's suspended receive merely because A is awaiting I/O. An ordinary (concurrent) actor admits B on a distinct stack while A is suspended, and neither can observe or mutate the other's frames.
 3. Nested calls and stack-local values survive suspend/resume, including migration between carriers, without a new stack identity.
 4. Child Task owns its own stack and cannot retain an escaping parent-stack mutable borrow; cancellation and physical retirement are separately observed.
 5. A quota/overflow or swallowed stack-budget exception fails A without corrupting independent B; stale generations, duplicate wakes, recycled IDs and forged frame tickets are rejected.
