@@ -22,6 +22,10 @@
 8. A `try_acquire` error must preserve pool counters and all live lease states. Repeated release is rejected; never double-frees.
 9. Access to pooled network payloads never performs blocking I/O inside an actor-critical region. An async I/O submission requires a separately tracked lifetime pin extending to completion/cancellation.
 10. No backend may silently claim full zero-copy across the NIC/kernel boundary from a mere user-space buffer move.
+11. Owner identity includes a trusted tenant identifier, actor identifier, and actor-incarnation generation (all nonzero). The identity tuple is NOT an authority token; only the trusted scheduler/actor registry may attest it.
+12. v1 transferable leases deny cross-tenant transfers by default. Cross-tenant sharing requires an explicit future capability and separate isolation proof.
+13. Mailbox occupancy counts queued, delivered, and checked-out leases until the receiver explicitly acknowledges physical release. A dequeue is not a credit refund; dropped unacknowledged delivery fails closed.
+14. The host-only C++ callback currently exposes a raw span under a pool mutex; it must not escape the callback or reenter the pool, and is NOT an async-I/O pin or guest-safe loan. A properly pinned loan facility is required before source guest bindings.
 
 ## API families (semantic signatures, not endorsed parser syntax)
 
