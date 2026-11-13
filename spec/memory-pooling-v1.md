@@ -41,3 +41,11 @@ Names are provisional until exact backend parser/typechecker acceptance is demon
 Run the same compiled `.atto` fixture with Java/Graal, LLVM and .NET Native AOT; pin source/compiler and binary hashes, instrument real guest allocation bytes and GC, and run 100,000 operations after warmup. Assert zero hot-path dynamic allocations, stable backing-buffer identity on eligible transfer, explicitly bounded RSS, correct exhaustion/backpressure, no cross-actor writes, no stale generations, and correct teardown under cancellation and panic. A native C++/Rust unit test is **host-only** and MUST NOT be reported as compiler/guest parity.
 
 Java managed-AOT may be low-GC rather than zero-GC. Strict non-GC and no-allocation guarantees require explicit target profile admission.
+
+## Authenticated native host bridge (experimental)
+
+The LLVM host-runtime proof now integrates the **actual** `ActorResourceRegistry` activity receipts: sender handoff admissions and receiver resource-loan tickets. A bound receiver registry is required to use the authenticated host API; it denies the unbound offer path. Source actor ID/incarnation and target registry identity must match independently, and shutdown reclaim remains `busy` while any queued or checked-out buffer retains a receiver loan. The receiver ticket releases only after physical buffer release and ACK; a dropped unacknowledged receipt must not forge reclamation.
+
+**Allocation caveat:** `ActorResourceRegistry` currently uses `std::unordered_set` for activity tickets. Those admissions may dynamically allocate even when the pooled payload bytes and mailbox ring are preallocated. Consequently the authenticated sender/receiver route does NOT yet meet strict zero-allocation admission. A separate preallocated fixed-capacity ticket ledger, or formally proven allocator-free registry implementation, is needed before strict real-time profiles accept this route. Host tests alone cannot authenticate guest actor identity or prove AttoLang compiler lowering.
+
+**Proof scope:** exact-file native C++ host tests with GCC/Clang and ASan/UBSan, using trusted C++ actor identity supplied by the scheduler test harness. No network socket, kernel I/O pin, compiled `.atto`, whole compiler tree or Java/.NET parity is implied.
