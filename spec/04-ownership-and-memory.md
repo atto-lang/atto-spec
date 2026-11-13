@@ -2,6 +2,10 @@
 
 **Status: DRAFT.** The ownership contract applies to objects, collections, actor state, closure captures, task frames, and transport.
 
+## Constant bindings and mutable constant instances (proposed)
+
+A type-first unqualified *local* declaration is a compile-time `const`, not implicitly `val`. Plain constants do not provide writable shared aliases. `const mut T x = expr` must create a distinct owned mutable instance on each execution of the declaration from const-evaluable template data, with a fixed binding and separately proved borrow/actor-state permissions. `mut` never grants writable access across tenant, actor, or pinned-continuation boundaries. Shared mutable global `const mut` is not admitted in the initial design. See [chapter 27](27-implicit-const-and-const-mut.md) for precise scope and diagnostic targets. This target is not a claim of implementation.
+
 ## Ownership operations
 
 AttoLang uses explicit rights operations, expressed as reserved `rt` forms:
