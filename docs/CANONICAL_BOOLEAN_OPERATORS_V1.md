@@ -38,7 +38,7 @@ Parentheses override precedence. A left operand is evaluated once before the rig
 - `a ^^ b`: evaluate both exactly once in order; return their Boolean XOR.
 - Errors, panics, allocations, writes, tracing and other effects in a skipped RHS **must not happen**.
 - Type checking still validates both operands even if their execution is statically unreachable.
-- `And(a,b)`, `Or(a,b)` and `Xor(a,b)` are independently exposed named intrinsics. Their arity, array overloads, and eager-vs-lazy operand rules must be specified and reconciled across backends before claiming **named intrinsic** parity. They are not automatically equivalent to infix operators for side effects.
+- **Scalar built-in** `And(a,b)` short-circuits if `a` is false, `Or(a,b)` short-circuits if `a` is true, and `Xor(a,b)` evaluates both in order. This matches the Java scalar intrinsic behavior and is the proposed common scalar contract. Compiler-owned intrinsics are not ordinary eager function calls. The Rust browser compiler accepts exactly two scalar arguments and forbids user-defined builtin shadowing; Java also supports variadic/array overloads and some namespace shadowing. Those overload/shadowing capabilities are **not yet portable**, and remain separate parity gates.
 
 ## Legacy migration
 
