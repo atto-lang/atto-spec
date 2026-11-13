@@ -64,6 +64,7 @@ test("implicit and explicit constants carry the same positive and negative deman
   for (const f of [implicit, explicit]) {
     assert.equal(f.expected_diagnostic_category, "non_const_initializer");
     assert.match(read(f.path), /runtime_value\(\)/);
+    assert.match(read(f.path), /stdio\.println\(0\)/);
   }
   assert.match(read(byId.get("val-let-runtime-positive").path), /mutable_name = immutable_name \+ 2;/);
 });
