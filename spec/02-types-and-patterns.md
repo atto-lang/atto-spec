@@ -8,7 +8,7 @@ AttoLang is statically typed and **nominal by default**. Two classes with the sa
 
 Primitive families include booleans, signed/unsigned integral types, floating-point types, strings, bytes, arrays, records, enums, function references and typed handles. Exact widths, overflow modes, numeric promotion, float corner cases, and ABI packing require cross-backend tests. No backend may rely on host-language unchecked overflow. Integer overflow panics the actor; see [integer rules](17-primitives-and-core-types.md#integer-rules).
 
-An immutable binding does not imply deep immutability of every reachable object. The ownership model controls mutation, copying, sharing and lifetime separately.
+An immutable *runtime* binding (`val`) does not imply deep immutability of every reachable object. The ownership model controls mutation, copying, sharing and lifetime separately. A compile-time `const` aggregate is separately required to have immutable/frozen data; explicit scoped `const mut` creates an owned mutable instance rather than exposing a writable alias into pooled constant storage. See the proposed [binding chapter](27-implicit-const-and-const-mut.md).
 
 ## Classes, records, structs, enums, ADTs
 
