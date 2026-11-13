@@ -44,7 +44,9 @@ The samples use one of several valid function forms: `: T` and `-> T` are both r
 
 ## Bindings and fields
 
-`val` declares an immutable binding, `let` a mutable binding, and `const` requires a compile-time constant. A `final` class field is single-assignment; a compile-time constant final initializer can be canonicalized from `final const` to `final` when proven constant. Instance field declarations default to immutable value slots unless explicit mutation is declared; the exact implicit-`val` grammar is a migration target.
+`val` declares an immutable binding initialized at runtime, `let` a mutable binding initialized at runtime, and `const` requires a compile-time constant initializer. A `final` class field is single-assignment; a compile-time constant final initializer can be canonicalized from `final const` to `final` when proven constant. Instance field declarations default to immutable value slots unless explicit mutation is declared; the exact implicit-`val` grammar is a migration target.
+
+**PROPOSED, separate from field grammar:** a local `T x = expr;` is exactly `const T x = expr;`; non-constant initializers fail rather than silently becoming `val`. `const mut T x = constant_expr;` retains an explicit `const` qualifier: it is a fixed local binding with a compile-time template and fresh, independently owned mutable runtime instance. See [chapter 27](27-implicit-const-and-const-mut.md) for scope, mutation, and constant-evaluation restrictions. This clarifies the newer immutable-default target in [chapter 21](21-semantic-floor-and-parity.md); neither chapter currently certifies backend implementation.
 
 ```atto
 val answer = 42
@@ -80,7 +82,7 @@ done
 
 The **target** early-exit spelling is `guard condition { terminal_failure_path }` with **no `else` or `fi`**. A comma-separated guard list checks each clause once, left to right. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
 
-An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.
+An `if expression as const/let name` binding tests **presence**, not truthiness. Here `const` is a contextual **runtime immutable binding**, not a compile-time-constant requirement; `let` permits rebinding within ordinary ownership rules. `final` is not a conditional-binding keyword. This grammar is distinct from a type-first local constant declaration ([chapter 27](27-implicit-const-and-const-mut.md)).
 
 `match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. An expression-form `return match ...` must infer its enclosing return type where admitted. Typed variants such as `match<int>` and `select<int>` constrain arm results. Duplicate and unreachable arms should be compile errors; exhaustive/disjoint-vs-priority matching is still subject to [open questions](12-open-questions.md).
 
