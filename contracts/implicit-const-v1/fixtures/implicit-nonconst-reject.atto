@@ -1,0 +1,7 @@
+fnc runtime_value() -> int ::
+  return 42;
+end
+fnc main() -> int ::
+  int value = runtime_value();
+  return value;
+end
