@@ -1,0 +1,831 @@
+{
+  "schema_version": 1,
+  "status": "SOURCE_ONLY_REFERENCE_MODEL_FIXTURES_NOT_COMPILER_VERIFIED",
+  "conventions": {
+    "kind": "test-only lexical category; parser and LSP classification not inferred",
+    "token_offsets": "UTF-16 code-unit offsets",
+    "documented_compound": "nb-select only; parser handles others contextually"
+  },
+  "cases": [
+    {
+      "id": "actor-contract-declaration",
+      "source": "define actor Foo implements Runnable;",
+      "expected": [
+        [
+          "define",
+          "reserved"
+        ],
+        [
+          "actor",
+          "reserved"
+        ],
+        [
+          "Foo",
+          "identifier"
+        ],
+        [
+          "implements",
+          "reserved"
+        ],
+        [
+          "Runnable",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "target-declare-not-lexically-reserved",
+      "source": "declare actor Foo implements ActorXYZ;",
+      "expected": [
+        [
+          "declare",
+          "identifier"
+        ],
+        [
+          "actor",
+          "reserved"
+        ],
+        [
+          "Foo",
+          "identifier"
+        ],
+        [
+          "implements",
+          "reserved"
+        ],
+        [
+          "ActorXYZ",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "qualifiers-and-return",
+      "source": "pub static fnc do_work(): void { return 42; }",
+      "expected": [
+        [
+          "pub",
+          "reserved"
+        ],
+        [
+          "static",
+          "reserved"
+        ],
+        [
+          "fnc",
+          "reserved"
+        ],
+        [
+          "do_work",
+          "identifier"
+        ],
+        [
+          "(",
+          "punctuation"
+        ],
+        [
+          ")",
+          "punctuation"
+        ],
+        [
+          ":",
+          "punctuation"
+        ],
+        [
+          "void",
+          "reserved"
+        ],
+        [
+          "{",
+          "punctuation"
+        ],
+        [
+          "return",
+          "reserved"
+        ],
+        [
+          "42",
+          "number"
+        ],
+        [
+          ";",
+          "punctuation"
+        ],
+        [
+          "}",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "callable-spelling-needs-parser",
+      "source": "worker.stop(); do(); done(); val stop = 1;",
+      "expected": [
+        [
+          "worker",
+          "identifier"
+        ],
+        [
+          ".",
+          "punctuation"
+        ],
+        [
+          "stop",
+          "reserved"
+        ],
+        [
+          "(",
+          "punctuation"
+        ],
+        [
+          ")",
+          "punctuation"
+        ],
+        [
+          ";",
+          "punctuation"
+        ],
+        [
+          "do",
+          "reserved"
+        ],
+        [
+          "(",
+          "punctuation"
+        ],
+        [
+          ")",
+          "punctuation"
+        ],
+        [
+          ";",
+          "punctuation"
+        ],
+        [
+          "done",
+          "reserved"
+        ],
+        [
+          "(",
+          "punctuation"
+        ],
+        [
+          ")",
+          "punctuation"
+        ],
+        [
+          ";",
+          "punctuation"
+        ],
+        [
+          "val",
+          "reserved"
+        ],
+        [
+          "stop",
+          "reserved"
+        ],
+        [
+          "=",
+          "operator"
+        ],
+        [
+          "1",
+          "number"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "word-boundaries-case-and-underscores",
+      "source": "actor actor2 _actor Actor foo_actor;",
+      "expected": [
+        [
+          "actor",
+          "reserved"
+        ],
+        [
+          "actor2",
+          "identifier"
+        ],
+        [
+          "_actor",
+          "identifier"
+        ],
+        [
+          "Actor",
+          "identifier"
+        ],
+        [
+          "foo_actor",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "ownership-contextual-words",
+      "source": "rt borrow mut value; rt take value; rt share value;",
+      "expected": [
+        [
+          "rt",
+          "reserved"
+        ],
+        [
+          "borrow",
+          "identifier"
+        ],
+        [
+          "mut",
+          "reserved"
+        ],
+        [
+          "value",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ],
+        [
+          "rt",
+          "reserved"
+        ],
+        [
+          "take",
+          "identifier"
+        ],
+        [
+          "value",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ],
+        [
+          "rt",
+          "reserved"
+        ],
+        [
+          "share",
+          "identifier"
+        ],
+        [
+          "value",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "effect-word-vs-api-suffix",
+      "source": "suspends fnc read_async(): void; suspend fnc read_blocking(): void;",
+      "expected": [
+        [
+          "suspends",
+          "reserved"
+        ],
+        [
+          "fnc",
+          "reserved"
+        ],
+        [
+          "read_async",
+          "identifier"
+        ],
+        [
+          "(",
+          "punctuation"
+        ],
+        [
+          ")",
+          "punctuation"
+        ],
+        [
+          ":",
+          "punctuation"
+        ],
+        [
+          "void",
+          "reserved"
+        ],
+        [
+          ";",
+          "punctuation"
+        ],
+        [
+          "suspend",
+          "identifier"
+        ],
+        [
+          "fnc",
+          "reserved"
+        ],
+        [
+          "read_blocking",
+          "identifier"
+        ],
+        [
+          "(",
+          "punctuation"
+        ],
+        [
+          ")",
+          "punctuation"
+        ],
+        [
+          ":",
+          "punctuation"
+        ],
+        [
+          "void",
+          "reserved"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "actor-pipe-vs-function-pipeline",
+      "source": "spawn A() pipe spawn B(); left |> right;",
+      "expected": [
+        [
+          "spawn",
+          "reserved"
+        ],
+        [
+          "A",
+          "identifier"
+        ],
+        [
+          "(",
+          "punctuation"
+        ],
+        [
+          ")",
+          "punctuation"
+        ],
+        [
+          "pipe",
+          "identifier"
+        ],
+        [
+          "spawn",
+          "reserved"
+        ],
+        [
+          "B",
+          "identifier"
+        ],
+        [
+          "(",
+          "punctuation"
+        ],
+        [
+          ")",
+          "punctuation"
+        ],
+        [
+          ";",
+          "punctuation"
+        ],
+        [
+          "left",
+          "identifier"
+        ],
+        [
+          "|>",
+          "operator"
+        ],
+        [
+          "right",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "lexer-compound-vs-parser-compounds",
+      "source": "nb-select critical-read critical-write transform-pipe;",
+      "expected": [
+        [
+          "nb-select",
+          "compound"
+        ],
+        [
+          "critical",
+          "identifier"
+        ],
+        [
+          "-",
+          "operator"
+        ],
+        [
+          "read",
+          "identifier"
+        ],
+        [
+          "critical",
+          "identifier"
+        ],
+        [
+          "-",
+          "operator"
+        ],
+        [
+          "write",
+          "identifier"
+        ],
+        [
+          "transform",
+          "identifier"
+        ],
+        [
+          "-",
+          "operator"
+        ],
+        [
+          "pipe",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "compound-boundaries",
+      "source": "nb-selector anb-select nb-select2;",
+      "expected": [
+        [
+          "nb",
+          "reserved"
+        ],
+        [
+          "-",
+          "operator"
+        ],
+        [
+          "selector",
+          "identifier"
+        ],
+        [
+          "anb",
+          "identifier"
+        ],
+        [
+          "-",
+          "operator"
+        ],
+        [
+          "select",
+          "reserved"
+        ],
+        [
+          "nb",
+          "reserved"
+        ],
+        [
+          "-",
+          "operator"
+        ],
+        [
+          "select2",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "line-comments-and-strings",
+      "source": "actor // implements\n\"actor implements\" 'pub' `match actor`;",
+      "expected": [
+        [
+          "actor",
+          "reserved"
+        ],
+        [
+          "// implements",
+          "comment"
+        ],
+        [
+          "\"actor implements\"",
+          "string"
+        ],
+        [
+          "'pub'",
+          "string"
+        ],
+        [
+          "`match actor`",
+          "template"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "nested-block-comments",
+      "source": "/* actor /* implements */ pub */ class C;",
+      "expected": [
+        [
+          "/* actor /* implements */ pub */",
+          "comment"
+        ],
+        [
+          "class",
+          "reserved"
+        ],
+        [
+          "C",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "symbols-quoted-symbols-and-text",
+      "source": "#ready #\"actor with spaces\" \"#ready\";",
+      "expected": [
+        [
+          "#ready",
+          "symbol"
+        ],
+        [
+          "#\"actor with spaces\"",
+          "symbol"
+        ],
+        [
+          "\"#ready\"",
+          "string"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "ascii-vs-unicode-dash",
+      "source": "a-b a–b a—b critical–read;",
+      "expected": [
+        [
+          "a",
+          "identifier"
+        ],
+        [
+          "-",
+          "operator"
+        ],
+        [
+          "b",
+          "identifier"
+        ],
+        [
+          "a",
+          "identifier"
+        ],
+        [
+          "–",
+          "invalid_dash"
+        ],
+        [
+          "b",
+          "identifier"
+        ],
+        [
+          "a",
+          "identifier"
+        ],
+        [
+          "—",
+          "invalid_dash"
+        ],
+        [
+          "b",
+          "identifier"
+        ],
+        [
+          "critical",
+          "identifier"
+        ],
+        [
+          "–",
+          "invalid_dash"
+        ],
+        [
+          "read",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "reserved-literals-and-construction",
+      "source": "true false null void new Thing();",
+      "expected": [
+        [
+          "true",
+          "reserved"
+        ],
+        [
+          "false",
+          "reserved"
+        ],
+        [
+          "null",
+          "reserved"
+        ],
+        [
+          "void",
+          "reserved"
+        ],
+        [
+          "new",
+          "reserved"
+        ],
+        [
+          "Thing",
+          "identifier"
+        ],
+        [
+          "(",
+          "punctuation"
+        ],
+        [
+          ")",
+          "punctuation"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "reserved-substrings",
+      "source": "implementsX ximplements implements implements_1",
+      "expected": [
+        [
+          "implementsX",
+          "identifier"
+        ],
+        [
+          "ximplements",
+          "identifier"
+        ],
+        [
+          "implements",
+          "reserved"
+        ],
+        [
+          "implements_1",
+          "identifier"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "escaped-string-masks-keywords",
+      "source": "\"actor \\\"implements\\\"\" 'pub'",
+      "expected": [
+        [
+          "\"actor \\\"implements\\\"\"",
+          "string"
+        ],
+        [
+          "'pub'",
+          "string"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "unicode-identifier-not-ascii-keyword",
+      "source": "актёр actor;",
+      "expected": [
+        [
+          "актёр",
+          "identifier"
+        ],
+        [
+          "actor",
+          "reserved"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "target-contextual-nouns",
+      "source": "singleton sealed enum supervisor final state;",
+      "expected": [
+        [
+          "singleton",
+          "identifier"
+        ],
+        [
+          "sealed",
+          "identifier"
+        ],
+        [
+          "enum",
+          "identifier"
+        ],
+        [
+          "supervisor",
+          "identifier"
+        ],
+        [
+          "final",
+          "identifier"
+        ],
+        [
+          "state",
+          "identifier"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "symbol-adjacent-keyword",
+      "source": "#ready actor #\"implements\";",
+      "expected": [
+        [
+          "#ready",
+          "symbol"
+        ],
+        [
+          "actor",
+          "reserved"
+        ],
+        [
+          "#\"implements\"",
+          "symbol"
+        ],
+        [
+          ";",
+          "punctuation"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    }
+  ]
+}

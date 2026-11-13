@@ -60,7 +60,7 @@ Status of rules 5 to 8 (for item 7, the restart part):
 
 | Backend | Overflow contained to the actor? | Per-actor quota | Proper tail calls |
 | --- | --- | --- | --- |
-| LLVM tenant VM | Yes, with restart. Exhaustion inside a runtime call is contained | No: the limit is the carrier's stack | No guarantee |
+| LLVM tenant VM | Yes, with restart. Exhaustion inside a runtime call is contained | Yes, per VM, in PR #1566, not yet merged: `actor_stack_bytes` gives the same depth on every carrier | No guarantee |
 | LLVM native, no tenant VM | No: the process dies with SIGSEGV | No | No guarantee |
 | Java/GraalVM | No: the program exits with status 1 | No | No guarantee |
 | .NET | No: a CLR stack overflow ends the process, which is why tenants run through the native core | No | No guarantee |
