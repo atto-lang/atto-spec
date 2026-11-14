@@ -36,7 +36,7 @@ At most one effective persistent guest state schema belongs to one actor. Direct
 - **critical-read:** immutable ephemeral loan; concurrent readers may be admitted if the actor/profile supports them.
 - **critical-write:** exclusive mutation; any writer excludes conflicting readers/writers.
 - No state loan may escape its callback, be serialized, be captured by a child task, or cross a suspension without an explicit proven and runtime-enforced safe exception.
-- Ordinary actors are concurrent by default. `define serial actor Name as ... end` opts into at most one active guest turn at a time. Concurrent admission never permits conflicting state access: compatible `critical-read` loans may overlap, while `critical-write` excludes readers and writers of the same protected region. Backend scheduling capacity does not replace these proofs.
+- Ordinary actors are concurrent by default. `define serial actor Name as ... end` opts into at most one live DATA `receive()` invocation at a time, including suspension; unrelated receiver methods remain concurrent and do not consume the receive permit. Concurrent admission never permits conflicting state access: compatible `critical-read` loans may overlap, while `critical-write` excludes readers and writers of the same protected region. Backend scheduling capacity does not replace these proofs.
 - Serial actors retain the same sealed-state and borrow rules; serialization is not permission to leak mutable references into tasks, pipes, singletons or other actors. See the [concurrency and shared-memory amendment](22-concurrency-and-shared-ownership.md) for migration and execution gates.
 
 ## Mailboxes and sends
