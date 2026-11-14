@@ -66,7 +66,7 @@ pub fnc example(): int {
 
 | Backend | Status as of decision | Evidence |
 |---|---|---|
-| Rust browser subset (`atto-lang/atto-source.rs`) | **Partial; isolated native test passed** | Draft PR #102, 6 local-binding tests at source commit `7339384131bd2dd5ba1e644dd0d0b84c0bd22b5a` on a verified private mirror; no full suite claim |
+| Rust browser subset (`atto-lang/atto-source.rs`) | **Partial; isolated native test passed** | Draft PR #102; source commit `a3a7493daf1fcf2ccbcd566a659a1c86ef1dca06`: 6 native tests passed and executable guest Wasm returned 12 on an exact-blob verified private mirror (Actions run `43646861569`); no full suite claim |
 | Java | **Not verified** | Requires independent lexer/parser/checker/backend tests |
 | LLVM | **Not verified** | Requires independent lexer/parser/checker/backend tests |
 | .NET | **Not verified** | Requires independent lexer/parser/checker/backend tests |
