@@ -193,5 +193,43 @@
       "source": "define class Mode as constructor(Color a) {} constructor(State b) {} end",
       "diagnostic": "E_CONSTRUCTOR_OVERLAP"
     }
+  ],
+  "fixtures": [
+    {
+      "path": "valid-arity-overloads.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "413d033f24766a36da1346a21f0245172d3fb738"
+    },
+    {
+      "path": "valid-head-tail.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "9ccae5039573c4caaffe7623464ad34848c2bdfa"
+    },
+    {
+      "path": "valid-packet.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "5368a2674234723b193275db1643c1f7409c5e40"
+    },
+    {
+      "path": "reject-actor-constructor.atto",
+      "kind": "reject",
+      "diagnostic": "E_ACTOR_CONSTRUCTOR_FORBIDDEN",
+      "blob_sha": "cc017be6c402a5a2ed0f62fe5e2c5faee6560221"
+    },
+    {
+      "path": "reject-duplicate-constructors.atto",
+      "kind": "reject",
+      "diagnostic": "E_CONSTRUCTOR_OVERLAP",
+      "blob_sha": "d9b9138254195e691cd92603e6a28fe0ba2a6701"
+    },
+    {
+      "path": "reject-forward-packet-length.atto",
+      "kind": "reject",
+      "diagnostic": "E_BINARY_FORWARD_LENGTH",
+      "blob_sha": "d42e1462bebc1a5db6cb024c3e0b1162560284fb"
+    }
   ]
 }
