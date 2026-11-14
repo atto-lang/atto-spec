@@ -5,7 +5,7 @@
   "forms": {
     "statement_if": {
       "braced": "if bool { statements } [else { statements }]",
-      "terminator": "no fi required after braced form",
+      "terminator": "braced if is self-delimiting; never consumes fi; stray fi rejected",
       "produces_value": false,
       "keyword_legacy": "if bool then statements [else statements] fi"
     },
@@ -13,7 +13,8 @@
       "syntax": "if bool then expression [elif bool then expression]* else expression fi",
       "else_required": true,
       "produces_value": true,
-      "condition_type": "bool"
+      "condition_type": "bool",
+      "max_arms": 128
     },
     "ternary": {
       "syntax": "bool ? expression_or_arm_block : expression_or_arm_block",
@@ -119,6 +120,24 @@
       "kind": "reject_compile",
       "source": "pub fnc main(): int { const int v = true ? { const int secret = 5; secret } : { 4 }; return secret; }",
       "expected_diagnostic": "E_UNBOUND"
+    },
+    {
+      "id": "reject_mixed_braces_fi",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { if true { return 42; } fi return 0; }",
+      "expected_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "nested_brace_preserves_parent_fi",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { if true then if true { return 42; } fi return 0; }",
+      "expected_result": 42
+    },
+    {
+      "id": "reject_excessive_elif",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { return if false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 else 42 fi; }",
+      "expected_diagnostic": "E_NESTING"
     }
   ]
 }
