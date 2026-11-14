@@ -134,6 +134,26 @@ Use the same positive and negative `.atto` fixture sources plus the same version
 6. Measure hot-path code size, allocation count, event cost, JIT deopt pause and p50/p99/p99.9 latency, including saturation, actor mailbox throughput, critical-read/write and hard-RT budgets. No unconditional "zero overhead" claim for dormant branches. Deliberate exporter failure must preserve guest results.
 7. Exact source/compiler/fixture/registry blob SHAs, target artifact digest, nonzero executed CI steps and actual guest output. Distinguish source-only checks, host recorder tests, native compiled execution, AOT proof and dynamic JIT probe proof.
 
+## Compiler independence is a hard architectural boundary
+
+**Conformance does not require a shared compiler or shared MIR.** Each compiler independently parses, resolves, validates, instruments, optimizes, lowers and emits guest code. Versioned contracts and source-ID registries are cross-compiler *data interchange and evidence*, not an executable compiler component, AST library, common optimizer or hidden dependency on the Java reference implementation.
+
+A source-ID record MUST be interpreted against each backend's own semantic call graph and source-map provenance. Different internal operand numbering, backend descriptor slots, native PC/bytecode offsets and code-generation epochs are permitted. The external stable source identity, developer-selected observability policy and trace/log behavior are not permitted to drift.
+
+| Independent implementation | Native instrumentation strategy | Optional deep runtime strategy | Required refusal/gate |
+| --- | --- | --- | --- |
+| Java/GraalVM (Truffle) | Own AST/bytecode source sections, Truffle tags/event nodes, JVM/Native Image compatible static descriptors and dormant probes | Explicitly authorized Truffle attach/deopt/recompile at safe points; codegen version map | Do not call a Native Image containing an interpreter full *guest* AOT; prove actual Atto compiled guest |
+| LLVM native | Own typed LLVM frontend/MIR, IR-inserted fixed probes, native descriptors, LLVM metadata/native debug map | Optional independently governed LLVM ORC-generated checked function variants; LLVM XRay only where supported | No runtime compiler in sealed AOT, no patching hard-RT executable pages |
+| .NET | Independent parser/CIL emitter, build-time generated static metadata, NativeAOT-safe recording probes | Published precompiled versions/hot-load only in supported mode; **no assumed CLR Reflection.Emit or dynamic CIL generation** | Host NativeAOT or host policy toggle alone does not prove guest AOT/probe parity |
+| Rust compiler (`oreslang-source.rs`) | Its own Logos frontend, validated Rust MIR and Cranelift object emission with source descriptor sidecar | Optional separately implemented Cranelift JIT where admitted by *that* compiler | No implicit use of `oreslang-source.cranelift` or LLVM IR |
+| Independent Cranelift backend (`oreslang-source.cranelift`) | Own Rust frontend + own Cranelift IR/probe lowering | Cranelift JIT recompile/publish with verified provenance | Current scalar JIT does not prove AOT or actor/async tracing |
+| Forge | Its own C++20 frontend/IR/native assembly descriptor table | Its own opt-in tiered JIT, verified versioned dispatch, safe retirement | No dependency on Graal, LLVM or Cranelift; no self-hosting/JIT claim from dispatch alone |
+| Wasm | Backend-owned source/descriptor mapping and explicit Wasm module/runtime event ABI | Reinstantiate a verified precompiled Wasm module if deployment profile admits it | **Current repository uses an LLVM compiler bridge for its initial source lowering**; do not mislabel it an independent source compiler or assume browser/Node JIT is controllable Atto JIT |
+
+A backend may implement a *different* internal source-ID matching or annotation strategy as long as it accepts the same source-controlled registry, preserves verified identities and passes equivalent positive/negative executions. Do not centralize a compiler-owned MIR merely to make telemetry pass. Common-source provides normative schemas, fixtures and evidence; each compiler owns its own adapter and acceptance status.
+
+Require individual runtime proofs for Java/Truffle JIT attach, LLVM AOT probe insertion/optional ORC, .NET NativeAOT guest output, Rust independent source-to-object descriptors, Forge native JIT, Wasm modules and Cranelift JIT. The use of an existing backend as an **explicit build dependency** must appear in evidence, especially Wasm's current LLVM bridge; it cannot count as independently implemented parsing/lowering.
+
 ## Existing work and precedent
 
 - [AttoLang scoped `using` and live JIT/AOT contract draft](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/pull/44).
