@@ -31,7 +31,7 @@ Two same-arity primitive alternatives (for example fnc f(int) and fnc f(string))
 
 ### Class constructors and actors
 
-An ordinary class MAY declare multiple constructors. The same static overload rules apply: source-visible arity first and only admitted nominal enum distinctions at equal arity. A constructor is not a normal fnc/mtd, cannot be selected using a return type, and cannot be inherited. Duplicate constructors and overlapping optional/default/variadic arities are errors. Constructor chaining MUST target an unambiguous sibling constructor on the same allocation, preserve exactly-once field initialization and checked ownership cleanup, and reject cycles.
+An ordinary class MAY declare multiple constructors, **by exact source-visible arity only in v1**. Unlike fnc/mtd, two constructors with the same arity are illegal even if their parameter types are different nominal enums. This intentionally aligns with the existing Java constructor-arity draft and keeps constructor selection independently AOT decidable. A constructor is not a normal fnc/mtd, cannot be selected using a return type, and cannot be inherited. Duplicate constructors and overlapping optional/default/variadic arities are errors. Constructor chaining MUST target an unambiguous sibling constructor on the same allocation, preserve exactly-once field initialization and checked ownership cleanup, and reject cycles.
 
 ~~~atto
 define class Point as
