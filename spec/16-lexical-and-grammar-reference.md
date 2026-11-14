@@ -159,6 +159,60 @@ These rules do not change the meaning of a comma in an `if` or `while`
 condition (the existing condition-conjunction grammar), or commas in a
 caller's parameter and argument lists.
 
+## Lambda forms and explicit same-line results
+
+Lambda syntax follows the function-body distinction, with an additional typed
+same-line `=>` delimiter. The executable lambda arrow remains `->`; the
+`=>` after its result type marks the start of a *typed inline expression*
+rather than a second return type. It does not change function-type syntax
+`(int, int) => int`.
+
+```ebnf
+lambda_head        = ("|" [ lambda_parameters ] "|" | "fnc(" [ parameters ] ")") "->";
+lambda_body        = expression
+                   | local_binding "," inline_sequence
+                   | type_ref "=>" (expression | local_binding "," inline_sequence)
+                   | [ type_ref ] "{" { statement } "}"
+                   | type_ref "::" comma_sequence "end";
+inline_sequence    = { local_binding "," } expression;
+comma_sequence     = { sequence_item "," } sequence_item;
+sequence_item      = local_binding | expression | compatible_statement;
+```
+
+Inferred one-line lambdas preserve the existing `|x| -> expression` form.
+A typed one-line lambda uses `|x| -> Type => expression`; the earlier
+incomplete `|x| -> Type expression` remains invalid. For example:
+
+```atto
+val plus = |x: int| -> int => x + 1;
+val eight = || -> val int x = 5, x + 3;
+val typed_eight = || -> int => val int x = 5, x + 3;
+val explicit = || -> int ::
+    int x = 5,
+    x + 3
+end;
+```
+
+Only a leading local declaration makes an unmarked inline comma sequence
+unambiguous. An otherwise bare `|x| -> a, b` is not a general-purpose
+comma expression because the comma can belong to an enclosing argument list.
+General expression sequences use `:: ... end` with an explicit result
+type. Argument delimiters, generic commas, tuple fields, pattern commas and
+`if` conjunction commas are unrelated syntax.
+
+For a lambda used as a `|>` stage, the unparenthesized inline lambda ends
+before the next pipeline stage. To place a nested `|>` *inside* that
+lambda expression, group the inner expression. Multiple lambda parameters
+receive fields of **one statically known tuple** of matching arity; the
+pipeline does not invent additional arguments or spread arrays.
+
+An explicit `void` lambda may perform an effect as its last expression,
+provided it returns `void`. A non-`void` lambda's terminal expression
+must match the declared result type. Existing braced lambdas require an
+explicit `return` for non-`void` results. Nested lexical scopes,
+borrows, throws and suspensions preserve the same static gates as the
+corresponding statement bodies.
+
 ## Statements and semicolons
 
 Semicolons are the formatter's canonical output. They may be omitted only where the parser has a clear structural boundary, such as just before `}`, `fi` or `end`. There is no JavaScript-style automatic insertion. Imports and `namespace` declarations always need one.
