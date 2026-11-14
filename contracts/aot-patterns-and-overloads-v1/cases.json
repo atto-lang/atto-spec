@@ -384,6 +384,54 @@
       "kind": "reject",
       "diagnostic": "E_BINARY_FORWARD_LENGTH",
       "blob_sha": "d42e1462bebc1a5db6cb024c3e0b1162560284fb"
+    },
+    {
+      "path": "valid-bytes-prefix.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "e3597d0a8a0175aaa3c41d6930340d2235776d5c"
+    },
+    {
+      "path": "valid-bytes-exact.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "bcad5ade2d16af03d89d9fb219ac1b2acac455ea"
+    },
+    {
+      "path": "valid-bits-prefix.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "cbdb569e91f9c465f1d0ad4885c2d7ddd15a9f66"
+    },
+    {
+      "path": "valid-bits-exact.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "3991a4671a1fc157fe4de599525b490941f3c5eb"
+    },
+    {
+      "path": "reject-bytes-range.atto",
+      "kind": "reject",
+      "diagnostic": "E_BYTES_LITERAL_RANGE",
+      "blob_sha": "707436ce61af923c24a72e4fe4c8d292e7edd661"
+    },
+    {
+      "path": "reject-bits-range.atto",
+      "kind": "reject",
+      "diagnostic": "E_BITS_LITERAL_RANGE",
+      "blob_sha": "1601212aa3c78cd13bb03d443e085412310e8f46"
+    },
+    {
+      "path": "reject-bits-double-tail.atto",
+      "kind": "reject",
+      "diagnostic": "E_PATTERN_TAIL_POSITION",
+      "blob_sha": "824980f5727c542a0f23ba27c6df7aa271d183a5"
+    },
+    {
+      "path": "reject-bytes-empty-tail-prefix.atto",
+      "kind": "reject",
+      "diagnostic": "E_PATTERN_TAIL_POSITION",
+      "blob_sha": "f7d40f92fd734229030268a3cc643690fbf6684a"
     }
   ]
 }
