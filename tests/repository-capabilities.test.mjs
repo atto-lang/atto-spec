@@ -38,7 +38,7 @@ test('unknown keys, cross-repository identity and invalid features are denied',(
  for(const mutate of [
    x=>{x.unexpected=true;},
    x=>{x.repository='atto-co/other';},
-   x=>{x.feature_status['__proto__']='passed';},
+   x=>{x.feature_status['BAD-KEY']='passed';},
    x=>{x.certification='CERTIFIED';}
  ]) {
   const x=clone();mutate(x);
