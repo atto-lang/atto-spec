@@ -102,6 +102,28 @@ top-level `|>` belongs to the enclosing pipeline; use parentheses to
 nest a pipeline inside a lambda expression. The same boundary rule applies
 to typed `|n| => Type -> expression` and inline local sequences.
 
+### Backend implementation and verification boundary (2026-11-14)
+
+These are **unmerged PR candidates**, not language parity or production
+acceptance. A test fixture, syntax-only formatter and a zero-step GitHub
+workflow must never be counted as executable guest evidence.
+
+| Target | Current candidate | Evidence status |
+| --- | --- | --- |
+| Java/Graal | [compiler #3079](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3079) | Parser, types and real guest tests authored; source Actions not executed |
+| LLVM | [native #1785](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1785) | Scalar `::` and named `|>` candidate; closure syntax denied; native execution not yet verified |
+| .NET | [CIL #523](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/523) | Scalar fnc/routine `::` candidate; nominal mtd and lambdas denied; NativeAOT run unverified |
+| Forge | [stage-0 #280](https://github.com/ores-truffle-oreslang/oreslang-source.forge/pull/280) | Explicit fail-closed `::`/lambda tests, no closure lowering |
+| WASM | [wasm32 #488](https://github.com/ores-truffle-oreslang/oreslang-source.wasm/pull/488) | Authenticated LLVM-to-Wasm compiler gate, native guest not yet run |
+| Browser playground | [compiler gate #115](https://github.com/atto-lang/atto-lang.github.io/pull/115) | Pinned independent Rust/Wasm compiler denies unimplemented forms pending upgrade |
+| Rust formatter | [formatter #143](https://github.com/ores-truffle-oreslang/oreslang-format/pull/143) | Exact head `c4065f6`, 2/2 CI jobs passed; this is formatting only |
+
+Conformance should progress from grammar and AST preservation, through
+type/ownership and effect validation, to real target execution and AOT
+artifact evidence. Backends may temporarily reject a proposed form
+with an explicit diagnostic; they must not accept it into an unsafe
+incomplete lowering or emit a false successful parity receipt.
+
 ## Named function, method and constructor arguments (v1 target)
 
 Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
