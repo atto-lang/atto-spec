@@ -8,7 +8,8 @@ A free function is declared with `fnc`; class and actor instance methods use an 
 
 ```atto
 pub fnc square(int x) -> int ::
-  return x * x
+  int result = x * x,
+  result
 end
 
 define class Ledger as
@@ -19,12 +20,22 @@ define class Ledger as
   end
 
   static fnc zero() -> int ::
-    return 0
+    0
   end
 end
 ```
 
-This `-> T :: ... end` style is one of the valid [function forms](16-lexical-and-grammar-reference.md#function-forms). Backend support differs until grammar parity is proved.
+The `-> T :: ... end` form is the **comma-delimited expression-body** style:
+top-level commas evaluate items from left to right and the final expression
+is the implicit return value for a non-`void` callable. A brace-delimited
+`{ ... }` body remains an explicit statement body, where a result requires
+`return`. Ordinary `-> T` end bodies without `::` retain their legacy
+statement semantics. Explicit `return` remains accepted inside `::` bodies
+for compatibility. The same rule applies to `fnc`, `routine`, class
+methods and explicit `mtd` receiver methods. Details and negative rules
+are in the [function grammar](16-lexical-and-grammar-reference.md#function-forms).
+Backend support must be tested independently; a declared contract alone is
+not proof of LLVM or .NET execution.
 
 ## Named function, method and constructor arguments (v1 target)
 
