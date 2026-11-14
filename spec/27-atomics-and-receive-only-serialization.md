@@ -8,10 +8,10 @@ AttoLang executes ordinary actors concurrently by default. Executing the same im
 
 `Atomic<T>` is the portable shared-scalar abstraction. It is a standard-library/core type, **not** a new `atomic` or Java-style `volatile` keyword. Portable initial specializations are `Atomic<bool>`, `Atomic<int>` (signed i64), and `Atomic<i8/i16/i32/i64/u8/u16/u32/u64>` where the target guarantees the width. There is no implicit `Atomic<String>`, `Atomic<Pointer<T>>` or atomic aggregate. Unsupported widths must be rejected or implemented using a documented linearizable lock-based fallback, never silently downgraded to ordinary loads/stores.
 
-Proposed guest API (snake_case):
+Proposed guest API (snake_case). Java's first interpreter-backed i64 slice uses `Atomic.new(initial)`; other scalar widths, explicit ordering and broader sharing remain TARGET until individually tested:
 
 ```atto
-val counter: Atomic<int> = Atomic<int>(0)
+val counter: Atomic<int> = Atomic.new(0)
 val before: int = counter.fetch_add(1)
 val after: int = counter.load()
 counter.store(42)
