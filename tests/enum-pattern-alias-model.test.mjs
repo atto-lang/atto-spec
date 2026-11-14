@@ -110,7 +110,7 @@ test("nominal matching, field validation and alias collisions fail closed", () =
     ["on Run { imaginary_field } as r ->", /missing variant field/],
     ["on Run { job_id, job_id } ->", /duplicate payload binding/],
     ["on Run { job_id } as job_id ->", /alias collides/],
-    ["on Run { job_id as j } ->", /invalid enum arm pattern/],
+    ["on Run { job_id as j } ->", /field-level rename/],
     ["on .Run ->", /invalid enum arm pattern/],
     ["on Stop { job_id } ->", /missing variant field/],
   ]) assert.throws(() => bind_arm(head), expected, head);
@@ -128,11 +128,11 @@ test("known closed variants must be covered; repeated arm is unreachable", () =>
 
 test("matching fixtures preserve intended source patterns", () => {
   validate_closed_match(arm_heads(fixture("accept-worker-receive.atto")));
-  validate_closed_match(arm_heads(fixture("accept-short-and-qualified.atto")).filter(x => x !== "on WorkerMsg.Stop ->").concat(["on Stop ->"]));
+  assert.deepEqual(arm_heads(fixture("accept-short-and-qualified.atto")).map(h => bind_arm(h).variant), ["Run", "Stop"]);
   for (const [file, expected] of [
     ["reject-alias-collision.atto", /alias collides/],
     ["reject-unknown-variant.atto", /unknown enum variant/],
-    ["reject-field-alias-v1.atto", /invalid enum arm pattern/],
+    ["reject-field-alias-v1.atto", /field-level rename/],
     ["reject-duplicate-payload-binding.atto", /duplicate payload binding/],
     ["reject-missing-variant-field.atto", /missing variant field/],
     ["reject-cross-enum-variant.atto", /cross-enum variant/],
