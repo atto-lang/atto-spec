@@ -1,0 +1,23 @@
+use namespace jobs;
+
+define enum WorkerMsg {
+    Run { job_id: u64, payload: Bytes },
+    Stop
+}
+
+define enum ServerMsg {
+    Stop
+}
+
+declare actor Worker;
+
+mtd (Worker self) receive(msg: WorkerMsg): void {
+    do match msg over
+        on Run as r -> {
+            self.process(r.job_id, r.payload);
+        }
+        on WorkerMsg.Stop -> {
+            self.stop();
+        }
+    end
+}
