@@ -94,10 +94,11 @@ All paths must preserve source-order evaluation of loop-body expressions. In act
 - Run equivalent fixtures on independent Java/GraalVM, LLVM-native AOT, Wasm, Forge and .NET Native AOT compilers. Cross-backend source/tree/fixture SHAs and stepful test logs are required. Rust browser compiler is an additional independently versioned admission lane, not proof of five-backend parity.
 - Check optimization and generation modes independently (debug/release, AOT/JIT, `O0`/`O2` where applicable); prove identical side-effect counts and cancellation/fuel observations.
 - A failed, missing or zero-step GitHub Actions job is NOT execution evidence. A temporary token-free mirror requires the repository's governed private-source export authorization and exact blob/tree verification.
+- The independent Rust browser E2E lane must execute a compiled unbounded loop in a disposable Worker, confirm the host's five-second worker timeout, and verify a subsequent fresh Worker still compiles/runs a healthy guest. This is browser-thread containment evidence, **not** actor-local scheduler/fuel or native process isolation proof.
 
 ## Implementation ledger (2026-11-14)
 
-- `atto-lang/atto-source.rs` draft PR #96 proposes parser/type-checker/Wasm/generator-CFG lowering plus 15 positive and 16 negative fixtures (including wildcard iterator discard, post-test return analysis, moved-condition rejection and terminator disambiguation). Its source-org Actions job completed without usable build logs; the new forms are **not verified executed**.
+- `atto-lang/atto-source.rs` draft PR #96 proposes parser/type-checker/Wasm/generator-CFG lowering plus 15 positive and 20 negative fixtures (including wildcard iterator discard, post-test return analysis, moved-condition rejection, terminator disambiguation and orphan-closer rejection). Its source-org Actions job completed without usable build logs; the new forms are **not verified executed**.
 - Java, LLVM, Wasm primary backend, Forge and .NET require independent source-level admission, formatter roundtrip, type/borrow checks and executable guest tests. The older `while ... do ... done`, `loop ... do ... done` and counted `for (...;...;...)` forms are known in at least one implementation, but that is not parity.
 
 **Release gate: DO NOT mark this target as implemented or five-backend-conformant until exact-head guest evidence is attached for each backend.**
