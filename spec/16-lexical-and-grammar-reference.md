@@ -10,6 +10,7 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 - Identifiers and keywords are case-sensitive.
 - An identifier starts with a letter or `_` and continues with letters, digits or `_`. The Java lexer accepts any Unicode letter. Whether every backend must do the same is open (S-22).
 - `//` starts a line comment. `/* ... */` is a block comment, and block comments nest.
+- **TARGET (decided, 2026-11-14):** block comments nest at most 128 deep. Opening a 129th level is a compile error, reported as `block comment nesting exceeds 128`, before parsing. Java main and .NET main already enforce this limit with that wording. LLVM main has no limit yet; oreslang-source.llvm#1251 adds it, with fixtures at depth 128 (accepted) and 129 (rejected).
 
 ## Keywords
 
@@ -63,7 +64,9 @@ From lowest to highest precedence, following the v0.6 grammar:
 | Assignment | `=` | Right |
 | Pipeline | `\|>` | Left |
 | Conditional | `? :` | Right |
-| Logical OR | `\|` | Left |
+| Logical OR | `\|\|` (and `\|` inside conditions) | Left |
+| Logical XOR | `^^` | Left |
+| Logical AND | `&&` (and `,` inside conditions) | Left |
 | Equality and identity | `eq` `neq` `!eq` `==` `!=` `is` | Left |
 | Comparison and type tests | `<` `<=` `>` `>=` `is type` `matches` `as` `as?` | Left |
 | Additive | `+` `-` | Left |
@@ -74,7 +77,10 @@ From lowest to highest precedence, following the v0.6 grammar:
 - `eq` and `neq` are the canonical comparisons. `==` and `!=` are accepted aliases.
 - `is` tests identity. Type tests use `is type`, as in `if animal is type Dog dog then`.
 - Inside an `if` or `while` condition, `,` means AND and `|` means OR, and comma binds tighter.
-- The grammar has no `&&`, `||` or bitwise and shift operators.
+- **TARGET (decided, 2026-11-14):** `&&` is short-circuit boolean AND, `^^` is boolean XOR, and `||` is short-circuit boolean OR. `^^` is eager: it evaluates both operands exactly once, left to right. Precedence is `&&` above `^^` above `||`. Every operand must have static type `bool`, and there is no truthiness conversion. The built-in `And`, `Or` and `Xor` functions stay valid.
+- Backend status on 2026-11-14: Java main and LLVM main accept `&&` and `||`, and .NET main accepts them in structured module source. All three mains still reject `^^` as reserved. The fixes are oreslang-source.java#3009 and oreslang-source.llvm#1728 / #1739; .NET needs a follow-up change.
+- Single `^` and the bitwise and shift operators are not in the grammar. Integer bit operations use named functions such as `Integer.bitXor(a, b)`.
+- Open: whether the condition-only `,` and `|` spellings stay. oreslang-source.java#3009 proposes removing them in favor of `&&` and `||`.
 - Assignment is an expression, but `if x = y then` is rejected.
 - `name = value` in a call is never a named argument. Named value arguments use `name: value` ([chapter 03](03-functions-and-effects.md)).
 - `++` and `--` exist only in a `for` update clause.
