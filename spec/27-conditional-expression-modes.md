@@ -25,9 +25,9 @@ const int x = true ? { return 5 } : { return 4 };
 const int y = true ? { const int n = 4; n + 1 } : { 4 };
 ```
 
-The historical keyword-delimited **statement** form `if condition then ... else ... fi` remains admitted during migration and never supplies an implicit result. A braced statement `if` can accept redundant `fi` for compatibility, but its canonical formatter output omits it. Braced statement arms contain normal statements; any `return` exits the enclosing callable.
+The historical keyword-delimited **statement** form `if condition then ... else ... fi` remains admitted during migration and never supplies an implicit result. A braced statement `if` must **not consume** a trailing `fi`. A stray `fi` after a standalone braced `if` is a syntax error. An immediately following `fi` may instead close a surrounding keyword-delimited conditional, and the parser must preserve that enclosing delimiter. Braced statement arms contain normal statements; any `return` exits the enclosing callable.
 
-The value `if` is an *expression-position* construct. It has a required `else`, optional `elif` arms, strict bool predicates and a common static result type. A value `if` must never be rewritten as a statement `if` during formatting. Desugaring into an equivalent right-associated ternary is permitted only after respecting `if`/`fi` nesting and branch scope. Assignment inside the condition is forbidden.
+The value `if` is an *expression-position* construct. It has a required `else`, optional `elif` arms (at most 128), strict bool predicates and a common static result type. A value `if` must never be rewritten as a statement `if` during formatting. Desugaring into an equivalent right-associated ternary is permitted only after respecting `if`/`fi` nesting and branch scope. Assignment inside the condition is forbidden.
 
 ## Conditional arm blocks
 
