@@ -185,6 +185,13 @@
       "kind": "reject",
       "source": "match data over on binary {flag: bits[-1]} -> {} end",
       "diagnostic": "E_BINARY_WIDTH"
+    },
+    {
+      "id": "ctor_nominal_same_arity",
+      "feature": "constructor",
+      "kind": "reject",
+      "source": "define class Mode as constructor(Color a) {} constructor(State b) {} end",
+      "diagnostic": "E_CONSTRUCTOR_OVERLAP"
     }
   ]
 }
