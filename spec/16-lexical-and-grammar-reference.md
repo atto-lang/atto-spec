@@ -78,7 +78,7 @@ From lowest to highest precedence, following the v0.6 grammar:
 - `is` tests identity. Type tests use `is type`, as in `if animal is type Dog dog then`.
 - Inside an `if` or `while` condition, `,` means AND and `|` means OR, and comma binds tighter.
 - **TARGET (decided, 2026-11-14):** `&&` is short-circuit boolean AND, `^^` is boolean XOR, and `||` is short-circuit boolean OR. `^^` is eager: it evaluates both operands exactly once, left to right. Precedence is `&&` above `^^` above `||`. Every operand must have static type `bool`, and there is no truthiness conversion. The built-in `And`, `Or` and `Xor` functions stay valid.
-- Backend status on 2026-11-14: Java main and LLVM main accept `&&` and `||`, and .NET main accepts them in structured module source. All three mains still reject `^^` as reserved. The fixes are oreslang-source.java#3009 and oreslang-source.llvm#1728 / #1739; .NET needs a follow-up change.
+- Backend status on 2026-11-14: Java main and LLVM main accept `&&` and `||`. .NET main accepts only the `and`/`or`/`xor` words. All three mains still reject `^^` as reserved. The fixes are oreslang-source.java#3009, oreslang-source.llvm#1728 / #1739 and oreslang-source.net#521, which adds `&&`, `^^` and `||` to the structured frontend.
 - Single `^` and the bitwise and shift operators are not in the grammar. Integer bit operations use named functions such as `Integer.bitXor(a, b)`.
 - Open: whether the condition-only `,` and `|` spellings stay. oreslang-source.java#3009 proposes removing them in favor of `&&` and `||`.
 - Assignment is an expression, but `if x = y then` is rejected.
