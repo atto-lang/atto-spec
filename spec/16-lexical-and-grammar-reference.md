@@ -180,13 +180,13 @@ sequence_item      = local_binding | expression | compatible_statement;
 ```
 
 Inferred one-line lambdas preserve the existing `|x| -> expression` form.
-A typed one-line lambda uses `|x| -> Type => expression`; the earlier
+A typed one-line lambda uses `|x| => Type -> expression`; the earlier
 incomplete `|x| -> Type expression` remains invalid. For example:
 
 ```atto
 val plus = |x: int| -> int => x + 1;
 val eight = || -> val int x = 5, x + 3;
-val typed_eight = || -> int => val int x = 5, x + 3;
+val typed_eight = || => int -> val int x = 5, x + 3;
 val explicit = || -> int ::
     int x = 5,
     x + 3
