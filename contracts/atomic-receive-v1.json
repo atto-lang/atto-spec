@@ -148,6 +148,19 @@
       "source_commit": "27bc2d949ebfe500d0b16edf4551abadd76731ba",
       "tests_passed": 104,
       "github_actions_url": "https://github.com/athlet-o/athleto-docs/actions/runs/43646666902"
+    },
+    "java_native_host_atto_interpreter": {
+      "status": "PASS",
+      "scope": "GraalVM 25.3.4.1 Native Image AOT host executable runs checked-in Atomic<int> .atto source in interpreter-no-jit guest mode; not sealed statically AOT-compiled guest",
+      "source_commit": "27bc2d949ebfe500d0b16edf4551abadd76731ba",
+      "source_main_java_tree_sha": "f7a6094e8ec7625f8d3d8269800be2e1ce90a7e4",
+      "fixture_blob_sha": "c52c4cb6436ac76c3089e0b18bd3907db9217d29",
+      "expected_stdout": "42:42:44",
+      "actual_stdout_verified_byte_equal": true,
+      "host_build_mode": "aot",
+      "guest_execution_mode": "interpreter-no-jit",
+      "sealed_guest_aot_status": "NOT_EXECUTED",
+      "github_actions_url": "https://github.com/athlet-o/athleto-docs/actions/runs/43647843652"
     }
   }
 }
