@@ -42,6 +42,10 @@ Keywords may also be described linguistically as nouns (e.g. `actor`), relationa
 
 **This chapter's documented lexer inventory remains authoritative for its cited revisions.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
 
+## Enum-pattern arm syntax — TARGET (not certified)
+
+The canonical enum syntax is `define enum Name { Variant, Data { field: Type } }`. Match arms begin with contextual `on` and use unqualified variants when the scrutinee's enum is known: `do match msg over on Run { job_id } as r -> { ... } end`. `as r` names a scoped readonly view of the entire narrowed variant, not a copied payload. A prefix dot such as `.Run` is not canonical. A qualified `EnumName.Run` may resolve ambiguity. Field-level renaming such as `job_id as j` remains deferred. See [chapter 27](27-typed-enum-pattern-aliases.md). The keyword inventory above is the observed Java lexer, **not** proof of target support.
+
 ## Literals
 
 | Kind | Form | Notes |
