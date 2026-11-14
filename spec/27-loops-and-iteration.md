@@ -62,6 +62,44 @@ for item in items do consume(item); end
 
 The parser must reject unsupported forms before emitting executable IR. A formatter must not silently rewrite a rejected form into an accepted one.
 
+## Value-returning immutable loops: `loop (val ...) { ... recur(...) }`
+
+**TARGET**: In addition to ordinary imperative `loop`, the state-carrying expression has this grammar:
+
+```ebnf
+state_loop_expr = 'loop' '(' state_binding { ',' state_binding } ')' loop_body ;
+state_binding   = 'val' identifier [ ':' type_ref ] '=' expression ;
+loop_tail       = 'recur' '(' expression { ',' expression } ')' ';'
+                | 'break' expression ';' ;
+```
+
+```atto
+val total: int = loop (
+    val i: int = 0,
+    val sum: int = 0
+) {
+    if i >= 10 {
+        break sum;
+    }
+    recur(i + 1, sum + i);
+};
+```
+
+This returns **45**. `recur` is intentionally adopted from Clojure `loop/recur`, **not** the earlier proposed stateful `continue(next_values)`. Ordinary `continue;` remains valid in imperative `while` / `for` / `loop` and is invalid in a state-carrying value-loop, whose `recur` must explicitly provide all next values.
+
+Rules:
+
+1. Every state binder is explicit `val` (immutable). A binding initializer is evaluated **once** in declaration order and may reference earlier bindings. Duplicate names and mutable `let`/other implicit binding kinds are rejected.
+2. `recur(v1, ..., vn);` is a **control-flow transfer, not a function call or expression**. It is legal only in tail position of the nearest active immutable state-loop: the final statement of the loop body or the final statement of an exhaustive conditional branch. The number and static types must match the state's bindings exactly; no coercions or implicit defaults.
+3. Each `recur` operand is evaluated once, from left to right, against the *old* immutable state. The implementation must evaluate all values before committing any of them, so `recur(b, a)` is a correct parallel swap and `recur(i + 1, sum + i)` uses the previous `i` for the sum.
+4. `break value;` exits the innermost value-loop with its typed result. Every valued exit must agree on a single static type. A value-loop requires at least one statically identified valued `break`, and no execution path may fall through its body. `return` still exits the enclosing function.
+5. `break;` or `continue;` without a new state/result is illegal in these value loops. `recur` outside a value loop is illegal. `break value` in ordinary loops is TARGET future work, not implied by this initial subset.
+6. Loop state has lexical lifetime. Carried owned values and borrows require explicit per-backend ownership validation; none may escape their legal actor heap/isolate boundary. Recurring state must not imply synchronization, purity, or suspension.
+7. Every immutable state-loop is lowered to a machine loop with phi/equivalent register/stack locals, **not a recursive call stack**. The loop infrastructure does not allocate on each iteration. The code *inside* the loop may still allocate, for example via string concatenation.
+8. Every backedge must preserve actor cancellation, cooperative scheduling and hard fuel/real-time limits appropriate to the backend. The Rust/Wasm first executable profile limits carried values to copyable `int`, `bool`, `float`, and `string`; nested ordinary loops and generator frame lowering await a later, separately audited slice.
+
+**Adversarial acceptance** includes tail-only `recur`, arity and type mismatches, repeated-evaluation prevention, parallel swaps, invalid fallthrough, mixed `break` result types, escaped `break value`, ownership across iterations, AOT debug/release equivalence, and actor cancellation under an unbounded `recur`. `fold`/`reduce` remain collection APIs, not aliases for this control-flow construct.
+
 ## Required semantics
 
 1. **Pre-test while** evaluates the condition before the first iteration and before every subsequent iteration. A false initial condition executes the body zero times.
