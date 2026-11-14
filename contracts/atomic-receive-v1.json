@@ -129,5 +129,25 @@
       "compiler_sha": null,
       "fixture_sha": null
     }
+  },
+  "verified_slices": {
+    "java_atomic_i64_interpreter": {
+      "status": "PASS",
+      "scope": "Java/GraalVM interpreter-backend Atomic<int> guest execution and compiler/ownership negative tests; not combined actor concurrency contract",
+      "source_commit": "27bc2d949ebfe500d0b16edf4551abadd76731ba",
+      "source_main_java_tree_sha": "f7a6094e8ec7625f8d3d8269800be2e1ce90a7e4",
+      "executed_fixture": "ores-truffle-oreslang/oreslang-source.java/tests/fixtures/atomic-v1/atomic_i64_guest.atto",
+      "fixture_blob_sha": "c52c4cb6436ac76c3089e0b18bd3907db9217d29",
+      "junit_tests_passed": 31,
+      "github_actions_url": "https://github.com/athlet-o/athleto-docs/actions/runs/43646372081",
+      "native_image_status": "NOT_EXECUTED"
+    },
+    "java_actor_regression": {
+      "status": "PASS",
+      "scope": "Existing Java actor runtime, source spawn/cleanup, state-region and loan JUnit regression tests (not physical parallel receive dispatch)",
+      "source_commit": "27bc2d949ebfe500d0b16edf4551abadd76731ba",
+      "tests_passed": 104,
+      "github_actions_url": "https://github.com/athlet-o/athleto-docs/actions/runs/43646666902"
+    }
   }
 }
