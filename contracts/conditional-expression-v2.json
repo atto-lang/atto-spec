@@ -32,7 +32,8 @@
     "branch_evaluation": "selected_branch_only",
     "check_both_types": true,
     "ownership": "join_after_exclusive_branches",
-    "effects": "checked"
+    "effects": "checked",
+    "required_value_type": "non_void"
   },
   "backend_claims": {
     "rust_browser": "implementation_PR_open_unverified",
@@ -138,6 +139,24 @@
       "kind": "reject_compile",
       "source": "pub fnc main(): int { return if false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 else 42 fi; }",
       "expected_diagnostic": "E_NESTING"
+    },
+    {
+      "id": "reject_void_ternary_expression",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { true ? stdio.println(\"yes\") : stdio.println(\"no\"); return 42; }",
+      "expected_diagnostic": "E_TYPE"
+    },
+    {
+      "id": "reject_void_if_expression",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { const int impossible = if true then stdio.println(\"yes\") else stdio.println(\"no\") fi; return 42; }",
+      "expected_diagnostic": "E_TYPE"
+    },
+    {
+      "id": "allow_imperative_void_effect",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { if true { stdio.println(\"selected\"); } else { stdio.println(\"wrong\"); } return 42; }",
+      "expected_result": 42
     }
   ]
 }
