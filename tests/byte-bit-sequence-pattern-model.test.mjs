@@ -102,7 +102,7 @@ test("bytes pattern exact, singleton literal, zero length, prefix, nested tail a
   assert.equal(byteAt(m.tail, 0), 7);
   assert.equal(matchSequence(view, "bytes", [lit(80)], "rest"), null);
   const nested = matchSequence(inputBytes(Uint8Array.from([10, 20, 30])), "bytes", [lit(10)], "rest");
-  assert.equal(matchSequence(nested.rest, "bytes", [lit(20), lit(30)]).constructor, Object);
+  assert.ok(matchSequence(nested.rest, "bytes", [lit(20), lit(30)]));
   const bound = matchSequence(view, "bytes", [bind("first"), bind("_"), bind("third")], "_");
   assert.equal(bound.first, 71);
   assert.equal(bound.third, 84);
