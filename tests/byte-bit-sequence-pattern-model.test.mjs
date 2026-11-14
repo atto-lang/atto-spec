@@ -155,7 +155,7 @@ test("borrowed tail lifetime is checked against parent owner", () => {
 
 test("two-packet-sized view and bit widths stay separate from positional bit literals", () => {
   const data = inputBytes(Uint8Array.from([0b10100101, 0, 3, 97, 98, 99]));
-  const flagBits = matchSequence(viewSuffix(data, 0, "BitView"), "bits",
+  const flagBits = matchSequence({ owner: data.owner, bitStart: 0, bitLength: 8, kind: "BitView" }, "bits",
     [lit(1),lit(0),lit(1),lit(0),lit(0),lit(1),lit(0),lit(1)]);
   assert.ok(flagBits);
   const payload = viewSuffix(viewSuffix(data, 8, "ByteView"), 16, "ByteView");
