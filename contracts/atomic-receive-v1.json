@@ -1,0 +1,133 @@
+{
+  "schema": "attolang-atomic-receive-v1",
+  "status": "TARGET",
+  "version": 1,
+  "decision_date": "2026-11-14",
+  "standard_library": {
+    "type": "Atomic<T>",
+    "default_order": "seq_cst",
+    "supported_scalar_target": [
+      "bool",
+      "int",
+      "i8",
+      "i16",
+      "i32",
+      "i64",
+      "u8",
+      "u16",
+      "u32",
+      "u64"
+    ],
+    "unsupported": [
+      "String",
+      "Pointer<T>",
+      "aggregate"
+    ],
+    "checked_integer_rmw": true
+  },
+  "memory_orders": {
+    "load": [
+      "relaxed",
+      "acquire",
+      "seq_cst"
+    ],
+    "store": [
+      "relaxed",
+      "release",
+      "seq_cst"
+    ],
+    "rmw": [
+      "relaxed",
+      "acquire",
+      "release",
+      "acq_rel",
+      "seq_cst"
+    ],
+    "cas_failure": [
+      "relaxed",
+      "acquire",
+      "seq_cst"
+    ]
+  },
+  "scheduling": {
+    "default_actor_receive": "concurrent_bounded",
+    "default_actor_methods": "concurrent_bounded",
+    "serial_actor_receive": "one_live_invocation_including_suspension",
+    "serial_actor_other_methods": "concurrent_not_gated_by_receive",
+    "state": "compiler_verified_critical_readers_exclusive_writer",
+    "stack": "one_stack_per_independent_invocation"
+  },
+  "fixtures": [
+    {
+      "id": "atomic_i64_sequential",
+      "file": "tests/fixtures/atomic-v1/atomic_i64_sequential.atto",
+      "kind": "compile_and_execute",
+      "expected_exit": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic_reject_string",
+      "file": "tests/fixtures/atomic-v1/atomic_reject_string.atto",
+      "kind": "compile_reject",
+      "expected_diagnostic_category": "ATOMIC_UNSUPPORTED_ELEMENT_TYPE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic_reject_load_release",
+      "file": "tests/fixtures/atomic-v1/atomic_reject_load_release.atto",
+      "kind": "compile_reject",
+      "expected_diagnostic_category": "ATOMIC_INVALID_MEMORY_ORDER",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "serial_receiver_methods",
+      "file": "tests/fixtures/atomic-v1/serial_receiver_methods.atto",
+      "kind": "runtime_harness_required",
+      "required_observations": [
+        "one_live_receive_through_await",
+        "independent_method_runs_while_receive_suspended",
+        "critical_loans_arbitrate_state"
+      ],
+      "status": "NOT_EXECUTED"
+    }
+  ],
+  "additional_required_evidence": [
+    "eight-thread_atomic_fetch_add_no_lost_updates",
+    "strong_compare_exchange_success_failure",
+    "atomic_overflow_no_partial_publication",
+    "release_acquire_publication",
+    "illegal_shared_actor_heap_reference_rejected",
+    "conflicting_critical_write_waits_for_readers",
+    "ordinary_actor_two_receives_distinct_stacks",
+    "serial_actor_stale_wake_cannot_release_new_receive_permit",
+    "cross_tenant_capability_checks",
+    "AOT_and_native_guest_execution_receipts"
+  ],
+  "backends": {
+    "java": {
+      "guest_status": "NOT_EXECUTED",
+      "compiler_sha": null,
+      "fixture_sha": null
+    },
+    "llvm": {
+      "guest_status": "NOT_EXECUTED",
+      "compiler_sha": null,
+      "fixture_sha": null
+    },
+    "net": {
+      "guest_status": "NOT_EXECUTED",
+      "compiler_sha": null,
+      "fixture_sha": null
+    },
+    "wasm": {
+      "guest_status": "NOT_EXECUTED",
+      "compiler_sha": null,
+      "fixture_sha": null
+    },
+    "forge": {
+      "guest_status": "NOT_EXECUTED",
+      "compiler_sha": null,
+      "fixture_sha": null
+    }
+  }
+}
