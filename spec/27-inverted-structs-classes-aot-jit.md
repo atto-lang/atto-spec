@@ -24,14 +24,15 @@ define inverted class Particle as
     f32 vx
     f32 vy
 
-    move(f32 dt): void {
-        self.x = self.x + self.vx * dt;
-        self.y = self.y + self.vy * dt;
-    }
 end
 
-val positions = InvertedArray<Position>.with_capacity(1024);
-val particles = InvertedArray<Particle>.with_capacity(1024);
+mtd (mut self: Particle) move_by(f32 dt): void {
+    self.x = self.x + self.vx * dt;
+    self.y = self.y + self.vy * dt;
+}
+
+let positions = InvertedArray<Position>.with_capacity(1024);
+let particles = InvertedArray<Particle>.with_capacity(1024);
 ```
 
 A plain `Array<T>` retains its documented ordinary array semantics. No compiler may silently reinterpret an existing `Array<T>` as `InvertedArray<T>`, or choose an AoS representation for a declared inverted-class store in contradiction to its SoA contract. A layout conversion is explicit and may copy. A fixed-width nested record may remain one opaque column element; recursive flattening requires its own opt-in layout contract and proof.
@@ -51,6 +52,31 @@ A plain `Array<T>` retains its documented ordinary array semantics. No compiler 
 The parser emits distinct `InvertedStructDecl` and `InvertedClassDecl` metadata, with nominal declaration identity, closed field order/types, storage policy and source spans. Type checking must either produce a fully admitted representation descriptor or reject the source **before executable IR**. Unsupported inheritance, virtual dispatch, GC/resource-owning fields, unsized/recursive fields, unproven aliasing, or incompatible target ABIs fail closed.
 
 A normalized layout plan contains declaration and generation identity, field types/widths/alignments, column offsets and capacities, owner/arena identity, store generation, row mapping policy, loan/effect summary, and selected layout. Every field address is checked using wide integer arithmetic, aligned segment bounds, and current handle/loan authority; field access does not first resolve an index then race an erase. The plan is a **compiler-owned**, versioned artifact, not user-constructed authority. Its physical description must agree across codegen, reflection/debugging, binary serializers and FFI or those integrations must be rejected.
+
+### Typed inverted-access IR admission (target contract)
+
+Before code generation, every backend must lower admitted `.atto` inverted operations to **typed compiler-owned IR**, never directly to unverified host-side column calls. The canonical *target op semantics* below do not assert that any backend implements them today; concrete IR spellings can differ between independent compilers.
+
+```text
+InvertedLayoutV1<T> = (declaration_identity, declaration_generation,
+  kind: struct|class, ordered_field_types_and_alignments, SoA_column_layout,
+  owner_domain, row_mapping_policy, layout_epoch_policy, target_abi)
+
+InvertedAlloc<T>(owner, capacity)               -> Store<T>                   [alloc, structural]
+InvertedPush<T>(store, typed_row_value)          -> CheckedClassHandle<T>      [alloc?, structural, trap]
+InvertedResolve<T>(store, class_handle)          -> CheckedRow<T>              [read, generation_check, trap]
+InvertedFieldRead<T,F>(store, checked_row, loan) -> F                          [read, bounds/loan_check, trap]
+InvertedFieldWrite<T,F>(store, checked_row, F)   -> void                       [write, bounds/loan_check, trap]
+InvertedSnapshot<T>(store, checked_row)         -> DetachedValue<T>           [read, whole_row_check, trap]
+InvertedEraseSwap<T>(store, class_handle)       -> void                       [write, structural, trap]
+InvertedDrop<T>(store)                          -> void                       [owner_drop, revoke_loans]
+```
+
+The class-handle operations above apply to `inverted class`; an `inverted struct` remains a detached value or scoped borrow, never a durable `CheckedClassHandle<T>`. Each operation preserves source-defined receiver/index/RHS evaluation order and exactly-once evaluation, including when the operation traps. The verifier rejects a forged capability, wrong owner, expired generation, stale layout, invalid field type, illegal alias or escaping loan. The lowered read/write checks and the access itself must be **linearizable under the same synchronization boundary**; an independent check followed by a raw address dereference is forbidden.
+
+An issued physical `LayoutGuard` contains store issuer identity and a monotonic epoch. A `reserve(n)` that **does not grow any backing metadata or field column** preserves the guard; real growth and `push` / `erase_swap` invalidate it. If a growth attempt can partially relocate storage before failing, it must invalidate the guard *before* its first allocation. A guard never grants raw pointer access, skips row/loan checks, or substitutes for code-generation/schema/CPU-feature guards. JIT deoptimization must not repeat a committed field write or exception side effect. The compilation pipeline must reject unrepresentable owner-relative 32-bit offsets *before narrowing*, and preserve deterministic arena reclamation without silently introducing tracing GC.
+
+These operations require backend-specific checked lowering and real compiled-guest `.atto` tests. A host C++ template or Java class implementing similar operations is **not** evidence of this IR or its AOT/JIT execution.
 
 **AOT:** monomorphize admitted row operations, fix offsets/strides at build time, inline bounded index+generation checks, eliminate temporary row materializations where observable semantics permit, vectorize proven independent field loops, and produce a static method/ABI manifest. Strict full-guest-AOT artifacts contain no interpreter, runtime source compiler, or JIT fallback.
 
