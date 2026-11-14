@@ -36,6 +36,7 @@ This repository is the **language-level specification**, not the proof that a pa
 | [22 — Concurrency and shared ownership](spec/22-concurrency-and-shared-ownership.md) | Concurrent-default actors, serial opt-in, ref32 arenas, protected pipes, singletons and symbols |
 | [23 — Keyword roles and highlighting](spec/23-keyword-taxonomy-and-highlighting.md) | Linguistic word classes, parser semantics, reserved/contextual distinctions and editor token guidance |
 | [24 — AOT, zero-GC and controlled dynamism](spec/24-aot-zero-gc-controlled-dynamism.md) | Strict profiles, static proxies/reflection, ownership and backend evidence |
+| [27 — Optional types and named/omittable call arguments](spec/27-optional-and-named-arguments.md) | Independent `?` positions, defaults, named binding, call-plan provenance and backend gates |
 | [26 — Bytes and async TCP v1](spec/26-bytes-and-async-tcp.md) | Move-only immutable Bytes, Bytes-keyed Map, nonblocking listener/connection API and affine connection transfer |
 
 ## Specification interpretation
