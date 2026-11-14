@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 const contract = JSON.parse(readFileSync(new URL("../contracts/aot-patterns-and-overloads-v1/cases.json", import.meta.url), "utf8"));
 
@@ -179,4 +180,23 @@ test("bit extraction, explicit little endian, alignment and forward lengths", ()
   assert.throws(() => binaryMatch(Uint8Array.from([0]), [
     {name:"rest",type:"rest"}, {name:"extra",type:"u8"}
   ]), /rest not last/);
+});
+
+
+test("canonical .atto fixtures retain exact Git blob hashes and explicit expected outcomes", () => {
+  assert.equal(contract.fixtures.length, 6);
+  const names = new Set();
+  for (const item of contract.fixtures) {
+    assert.ok(item.path.endsWith(".atto") && !item.path.includes("/"));
+    assert.ok(!names.has(item.path), item.path);
+    names.add(item.path);
+    const text = readFileSync(new URL("../contracts/aot-patterns-and-overloads-v1/" + item.path, import.meta.url));
+    const sha = createHash("sha1")
+      .update("blob " + text.length + "\0")
+      .update(text).digest("hex");
+    assert.equal(sha, item.blob_sha, item.path);
+    assert.ok(text.toString("utf8").includes("main()"));
+    if (item.kind === "accept") assert.equal(item.expected_exit, 42);
+    else assert.match(item.diagnostic, /^E_/);
+  }
 });
