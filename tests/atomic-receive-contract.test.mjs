@@ -62,6 +62,13 @@ test("contract declares bounded target API and does not attest guest parity", ()
   assert.match(javaAtomic.fixture_blob_sha, /^[a-f0-9]{40}$/);
   assert.equal(javaAtomic.native_image_status, "NOT_EXECUTED");
   assert.equal(contract.verified_slices?.java_actor_regression?.tests_passed, 104);
+  const nativeHost = contract.verified_slices?.java_native_host_atto_interpreter;
+  assert.equal(nativeHost?.status, "PASS");
+  assert.equal(nativeHost.host_build_mode, "aot");
+  assert.equal(nativeHost.guest_execution_mode, "interpreter-no-jit");
+  assert.equal(nativeHost.actual_stdout_verified_byte_equal, true);
+  assert.equal(nativeHost.expected_stdout, "42:42:44");
+  assert.equal(nativeHost.sealed_guest_aot_status, "NOT_EXECUTED");
   // A verified Java subset must not accidentally certify the combined
   // receive-only concurrency contract for any of the five backends.
   assert.equal(contract.backends.java.guest_status, "NOT_EXECUTED");
