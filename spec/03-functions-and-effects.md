@@ -37,6 +37,68 @@ are in the [function grammar](16-lexical-and-grammar-reference.md#function-forms
 Backend support must be tested independently; a declared contract alone is
 not proof of LLVM or .NET execution.
 
+## Lambda bodies, explicit results and comma sequencing
+
+The typed same-line lambda delimiter proposed on 2026-11-07 is
+`-> ReturnType => expression`. Here `-> ReturnType` is the callable result
+annotation and the **second**, `=>` token introduces its inline value
+expression. `=>` continues to appear in type-level function signatures
+(`(int, int) => int`); the two contexts are unambiguous in the grammar.
+
+```atto
+val inferred = || -> 5 + 3;
+val typed = || -> int => 5 + 3;
+val typed_with_local = || -> int => val int x = 5, x + 3;
+val inferred_with_local = || -> val int x = 5, x + 3;
+
+val block = || -> int { return 8; };
+val comma_block = || -> int ::
+    int x = 5,
+    x + 3
+end;
+```
+
+The `-> Type :: ... end` lambda form uses the same top-level comma
+sequence and implicit terminal-result rule as `fnc`, `routine` and `mtd`.
+An explicit `void` result permits a terminal effect expression with no
+value result; a non-`void` declaration must match the inferred terminal
+expression type. An ordinary `{ ... }` lambda body remains a statement
+body with explicit `return`.
+
+An inferred **same-line** comma sequence may begin with a local declaration
+(`val`, `const`, `let` or a supported type-first immutable binding),
+then one or more comma-delimited items, ending in a value expression.
+A bare `|| -> left, right` must not consume a caller's second argument
+as part of the lambda: explicit grouping or `:: ... end` is required
+for general comma sequences lacking a leading binding.
+
+### Pipeline lambda contracts
+
+```atto
+fnc foo(int n): Tuple[int, int] {
+    return tuple(n, n + 1);
+}
+
+val reporter = || -> void ::
+    5 |> foo |> |x, y| -> stdio.println(x + y)
+end;
+
+val compact = || -> void =>
+    5 |> foo |> |x, y| -> stdio.println(x + y);
+```
+
+A value pipeline always forwards **one** value. For a lambda stage with
+multiple parameters (`|x, y|`), the single upstream value must be a
+statically typed tuple of matching arity, destructured exactly once in
+order. A scalar, array or mismatched tuple must fail type checking.
+No implicit extra arguments, reflection or copy of ownership-sensitive
+elements is introduced by the comma-body feature.
+
+For an unparenthesized `|n| -> expression` pipeline stage, the next
+top-level `|>` belongs to the enclosing pipeline; use parentheses to
+nest a pipeline inside a lambda expression. The same boundary rule applies
+to typed `|n| -> Type => expression` and inline local sequences.
+
 ## Named function, method and constructor arguments (v1 target)
 
 Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
