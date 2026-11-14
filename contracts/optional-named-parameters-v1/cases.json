@@ -689,6 +689,222 @@
         }
       ],
       "reject": "too_many_arguments"
+    },
+    {
+      "id": "type-first-calculate-named-42",
+      "source": "fnc calculate(int x, int y?=10, int? z?); calculate(x:20,y:22)",
+      "formals": [
+        {
+          "name": "x",
+          "type": "int"
+        },
+        {
+          "name": "y",
+          "type": "int",
+          "omittable": true,
+          "default": 10,
+          "defaultKind": "constant",
+          "defaultType": "int"
+        },
+        {
+          "name": "z",
+          "type": "int?",
+          "omittable": true
+        }
+      ],
+      "items": [
+        {
+          "kind": "value",
+          "label": "x",
+          "expression": "20",
+          "valueType": "int"
+        },
+        {
+          "kind": "value",
+          "label": "y",
+          "expression": "22",
+          "valueType": "int"
+        }
+      ],
+      "slots": [
+        "value@0",
+        "value@1",
+        "absent:typed_none"
+      ],
+      "eval": [
+        0,
+        1
+      ]
+    },
+    {
+      "id": "name-first-calculate-named-42",
+      "source": "fnc calculate(x:int, y?:int=10, z?:int?); calculate(x:20,y:22)",
+      "formals": [
+        {
+          "name": "x",
+          "type": "int"
+        },
+        {
+          "name": "y",
+          "type": "int",
+          "omittable": true,
+          "default": 10,
+          "defaultKind": "constant",
+          "defaultType": "int"
+        },
+        {
+          "name": "z",
+          "type": "int?",
+          "omittable": true
+        }
+      ],
+      "items": [
+        {
+          "kind": "value",
+          "label": "x",
+          "expression": "20",
+          "valueType": "int"
+        },
+        {
+          "kind": "value",
+          "label": "y",
+          "expression": "22",
+          "valueType": "int"
+        }
+      ],
+      "slots": [
+        "value@0",
+        "value@1",
+        "absent:typed_none"
+      ],
+      "eval": [
+        0,
+        1
+      ]
+    },
+    {
+      "id": "name-first-calculate-default-30",
+      "source": "fnc calculate(x:int, y?:int=10, z?:int?); calculate(x:20)",
+      "formals": [
+        {
+          "name": "x",
+          "type": "int"
+        },
+        {
+          "name": "y",
+          "type": "int",
+          "omittable": true,
+          "default": 10,
+          "defaultKind": "constant",
+          "defaultType": "int"
+        },
+        {
+          "name": "z",
+          "type": "int?",
+          "omittable": true
+        }
+      ],
+      "items": [
+        {
+          "kind": "value",
+          "label": "x",
+          "expression": "20",
+          "valueType": "int"
+        }
+      ],
+      "slots": [
+        "value@0",
+        "absent:explicit",
+        "absent:typed_none"
+      ],
+      "eval": [
+        0
+      ]
+    },
+    {
+      "id": "name-first-required-option",
+      "source": "fnc f(x:int?); f(None)",
+      "formals": [
+        {
+          "name": "x",
+          "type": "int?"
+        }
+      ],
+      "items": [
+        {
+          "kind": "value",
+          "expression": "None",
+          "valueType": "None"
+        }
+      ],
+      "slots": [
+        "value@0"
+      ],
+      "eval": [
+        0
+      ]
+    },
+    {
+      "id": "name-first-defaulted-option",
+      "source": "fnc f(x?:int?=Some(5)); f()",
+      "formals": [
+        {
+          "name": "x",
+          "type": "int?",
+          "omittable": true,
+          "default": "Some(5)",
+          "defaultKind": "constant",
+          "defaultType": "Option<int>"
+        }
+      ],
+      "items": [],
+      "slots": [
+        "absent:explicit"
+      ],
+      "eval": []
+    },
+    {
+      "id": "name-first-required-option-missing",
+      "source": "fnc f(x:int?); f()",
+      "formals": [
+        {
+          "name": "x",
+          "type": "int?"
+        }
+      ],
+      "items": [],
+      "reject": "missing_required"
+    },
+    {
+      "id": "name-first-scalar-omission-no-default",
+      "source": "fnc f(x?:int); f()",
+      "formals": [
+        {
+          "name": "x",
+          "type": "int",
+          "omittable": true
+        }
+      ],
+      "items": [],
+      "reject": "missing_nonoption_default"
+    },
+    {
+      "id": "name-first-unwrapped-value-rejected",
+      "source": "fnc f(x:int?); f(42)",
+      "formals": [
+        {
+          "name": "x",
+          "type": "int?"
+        }
+      ],
+      "items": [
+        {
+          "kind": "value",
+          "expression": "42",
+          "valueType": "int"
+        }
+      ],
+      "reject": "wrong_type"
     }
   ]
 }

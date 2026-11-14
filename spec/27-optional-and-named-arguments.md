@@ -12,6 +12,46 @@
 | `int? age?` | `Option<int>` | no | typed `None` |
 | `int? age? = Some(18)` | `Option<int>` | no | checked explicit default |
 
+## Equivalent formal declaration orders
+
+AttoLang admits **two equally normative declaration spellings**; one is
+not an obsolete, erased, or lower-priority compatibility form. Both lower to
+the **same** parameter name, resolved type, name-level `omittable` bit,
+type-position `Option<T>` sugar bit, and unevaluated default expression.
+
+| Type-first | Name-first | Semantics |
+| --- | --- | --- |
+| `int x` | `x: int` | required `int` |
+| `int? x` | `x: int?` | **required** `Option<int>` |
+| `int y? = 10` | `y?: int = 10` | omittable `int`, default `10` |
+| `int? z?` | `z?: int?` | omittable `Option<int>`, default `None` |
+| `int? z? = Some(5)` | `z?: int? = Some(5)` | omittable Option, checked default |
+| `Option<int>? nested?` | `nested?: Option<int>?` | omittable nested Option |
+
+In the name-first form, `?` **before** `:` belongs to the formal *name*,
+and `?` **after** the type belongs to its *type*. `x: int??` must not be
+reinterpreted as `x?: int?`; reject the malformed suffix rather than
+silently moving the omission marker. A default with `x: int = 5`
+also fails because the name has no `?`. Mixed declaration styles in one
+formal list are allowed; duplicate names still fail.
+
+```atto
+fnc calculate(x: int, y?: int = 10, z?: int?): int {
+  return x + y;
+}
+
+pub fnc main(): int {
+  return calculate(x: 20, y: 22); // expected exit 42
+}
+```
+
+The illustrative guest program above is **target syntax**, not evidence that
+any backend currently executes defaulted or named calls. The signature is
+equivalent to `fnc calculate(int x, int y? = 10, int? z?)`.
+The formatter must preserve semantics and lexical call argument evaluation
+regardless of its chosen output styling. Prefer round-tripping the user's
+selected formal declaration order if the frontend retains source spelling.
+
 **Type-position suffix `?` is exactly `Option<T>` sugar**: `T?` and `Option<T>` have the same nominal source type, ownership, layout, ABI, matching and inference semantics. An `Option<T>` argument does not become omittable because its *type* is optional. `T?` is valid wherever a type reference is admitted (including fields, local declarations, results, generic type arguments, type aliases, array elements and formals). Nested types can be written `Option<T>?` (`Option<Option<T>>`) or explicitly `Option<Option<T>>`; an unproven compact `T??` spelling must fail closed. Never substitute nullable host references or implicitly construct `Some` when only an ordinary `T` is supplied: existing explicit `Some(value)` / `None` semantics apply.
 
 **Formal-name suffix `?` is only legal on a *value-parameter declaration*** (function, method, constructor, and other statically verified callable signatures). It is a compile-time omittable-slot bit, not a type suffix, nullable local variable, postfix propagation, conditional operator or runtime argument value. `let int age?`, `obj.age?` and named generic type parameters `<T?>` must never acquire "omittable parameter" meaning.

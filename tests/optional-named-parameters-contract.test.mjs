@@ -37,6 +37,18 @@ test("type suffix sugar and formal omission bit are independent",()=>{
   ]);
 });
 
+test("both formal declaration orders describe the same binding shape, not guest execution",()=>{
+  const typeFirst=sourceCases.find(x=>x.id==="type-first-calculate-named-42");
+  const nameFirst=sourceCases.find(x=>x.id==="name-first-calculate-named-42");
+  assert.ok(typeFirst && nameFirst);
+  assert.notEqual(typeFirst.source,nameFirst.source);
+  assert.deepEqual(normalize(typeFirst.formals),normalize(nameFirst.formals));
+  assert.deepEqual(bind(typeFirst.formals,typeFirst.items),bind(nameFirst.formals,nameFirst.items));
+  assert.equal(bind(nameFirst.formals,[{kind:"value",label:"x",expression:"20",valueType:"int"}]).slots[1],"absent:explicit");
+  assert.throws(()=>bind([{name:"x",type:"int?"}],[]),
+    e=>e instanceof BindingError&&e.code==="missing_required");
+});
+
 test("labels do not resolve overlapping optional-arity overloads",()=>{
   const a=[{name:"one",type:"int",omittable:true,default:1,defaultKind:"constant",defaultType:"int"},{name:"two",type:"int"}];
   const b=[{name:"other",type:"int"}];

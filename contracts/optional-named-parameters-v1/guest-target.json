@@ -79,6 +79,55 @@
       "expected_exit": null,
       "expected_diagnostic_category": "missing_required_formal",
       "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/namefirst_calculate_42.atto",
+      "kind": "execute",
+      "expected_exit": 42,
+      "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/namefirst_calculate_default_30.atto",
+      "kind": "execute",
+      "expected_exit": 30,
+      "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/namefirst_required_option.atto",
+      "kind": "execute",
+      "expected_exit": 42,
+      "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/namefirst_reject_scalar_without_default.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "missing_default",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/namefirst_reject_default_without_omission.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "default_requires_name_question",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/namefirst_reject_duplicate_type_question.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "duplicate_type_question",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/namefirst_reject_duplicate_formal.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "duplicate_formal_name",
+      "status": "AUTHORED_NOT_EXECUTED"
     }
   ]
 }
