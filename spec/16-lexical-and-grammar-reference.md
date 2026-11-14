@@ -161,30 +161,34 @@ caller's parameter and argument lists.
 
 ## Lambda forms and explicit same-line results
 
-Lambda syntax follows the function-body distinction, with an additional typed
-same-line `=>` delimiter. The executable lambda arrow remains `->`; the
-`=>` after its result type marks the start of a *typed inline expression*
-rather than a second return type. It does not change function-type syntax
-`(int, int) => int`.
+Lambda bodies follow the callable distinction. The fat arrow `=>`
+introduces an explicit **result type**, not an expression body. The
+slim arrow `->` introduces the expression itself. This is consistent
+with type-level notation `(int, int) => int`.
 
 ```ebnf
-lambda_head        = ("|" [ lambda_parameters ] "|" | "fnc(" [ parameters ] ")") "->";
-lambda_body        = expression
-                   | local_binding "," inline_sequence
-                   | type_ref "=>" (expression | local_binding "," inline_sequence)
-                   | [ type_ref ] "{" { statement } "}"
-                   | type_ref "::" comma_sequence "end";
-inline_sequence    = { local_binding "," } expression;
+lambda_head        = ("|" [ lambda_parameters ] "|" | "fnc(" [ parameters ] ")");
+inline_typed       = lambda_head "=>" type_ref "->" inline_sequence;
+inline_typed_alias = lambda_head "(" "=>" type_ref ")" "->" inline_sequence;
+inline_inferred    = lambda_head "->" inline_sequence;
+block_lambda       = lambda_head "->" [ type_ref ] "{" { statement } "}";
+comma_lambda       = lambda_head "->" type_ref "::" comma_sequence "end";
+inline_sequence    = expression | local_binding "," { local_binding "," } expression;
 comma_sequence     = { sequence_item "," } sequence_item;
 sequence_item      = local_binding | expression | compatible_statement;
 ```
 
-Inferred one-line lambdas preserve the existing `|x| -> expression` form.
-A typed one-line lambda uses `|x| => Type -> expression`; the earlier
-incomplete `|x| -> Type expression` remains invalid. For example:
+Inferred one-line lambdas preserve `|x| -> expression`.
+Typed inline lambdas are canonically `|x| => Type -> expression`.
+The parenthesized `|x| (=> Type) -> expression` is a noncanonical
+but unambiguous alias, and `|x| -> Type => expression` is **rejected**.
+This is independent of the already supported explicit-return
+`|x| -> Type { ... }` and comma `|x| -> Type :: ... end`
+body forms.
 
 ```atto
-val plus = |x: int| -> int => x + 1;
+val plus = |x: int| => int -> x + 1;
+val plus_verbose = |x: int| (=> int) -> x + 1;
 val eight = || -> val int x = 5, x + 3;
 val typed_eight = || => int -> val int x = 5, x + 3;
 val explicit = || -> int ::
