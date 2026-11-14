@@ -83,51 +83,81 @@ Ternary conditions must have static type `bool`. AttoLang has no truthiness conv
 
 ## Function forms
 
-**TARGET (decided):** `: T` and `-> T` are both valid return spellings, and `::` may be included or omitted. No one form is the only correct one.
+**TARGET (decided, 2026-11-14):** AttoLang distinguishes an ordinary *statement body*
+from an Erlang-inspired *comma expression body*. Return-type spelling alone
+does not determine the behavior; the contiguous **`-> Type ::`** header is
+the meaningful expression-body marker.
 
-As a grammar rule (**TARGET (decided)**), this reads:
+| Form | Body semantics |
+| --- | --- |
+| `fnc f(int x): int { return x; }` | Braced statement body; explicit `return` |
+| `fnc f(int x) -> int { return x; }` | Same braced statement-body semantics |
+| `fnc f(int x) -> int :: x end` | Comma expression body; the last expression is returned implicitly |
+| `fnc f(int x) -> int :: int y = 5, y + x end` | Lexical bindings followed by a final value expression |
+| `fnc f(int x) -> int\n return x;\nend` | Legacy unmarked end-delimited statement body; preserve compatibility |
 
-```ebnf
-callable_body = return_spec [ "::" ] ( block | { statement } "end" ) ;
-return_spec   = ":" type_ref | "->" type_ref ;
-```
-
-So these all declare the same function:
+Equivalent cases apply to `fnc`, `routine`, bare class methods,
+explicit class `mtd` receiver methods, actor instance methods, and static
+class functions wherever those declarations are otherwise legal. An explicit
+`mtd` does not add an extra overload argument for `self`.
 
 ```atto
-fnc add(int a, int b): int { return a + b; }
-fnc add(int a, int b) -> int { return a + b; }
-fnc add(int a, int b): int :: { return a + b; }
-fnc add(int a, int b) -> int :: { return a + b; }
+pub fnc foo(int foo): int {
+    return 5;
+}
 
-fnc add(int a, int b): int ::
-  return a + b;
+pub fnc foo_expression(int foo) -> int ::
+    int x = 5, x + foo
 end
 
-fnc add(int a, int b) -> int ::
-  return a + b;
+pub routine triple(int n) -> int ::
+    int factor = 3,
+    n * factor
 end
 
-fnc add(int a, int b): int
-  return a + b;
-end
+define class Calculator as
+    pub mtd with_receiver(mut self, int n) -> int ::
+        int offset = 2,
+        offset + n
+    end
 
-fnc add(int a, int b) -> int
-  return a + b;
+    pub static fnc one() -> int ::
+        1
+    end
 end
 ```
 
-The same rule applies to methods. A file may mix forms, since one declaration's form does not affect another's.
+### Comma-body evaluation and return rules
 
-Only the first two forms run on free functions today. See [chapter 19](19-observed-status-2026-11-03.md).
+1. Each top-level `,` **sequences** two body items; it does not create a
+   tuple, a list or a pair. Evaluate items strictly left to right and exactly
+   once. `int x = 5` is an immutable local binding under the usual lexical
+   scope, not actor state.
+2. If the declared return type is non-`void`, the final body item may be
+   an expression, which becomes the function's result without writing
+   `return`. The normal type, effect, ownership and definite-return checks
+   still apply. A trailing declaration cannot satisfy a non-`void` return.
+3. An empty body is permitted only where existing return rules admit it,
+   normally `void`. An empty item (`,,`) and a trailing comma before
+   `end` are invalid.
+4. The new comma operator is **not** a general-purpose operator in ordinary
+   expression or brace-body syntax. Nested `f(a, b)`, tuple/record literals,
+   generic `Map<K, V>` arguments, destructuring, lambda parameters, and
+   `match` arms retain their existing comma grammar. Only commas at the
+   sequence body's top level delimit body items.
+5. A `void` body can use comma sequencing for effects without inventing a
+   returned value; an explicitly written `return;` remains supported. For
+   compatibility with existing source, explicit return/semicolon statements
+   inside `-> Type :: ... end` continue to be admitted, but the canonical
+   expression-bodied style omits `return` on its final value.
+6. Parsing and formatting must preserve this body kind and evaluation order;
+   never normalize a comma expression body to a braced statement body without
+   translating the final expression to an explicit return. The two forms are
+   intentionally **not textually interchangeable**.
 
-**PROPOSED** parsing rules, because leaving out `::` can make the end of the return type unclear:
-
-1. The return type is read as far as it can go. Without `::`, the `|` in `-> int |x| ...` continues a union type, and the `[` in `-> Vector [const a] = f();` continues a sequence shape. In these cases the author writes `::` to end the type.
-2. A `{` right after the return type or `::` always opens a brace body, which then needs no `end`. A body in the `end` form therefore cannot start with a `{` destructure. Write `const {a} = f();` instead.
-3. Newlines do not separate the return type from the body, because AttoLang has no automatic semicolon insertion.
-
-**PROPOSED** formatter rule: the formatter keeps the form the author wrote and does not rewrite one into another.
+These rules do not change the meaning of a comma in an `if` or `while`
+condition (the existing condition-conjunction grammar), or commas in a
+caller's parameter and argument lists.
 
 ## Statements and semicolons
 
