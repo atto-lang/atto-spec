@@ -192,6 +192,160 @@
       "kind": "reject",
       "source": "define class Mode as constructor(Color a) {} constructor(State b) {} end",
       "diagnostic": "E_CONSTRUCTOR_OVERLAP"
+    },
+    {
+      "id": "byte_literal_prefix",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bytes[71, 69, 84 | rest] -> { process_bytes(rest); } on _ -> {} end",
+      "expect": "prefix_and_byte_view"
+    },
+    {
+      "id": "byte_exact_match",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bytes[1, 2, 3] -> { return 42; } on _ -> { return 0; } end",
+      "expect": "exact_three_bytes"
+    },
+    {
+      "id": "byte_zero_length",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bytes[] -> { return 42; } on _ -> { return 0; } end",
+      "expect": "empty_bytes_only"
+    },
+    {
+      "id": "byte_capture_and_ignore",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bytes[first, _, third | rest] -> { use_bytes(first, third, rest); } on _ -> {} end",
+      "expect": "u8_captures_and_tail"
+    },
+    {
+      "id": "byte_single_numeric_literal",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bytes[3] -> { return 42; } on _ -> { return 0; } end",
+      "expect": "exact_one_byte_value_3"
+    },
+    {
+      "id": "bit_prefix_tail",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bits[1, 0, 1 | rest] -> { handle_bits(rest); } on _ -> {} end",
+      "expect": "bitview_unaligned_tail"
+    },
+    {
+      "id": "bit_exact",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bits[1, 0, 1, 0, 0, 1, 0, 1] -> { return 42; } on _ -> { return 0; } end",
+      "expect": "exact_one_byte"
+    },
+    {
+      "id": "bit_capture",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bits[flag, _, 1 | rest] -> { handle_flag(flag, rest); } on _ -> {} end",
+      "expect": "bool_capture"
+    },
+    {
+      "id": "bit_no_tail_nonmatch",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bits[1] -> { return 1; } on _ -> { return 42; } end",
+      "expect": "one_byte_input_does_not_equal_one_bit"
+    },
+    {
+      "id": "bit_zero_length",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bits[] -> { return 42; } on _ -> { return 0; } end",
+      "expect": "empty_bits_only"
+    },
+    {
+      "id": "binary_width_vs_byte_sequence",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on packet {payload: bytes[3]} -> { match payload over on bytes[1, 2, 3] -> { return 42; } on _ -> { return 0; } end; } on _ -> { return 0; } end",
+      "expect": "segment_length_vs_literal_pattern"
+    },
+    {
+      "id": "byte_out_of_range",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[256 | rest] -> {} end",
+      "diagnostic": "E_BYTES_LITERAL_RANGE"
+    },
+    {
+      "id": "byte_negative",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[-1 | rest] -> {} end",
+      "diagnostic": "E_BYTES_LITERAL_RANGE"
+    },
+    {
+      "id": "bit_out_of_range",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bits[2 | rest] -> {} end",
+      "diagnostic": "E_BITS_LITERAL_RANGE"
+    },
+    {
+      "id": "bit_boolean_not_literal",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bits[true | rest] -> {} end",
+      "diagnostic": "E_BITS_LITERAL_RANGE"
+    },
+    {
+      "id": "byte_empty_prefix_tail",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[| rest] -> {} end",
+      "diagnostic": "E_PATTERN_TAIL_POSITION"
+    },
+    {
+      "id": "bit_duplicate_tail",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bits[1 | rest | second] -> {} end",
+      "diagnostic": "E_PATTERN_TAIL_POSITION"
+    },
+    {
+      "id": "byte_tail_nonfinal",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[1 | rest, 2] -> {} end",
+      "diagnostic": "E_PATTERN_TAIL_POSITION"
+    },
+    {
+      "id": "byte_duplicate_binding",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[x, x | rest] -> {} end",
+      "diagnostic": "E_PATTERN_DUPLICATE_BINDING"
+    },
+    {
+      "id": "byte_dotdot_rest",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[1, ..rest] -> {} end",
+      "diagnostic": "E_PATTERN_REST_SYNTAX"
+    },
+    {
+      "id": "byte_segment_syntax_mixed",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on packet {payload: bytes[1 | rest]} -> {} end",
+      "diagnostic": "E_BINARY_SEGMENT_TYPE"
+    },
+    {
+      "id": "bit_segment_syntax_mixed",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on packet {flags: bits[1, 0]} -> {} end",
+      "diagnostic": "E_BINARY_SEGMENT_TYPE"
     }
   ],
   "fixtures": [
