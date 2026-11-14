@@ -19,6 +19,7 @@ class ReferenceColumns {
     this.readers = new Map(fields.map(f => [f, 0]));
     this.writers = new Set();
     this.epoch = 1;
+    this.capacity = 0;
     this.codeGeneration = 1;
     this.closed = false;
   }
@@ -35,6 +36,15 @@ class ReferenceColumns {
       throw Error("stale handle");
     return slot.row;
   }
+  reserve(requested) {
+    this.open();
+    this.quiescent();
+    if (!Number.isSafeInteger(requested) || requested < 0) throw Error("invalid capacity");
+    if (requested <= this.capacity) return;
+    // Reference model only: actual host allocators can fail before publication.
+    this.capacity = requested;
+    this.epoch++;
+  }
   push(data) {
     this.open();
     this.quiescent();
@@ -42,6 +52,7 @@ class ReferenceColumns {
         || this.fields.some(f => !Object.hasOwn(data, f)))
       throw Error("row width mismatch");
     const row = this.denseToSlot.length;
+    if (row >= this.capacity) this.capacity = Math.max(row + 1, this.capacity * 2);
     const slot = this.free.length ? this.free.pop() : this.slots.length;
     if (slot === this.slots.length) this.slots.push({ generation: 1, live: false, row: 0 });
     for (const field of this.fields) this.columns[field].push(data[field]);
@@ -135,6 +146,9 @@ test("spec distinguishes value snapshots from generation-checked class handles",
   assert.ok(spec.includes("**Status: TARGET / DRAFT"));
   assert.ok(spec.includes("**inverted struct**"));
   assert.ok(spec.includes("**inverted class**"));
+  assert.match(spec, /InvertedFieldRead<T,F>/);
+  assert.match(spec, /InvertedFieldWrite<T,F>/);
+  assert.match(spec, /mtd \\(mut self: Particle\\) move_by/);
   assert.match(spec, /source-free reference oracle|host models/);
   const store = new ReferenceColumns(["x", "y"]);
   const handle = store.push({ x: 1, y: 2 });
@@ -192,6 +206,20 @@ test("JIT specialization invalidates before mutation on resize, hot reload and o
   const foreignPlan = specialize(new ReferenceColumns(["x", "y"]));
   assert.equal(guardedSet(store, foreignPlan, row, "x", 999), "DEOPT_BEFORE_EFFECT");
   assert.equal(store.get(row, "x"), 8);
+});
+
+test("no-op reserve preserves JIT layout guards but true growth invalidates", () => {
+  const store = new ReferenceColumns(["x", "y"]);
+  const row = store.push({ x: 5, y: 6 });
+  store.reserve(8);
+  const plan = specialize(store);
+  store.reserve(8);
+  assert.equal(guardedSet(store, plan, row, "x", 7), "COMMITTED");
+  store.reserve(16);
+  assert.equal(guardedSet(store, plan, row, "x", 99), "DEOPT_BEFORE_EFFECT");
+  assert.equal(store.get(row, "x"), 7);
+  assert.throws(() => store.reserve(-1), /capacity/);
+  assert.throws(() => store.reserve(1.5), /capacity/);
 });
 
 test("closing revokes checked loans and optimized accesses", () => {
