@@ -148,7 +148,7 @@ test("spec distinguishes value snapshots from generation-checked class handles",
   assert.ok(spec.includes("**inverted class**"));
   assert.match(spec, /InvertedFieldRead<T,F>/);
   assert.match(spec, /InvertedFieldWrite<T,F>/);
-  assert.match(spec, /mtd \\(mut self: Particle\\) move_by/);
+  assert.ok(spec.includes("mtd (mut self: Particle) move_by"));
   assert.match(spec, /source-free reference oracle|host models/);
   const store = new ReferenceColumns(["x", "y"]);
   const handle = store.push({ x: 1, y: 2 });
