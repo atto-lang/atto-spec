@@ -95,7 +95,7 @@ All paths must preserve source-order evaluation of loop-body expressions. In act
 
 ## Implementation ledger (2026-11-14)
 
-- `atto-lang/atto-source.rs` draft PR #96 proposes parser/type-checker/Wasm/generator-CFG lowering plus 11 positive and 10 negative fixtures. Its source-org Actions job completed without usable build logs; the new forms are **not verified executed**.
+- `atto-lang/atto-source.rs` draft PR #96 proposes parser/type-checker/Wasm/generator-CFG lowering plus 12 positive and 11 negative fixtures (including wildcard iterator discard). Its source-org Actions job completed without usable build logs; the new forms are **not verified executed**.
 - Java, LLVM, Wasm primary backend, Forge and .NET require independent source-level admission, formatter roundtrip, type/borrow checks and executable guest tests. The older `while ... do ... done`, `loop ... do ... done` and counted `for (...;...;...)` forms are known in at least one implementation, but that is not parity.
 
 **Release gate: DO NOT mark this target as implemented or five-backend-conformant until exact-head guest evidence is attached for each backend.**
