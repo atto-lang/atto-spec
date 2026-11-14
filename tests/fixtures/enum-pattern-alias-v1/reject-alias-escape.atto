@@ -1,0 +1,19 @@
+use namespace jobs;
+
+define enum WorkerMsg {
+    Run { job_id: u64, payload: Bytes },
+    Stop
+}
+
+declare actor Worker;
+declare actor Observer;
+
+mtd (Worker self) receive(msg: WorkerMsg): void {
+    do match msg over
+        on Run as r -> {
+            // ERROR: a borrowed view must not cross an actor mailbox boundary
+            observer.send(r);
+        }
+        on Stop -> {}
+    end
+}
