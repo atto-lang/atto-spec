@@ -6,6 +6,16 @@
 
 An **inverted struct** is a closed-shape **value type** whose owning `InvertedArray<T>` stores fields as columns. Extracting a value makes a detached snapshot or a statically scoped borrow; it never invents an independently heap-allocated row object. Copies preserve value semantics. The type has no per-element reference identity.
 
+For an inverted **struct**, `let saved = rows.snapshot(index);` produces a
+detached value containing copies of every declared field at one checked
+capture point. Later `rows.set(...)`, `erase_swap(...)`, row reuse, or
+owner teardown cannot mutate `saved`. Reading `saved.field` is a local
+value read, not a second lookup into the original SoA columns. In the
+restricted LLVM source-AOT implementation, this currently supports one
+two-`i64` snapshot whose field is read in a terminal `return`;
+the broader language syntax, multiple snapshots and full struct value
+flows still require complete compiler admission.
+
 An **inverted class** is a nominal **reference-like row interface** backed by an owning `InvertedArray<T>`. The only durable row identity is an opaque issuer+store+slot+generation capability, not a physical index or pointer. Methods lower to checked row/column operations and may not smuggle out `self`, mutable field pointers, or a borrow beyond the store's lifetime. Per-row physical class allocations and ad-hoc object headers are **not** part of the SoA representation.
 
 Target grammar is `define [pub] inverted struct Name as ... end` and `define [pub] inverted class Name as ... end`, subject to the established visibility grammar; `inverted` is a declaration modifier, not a standalone runtime type constructor. This spelling is *proposed* pending parser/formatter acceptance tests.
