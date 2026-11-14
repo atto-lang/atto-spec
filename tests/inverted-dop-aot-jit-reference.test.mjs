@@ -158,6 +158,20 @@ test("spec distinguishes value snapshots from generation-checked class handles",
   assert.equal(store.get(handle, "y"), 2);
 });
 
+test("detached inverted struct values survive mutation, row replacement and owner close", () => {
+  const store = new ReferenceColumns(["x", "id"]);
+  const initial = store.push({ x: 42, id: 100 });
+  const saved = store.snapshot(initial);
+  store.push({ x: 9, id: 11 });
+  store.set(initial, "x", 77);
+  store.eraseSwap(initial);
+  assert.deepEqual(saved, { x: 42, id: 100 });
+  assert.equal(store.columns.x[0], 9);
+  assert.throws(() => store.snapshot(initial), /stale/);
+  store.close();
+  assert.deepEqual(saved, { x: 42, id: 100 });
+});
+
 test("swap-delete retains survivors and rejects stale and foreign capabilities", () => {
   const a = new ReferenceColumns(["x", "y"]);
   const b = new ReferenceColumns(["x", "y"]);
