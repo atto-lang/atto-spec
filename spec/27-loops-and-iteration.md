@@ -85,7 +85,7 @@ val total: int = loop (
 };
 ```
 
-This returns **45**. `recur` is intentionally adopted from Clojure `loop/recur`, **not** the earlier proposed stateful `continue(next_values)`. Ordinary `continue;` remains valid in imperative `while` / `for` / `loop` and is invalid in a state-carrying value-loop, whose `recur` must explicitly provide all next values.
+This returns **45**. In the executable Rust subset, braced `if` / `else` bodies are self-closing (an optional legacy `fi` is accepted), whereas unbraced `if ... then ... fi` requires `fi`. `recur` is intentionally adopted from Clojure `loop/recur`, **not** the earlier proposed stateful `continue(next_values)`. Ordinary `continue;` remains valid in imperative `while` / `for` / `loop` and is invalid in a state-carrying value-loop, whose `recur` must explicitly provide all next values.
 
 Rules:
 
