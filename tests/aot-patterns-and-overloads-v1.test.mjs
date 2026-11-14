@@ -184,7 +184,7 @@ test("bit extraction, explicit little endian, alignment and forward lengths", ()
 
 
 test("canonical .atto fixtures retain exact Git blob hashes and explicit expected outcomes", () => {
-  assert.equal(contract.fixtures.length, 6);
+  assert.equal(contract.fixtures.length, 14);
   const names = new Set();
   for (const item of contract.fixtures) {
     assert.ok(item.path.endsWith(".atto") && !item.path.includes("/"));
