@@ -40,15 +40,15 @@ not proof of LLVM or .NET execution.
 ## Lambda bodies, explicit results and comma sequencing
 
 The typed same-line lambda delimiter proposed on 2026-11-07 is
-`-> ReturnType => expression`. Here `-> ReturnType` is the callable result
+`=> ReturnType -> expression`. Here `-> ReturnType` is the callable result
 annotation and the **second**, `=>` token introduces its inline value
 expression. `=>` continues to appear in type-level function signatures
 (`(int, int) => int`); the two contexts are unambiguous in the grammar.
 
 ```atto
 val inferred = || -> 5 + 3;
-val typed = || -> int => 5 + 3;
-val typed_with_local = || -> int => val int x = 5, x + 3;
+val typed = || => int -> 5 + 3;
+val typed_with_local = || => int -> val int x = 5, x + 3;
 val inferred_with_local = || -> val int x = 5, x + 3;
 
 val block = || -> int { return 8; };
@@ -83,7 +83,7 @@ val reporter = || -> void ::
     5 |> foo |> |x, y| -> stdio.println(x + y)
 end;
 
-val compact = || -> void =>
+val compact = || => void ->
     5 |> foo |> |x, y| -> stdio.println(x + y);
 ```
 
@@ -97,7 +97,7 @@ elements is introduced by the comma-body feature.
 For an unparenthesized `|n| -> expression` pipeline stage, the next
 top-level `|>` belongs to the enclosing pipeline; use parentheses to
 nest a pipeline inside a lambda expression. The same boundary rule applies
-to typed `|n| -> Type => expression` and inline local sequences.
+to typed `|n| => Type -> expression` and inline local sequences.
 
 ## Named function, method and constructor arguments (v1 target)
 
