@@ -78,6 +78,20 @@ while should_continue() do
 done
 ```
 
+Both `ifnot` and `unless` negate the **first** boolean condition, evaluate it once, and preserve ordinary `elif`, `else`, and `fi` semantics. They accept the current `then` and braced conditional forms. Neither form supports postfix `unless`. Refutable pattern heads and conditional `as let` bindings in the negated head are rejected until sound narrowing is implemented. See [the semantic contract](../contracts/ifnot-unless-v1.json).
+
+```atto
+ifnot ready then
+  start_worker();
+else
+  notify_ready();
+fi
+
+unless should_stop then
+  process_next();
+fi
+```
+
 The **target** early-exit spelling is `guard condition { terminal_failure_path }` with **no `else` or `fi`**. A comma-separated guard list checks each clause once, left to right. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
 
 An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.

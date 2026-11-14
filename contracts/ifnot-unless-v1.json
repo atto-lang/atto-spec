@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "id": "ifnot-unless-v1",
+  "status": "TARGET_NOT_EXACT_HEAD_CI_VERIFIED",
+  "keywords": [
+    "ifnot",
+    "unless"
+  ],
+  "kind": "statement_only",
+  "predicate_type": "bool",
+  "evaluate_once": true,
+  "invert_initial_only": true,
+  "remaining_elif_predicates_positive": true,
+  "else_semantics": "ordinary_fallback",
+  "terminator": "fi",
+  "no_postfix_unless": true,
+  "negative_binding_head": "REJECT_UNTIL_SCOPE_PROOF",
+  "truth_table": [
+    {
+      "value": false,
+      "first_taken": true
+    },
+    {
+      "value": true,
+      "first_taken": false
+    }
+  ],
+  "evidence": {
+    "java": "oreslang-source.java#3086 PR",
+    "llvm": "oreslang-source.llvm#1791 PR",
+    "guest_execution": "NOT_EXECUTED",
+    "other_backends": "NOT_EXECUTED"
+  }
+}

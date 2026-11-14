@@ -150,6 +150,8 @@
         "yield",
         "return",
         "if",
+        "ifnot",
+        "unless",
         "else",
         "elif",
         "elseif",

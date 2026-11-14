@@ -14,7 +14,7 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 
 ## Keywords
 
-The Java lexer reserves these words. The LLVM parser has its own keyword handling, and the two lists have not been compared.
+The Java lexer reserves these words in the proposed feature branch (oreslang-source.java#3086); the independent native parser supports the two new spellings in oreslang-source.llvm#1791. Exact-head guest CI has not verified these PRs yet.
 
 | Group | Words |
 | --- | --- |
@@ -22,7 +22,7 @@ The Java lexer reserves these words. The LLVM parser has its own keyword handlin
 | Callables | `fnc` `routine` `async` `suspends` `generator` `yield` `nlex` `return` `self` `super` `static` |
 | Visibility | `pub` `private` |
 | Bindings | `const` `val` `let` `mut` |
-| Control flow | `if` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
+| Control flow | `if` `ifnot` `unless` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
 | Errors | `try` `catch` `finally` `throw` `raise` `panic` `recover` `trap` `defer` |
 | Actors | `actor` `isoactor` `shared` `untrusted` `spawn` `stop` `rt` |
 | Async and channels | `await` `nb` `cb` `select` `readch` `writech` |
