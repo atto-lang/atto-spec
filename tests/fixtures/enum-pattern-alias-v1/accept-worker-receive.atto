@@ -1,0 +1,23 @@
+use namespace jobs;
+
+define enum WorkerMsg {
+    Run { job_id: u64, payload: Bytes },
+    Cancel { job_id: u64 },
+    Stop
+}
+
+declare actor Worker;
+
+mtd (Worker self) receive(msg: WorkerMsg): void {
+    do match msg over
+        on Run { job_id, payload } as r -> {
+            self.process(r.job_id, r.payload);
+        }
+        on Cancel { job_id } as c -> {
+            self.cancel(c.job_id);
+        }
+        on Stop -> {
+            self.stop();
+        }
+    end
+}
