@@ -38,6 +38,8 @@ This repository is the **language-level specification**, not the proof that a pa
 | [24 — AOT, zero-GC and controlled dynamism](spec/24-aot-zero-gc-controlled-dynamism.md) | Strict profiles, static proxies/reflection, ownership and backend evidence |
 | [26 — Bytes and async TCP v1](spec/26-bytes-and-async-tcp.md) | Move-only immutable Bytes, Bytes-keyed Map, nonblocking listener/connection API and affine connection transfer |
 
+| [27 — Typed enum patterns and aliases](spec/27-typed-enum-pattern-aliases.md) | Canonical `on Run { ... } as r`, type narrowing and scoped borrows |
+
 ## Specification interpretation
 
 A chapter labelled **DRAFT** describes the intended language contract. **TARGET** means a required eventual behavior, not necessarily shipped. **IMPLEMENTED** must always be qualified by a named backend, immutable commit, fixture, and actual execution evidence. **PROPOSED** denotes a design that needs a decision. `MUST` and `SHOULD` have their ordinary normative RFC meaning **inside the draft target**, not as a claim of current parity.
