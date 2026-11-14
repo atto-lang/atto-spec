@@ -62,6 +62,43 @@ for item in items do consume(item); end
 
 The parser must reject unsupported forms before emitting executable IR. A formatter must not silently rewrite a rejected form into an accepted one.
 
+## Element iteration — `in`, `of` and typed `:`
+
+The **canonical AttoLang form** is `for item in iterable` (or with parentheses/braces); `of` is an exact alias for element iteration, not a JavaScript-style property-key distinction. Java/C++ range-based `for (Type item : iterable)` is an accepted **typed, parenthesized** compatibility spelling. `:` is **not** valid after an untyped loop variable, and none of these spellings accepts a C-style initializer or three-clause separator.
+
+```atto
+for item in items do
+    consume(item);
+end
+
+for (val item: int of numbers()) {
+    consume(item);
+}
+
+for (Particle p : particles) {
+    consume(p);
+}
+
+for (Particle p in particles) {
+    consume(p);
+}
+
+for (Particle p of particles) {
+    consume(p);
+}
+```
+
+`in`, `of` and typed `:` must all desugar to the **same** typed `IntoIterator<Item>` contract. A source expression is evaluated exactly once; `into_iter()` creates exactly one iterator (or reuses an existing owned iterator); each body iteration calls `next()` once; `None` ends iteration without entering the body; the iterator's lifecycle is closed exactly once at completion or exit. Early `break`, `continue`, `return`, exception paths, cancellation, and actor teardown must respect ownership and resource cleanup; `continue` advances to the next item without closing the iterator.
+
+- **Values, never implicit keys.** For maps, explicit `.keys()`, `.values()`, `.entries()` disambiguate. Unlike JavaScript's `for...in`/ `for...of` distinction, there is no inherited-property enumeration.
+- **Types and mutability.** The loop variable's item type may be inferred (`for item in source`), explicitly annotated (`for (val item: Particle in source)`) or written in type-first Java/C++ form. The binding is per-iteration and immutable by default. `let` explicitly requests a mutable *local* copy, not automatic mutation of the underlying storage. `const` cannot bind runtime iterator elements.
+- **Ownership.** Value iteration copies only `Copy` elements; consuming `move` iteration needs an explicit ownership transfer. Borrow iteration must specify a borrow scope/capability, for example `for (rt borrow mut p: Particle in particles)` (TARGET syntax, requires borrow checker admission), with no escaping alias, double mutable borrow, or cross-`await` unsoundness. `Particle* p` is a raw pointer, **not** an implicit mutable borrow; unsafe pointer iteration and `p->update(dt)` must be separately gated and are not silently emitted as safe iteration.
+- **Arrays.** `Array<T>`, `Slice<T>`, and fixed arrays should specialize iteration to contiguous indexed loads, bounds/length checks as needed, and zero per-iteration allocation. Array-of-struct and struct-of-array storage may have different performance; `for` must not force object-pointer chasing. Collections and user iterators use the same element contract but may have different optimized lowering.
+- **Exceptions and supervision.** `next()` or body errors must close the iterator via a well-defined cleanup path; an actor panic still follows its supervisor CONTROL path. Any asynchronous `next_async()` iteration requires an explicitly asynchronous variant and stable borrow/suspension semantics, not an implicit blocking call.
+- **Performance.** No requirement for recursion or heap creation on each iteration. A direct array loop may be vectorized; an iterator object may be devirtualized; pointer iteration may require additional safety bounds. Effectful `p.update(dt)` remains effectful regardless of syntax.
+
+**Current executable Rust/Wasm subset:** bare `for item in generator()` already works; the new stacked [typed headers draft](https://github.com/atto-lang/atto-source.rs/pulls) adds `for item of generator()`, `for (int item : generator())`, `for (val item: int of generator())`, and typed `in/of`, all through the existing `Generator<int>` `next` and `close` machinery. **Arrays, `Particle` objects, raw pointers, general iterator trait dispatch, and mutable borrowing are *not* yet executable in this frontend.** Their parser/type checker must fail closed until exact-head backend and actor-ownership evidence exists.
+
 ## Value-returning immutable loops: `loop (val ...) { ... recur(...) }`
 
 **TARGET**: In addition to ordinary imperative `loop`, the state-carrying expression has this grammar:
