@@ -39,15 +39,18 @@ not proof of LLVM or .NET execution.
 
 ## Lambda bodies, explicit results and comma sequencing
 
-The typed same-line lambda delimiter proposed on 2026-11-07 is
-`=> ReturnType -> expression`. Here `-> ReturnType` is the callable result
-annotation and the **second**, `=>` token introduces its inline value
-expression. `=>` continues to appear in type-level function signatures
-(`(int, int) => int`); the two contexts are unambiguous in the grammar.
+**Canonical typed inline lambda:** `|params| => ReturnType -> expression`.
+The fat arrow `=>` introduces the return **type annotation**; the slim
+arrow `->` introduces the executable **expression**. These roles also
+align with function-type notation `(int, int) => int`, where `=>`
+specifies a result type. Parenthesized `|params| (=> ReturnType) -> expression`
+is an accepted but noncanonical annotation alias. The reversed
+`|params| -> ReturnType => expression` is invalid.
 
 ```atto
 val inferred = || -> 5 + 3;
 val typed = || => int -> 5 + 3;
+val typed_alias = || (=> int) -> 5 + 3;
 val typed_with_local = || => int -> val int x = 5, x + 3;
 val inferred_with_local = || -> val int x = 5, x + 3;
 
