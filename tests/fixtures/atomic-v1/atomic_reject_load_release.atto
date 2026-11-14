@@ -1,5 +1,5 @@
 // TARGET negative guest fixture: release ordering cannot be used for load.
 pub fnc main(): int {
-  val flag: Atomic<int> = Atomic<int>(0);
+  val flag: Atomic<int> = Atomic.new(0);
   return flag.load(order: MemoryOrder.release);
 }
