@@ -55,6 +55,17 @@ test("contract declares bounded target API and does not attest guest parity", ()
     assert.equal(result.guest_status, "NOT_EXECUTED");
     assert.equal(result.compiler_sha, null);
   }
+  const javaAtomic = contract.verified_slices?.java_atomic_i64_interpreter;
+  assert.equal(javaAtomic?.status, "PASS");
+  assert.equal(javaAtomic.junit_tests_passed, 31);
+  assert.match(javaAtomic.source_main_java_tree_sha, /^[a-f0-9]{40}$/);
+  assert.match(javaAtomic.fixture_blob_sha, /^[a-f0-9]{40}$/);
+  assert.equal(javaAtomic.native_image_status, "NOT_EXECUTED");
+  assert.equal(contract.verified_slices?.java_actor_regression?.tests_passed, 104);
+  // A verified Java subset must not accidentally certify the combined
+  // receive-only concurrency contract for any of the five backends.
+  assert.equal(contract.backends.java.guest_status, "NOT_EXECUTED");
+
   const fixtureIds = new Set();
   for (const f of contract.fixtures) {
     assert.ok(!fixtureIds.has(f.id), "duplicate fixture id: " + f.id);
