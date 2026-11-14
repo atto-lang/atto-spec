@@ -132,9 +132,9 @@ function guardedSet(store, plan, handle, field, value) {
 }
 
 test("spec distinguishes value snapshots from generation-checked class handles", () => {
-  assert.match(spec, /\\*\\*Status: TARGET \\/ DRAFT/);
-  assert.match(spec, /\\*\\*inverted struct\\*\\*/);
-  assert.match(spec, /\\*\\*inverted class\\*\\*/);
+  assert.ok(spec.includes("**Status: TARGET / DRAFT"));
+  assert.ok(spec.includes("**inverted struct**"));
+  assert.ok(spec.includes("**inverted class**"));
   assert.match(spec, /source-free reference oracle|host models/);
   const store = new ReferenceColumns(["x", "y"]);
   const handle = store.push({ x: 1, y: 2 });
