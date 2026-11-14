@@ -1,0 +1,84 @@
+{
+  "schema": "attolang.optional-named-guest-target.v1",
+  "status": "AUTHORED_NOT_EXECUTED",
+  "warning": "These are canonical proposed .atto source fixtures; source-free Node existence checks cannot certify parser, compiler, Native Image or guest execution.",
+  "backends": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "dotnet": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED"
+  },
+  "fixtures": [
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/named_nontrailing_default.atto",
+      "kind": "execute",
+      "expected_exit": 42,
+      "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/optional_option_none.atto",
+      "kind": "execute",
+      "expected_exit": 42,
+      "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/reject_missing_required_option.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "missing_required_formal",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/reject_nonoption_no_default.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "missing_default",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/reject_duplicate_label.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "duplicate_argument_label",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/reject_positional_after_named.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "positional_after_named",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/reject_plain_t_for_option.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "option_type_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/reject_omit_required.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "cannot_omit_required",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/reject_runtime_default.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "unproved_runtime_default",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "path": "contracts/optional-named-parameters-v1/fixtures/reject_shift_nontrailing.atto",
+      "kind": "reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "missing_required_formal",
+      "status": "AUTHORED_NOT_EXECUTED"
+    }
+  ]
+}

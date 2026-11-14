@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'contracts/optional-named-parameters-v1/**'
+      - 'tests/optional-named-guest-fixtures.test.mjs'
       - 'tests/optional-named-parameters-contract.test.mjs'
       - 'tests/helpers/optional-named-binder-reference.mjs'
       - '.github/workflows/optional-named-parameters-contract.yml'
@@ -10,6 +11,7 @@ on:
   pull_request:
     paths:
       - 'contracts/optional-named-parameters-v1/**'
+      - 'tests/optional-named-guest-fixtures.test.mjs'
       - 'tests/optional-named-parameters-contract.test.mjs'
       - 'tests/helpers/optional-named-binder-reference.mjs'
       - '.github/workflows/optional-named-parameters-contract.yml'
@@ -26,4 +28,4 @@ jobs:
         with:
           persist-credentials: false
       - name: Validate source-free reference shape (not guest tests)
-        run: node --test tests/optional-named-parameters-contract.test.mjs
+        run: node --test tests/optional-named-parameters-contract.test.mjs tests/optional-named-guest-fixtures.test.mjs
