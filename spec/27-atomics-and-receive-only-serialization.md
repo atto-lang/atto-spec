@@ -21,7 +21,7 @@ val result = counter.compare_exchange(7, 9)
 
 `compare_exchange(expected, desired)` is **strong**, returning a typed `CompareExchange<T>` outcome with `exchanged: bool` and `observed: T`; it must never hide spurious failure. `fetch_add` and `fetch_sub` return the previous value. Integer bitwise `fetch_and`, `fetch_or` and `fetch_xor` likewise return the previous value. Arithmetic is checked: an overflowing `fetch_add`/`fetch_sub` fails by the language's integer-overflow panic rule **without publishing** a wrapped update. Other RMW operations have one atomic linearization point.
 
-`Atomic<T>` retains one allocation identity. Copying a handle may create another authorized reference, never another independent cell or duplicated ownership. Shared access requires an explicitly authorized shared allocation domain, valid generation and lifetime, and permitted synchronization capabilities. `Atomic<T>` does **not** make adjacent mutable data, referents, or arbitrary guest pointers thread-safe; it does not bypass sealed `state`, critical loans, tenant isolation, or the 32-bit actor-relative handle checks.
+`Atomic<T>` retains one allocation identity. Copying a handle may create another authorized reference, never another independent cell or duplicated ownership. **The initial Java i64 guest slice rejects `rt copy` and `rt share` of direct or nested Atomic cells** until the compiler/runtime can prove such reference and region lifetimes. Shared access requires an explicitly authorized shared allocation domain, valid generation and lifetime, and permitted synchronization capabilities. `Atomic<T>` does **not** make adjacent mutable data, referents, or arbitrary guest pointers thread-safe; it does not bypass sealed `state`, critical loans, tenant isolation, or the 32-bit actor-relative handle checks.
 
 ## Memory order
 
@@ -52,6 +52,16 @@ An ordinary actor may execute multiple `receive()` invocations **and** several r
 `critical-read` permits multiple compatible readers; `critical-write` is exclusive against readers/writers of its protected state. Neither ordinary concurrency nor the `serial` qualifier grants an implicit state loan. No loan may escape or silently span suspension. A serial receive may be waiting on I/O while an independently invoked `status()` method reads state under `critical-read`. The serial gate MUST NOT hold a global actor lock that blocks such unrelated methods. CONTROL notices retain their separate supervisory path, not the DATA receive gate.
 
 Pending receives, independently invoked methods and tasks have separately accounted live frames. A receive gate permit is released only on terminal completion and correct physical retirement for its incarnation; stale wake/cancel tickets cannot release a newer permit. Restarts fence old generations. Serial admission is not a guarantee of single-threaded actor execution.
+
+## Staged implementation status (Java, 2026-11-14)
+
+The Java/GraalVM draft now has a compiler/evaluator binding for `Atomic.new(0)` as `Atomic<int>`, checked sequentially consistent host operations, and a compiler-generated CAS result projection. It prohibits unproven atomic sharing in actor signatures, `SharedMutex`, and `rt copy`/`rt share`, including nested typed containers. This is a **local guest API implementation proposal**, not an AOT/parity claim: its checked-in positive/negative `.atto` tests have **NOT_EXECUTED** with the full compiler.
+
+The draft `ActorRuntime.ActorCell` now retains an incarnation-scoped receive permit from dispatch through synchronous completion or source-Future settlement, and holds the permit until physical cleanup for stopped actors. `SourceActorState` and compiler-sealed regions carry the explicit `serialReceive` flag. A nonblocking host-only read/write arbiter permits multiple logical readers and excludes all writers; it fences stale views at STOP without reclaiming live lexical tickets.
+
+**Important limitation:** the existing ActorCell physical single-writer carrier remains enabled, so neither ordinary actors' parallel `receive()` execution nor independent receiver-method concurrency is currently verified or enabled. The receive permit is conservatively limited to one live invocation for both actor kinds until independent stacks/continuations and actor-state ownership are proven. The implementation must not claim full user-requested concurrency merely because parser flags and host permit tests exist.
+
+The exact Java host primitives passed local Java 21 stress checks for atomic updates, overflow/CAS, receive permits, and multi-reader/exclusive-writer loans. Two attempted token-free private CI carrier runs also failed with zero steps/runner assignment; these are **CI infrastructure blockers**, not native or guest execution receipts.
 
 ## Backend lowering and conformance
 
