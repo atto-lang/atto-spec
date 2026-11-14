@@ -103,11 +103,73 @@ let binary {
 - bits[n] consumes n bits in network MSB-first order, with n a bounded nonnegative compile-time constant. bytes[n] consumes exactly n bytes, where n is a compile-time constant or an earlier, statically integer-typed bound field. References to later fields, circular lengths, unproven signed/overflowing arithmetic, or effects are rejected.
 - Every offset/length computation uses checked non-wrapping arithmetic and bounds checks before reading or forming borrowed views. A failed size or value test is a normal nonmatch in a match arm, never an out-of-bounds read, partial write, arbitrary allocation, or acceptance of a truncated packet.
 - ..rest is optional and MUST be the final segment. It binds the exact remaining suffix with preserved ownership/lifetime. Without ..rest, a pattern requires exact full input consumption. An ignored field uses _ only in a position whose width is known.
-- A pattern beginning with a non-byte-aligned segment may use additional bits fields; a bytes segment or ..rest requires a byte-aligned cursor. No silent rounding/padding. Bit-level tails require an explicitly typed bits rest pattern in a later separately versioned design.
+- A pattern beginning with a non-byte-aligned segment may use additional bits fields; a bytes segment or ..rest requires a byte-aligned cursor. No silent rounding/padding. Bit-level tails are admitted only through a typed `BitView` from the `bits[... | tail]` sequence pattern defined below; `..rest` in a binary/packet field sequence remains byte-aligned.
 - Field identifiers may be used as captured names in the arm, and an optional outer as name binds the successfully decoded aggregate view. Field declarations are ordered captures, not source-record member lookups. The pattern parser must not confuse { ... } here with class bodies, block statements or structural patterns.
 - Matching immutable Bytes may borrow a bounded subview only when a proven lifetime prevents escaping the owning storage. Cross-actor transport requires admitted take/copy/share rules; no raw pointers, hidden heap allocations, dynamic compilation or host-language reflection.
 
 For example, bytes 01 00 03 61 62 63 ff match packet {version:u8,length:u16be,payload:bytes[length],..rest} with version=1, length=3, payload=61 62 63 and rest=ff. The same input **does not** match an exact pattern without ..rest.
+
+## 3.1 Byte-sequence and bit-sequence patterns (TARGET)
+
+Binary input supports two additional **sequence patterns** in the same `match` grammar: `bytes[...]` and `bits[...]`. These are **not aliases** for `binary { ... }`, and **not container constructors**. They have ordered positional elements, optional `| tail`, and no implicit parsing of schema fields. All spellings are contextual inside a pattern position (`on`, a destructuring binding, or an admitted callable-pattern formal); ordinary `Bytes` expressions, type syntax and array indexing retain their existing meanings.
+
+~~~atto
+match data over
+    on bytes[71, 69, 84 | rest] -> { handle_get(rest); }
+    on bytes[80, 79, 83, 84 | rest] -> { handle_post(rest); }
+    on bytes[] -> { handle_empty(); }
+    on _ -> { reject_request(); }
+end
+
+match data over
+    on bits[1, 0, 1, 1 | remaining_bits] -> {
+        consume_flags(remaining_bits);
+    }
+    on _ -> {}
+end
+
+match data over
+    on packet {
+        version: u8,
+        flags: bits[3],
+        kind: bits[5],
+        length: u16be,
+        payload: bytes[length],
+        ..rest
+    } when version eq 1 -> {
+        process_payload(payload);
+    }
+    on _ -> {}
+end
+~~~
+
+**Context-sensitive but unambiguous rules:**
+
+- `on bytes[3]` tests **one literal byte with value 3** (input length exactly one byte). `on bytes[x]` binds one `u8`; `on bytes[_]` consumes one byte. `bytes[]` matches only a zero-length sequence. In contrast, **inside a field declaration** such as `payload: bytes[3]`, `bytes[3]` consumes **exactly three bytes** and binds a byte-range capture. The grammar distinguishes `sequence_pattern` from `binary_segment_type` at the start of parsing; whitespace is irrelevant.
+- `on bits[1]` tests exactly one bit of a bit sequence, **not** a width of one bit; `on bits[flag]` binds one `bool`, with literal bits restricted to `0` and `1`. `bits[]` matches an empty bit sequence. Inside a field such as `flags: bits[3]`, `3` is instead a constant segment width measured in bits. The bit order is **MSB-first within each byte** for both forms.
+- Both sequence forms accept exactly one *final* tail separator: `bytes[a, b | tail]`, `bits[1, x | tail]`. The prefix MUST contain at least one element. `[a | _]` explicitly ignores its tail. A tail permits any remaining length, including zero; without a tail the entire input sequence must be consumed. Repeated bindings, duplicate `|`, `| tail` followed by another element, and `..rest` in a sequence pattern reject. `..rest` is only for `binary` / `packet` field sequences.
+- A byte element may be `_`, a fresh identifier, a compile-time integer literal in `0..255`, or another admitted statically checked `u8` constant pattern. A bit element is `_`, a fresh identifier, or literal `0`/`1`. No implicit string-to-bytes conversion, Symbol-to-integer conversion or ordinary numeric coercion. Current Java/LLVM grammars do **not** accept `0x` integer literals, so decimal byte literals are the portable target; hex literals require a separately versioned lexer change.
+- `bytes[...]` accepts an immutable `Bytes` value or a statically admitted `ByteView`. `bits[...]` accepts `Bytes` (interpreted as exactly eight MSB-first bits per byte) or `BitView`. In particular, a bare `bits[1]` cannot match a one-byte `Bytes` because seven input bits remain; `bits[1 | rest]` can. A byte-oriented pattern never silently rounds a non-byte-aligned `BitView`.
+- `ByteView` and `BitView` are proposed **compiler-owned, immutable, lifetime-bound view types** with owner-generation, offset, length and bounds proof. They may be materialized in a register/stack frame with no guest heap allocation; they do **not** replace `Bytes` and are not automatically `Sendable` or `Serializable`. `BitView` also tracks an exact bit offset and length, so a tail starting mid-byte is representable. Future owned conversion must be explicit and checked; existing `Bytes.slice` retains its separately documented fresh-owned-copy behavior. Match-arm bindings cannot outlive the input or cross an actor/send/await boundary without an independent lifetime/ownership proof.
+- Pattern matching reads only the input and binds temporary captures after **all prefix checks succeed**. A mismatch returns false for that arm, with no visible partially initialized bindings or observable writes. Guard expressions run only after full matching, are pure and return `bool`; a false guard resumes the next arm without leaking a borrowed capture. `match` order is first matching arm.
+- The source formatter MUST preserve whether each `bytes[n]`/`bits[n]` is a positional sequence pattern or a binary width segment. AOT lowering emits fixed-position byte tests, bit masks/shifts, one bounded tail view and checked comparisons. No runtime reflection, interpreted pattern VM, dynamic allocation, unbounded scan/backtracking, implicit endian assumption or JIT is permitted. Compiler budgets must bound total pattern elements/depth and reject oversized source deterministically.
+
+Illustrative parsing grammar (TARGET; contextual tokens, not extra reserved words):
+
+~~~ebnf
+binary_match_pattern  = ("binary" | "packet"), "{", segment, { ",", segment }, "}" ;
+segment               = ident, ":", segment_type | "..", ident ;
+segment_type          = integer_segment | "bytes", "[", length_expr, "]"
+                      | "bits", "[", const_width, "]" ;
+byte_sequence_pattern = "bytes", "[", [ byte_element, { ",", byte_element },
+                         [ "|", ( ident | "_" ) ] ], "]" ;
+bit_sequence_pattern  = "bits", "[", [ bit_element, { ",", bit_element },
+                         [ "|", ( ident | "_" ) ] ], "]" ;
+~~~
+
+The grammar is schematic: the last `segment` alone may be `..rest`; sequence alternatives do not allow an empty prefix before `|`. The parser should construct different AST node kinds for `BinarySegmentLength`, `BytesSequencePattern` and `BitsSequencePattern` rather than resolving ambiguities from token spelling after parsing.
+
+**Security edge cases:** reject byte literal 256 or -1, bit literal 2, duplicated tail bindings, unterminated or repeated tail operators, zero-byte source read as a fixed-width field, malformed/truncated payload lengths, arithmetic overflow, stale or escaping loan views, unaligned byte fields, and unsupported field endian annotations. These must fail before code emission when statically invalid; an input-length mismatch at runtime is a normal unsuccessful match, not an unchecked memory read or an actor panic.
 
 ## 4. Strict-AOT implementation and conformance requirements
 
