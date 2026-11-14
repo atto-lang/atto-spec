@@ -1,0 +1,5 @@
+// TARGET negative guest fixture: Atomic<T> rejects non-scalar T.
+pub fnc main(): int {
+  val forbidden: Atomic<String> = Atomic<String>("not atomic");
+  return 0;
+}
