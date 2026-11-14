@@ -75,33 +75,37 @@
       "phase": "link",
       "expect": "reject",
       "diagnostic": "package-visibility",
-      "packages": [
-        {
-          "name": "pkg_a",
-          "source": "export pub[pkg] fnc helper;\nfnc helper(): int { return 42; }\n"
-        },
-        {
-          "name": "pkg_b",
-          "source": "import fnc helper from \"pkg_a\";\nfnc main(): int { return helper(); }\n"
-        }
-      ]
+      "provider": {
+        "package": "pkg_a",
+        "file": "a.atto",
+        "source": "export pub[pkg] fnc helper;\nfnc helper(): int { return 42; }\n"
+      },
+      "importRequest": {
+        "consumerPackage": "pkg_b",
+        "providerPackage": "pkg_a",
+        "providerFile": "a.atto",
+        "kind": "fnc",
+        "name": "helper"
+      },
+      "note": "Importer source spelling is intentionally backend-provided until the canonical package import ABI is fixed; do not invent a parser syntax here."
     },
     {
       "id": "private-same-package-access",
       "phase": "link",
       "expect": "accept",
-      "packages": [
-        {
-          "name": "pkg_a",
-          "file": "a.atto",
-          "source": "export pub[pkg] fnc helper;\nfnc helper(): int { return 42; }\n"
-        },
-        {
-          "name": "pkg_a",
-          "file": "b.atto",
-          "source": "import fnc helper from \"a\";\nfnc main(): int { return helper(); }\n"
-        }
-      ]
+      "provider": {
+        "package": "pkg_a",
+        "file": "a.atto",
+        "source": "export pub[pkg] fnc helper;\nfnc helper(): int { return 42; }\n"
+      },
+      "importRequest": {
+        "consumerPackage": "pkg_a",
+        "providerPackage": "pkg_a",
+        "providerFile": "a.atto",
+        "kind": "fnc",
+        "name": "helper"
+      },
+      "note": "Importer source spelling is intentionally backend-provided until the canonical package import ABI is fixed; do not invent a parser syntax here."
     }
   ],
   "receiptRequirements": [
