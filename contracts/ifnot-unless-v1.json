@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "contract": "ifnot-unless-v1",
+  "status": "TARGET_NOT_CI_VERIFIED",
+  "keywords": [
+    "ifnot",
+    "unless"
+  ],
+  "kind": "statement",
+  "condition_type": "bool",
+  "condition_evaluated_once": true,
+  "invert_initial_only": true,
+  "elif_is_positive": true,
+  "else_is_ordinary_fallback": true,
+  "closes_with": "fi",
+  "no_postfix_unless": true,
+  "condition_bindings": "reject_on_negated_initial_head_pending_scope_proof",
+  "truth_table": [
+    {
+      "value": false,
+      "then_taken": true
+    },
+    {
+      "value": true,
+      "then_taken": false
+    }
+  ],
+  "backends": {
+    "java": "PR_OPEN_NOT_TESTED",
+    "llvm": "PR_OPEN_NOT_TESTED",
+    "net": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED"
+  }
+}
