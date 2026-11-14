@@ -14,10 +14,8 @@ declare actor Worker;
 mtd (Worker self) receive(msg: WorkerMsg): void {
     do match msg over
         on Run as r -> {
-            self.process(r.job_id, r.payload);
+            val job_id = r.job_id;
         }
-        on WorkerMsg.Stop -> {
-            self.stop();
-        }
+        on WorkerMsg.Stop -> {}
     end
 }
