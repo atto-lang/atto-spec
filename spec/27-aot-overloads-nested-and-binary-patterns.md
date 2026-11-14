@@ -116,3 +116,8 @@ Every backend MUST build a finite, immutable compile-time dispatch table and a b
 The same canonical .atto fixtures must exercise parse/formatter round trips; valid and invalid same-arity overloads; free/mtd/static/constructor namespaces; actor constructor rejection; constructor chaining/cycles; nested success and failure; head/tail with empty suffix; binary BE/LE, bits, truncation, rest, zero and max lengths, overflow, borrowing, concurrent actor dispatch and ownership rejection. Verify generated AOT artifacts, accessible symbol/dispatch manifests, sanitizer results for native builds and exact-commit stepful guest execution, not just a source-free reference-model test.
 
 **Current status:** This chapter and the attached contract corpus are source-level targets only. The real Java and LLVM compilers contain partially implemented overload/constructor paths, but this change does not certify them. Forge, Wasm and .NET likewise require independent compiler and execution evidence.
+
+
+## Non-normative syntax comparisons
+
+The compact ordered-field design borrows clarity rather than delimiters: Rust [Deku](https://docs.rs/deku/latest/deku/) declares binary layouts using typed structs and field attributes (including endianness, count and bit widths), while [Kaitai Struct](https://doc.kaitai.io/user_guide.html) uses an external declarative sequence with explicit sizes and byte order. AttoLang deliberately makes this a first-class **match pattern** in ordinary source, using binary {} or packet {}, so the compiler can lower a typed layout and checked decision tree before AOT code generation. These comparisons do not import the other tools' unspecified defaults, copying rules or dynamic reader machinery.
