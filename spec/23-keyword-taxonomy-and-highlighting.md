@@ -23,7 +23,7 @@ For example, in the **TARGET** form `declare actor Worker implements Runnable;`,
 | **Adjectives / qualifiers** | Constrain a declaration, binding, or access | `pub`, `private`, `static`, `const`, `mut`, `abstract`; TARGET/contextual `final`, `sealed` | `final` and `sealed` are not reserved by the documented Java lexer; validity depends on grammar context |
 | **Adverbs / execution qualifiers** | Specify execution or access mode | `async`, `suspends`, `rt`, `nb`; compound `critical-read`, `critical-write`, `nb-select` | `critical-read`/`critical-write` are context-handled by the parser; `nb-select` is a lexer-recognized compound |
 | **Connectives / prepositions** | Introduce clauses and relations | `as`, `from`, `of`, `over`, `then` | Different grammar productions; `as` can occur in more than one role |
-| **Control / structural words** | Form branching and syntactic boundaries | `if`, `else`, `elif`, `fi`, `match`, `switch`, `select`, `do`, `done`, `end`, `while` | These are structural tokens, not uniform nouns or verbs |
+| **Control / structural words** | Form branching and syntactic boundaries | `if`, `ifnot`, `unless`, `else`, `elif`, `fi`, `match`, `switch`, `select`, `do`, `done`, `end`, `while` | These are structural tokens, not uniform nouns or verbs |
 | **Comparatives / logical relations** | Compare or join expressions | `eq`, `neq`, `is`, `matches` | `\|>` is a pipeline **operator**, not a keyword; current `,` and `\|` in conditions are operators, not reserved words `and` and `or` |
 | **Pronouns / references** | Refer to the receiver or inherited context | `self`, `super` | Reserved lexemes with expression-specific roles |
 | **Literal / sentinel words** | Denote built-in values or markers | `true`, `false`, `null`, `void` | These belong to literal/type-marker scopes; `null` is lexed but a standalone null value is rejected (chapter 16) |
@@ -43,7 +43,7 @@ These are **proposed descriptive scopes**, not mandatory colors and not a replac
 | Entity-kind keywords | `actor`, `class`, `trait`, `interface`, TARGET `singleton` | `keyword.entity.atto` |
 | Relationship introducers | `implements`, `extends`, `conforms` | `keyword.relationship.atto` |
 | Visibility and binding qualifiers | `pub`, `private`, `static`, `const`, `mut`, TARGET `sealed`/`final` | `storage.modifier.atto` |
-| Control and structure | `if`, `match`, `select`, `return`, `fi`, `end` | `keyword.control.atto` |
+| Control and structure | `if`, `ifnot`, `unless`, `match`, `select`, `return`, `fi`, `end` | `keyword.control.atto` |
 | Concurrency and scheduling | `spawn`, `await`, `suspends`, `nb-select` | `keyword.concurrency.atto` |
 | Ownership operations | `rt` with context-proven ownership constructs such as `borrow` or `take` | `keyword.ownership.atto` |
 | Effects and failure | `trap`, `throw`, `raise`, `panic`, `recover` | `keyword.effect.atto` |
