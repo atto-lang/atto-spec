@@ -14,6 +14,11 @@
       "operation": "copy"
     },
     {
+      "input": "copy!eqfoo",
+      "canonical": "copy! eqfoo",
+      "operation": "copy"
+    },
+    {
       "input": "take! foo",
       "canonical": "take! foo",
       "operation": "take"
@@ -99,7 +104,11 @@
     "other!foo",
     "mutborrow!foo",
     "copy!",
-    "mut borrow!"
+    "mut borrow!",
+    "copy!eq foo",
+    "copy!eq",
+    "borrow!eq foo",
+    "mut borrow!eq foo"
   ],
   "required_compiler_semantic_negative": [
     "use-after-take",
