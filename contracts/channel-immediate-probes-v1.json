@@ -1,0 +1,155 @@
+{
+  "contract": "attolang.channel-immediate-probes.v1",
+  "status": "DESIGN_ONLY_NOT_EXECUTED",
+  "normative_spec": "spec/27-channel-immediate-probes.md",
+  "backends": [
+    "java",
+    "llvm",
+    "wasm",
+    "forge",
+    "net"
+  ],
+  "source_forms": [
+    "try readch ch",
+    "try writech ch, value",
+    "nb writech ch, value",
+    "writech ch, value"
+  ],
+  "write_result": {
+    "type": "TryWriteResult<T>",
+    "variants": [
+      "Accepted",
+      "Full(T)",
+      "Closed(T)"
+    ]
+  },
+  "rules": {
+    "no_suspend": true,
+    "no_waiter_registration": true,
+    "atomic_admission": true,
+    "payload_return_on_rejection": true,
+    "source_move_invalidates_binding": true,
+    "closed_distinct_from_full": true
+  },
+  "cases": [
+    {
+      "id": "CIW-001",
+      "name": "buffered_accept",
+      "assertion": "try writech on nonfull buffered channel returns Accepted and transfers exactly one value",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-002",
+      "name": "buffered_full",
+      "assertion": "try writech on full channel returns Full(original) without enqueue or waiter",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-003",
+      "name": "closed_write",
+      "assertion": "try writech after close returns Closed(original), never false or an untyped exception",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-004",
+      "name": "close_vs_write",
+      "assertion": "racing close and immediate write yields one linearizable outcome, never double-drop",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-005",
+      "name": "capacity_zero_unmatched",
+      "assertion": "unbuffered try writech without ready reader returns Full(original)",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-006",
+      "name": "capacity_zero_matched",
+      "assertion": "unbuffered try writech with armed reader commits exactly one rendezvous",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-007",
+      "name": "racing_writers",
+      "assertion": "racing writers admit no more than capacity and return every losing owned payload",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-008",
+      "name": "retry_after_full",
+      "assertion": "Full(payload) may be retried and is admitted exactly once after capacity opens",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-009",
+      "name": "explicit_take_accepted",
+      "assertion": "rt take source is invalid after Accepted; channel has one owner",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-010",
+      "name": "explicit_take_rejected",
+      "assertion": "rt take source remains invalid after Full/Closed, recovered value exists only in result",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-011",
+      "name": "borrow_and_guard_denial",
+      "assertion": "borrowed references, MutexGuard and non-transportable capabilities fail static admission",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-012",
+      "name": "actor_isolation_denial",
+      "assertion": "untrusted actor/private pointer channel escape is rejected",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-013",
+      "name": "probe_leaves_no_waiter",
+      "assertion": "no waiter or deferred send remains after Full or Closed",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-014",
+      "name": "read_some_none_closed",
+      "assertion": "try readch yields Some or None; closed and drained raises closed failure",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-015",
+      "name": "nb_differs_from_try",
+      "assertion": "nb writech arms a Future and try writech never arms a Future",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-016",
+      "name": "select_atomicity",
+      "assertion": "immediate writes arbitrate with select and pending reads without double commit",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-017",
+      "name": "source_eval_once",
+      "assertion": "channel and payload evaluated once; result corresponds to same probe",
+      "verification_status": "NOT_EXECUTED"
+    },
+    {
+      "id": "CIW-018",
+      "name": "drop_safety",
+      "assertion": "move-only payload is neither leaked nor double-dropped across every result branch",
+      "verification_status": "NOT_EXECUTED"
+    }
+  ],
+  "acceptance": {
+    "requires": [
+      "real guest execution per backend",
+      "immutable compiler/source/fixture SHA evidence",
+      "negative static ownership fixtures",
+      "concurrent writer/reader/close tests",
+      "exact result/ownership parity"
+    ],
+    "host_only_tests_certify_parity": false,
+    "zero_step_workflows_certify_execution": false
+  }
+}
