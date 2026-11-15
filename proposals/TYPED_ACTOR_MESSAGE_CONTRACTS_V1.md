@@ -1,0 +1,112 @@
+# Typed actor message contracts v1 (proposal)
+
+**Status:** PROPOSED; no compiler, formatter, runtime, or backend conformance claim.
+
+**Scope:** AttoLang actor declarations and message send/receive semantics. Legacy Oreslang source compatibility is a separate migration gate.
+
+## Decision
+
+An actor has **one designated supervising parent at a time** and may communicate with **zero, one, or arbitrarily many** downstream or peer actors. A supervisor relationship is a lifecycle/control relationship, **not** an outbound application-message port.
+
+- `receives T` declares the actor's admitted **application** message type (possibly a sum/union).
+- `sends U` declares an upper bound on **application** payload types emitted by this actor, across all destinations. It does **not** specify the number, identity, or topology of recipients.
+- `ActorRef<T>` is a typed, capability-carrying send handle. A call `target.send(value)` is legal only if the compiler proves `value` is assignable to `T` **and** permitted by the sending actor's declared/inferred outbound effect.
+- Supervision notices and exit/control events are delivered on the dedicated **priority CONTROL** path and do not count as ordinary `sends` or `receives` messages.
+
+This is a protocol type/effect proposal, not a guarantee obtainable from Erlang Dialyzer alone.
+
+## Candidate declaration syntax
+
+```atto
+// Illustrative proposed syntax; not a currently passing compiler fixture.
+// Message definitions use the language's established nominal/sum-type facilities.
+
+define actor Parser
+  receives ParseRequest | CancelRequest
+  sends ParseResult | ParseWarning
+as
+  // Downstream handles may be constructor parameters, stored fields,
+  // subscriber collections, or temporarily borrowed capabilities.
+  // results: ActorRef<ParseResult>
+  // diagnostics: List<ActorRef<ParseWarning>>
+
+  // The actor may fan out to 100 results receivers and 20 warning receivers.
+  // All send sites are checked against their individual target handles.
+end
+```
+
+The `receives` and `sends` clauses each accept a type expression. `|` denotes the same nominal sum/union semantics used by the language's type system; it must not introduce stringly-typed message tags. The canonical ordering, formatter layout, and any optional parenthesization need parser/formatter fixtures.
+
+An actor may omit `sends`; its outbound application-message effect is then **inferred**, not assumed to be `Any`. A declaration `sends never` expresses no outbound application messages. Legacy untyped actor declarations require an explicit, documented migration mode; omitting `receives` in new strict-mode code must not silently turn the mailbox into an unrestricted `Any` mailbox.
+
+## Multiple downstream recipients
+
+- A sender may possess any number of `ActorRef<T>` handles.
+- Receivers of the same `T` may be collected into an array/list and broadcast to.
+- Different downstream actors may admit disjoint types; each send is checked against the **specific destination**.
+- Receiving an `ActorRef<Reply>` inside a request permits typed replies to dynamically chosen callers, subject to the sender's `sends` effect.
+- A `sends ParseResult | ParseWarning` clause does not authorize sending a `ParseResult` to an `ActorRef<ParseWarning>`.
+- Having an `ActorRef<T>` does not grant access to the target's state, supervisor relationship, or CONTROL mailbox.
+
+No globally declared graph edges, fixed child count, or named ports are needed for ordinary messaging. Named output ports can be library abstractions built from typed actor refs, without a new core keyword.
+
+## Type-checking contract
+
+For `sender.send_to(target, message)`, or the existing idiomatic `target.send(message)`:
+
+1. Resolve the receiver capability `target: ActorRef<R>`.
+2. Prove `type(message) <: R` under the language's established nominal type rules and explicit generic constraints.
+3. Prove `type(message) <: S` where `S` is the sender's explicit `sends` upper bound, if present. When absent, infer the effect over all reachable application send sites, including helper calls that perform sends.
+4. Enforce ownership/borrow and `Sendable` transfer rules. `Serializable` for network transfer is a separate requirement.
+5. Preserve the existing `send` admission/ack `Result` contract; typing alone does not imply delivery, processing, or successful completion.
+6. Reject invalid casts, unsafe variance, or dynamic `Any` erasure that could widen a typed `ActorRef<R>` silently. Default to invariant handles until variance is formally established. Any dynamic gateway must be capability-gated and validated before mailbox admission.
+
+For `receives R`, every application message presented to the actor's `receive` hook must be within `R`. Exhaustiveness analysis of finite variants should reject non-exhaustive handling in strict mode, while retaining explicitly checked wildcard/default semantics where the language requires them.
+
+A polymorphic actor or helper may send `T` to `ActorRef<T>` if both the handle type and sender effect constraints are statically satisfied. At actor boundaries, type identities must remain valid through hot reload, source generations, and serialization.
+
+## Supervision and safety boundary
+
+- At most one designated supervisor owns the child lifecycle at a time; group membership, subscriptions and ordinary sends do not change that parent.
+- `panic` is non-interceptable by its originating actor and emits an authenticated priority CONTROL notice to the supervising runtime. `raise` and `throw` keep their separately specified handling/escalation rules.
+- CONTROL notices carry source actor identity, parent/supervisor identity and event kind; the runtime must prevent forging them with ordinary application payloads.
+- Supervisor shutdown/restart/control coordination remains possible even if a child declares `sends never` or `receives never`, and even if its ordinary mailbox is full.
+- A supervisor that also accepts **application** messages may expose its own `ActorRef<AppMessage>`. That is a separate, explicitly typed capability, not the CONTROL channel.
+
+## Runtime and compatibility requirements
+
+- Locally compiled typed actor sends should not pay a mandatory dynamic tag check where type safety has already been proven and the target protocol generation is stable.
+- Cross-isolate, FFI, network, and hot-reload boundaries must independently verify message envelope identity, protocol generation, payload size, transfer permissions, and decoder result **before** application-mailbox admission; mismatches fail closed.
+- The sending actor's allowed outbound types cannot be bypassed by forwarding `ActorRef` handles to an untyped host shim or by reclassifying a message as CONTROL.
+- Existing actor code is migrated under a documented compatibility profile rather than falsely promoted to strict typed admission.
+
+## Required conformance cases (proposed, NOT_EXECUTED)
+
+| ID | Case | Required result |
+| --- | --- | --- |
+| ACTOR-TYPED-01 | Single `receives Work`, send `Work` | Compile and admit |
+| ACTOR-TYPED-02 | Send a `String` to `ActorRef<Work>` | Compile rejection |
+| ACTOR-TYPED-03 | One actor sends distinct messages to two differently typed peers | Compile and admit |
+| ACTOR-TYPED-04 | Broadcast one accepted type to many typed refs | Compile and admit |
+| ACTOR-TYPED-05 | Declared `sends Result`, attempt to send `Warning` | Compile rejection |
+| ACTOR-TYPED-06 | `sends` omitted; infer bounded outbound type effect | Compile and admit |
+| ACTOR-TYPED-07 | Request contains `ActorRef<Reply>`, reply via ref | Compile and admit |
+| ACTOR-TYPED-08 | Sender owns `ActorRef<Warning>`, sends `Result` despite union `sends Result | Warning` | Compile rejection |
+| ACTOR-TYPED-09 | Child declares `sends never`, panics | Supervisor receives CONTROL notice |
+| ACTOR-TYPED-10 | App message attempts forged supervisor CONTROL event | Reject/deny admission |
+| ACTOR-TYPED-11 | Full ordinary mailbox, authentic supervisor termination | CONTROL remains reachable |
+| ACTOR-TYPED-12 | Cross-isolate message with wrong protocol generation | Reject before application admission |
+| ACTOR-TYPED-13 | Ownership-invalid send or non-`Sendable` message | Compile rejection |
+| ACTOR-TYPED-14 | Untyped/cast actor reference masquerades as `ActorRef<Work>` | Fail closed |
+| ACTOR-TYPED-15 | Strict-mode non-exhaustive finite `receives` handling | Compile rejection |
+
+## Promotion gates
+
+Implement parser/formatter acceptance, typed HIR/MIR, flow-sensitive effect checking, actor reference capability typing, mailbox admission, and supervisor CONTROL separation independently in the Java, LLVM, .NET, Wasm and Forge backends (plus other supported compilers). Maintain shared positive/negative `.atto` fixtures; retain `.ores` compatibility checks where supported. Use Rust-based test infrastructure where tests are newly introduced; do not use Python. A backend can be marked supported only with exact HEAD/commit provenance, observed compiler execution, positive/negative guest fixtures, and runtime tests for CONTROL isolation. Untested and unsupported are **not** passed.
+
+## Open implementation details
+
+- Exact grammar for sum types and whether an explicitly declared `sends` effect can be parameterized.
+- Whether an explicit `receives never` actor is allowed for timer-only/CONTROL-only actors (recommended: yes).
+- Precise error names and diagnostics, plus the canonical `send` return type.
+- Whether inferred effects become part of public actor interface metadata (recommended: yes, with deterministic generation IDs).
