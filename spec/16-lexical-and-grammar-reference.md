@@ -90,13 +90,14 @@ Ternary conditions must have static type `bool`. AttoLang has no truthiness conv
 ### Canonical conditional forms (TARGET)
 
 ```ebnf
-if_expression = "if" condition "then" expression "else" expression "fi" ;
-if_statement  = "do" "if" condition "then" { statement } [ "else" { statement } ] "fi"
-              | "if" condition "{" { statement } "}" [ "else" "{" { statement } "}" ] ;
+conditional_head = "if" | "ifnot" | "unless" ;
+if_expression = conditional_head condition "then" expression "else" expression "fi" ;
+if_statement  = "do" conditional_head condition "then" { statement } [ "else" { statement } ] "fi"
+              | conditional_head condition "{" { statement } "}" [ "else" "{" { statement } "}" ] ;
 ternary       = expression "?" expression ":" expression ;
 ```
 
-The expression form has mandatory `else` and yields a statically checked value. A branch cannot use a bare `break`, `continue`, or `return` as its result. The two statement forms yield no value; control transfer is permitted when otherwise legal (e.g. `break` within an enclosing loop). Canonical brace statements require no `fi`. A strict compiler must reject `if true then break; fi` even when nested inside a loop. Historical `if ... then` statements and `if { ... } fi` files remain migration-only until updated. See [chapter 27](27-value-conditionals-and-do-if.md).
+`ifnot` and `unless` are equivalent negated-condition heads. They evaluate the condition once and execute the then-arm only when it is false. The expression form has mandatory `else` and yields a statically checked value. A branch cannot use a bare `break`, `continue`, or `return` as its result. The two statement forms yield no value; control transfer is permitted when otherwise legal (e.g. `break` within an enclosing loop). Canonical brace statements require no `fi`. A strict compiler must reject `if true then break; fi` even when nested inside a loop. Historical `if ... then` statements and `if { ... } fi` files remain migration-only until updated. See [chapter 27](27-value-conditionals-and-do-if.md).
 
 
 ## Function forms
