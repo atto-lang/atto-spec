@@ -6,7 +6,7 @@ import test from 'node:test';
 
 const fixture = JSON.parse(readFileSync(fileURLToPath(new URL('./fixtures/ownership-bang-aliases-v1.json', import.meta.url)), 'utf8'));
 function reference_recognize(source) {
-  const bang = /^(mut\s+borrow|copy|take|borrow|share)!(?!=)([\s\S]*)$/.exec(source);
+  const bang = /^(mut\s+borrow|copy|take|borrow|share)!(?!=|eq\b)([\s\S]*)$/.exec(source);
   if (bang && bang[2].trim()) {
     const op = bang[1] === 'mut borrow' ? 'mut_borrow' : bang[1];
     return { operation: op, canonical: bang[1].replace(/\s+/g, ' ') + '! ' + bang[2].trim() };
