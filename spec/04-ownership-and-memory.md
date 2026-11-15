@@ -11,11 +11,11 @@ AttoLang uses explicit rights operations. **TARGET (decided, 2026-11-14):** the 
 | `take! value` | `take!value` | `rt take value` | Move exclusive ownership; subsequent use of the old place is invalid |
 | `copy! value` | `copy!value` | `rt copy value` | Duplicate only when the type proves it is Copy |
 | `borrow! value` | `borrow!value` | `rt borrow value` | Acquire a bounded immutable loan |
-| `mut borrow! value` | `mut borrow!value` | `rt borrow mut value` and `rt mut borrow value` | Acquire a bounded exclusive mutable loan |
+| `borrow! mut value` | `borrow!mut value` | `mut borrow! value`, `rt borrow mut value` and `rt mut borrow value` | Acquire a bounded exclusive mutable loan |
 | `share! value` | `share!value` | `rt share value` | Convert to explicitly authorized shared/frozen ownership |
 | — | — | `rt ref` / `rt deref` / `rt unref` | Managed or checked handle operations, never unchecked cross-isolate escape |
 
-The formatter MUST emit a single ASCII space after `!` in the preferred forms (e.g. `copy! foo`, `mut borrow! foo`). It MUST accept the compact forms without warning and normalize old `rt` forms only when it can preserve the same AST, effects, precedence and evaluation order. No space or comment is allowed between an ownership verb and its `!` marker: `copy !foo` is *not* the `copy!` operator. `mut` and `borrow!` remain separate words. See [chapter 16](16-lexical-and-grammar-reference.md#ownership-prefix-operators-target).
+The formatter MUST emit a single ASCII space after `!` in the preferred forms (e.g. `copy! foo`, `borrow! mut foo`). It MUST accept the compact forms without warning and normalize old `rt` forms only when it can preserve the same AST, effects, precedence and evaluation order. No space or comment is allowed between an ownership verb and its `!` marker: `copy !foo` is *not* the `copy!` operator. `mut` follows the attached `borrow!` marker as a separate keyword. The earlier `mut borrow! value` form remains a compatibility alias, never the formatter output. See [chapter 16](16-lexical-and-grammar-reference.md#ownership-prefix-operators-target).
 
 ```atto
 val packet = make_packet();
@@ -24,7 +24,7 @@ val owned = take! packet;
 
 val payload_copy = copy! data;
 val reader = borrow! record;
-val writer = mut borrow! record;
+val writer = borrow! mut record;
 val frozen = share! payload;
 ```
 
