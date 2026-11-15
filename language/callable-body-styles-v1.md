@@ -1,0 +1,175 @@
+# Callable body styles: C braces and Erlang-like comma sequences (proposal v1)
+
+Status: **accepted syntax contract** (2026-11-15). Compiler support is independently
+gated. Acceptance does **not** imply executable parity across backends.
+
+## Accepted declaration spellings
+
+The body rules apply to `fnc`, `routine`, class/actor methods, and
+out-of-line `mtd` receivers; existing modifier and receiver checks still apply.
+
+```atto
+fnc foo() : int { return 5; }
+fnc foo() : int -> { return 5; }
+fnc foo() -> int { return 5; }
+
+fnc foo() -> int
+    let int x = 3,
+    x + 2
+end
+
+fnc foo() -> int ::
+    let int x = 3,
+    x + 2
+end
+```
+
+The fourth/fifth forms are **Erlang-like**, not Erlang syntax or a new
+evaluation strategy. They return the value of the terminal expression.
+
+## Inline methods, out-of-line receivers and formatting (accepted)
+
+All five body styles above apply identically to inline instance methods and
+out-of-line `mtd`, with existing class/actor state and effect restrictions.
+Class/actor instance methods may be written as `name(...)`, `fnc name(...)`,
+or the legacy `method name(...)` declaration. The formatter canonically
+**removes the redundant `fnc` / `method` prefix** inside a class or actor,
+but retains `static fnc` for static functions.
+
+```atto
+define class Calculator as
+    add(int a, int b): int { return a + b; }
+    fnc subtract(int a, int b): int -> { return a - b; }
+    multiply(int a, int b) -> int { return a * b; }
+    divide(int a, int b) -> int
+        let int result = a / b,
+        result
+    end
+    square(int x) -> int :: x * x end
+end
+
+mtd (self: Calculator) add(int a, int b): int { return a + b; }
+mtd (self: Calculator) subtract(int a, int b): int -> { return a - b; }
+mtd (self: Calculator) multiply(int a, int b) -> int { return a * b; }
+mtd (self: Calculator) divide(int a, int b) -> int
+    let int result = a / b,
+    result
+end
+mtd (self: Calculator) square(int x) -> int :: x * x end
+
+mtd (mut self: Calculator) increment() -> int ::
+    self.count = self.count + 1,
+    self.count
+end
+```
+
+The inline and out-of-line examples are alternative ways to declare an
+implementation: **do not declare an identical owner/name/arity signature both
+inline and out-of-line**. Mutability, ownership, and actor critical-state
+checks apply before lowering. An actor's sealed state may not be accessed by
+direct `self.field` operations merely because the method uses an Erlang body.
+
+The following out-of-line *receiver headers* are accepted synonyms:
+
+```atto
+mtd (self: Calculator) square(int x) -> int :: x * x end
+mtd (Calculator self) square(int x) -> int :: x * x end
+mtd (Calculator) square(int x) -> int :: x * x end
+mtd (Calculator _) square(int x) -> int :: x * x end
+```
+
+These are four **alternative declarations**, not four overloads to co-exist.
+`(self: Calculator)` and `(Calculator self)` explicitly bind `self`.
+`(Calculator)` and `(Calculator _)` are the implicit-receiver variants.
+The canonical printer normalizes `(Calculator self)` to
+`(self: Calculator)`, and `(Calculator _)` to `(Calculator)`. Explicit
+mutable receivers use `(mut self: Calculator)`; no mutable receiver may be
+silently inferred from a nominal spelling.
+
+The formatter must preserve the original **body family** (braces versus
+comma/`end`) unless explicitly asked to convert it; it must not insert
+implicit returns into C-style blocks or replace Erlang sequence commas with
+semicolons. Receiver normalization and inline-method prefix removal must be
+idempotent (format twice equals format once). The formatter must never merge
+distinct signatures or change receiver mutability.
+
+`->` is used in these callable headers and lambda bodies. `=>` remains the
+fat arrow for callable *type* definitions/declarations; do not rewrite one
+into the other.
+
+## Body boundary and disambiguation
+
+```ebnf
+callable          = callable_head, return_spec, callable_body ;
+return_spec       = (":", type_ref) | ("->", type_ref) ;
+callable_body     = "{", c_statements, "}"
+                  | "->", "{", c_statements, "}"  (* only after : Type *)
+                  | ["::"], erlang_sequence, "end" (* only after -> Type *) ;
+erlang_sequence   = erlang_item, {",", erlang_item} ;
+erlang_item       = statement_without_terminator | expression ;
+```
+
+A `-> Type` header followed by `{` unambiguously selects C-style.
+The optional `::` after `-> Type` selects Erlang-style explicitly;
+otherwise the absence of `{` selects Erlang-style. A `: Type` header
+does **not** implicitly select Erlang-style. A body-opening `->` following
+`: Type` requires `{`. Neither `::` nor a second `->` may be used
+as an expression operator. The parser must not fall back to another
+interpretation after encountering malformed delimiters.
+
+## Statement separation and value semantics
+
+- Within C-style braces, preserve existing semicolon and safe-newline
+  statement termination. C-style expression statements do **not**
+  implicitly return.
+- Within the outer Erlang-style sequence, use a comma between items.
+  A newline is whitespace, not a substitute for a comma. A semicolon
+  is not an outer sequence separator. Trailing commas and empty items
+  are invalid. An explicit `return` is allowed but not required.
+- A terminal expression in an Erlang-style non-`void` callable acts
+  exactly like `return expression`: evaluate it once, check its type
+  against the declared return type, and apply the normal ownership,
+  control-flow and cleanup rules. Earlier expressions are evaluated
+  for effects and their results discarded.
+- For `void`, a final expression is an ordinary expression statement,
+  not a value-return. Non-`void` paths without a terminal expression
+  or explicit return must fail type/control-flow checking.
+- Nested `if/fi`, `match/end`, `while/done`, function arguments,
+  lists and tuples retain their own delimiter grammars. Commas inside
+  nested expressions are not outer statement separators. In particular,
+  conditional comma-as-AND stays scoped to conditional parsing.
+- The explicit `::` form is recommended for a multi-line body when
+  a declaration boundary could be confused with the body beginning.
+
+## Rejection and safety tests
+
+All backends and the formatter should test the following:
+
+1. Each of the five examples above returns 5.
+2. `fnc f() : int { 5; }` does not gain implicit return.
+3. `fnc f() -> int :: 3, 2 + 3 end` returns 5.
+4. Reject a missing `end`, a trailing comma, adjacent items without
+   comma, a top-level semicolon in Erlang-style, and `: int ::`.
+5. Reject `fnc f() : int -> 5 end`: the `->` body marker requires braces.
+6. Reject a non-`void` Erlang body that can fall through without a
+   result, and enforce return-type and ownership checks for its tail.
+7. Keep argument commas (e.g., `sum(2, 3)`) distinct from sequence
+   commas; properly consume nested `if/fi` and `match/end`.
+8. `fnc`, `routine`, class methods and out-of-line `mtd` must use
+   equivalent syntax recognition, but executable claims require **actual
+   tested lowering** for that callable category.
+9. Inline `fnc`/`method` prefix normalization and both named receiver spellings
+   round-trip to one canonical form, including `mut self` and implicit `_`.
+10. Reject duplicate owner/name/arity across inline versus out-of-line methods;
+    actor sealed-state/critical guards remain enforced in every body family.
+
+## Compatibility and rollout
+
+Existing C-style declarations remain valid and unchanged. `routine`
+retains its direct-call-only/non-first-class intent and does not acquire
+recursion guarantees solely from this syntax. `mtd` out-of-line receivers
+are currently syntax-only in the Rust browser compiler; accepting a
+header is not evidence that a guest Wasm method executes. Rust, Wasm,
+Java, LLVM, .NET, Forge, the formatter, and playground should publish
+their own tested capability status and a shared positive/negative
+conformance corpus before declaring parity.
