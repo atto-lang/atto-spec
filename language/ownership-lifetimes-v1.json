@@ -1,0 +1,176 @@
+{
+  "schema": "atto.ownership.lifetimes.proposal.v1",
+  "status": "PROPOSED_NOT_ACCEPTED",
+  "implemented": false,
+  "compiled_guest_proof": false,
+  "source_of_truth": "language/owned-shared-handles-and-suspension-v1.md",
+  "backend_targets": [
+    "java",
+    "llvm",
+    "rust-wasm",
+    "forge",
+    "net"
+  ],
+  "cases": [
+    {
+      "id": "box-owner-transfer",
+      "area": "box",
+      "target": "accept",
+      "current": "unverified",
+      "source": "val a = Box.of(new Parcel()); val b = take! a;",
+      "rule": "single owner moves exactly once"
+    },
+    {
+      "id": "box-use-after-take",
+      "area": "box",
+      "target": "reject",
+      "current": "unverified",
+      "source": "val a = Box.of(new Parcel()); val b = take! a; consume(a);",
+      "rule": "former owner invalid after take"
+    },
+    {
+      "id": "box-loan-after-drop",
+      "area": "box",
+      "target": "reject",
+      "current": "unverified",
+      "source": "val a = Box.of(new Parcel()); val r = borrow! a; drop(a); use(r);",
+      "rule": "no owner destruction with live loan"
+    },
+    {
+      "id": "box-nested-return-escape",
+      "area": "box",
+      "target": "reject",
+      "current": "unverified",
+      "source": "val a = Box.of(new Parcel()); val r = borrow! a; return r.field;",
+      "rule": "field provenance cannot escape owner"
+    },
+    {
+      "id": "arc-share-immutable",
+      "area": "arc",
+      "target": "accept",
+      "current": "unverified",
+      "source": "val a = Arc.of(new FrozenSnapshot()); val b = share! a;",
+      "rule": "immutable sharing with verified contract"
+    },
+    {
+      "id": "arc-share-mutable",
+      "area": "arc",
+      "target": "reject",
+      "current": "unverified",
+      "source": "val a = new MutableParcel(); val b = share! a;",
+      "rule": "unverified mutable share forbidden"
+    },
+    {
+      "id": "arc-mutate-through-read",
+      "area": "arc",
+      "target": "reject",
+      "current": "unverified",
+      "source": "val a = Arc.of(new FrozenSnapshot()); a.field = 3;",
+      "rule": "Arc alone does not grant writes"
+    },
+    {
+      "id": "receiver-nested-alias",
+      "area": "alias",
+      "target": "reject",
+      "current": "partial-rust-wasm",
+      "source": "return item.method(drain(item));",
+      "rule": "receiver live during argument evaluation"
+    },
+    {
+      "id": "ternary-join-moves",
+      "area": "control-flow",
+      "target": "reject",
+      "current": "partial-rust-wasm",
+      "source": "val x = true ? take! owner : take! owner; use(owner);",
+      "rule": "post-join moved state must reject"
+    },
+    {
+      "id": "loop-backedge-move",
+      "area": "control-flow",
+      "target": "reject",
+      "current": "partial-rust-wasm",
+      "source": "while take! limit > 0 { break; }",
+      "rule": "repeated positions cannot move outer owner"
+    },
+    {
+      "id": "actor-send-owned",
+      "area": "actor",
+      "target": "accept",
+      "current": "unverified",
+      "source": "sender.send(take! owned);",
+      "rule": "sender transfer commits only at accepted mailbox admission"
+    },
+    {
+      "id": "actor-send-rejected",
+      "area": "actor",
+      "target": "reject",
+      "current": "unverified",
+      "source": "sender.close(); sender.send(take! owned);",
+      "rule": "rejected admission must preserve sender ownership"
+    },
+    {
+      "id": "actor-send-loan",
+      "area": "actor",
+      "target": "reject",
+      "current": "unverified",
+      "source": "val view = borrow! owned; sender.send(view);",
+      "rule": "borrow never escapes into actor mailbox"
+    },
+    {
+      "id": "actor-serializable-not-sendable",
+      "area": "actor",
+      "target": "reject",
+      "current": "unverified",
+      "source": "sender.send(serializable_pointer);",
+      "rule": "Serializable does not imply Sendable"
+    },
+    {
+      "id": "await-borrow-live",
+      "area": "suspension",
+      "target": "reject",
+      "current": "partial-rust-wasm",
+      "source": "val view = borrow! owned; await ready(); use(view);",
+      "rule": "reject live borrow across await"
+    },
+    {
+      "id": "select-write-loan",
+      "area": "suspension",
+      "target": "reject",
+      "current": "unverified",
+      "source": "val w = borrow! mut owned; select { ... }; use(w);",
+      "rule": "exclusive loan cannot cross select"
+    },
+    {
+      "id": "critical-write-await",
+      "area": "suspension",
+      "target": "reject",
+      "current": "unverified",
+      "source": "handle_state(critical-write |s| -> { await receive(); });",
+      "rule": "sealed actor state cannot keep writer lock while suspending"
+    },
+    {
+      "id": "panic-control-only",
+      "area": "failure",
+      "target": "accept",
+      "current": "unverified",
+      "source": "panic Error(\"fatal\");",
+      "rule": "actor panic observable only on supervisor priority CONTROL"
+    },
+    {
+      "id": "raise-recover-boundary",
+      "area": "failure",
+      "target": "accept",
+      "current": "unverified",
+      "source": "defer recover |err| -> cleanup(); raise Error(\"e\");",
+      "rule": "raise bypasses catches and invokes nearest valid recover"
+    },
+    {
+      "id": "unwinding-no-double-drop",
+      "area": "failure",
+      "target": "reject",
+      "current": "unverified",
+      "source": "throw Error(\"e\");",
+      "rule": "controlled exit must not double cleanup; fatal traps separate"
+    }
+  ]
+}
