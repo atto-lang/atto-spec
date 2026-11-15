@@ -38,6 +38,8 @@ This is proposed syntax; exact arm grammar and timeout handling need compiler fi
 
 `process.stdout` / `stderr` / `stdin` and `stdio.out` / `err` / `in` are channel-style standard streams by design; `stdio.in.stream()` and `Observable.from_ch(stdio.in)` are target adapters. Network stream framing and backpressure are part of the contract, not consequences of merely using a Channel type.
 
+The approved immediate channel probe API is specified in [chapter 27](27-channel-immediate-probes.md): `try writech` targets `TryWriteResult<T>` with `Accepted`, `Full(T)` and `Closed(T)` and no waiter registration; `try readch` retains its `Option<T>` compatibility contract. This is a TARGET contract until each backend proves actual guest execution.
+
 ## Scheduling guarantees
 
 - Actor DATA turns and Task continuations use bounded scheduling, cancellation fencing, and **cooperative reductions/time budgets**.
