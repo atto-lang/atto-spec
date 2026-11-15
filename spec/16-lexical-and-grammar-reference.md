@@ -57,6 +57,26 @@ Keywords may also be described linguistically as nouns (e.g. `actor`), relationa
 
 ## Operators
 
+### Ownership-prefix operators (TARGET)
+
+**Decided 2026-11-14; not verified as implemented in the dated compiler revisions below.** The canonical forms are `copy! operand`, `take! operand`, `borrow! operand`, `mut borrow! operand` and `share! operand`. The same five forms with no whitespace after the marker (such as `copy!foo` and `mut borrow!foo`) MUST parse identically. The original `rt copy`, `rt take`, `rt borrow`, `rt borrow mut` and `rt share` remain admitted for compatibility, along with the additional `rt mut borrow` spelling for mutable borrowing. Chapter 04 defines their rights semantics.
+
+Lexical rule: `!` is a punctuation token, not part of an identifier. In the ownership-prefix grammar, the verb (`copy`, `take`, `borrow`, `share`) MUST be immediately adjacent to its `!` token. The parser matches this contextual token pair at the start of a unary expression; for `mut borrow!`, `mut` is a distinct preceding keyword. A source gap after `!` is optional, including zero whitespace. A source gap *before* `!` breaks the ownership operator; `copy !foo` and `borrow !foo` MUST NOT be treated as `copy!` or `borrow!`. Other identifiers followed by `!` are not ownership operators. Existing unary logical `!foo`, inequality `!=` and `!eq` retain their meanings. These spellings do not create a general macro-invocation `name!expr` rule; `copy!(foo)` is the ownership operator applied to a parenthesized expression.
+
+Ownership prefixes bind at unary precedence, with postfix place/member/index operations on their operand binding more tightly: `borrow! foo.bar` means `borrow! (foo.bar)`, and `copy! a + b` means `(copy! a) + b`. Parentheses are required to apply an ownership operation to a whole compound expression (`copy! (a + b)`). A mutating borrow or move MUST satisfy the existing type, place, lifetime, authority and effects checks; syntax acceptance cannot bypass an ownership diagnostic. The operand must be evaluated exactly once.
+
+```ebnf
+ownership_prefix = ("copy" | "take" | "borrow" | "share") "!"
+                 | "mut" "borrow" "!" ;
+ownership_expr   = ownership_prefix unary_expr ;
+// Lexical adjacency required between the ownership verb and "!".
+// Whitespace between "!" and unary_expr is optional.
+```
+
+**Formatter:** Always use one space after the final `!`, e.g. `copy! foo` and `mut borrow! foo`; preserve grouping, comments, and existing evaluation order. Do not rewrite `rt ref` / `rt deref` / `rt unref` as unsupported bang spellings. The parser MUST reject missing operands and syntax that cannot be lowered, rather than silently interpreting an unrecognized ownership operator as a generic call or other host behavior.
+
+**Conformance gate:** Test spaced and compact input, formatter round trips, nested/postfix operands, `!` vs `!=` / `!eq`, ordinary identifiers named similarly to ownership verbs, and the absent-space-before-`!` distinction. Type-checking negatives must cover use-after-take, non-Copy duplication, non-place mutable borrowing, aliased mutable loans, unauthorized share, and loans illegally crossing suspension. Tests must execute against each target compiler/backend at recorded commits; a source-only fixture or parser acceptance is not evidence of backend implementation.
+
 From lowest to highest precedence, following the v0.6 grammar:
 
 | Level | Operators | Associativity |
