@@ -72,8 +72,8 @@ already emits it:
 
 | Component | Contract |
 | --- | --- |
-| Callable value | Opaque i64 (generation:u32 << 32) OR slot:u32 with one-based slot; zero is invalid |
-| Domain | Trusted per-instance/actor owner identity, never serialized as part of a user value |
+| Callable value | Opaque two-word 128-bit capability: upper u64 = trusted instance/actor domain, lower u64 = (generation:u32 << 32) OR one-based slot:u32; zero fields invalid |
+| Domain | Trusted nonzero and nonreused per-instance/actor execution-domain identity, embedded in the checked handle but never accepted from user serialization |
 | Slot table | Bounded, compiler-controlled, per guest-instance table/arena |
 | Slot contents | Live state, generation, owner, exact signature ID, compiler-controlled function-table index, checked typed capture layout |
 | Invocation | Validate live slot, generation, owner, bounds, signature and capture layout **before** typed Wasm call_indirect |
@@ -83,6 +83,11 @@ already emits it:
 | Exhaustion | Retire slots with exhausted generation; never wrap or alias a stale handle |
 | Limits | Initial reference limits: 1,024 slots/domain, 16 scalar capture words/closure |
 
+The two-word handle requires an explicit callable feature/ABI revision and
+must not be smuggled through the current single-i64 ABI v2. A guest lowering
+may pass the two i64 words or store them in a checked opaque value. The
+per-domain owner identity is never a substitute for host authorization.
+
 The guest type index is local to a module, not a portable cross-module numeric
 identifier. Signature identity derives from exact canonical parameter and
 return types, and is mapped to the module-local type section during linking.
@@ -90,10 +95,12 @@ The compiler controls every table entry; no host-owned or unverified funcref
 can be installed. Each source callback's wrapper receives a checked
 environment plus the typed user arguments.
 
-A 64-bit handle's bits are **not an authentication token**. Collision with
-another guest instance is possible, so the runtime must never deserialize a
-handle from a foreign actor/tenant or allow source-level bitcasts. Every checked
-call uses the trusted owner context. The reference Rust host model rejects
+Even a 128-bit handle is **not an authentication token**. Embedding the trusted
+runtime-assigned 64-bit execution-domain identity prevents accidental aliasing
+between instances with the same slot/generation, but only strict provenance
+and nonreuse of domain IDs prevents stale cross-instance aliasing. The runtime
+must never deserialize handles from foreign actors/tenants or allow source-level
+bitcasts. Every checked call uses the independently trusted owner context. The reference Rust host model rejects
 caller-owner mismatches, but this alone is not proof of cross-process
 authorization. Host/guest isolation and capability provenance remain
 mandatory.
