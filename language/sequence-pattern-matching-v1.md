@@ -37,8 +37,8 @@ sequence_pattern = "List.of(", [sequence_item, {",", sequence_item}], ")"
                  | "Tuple.of(", [tuple_item, {",", tuple_item}], ")" ;
 sequence_item    = value_pattern | "_" | "..._" | "_..." ;
 tuple_item       = value_pattern | "_" ;
-value_pattern    = literal | type_test | sequence_pattern
-                 | value_pattern, "as", binding_qualifier, identifier ;
+value_pattern    = primary_pattern, ["as", binding_qualifier, identifier] ;
+primary_pattern  = literal | type_test | sequence_pattern ;
 type_test        = "is", ["!"], type
                  | "is", "Tuple[", [tuple_type_item, {",", tuple_type_item}], "]" ;
 tuple_type_item  = ["!"], type | "_" ;
