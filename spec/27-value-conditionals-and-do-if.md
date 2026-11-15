@@ -102,6 +102,10 @@ The formatter preserves `do if` versus brace-style `if`; it must never silently 
 
 Verify nested loops, statement termination, call arguments, true/false evaluation order, mismatched ownership, and both arms of static type checking in each of Java/GraalVM, LLVM, WASM, Forge, and .NET/AOT. Record each backend as PASSED, FAILED, UNSUPPORTED, or NOT EXECUTED with an exact commit SHA and an actual guest run where applicable.
 
+## Implementation snapshot (unverified)
+
+At the current draft stage, the Java reference feature branch provides the negated conditional parser and JUnit guest fixtures; the canonical source-compiler profile still needs production entrypoint wiring. The .NET scalar compiler branch provides a bounded `loop` CFG with typed SSA `break`/`continue` edges and CIL regression tests. The LLVM branch provides parsed/typed negated conditionals and native compilation fixtures, but **general `loop` / `break` continuations are still rejected**, tracked in [LLVM issue #1828](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/1828). None of these branches has a passing exact-SHA guest run proven by the presently available CI; do not mark full parity.
+
 ## Migration
 
 Legacy parsers accepted keyword-delimited imperative `if ... then ... fi` and mandatory `fi` after a braced `if`. Migration must be explicit: rewrite imperative keyword branches to `do if ... then ... fi`, and remove redundant `fi` from braced statements in canonical Atto source. Maintain old parser entry points only for deliberate compatibility until migration is complete; the canonical strict Atto grammar must fail closed.
