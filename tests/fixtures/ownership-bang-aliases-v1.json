@@ -49,6 +49,11 @@
       "operation": "mut_borrow"
     },
     {
+      "input": "borrow!mutfoo",
+      "canonical": "borrow! mutfoo",
+      "operation": "borrow"
+    },
+    {
       "input": "borrow!mut foo[0]",
       "canonical": "borrow! mut foo[0]",
       "operation": "mut_borrow"
@@ -126,7 +131,11 @@
     "mut borrow!eq foo",
     "copy!eq é",
     "borrow! mut",
-    "borrow!mut"
+    "borrow!mut",
+    "mut borrow! mut foo",
+    "borrow! mut mut foo",
+    "rt borrow mut mut foo",
+    "rt mut borrow mut foo"
   ],
   "required_compiler_semantic_negative": [
     "use-after-take",
