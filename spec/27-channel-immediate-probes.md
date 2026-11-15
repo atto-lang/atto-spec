@@ -64,8 +64,29 @@ Allocation-minimal implementations are desirable, but zero allocation is a perfo
 
 ## Migration and implementation status
 
-Existing Java guest `try writech` currently returns `bool`: true for acceptance, false for temporary Full, and a closed-channel error for Closed. It rejects move-only element types and direct `rt take` on the compatibility path to prevent ownership loss. **Do not remove that safety gate until the guest compiler, evaluator and ownership lowering implement the typed result and test it.**
+Java/GraalVM guest `try writech` now yields a move-only `TryWriteResult<T>`
+with `Accepted`, `Full(T)`, and `Closed(T)` constructor patterns in draft
+[Java PR #3109](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3109).
+The Java host `ChannelRuntime.Channel<T>.tryWrite(T)` Boolean method remains
+an internal compatibility interface, **not** the canonical guest API.
 
-Java/GraalVM has a staged host-only `ChannelRuntime.TryWriteResult<T>` primitive on the channel-hardening branch. A host Java unit test or parser acceptance by itself is not guest verification. LLVM, Wasm, Forge and .NET Native AOT still need independent compiler-backed source execution.
+Java guest compiler/type/ownership checker and evaluator support is executed,
+but not yet an unconditional full-suite or AOT claim:
+at Java source commit `c45bf45c2cb90572f145c18a0a56f7f57c95bdd1`,
+the source-exact private GraalVM/JDK25 CI run
+[43672639208](https://github.com/3FA-app/atto-ci/actions/runs/43672639208)
+executed 8 compiler-backed guest cases and 5 host-runtime cases
+(13/13 passed, zero failures/errors/skips). Later source commits adding more
+race and ownership tests require a separate exact-head execution receipt.
+This evidence does not establish full Maven suite success.
 
-Promotion to IMPLEMENTED requires parser/formatter round-trips, exact-type checking, source-level `rt take` positive/negative fixtures, real actor-domain rendezvous and backpressure, failure/closure/cancellation races, proof that Full/Closed return the original owned payload, zero retained waiters after a probe, no untrusted actor capability escapes, and exact-head execution receipts. See [chapter 11](11-conformance.md). All cross-backend cases start NOT_EXECUTED.
+Outstanding before declaring complete Java implementation:
+broader compiler and runtime regression suite, parser/formatter roundtrip,
+strict actors with suspension/cancellation races, AOT runs where claimed,
+and verified drop/ownership behavior across all supported payload classes.
+
+LLVM, Wasm, Forge and .NET Native AOT still require independent compiler-backed
+execution of the same guest fixtures. The 18-case contract remains
+DESIGN_ONLY_NOT_EXECUTED for all five until it has authenticated per-case
+per-backend receipts, including cases absent from the focused Java suite.
+See [chapter 11](11-conformance.md).
