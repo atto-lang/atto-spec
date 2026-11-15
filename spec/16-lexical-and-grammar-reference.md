@@ -87,6 +87,18 @@ From lowest to highest precedence, following the v0.6 grammar:
 
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
 
+### Canonical conditional forms (TARGET)
+
+```ebnf
+if_expression = "if" condition "then" expression "else" expression "fi" ;
+if_statement  = "do" "if" condition "then" { statement } [ "else" { statement } ] "fi"
+              | "if" condition "{" { statement } "}" [ "else" "{" { statement } "}" ] ;
+ternary       = expression "?" expression ":" expression ;
+```
+
+The expression form has mandatory `else` and yields a statically checked value. A branch cannot use a bare `break`, `continue`, or `return` as its result. The two statement forms yield no value; control transfer is permitted when otherwise legal (e.g. `break` within an enclosing loop). Canonical brace statements require no `fi`. A strict compiler must reject `if true then break; fi` even when nested inside a loop. Historical `if ... then` statements and `if { ... } fi` files remain migration-only until updated. See [chapter 27](27-value-conditionals-and-do-if.md).
+
+
 ## Function forms
 
 **TARGET (decided):** `: T` and `-> T` are both valid return spellings, and `::` may be included or omitted. No one form is the only correct one.
