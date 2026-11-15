@@ -71,7 +71,8 @@ ownership_mut_prefix    = "borrow" "!" "mut"
                         | "mut" "borrow" "!" ; // compatibility only
 ownership_expr          = (ownership_mut_prefix | ownership_simple_prefix) unary_expr ;
 // Longest contextual prefix wins: borrow! mut x is BorrowMut, not Borrow(mut x).
-// The "mut" must be a separate keyword: borrow!mutfoo borrows identifier mutfoo.
+// The "mut" is a distinct token: borrow!mutfoo borrows the identifier mutfoo,
+// but borrow!mut(value) mutably borrows the parenthesized expression.
 // Do not permit a second "mut" on the same borrow.
 // Lexical adjacency is required only between the ownership verb and "!".
 // Whitespace between "!" and a following operand is optional.
