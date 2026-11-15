@@ -1,7 +1,7 @@
 {
   "contract": "attolang.ownership-bang-aliases.v1",
   "status": "TARGET_SOURCE_ONLY_NOT_BACKEND_VERIFIED",
-  "formatter": "one ASCII space after !",
+  "formatter": "one ASCII space after !; canonical mutable form borrow! mut operand",
   "accepted": [
     {
       "input": "copy! foo",
@@ -44,13 +44,23 @@
       "operation": "borrow"
     },
     {
+      "input": "borrow! mut foo",
+      "canonical": "borrow! mut foo",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "borrow!mut foo[0]",
+      "canonical": "borrow! mut foo[0]",
+      "operation": "mut_borrow"
+    },
+    {
       "input": "mut borrow! foo",
-      "canonical": "mut borrow! foo",
+      "canonical": "borrow! mut foo",
       "operation": "mut_borrow"
     },
     {
       "input": "mut borrow!foo[0]",
-      "canonical": "mut borrow! foo[0]",
+      "canonical": "borrow! mut foo[0]",
       "operation": "mut_borrow"
     },
     {
@@ -85,12 +95,12 @@
     },
     {
       "input": "rt borrow mut foo",
-      "canonical": "mut borrow! foo",
+      "canonical": "borrow! mut foo",
       "operation": "mut_borrow"
     },
     {
       "input": "rt mut borrow foo",
-      "canonical": "mut borrow! foo",
+      "canonical": "borrow! mut foo",
       "operation": "mut_borrow"
     },
     {
@@ -114,7 +124,9 @@
     "copy!eq",
     "borrow!eq foo",
     "mut borrow!eq foo",
-    "copy!eq é"
+    "copy!eq é",
+    "borrow! mut",
+    "borrow!mut"
   ],
   "required_compiler_semantic_negative": [
     "use-after-take",
