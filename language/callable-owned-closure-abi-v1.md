@@ -69,6 +69,31 @@ ordinary method dispatch with a receiver, **not** an implicit 'obj(...)'
 conversion and not a license to treat class instances as raw callable handles.
 Functor adapters must obey the same signature and ownership checks.
 
+## Experimental compiler slice (not the released ABI)
+
+The Rust/wasm32 **draft** `atto-source.rs` PR #145 now compiles a deliberately
+bounded subset of these examples, including an escaping `make_adder(1)` (42),
+`apply_twice` (40), independent closures (43), and two separate lambda targets
+(41). It lowers `fnc(int) => int` into a compiler-private class environment,
+snapshots up to four immutable integer captures, and emits a sealed one-slot
+`funcref` table with typed Wasm `call_indirect` to a generated receiver
+method. The method dispatches among at most 32 in-module expression-bodied
+lambda targets. Direct-only modules do not acquire a Wasm table.
+
+This is real compiled guest execution, **not** `CallableHandle` v1. The
+experimental environment uses existing bounded bump allocation and does not
+reclaim captured environments or implement generational handle validation,
+arbitrary first-class funcrefs, actor transport, nested closure captures or
+exception-safe destructor handling. The stable contract below remains
+**proposed** and must not be marked fulfilled simply because this scalar
+adapter has a `call_indirect` opcode.
+
+Independent executed-test evidence: private exact-blob carrier
+`honeypot-r-us-test/hnpt-e2e`, Actions run 43764645771, including native and
+wasm32 compiler builds, executable guest parity and the fail-closed source
+fixtures. This is subset-mirror evidence, not a full source-tree SHA or
+real-browser acceptance receipt. No source-org Actions token was needed.
+
 ## Candidate guest Wasm representation (feature-gated)
 
 The following is a **reference layout**, not a declaration that any backend
