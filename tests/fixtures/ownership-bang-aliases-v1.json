@@ -1,0 +1,113 @@
+{
+  "contract": "attolang.ownership-bang-aliases.v1",
+  "status": "TARGET_SOURCE_ONLY_NOT_BACKEND_VERIFIED",
+  "formatter": "one ASCII space after !",
+  "accepted": [
+    {
+      "input": "copy! foo",
+      "canonical": "copy! foo",
+      "operation": "copy"
+    },
+    {
+      "input": "copy!foo",
+      "canonical": "copy! foo",
+      "operation": "copy"
+    },
+    {
+      "input": "take! foo",
+      "canonical": "take! foo",
+      "operation": "take"
+    },
+    {
+      "input": "take!foo",
+      "canonical": "take! foo",
+      "operation": "take"
+    },
+    {
+      "input": "borrow! foo",
+      "canonical": "borrow! foo",
+      "operation": "borrow"
+    },
+    {
+      "input": "borrow!foo.bar",
+      "canonical": "borrow! foo.bar",
+      "operation": "borrow"
+    },
+    {
+      "input": "mut borrow! foo",
+      "canonical": "mut borrow! foo",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "mut borrow!foo[0]",
+      "canonical": "mut borrow! foo[0]",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "share! value",
+      "canonical": "share! value",
+      "operation": "share"
+    },
+    {
+      "input": "share!value",
+      "canonical": "share! value",
+      "operation": "share"
+    },
+    {
+      "input": "copy!(left + right)",
+      "canonical": "copy! (left + right)",
+      "operation": "copy"
+    },
+    {
+      "input": "rt copy foo",
+      "canonical": "copy! foo",
+      "operation": "copy"
+    },
+    {
+      "input": "rt take foo",
+      "canonical": "take! foo",
+      "operation": "take"
+    },
+    {
+      "input": "rt borrow foo",
+      "canonical": "borrow! foo",
+      "operation": "borrow"
+    },
+    {
+      "input": "rt borrow mut foo",
+      "canonical": "mut borrow! foo",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "rt mut borrow foo",
+      "canonical": "mut borrow! foo",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "rt share foo",
+      "canonical": "share! foo",
+      "operation": "share"
+    }
+  ],
+  "must_not_recognize_as_ownership": [
+    "copy !foo",
+    "take ! foo",
+    "borrow !foo",
+    "mut borrow !foo",
+    "share !foo",
+    "copy!=foo",
+    "other!foo",
+    "mutborrow!foo",
+    "copy!",
+    "mut borrow!"
+  ],
+  "required_compiler_semantic_negative": [
+    "use-after-take",
+    "non-Copy duplication",
+    "non-place mutable borrow",
+    "overlapping mutable loans",
+    "unauthorized share",
+    "borrow across unsafe await",
+    "cross-actor mutable pointer escape"
+  ]
+}
