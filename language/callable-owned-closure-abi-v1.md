@@ -96,7 +96,14 @@ The guest type index is local to a module, not a portable cross-module numeric
 identifier. Signature identity derives from exact canonical parameter and
 return types, and is mapped to the module-local type section during linking.
 The compiler controls every table entry; no host-owned or unverified funcref
-can be installed. Each source callback's wrapper receives a checked
+can be installed.
+
+Each function-table target must be registered with its exact canonical callable
+signature and capture-field type layout **before** any closure environment is
+allocated. The target's registration is immutable for the lifetime of its table
+entry. Runtime allocation must reject unregistered targets, incompatible target
+signatures, capture count/type mismatches, and attempts to reregister a target
+with different metadata; comparing only caller-supplied type IDs is insufficient. Each source callback's wrapper receives a checked
 environment plus the typed user arguments.
 
 Even a 128-bit handle is **not an authentication token**. Embedding the trusted
