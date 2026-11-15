@@ -14,16 +14,16 @@
 Illustrative TARGET syntax (not yet accepted by the browser backend):
 
 ~~~atto
-pub fnc main(): int {
+pub fnc use_pointer(): Result<int, PointerError> {
     let cells: Pointer<int> = Pointer.alloc<int>(4)?;
-    cells.write_at(0, 42);
-    val n: int = cells.read_at(0);
-    cells.close();
-    return n;
+    cells.write_at(0, 42)?;
+    val n: int = cells.read_at(0)?;
+    cells.close()?;
+    return Ok(n);
 }
 ~~~
 
-The actual Result-returning allocation signature and mutation-receiver syntax must be verified in the final type checker. read_at returns a copied value only when T is Copy. Non-Copy element access uses a proved loan or ownership move.
+The illustrated PointerError and Result-returning method signatures, plus mutation-receiver syntax, are proposed and must be verified in the final type checker. read_at returns a copied value only when T is Copy. Non-Copy element access uses a proved loan or ownership move.
 
 ## Logical representation and integrity
 
@@ -43,7 +43,7 @@ For each read_at/write_at:
 - borrow! creates a scoped read loan, or a proven exclusive write loan when mutable access is required. No loan escapes a shorter-lived region or crosses await/select, critical access, actor restart or FFI unless frame-pinning plus effect proofs establish safety.
 - copy! cannot copy a mutable *capability*. Copy data into a new independent region, or copy a legitimately immutable shared handle with the same lifetime/domain restrictions.
 - take! revokes sender ownership **only on successful atomic mailbox admission**; full/closed/denied/canceled admissions preserve sender ownership and generation.
-- share! requires a proven permanently, transitively frozen object graph with no writable alias. Arc, Box, Atomic, Send and any wrapper do not automatically establish Sendability, tenant authority, freeze, or FFI safety.
+- share! requires a proven permanently, transitively frozen object graph with no writable alias. The region must remain live while any shared handle or loan exists: deterministic bounded reference accounting or a proven scoped lifetime must prevent premature close. Explicit close with outstanding loans/shares fails or is statically rejected; retirement releases the last share exactly once. Arc, Box, Atomic, Send and any wrapper do not automatically establish Sendability, tenant authority, freeze, or FFI safety.
 - No raw pointer capability traverses tenant/isolate/web-worker or network boundaries. An authorized broker may copy/serialize *values*. Same-domain zero-copy moves require a proven matching arena and generation revocation.
 - Foreign memory needs explicit privileged FFI effects, pinned lifetime, transfer/copy rules, a closed-world import manifest, and teardown rules. A source-level Pointer cannot turn unchecked foreign addresses into safe capabilities.
 
