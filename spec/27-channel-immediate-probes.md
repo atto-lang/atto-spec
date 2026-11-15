@@ -72,12 +72,12 @@ an internal compatibility interface, **not** the canonical guest API.
 
 Java guest compiler/type/ownership checker and evaluator support is executed,
 but not yet an unconditional full-suite or AOT claim:
-at Java source commit `c45bf45c2cb90572f145c18a0a56f7f57c95bdd1`,
+at Java source commit `7848231f19925500824d4929c4997e9b72361feb`,
 the source-exact private GraalVM/JDK25 CI run
-[43672639208](https://github.com/3FA-app/atto-ci/actions/runs/43672639208)
-executed 8 compiler-backed guest cases and 5 host-runtime cases
-(13/13 passed, zero failures/errors/skips). Later source commits adding more
-race and ownership tests require a separate exact-head execution receipt.
+[43673035969](https://github.com/3FA-app/atto-ci/actions/runs/43673035969)
+executed 9 compiler-backed guest cases and 7 host-runtime cases
+(16/16 passed, zero failures/errors/skips). The carrier checked out its
+verified exact head; source and mirror `src` and `docs` trees were identical.
 This evidence does not establish full Maven suite success.
 
 Outstanding before declaring complete Java implementation:
