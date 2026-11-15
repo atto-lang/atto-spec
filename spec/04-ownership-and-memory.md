@@ -4,16 +4,31 @@
 
 ## Ownership operations
 
-AttoLang uses explicit rights operations, expressed as reserved `rt` forms:
+AttoLang uses explicit rights operations. **TARGET (decided, 2026-11-14):** the preferred spellings are the punctuated ownership-prefix operators below. Legacy `rt` forms remain accepted compatibility aliases; a spelling change does not grant additional rights.
 
-| Operation | Intended meaning |
-| --- | --- |
-| `rt take value` | Move exclusive ownership; subsequent use of the old place is invalid |
-| `rt copy value` | Duplicate only when the type proves it is Copy |
-| `rt borrow value` | Acquire a bounded immutable loan |
-| `rt borrow mut value` | Acquire a bounded exclusive mutable loan |
-| `rt share value` | Convert to explicitly authorized shared/frozen ownership |
-| `rt ref` / `rt deref` / `rt unref` | Managed or checked handle operations, never unchecked cross-isolate escape |
+| Preferred spelling | Compact accepted spelling | Legacy compatibility spelling | Intended meaning |
+| --- | --- | --- | --- |
+| `take! value` | `take!value` | `rt take value` | Move exclusive ownership; subsequent use of the old place is invalid |
+| `copy! value` | `copy!value` | `rt copy value` | Duplicate only when the type proves it is Copy |
+| `borrow! value` | `borrow!value` | `rt borrow value` | Acquire a bounded immutable loan |
+| `mut borrow! value` | `mut borrow!value` | `rt borrow mut value` and `rt mut borrow value` | Acquire a bounded exclusive mutable loan |
+| `share! value` | `share!value` | `rt share value` | Convert to explicitly authorized shared/frozen ownership |
+| — | — | `rt ref` / `rt deref` / `rt unref` | Managed or checked handle operations, never unchecked cross-isolate escape |
+
+The formatter MUST emit a single ASCII space after `!` in the preferred forms (e.g. `copy! foo`, `mut borrow! foo`). It MUST accept the compact forms without warning and normalize old `rt` forms only when it can preserve the same AST, effects, precedence and evaluation order. No space or comment is allowed between an ownership verb and its `!` marker: `copy !foo` is *not* the `copy!` operator. `mut` and `borrow!` remain separate words. See [chapter 16](16-lexical-and-grammar-reference.md#ownership-prefix-operators-target).
+
+```atto
+val packet = make_packet();
+val owned = take! packet;
+// using packet here is a compile-time use-after-move error
+
+val payload_copy = copy! data;
+val reader = borrow! record;
+val writer = mut borrow! record;
+val frozen = share! payload;
+```
+
+For `copy!foo`, the scanner must recognize `copy`, `!`, `foo` with a context-sensitive ownership-prefix parse; `!` is not part of the identifier. These are **TARGET semantics**, not a claim that every backend currently compiles the new spelling. In particular, mutable borrowing still requires an addressable writable place, shared ownership still requires explicit authority and the immutable/frozen proof, and `take!` never permits later use of a moved place.
 
 ```atto
 val packet = make_packet()
