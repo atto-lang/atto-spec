@@ -2,14 +2,31 @@
 
 **Status:** TARGET grammar decision, 2026-11-14. A backend is conformant only after actual parser, type-checker, runtime/IR, and negative-fixture evidence at an exact commit. The Java reference compiler currently stages this in the opt-in `parseStrictAtto` entry point; legacy entry points retain historical acceptance for source migration. Do not claim five-backend parity from a spec or parser-only test.
 
+## Negated conditional heads: `ifnot` and `unless`
+
+`ifnot` and `unless` are separate reserved keywords with identical semantics: they evaluate the boolean condition exactly once and select the first arm **only when it is false**. This is equivalent to `if !(condition)`, without re-evaluation or implicit coercion. Both are valid in value expressions, imperative `do` statements and brace-style imperative statements. An `else` arm, when present, is chosen when the original condition is true.
+
+```atto
+loop {
+    do ifnot ready then break; fi
+}
+loop {
+    do unless ready then break; fi
+}
+val int n = unless ready then 5 else 6 fi;
+ifnot ready { retry(); }
+```
+
+For either keyword, `true` **does not** execute the first arm; `false` **does**. When the first arm contains `break` or `continue`, the ordinary imperative control-flow context rules still apply; neither is a value expression. The negation is on the condition only, not on individual `elif` predicates.
+
 ## Forms and meaning
 
 | Form | Category | Result | Required closing syntax |
 | --- | --- | --- | --- |
-| `if condition then left else right fi` | Expression | Value of the selected branch | `else` and `fi` |
+| `if/ifnot/unless condition then left else right fi` | Expression | Value of the selected branch | `else` and `fi` |
 | `condition ? left : right` | Expression | Value of the selected branch | Both arms |
-| `do if condition then ... [else ...] fi` | Statement | No value | `fi` |
-| `if condition { ... } [else { ... }]` | Statement | No value | Matching braces only |
+| `do if/ifnot/unless condition then ... [else ...] fi` | Statement | No value | `fi` |
+| `if/ifnot/unless condition { ... } [else { ... }]` | Statement | No value | Matching braces only |
 
 Expression-form `if` requires a boolean condition and compatible static value types on both arms. Evaluate its condition exactly once, evaluate only the selected arm, and honor ownership/move/borrow checks when joining branch results. The initial portable implementation supports a single expression per value arm. A future block-valued extension must specify tail-expression rules explicitly rather than treating an imperative block as a value.
 
@@ -52,9 +69,10 @@ val int answer = if ready then break else 7 fi;
 ## Grammar and front-end boundary
 
 ```ebnf
-if_expr   = "if" bool_expr "then" expr "else" expr "fi" ;
-if_stmt   = "do" "if" bool_expr "then" { stmt } [ "else" { stmt } ] "fi"
-          | "if" bool_expr "{" { stmt } "}" [ "else" "{" { stmt } "}" ] ;
+if_head   = "if" | "ifnot" | "unless" ;
+if_expr   = if_head bool_expr "then" expr "else" expr "fi" ;
+if_stmt   = "do" if_head bool_expr "then" { stmt } [ "else" { stmt } ] "fi"
+          | if_head bool_expr "{" { stmt } "}" [ "else" "{" { stmt } "}" ] ;
 ternary   = expr "?" expr ":" expr ;
 ```
 
@@ -70,6 +88,12 @@ The formatter preserves `do if` versus brace-style `if`; it must never silently 
 | `return if true then 1 fi;` | Compile failure: missing `else` value |
 | `return if true then break else 1 fi;` | Compile failure: control transfer is not an expression value |
 | `do if true then break; fi` in a loop | Accepted and exits the loop |
+| `do ifnot true then break; fi` in a loop | Accepted; **does not break** |
+| `do unless true then break; fi` in a loop | Accepted; **does not break** |
+| `do ifnot false then break; fi` in a loop | Accepted; exits loop |
+| `do unless false then break; fi` in a loop | Accepted; exits loop |
+| `do unless false then break; fi` outside a loop | Compile failure: invalid loop exit |
+| `return unless false then 7 else 9 fi;` | Accepted; returns 7 |
 | `do if true then break; fi` outside a loop | Compile failure: invalid loop exit |
 | `if ready { act(); } else { retry(); }` | Accepted statement, no `fi` |
 | `return if ready then 1 else 2 fi;` | Accepted typed expression, selected branch only |
