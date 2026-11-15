@@ -86,7 +86,9 @@ while should_continue() do
 done
 ```
 
-The negated synonyms `ifnot` and `unless` are available after `do` and with braces, and as value expressions; they negate the boolean condition without changing control-flow category. Thus `do ifnot true then break; fi` and `do unless true then break; fi` both skip the break.\n\nA bare `if ... then ... fi` is not a statement in the canonical AttoLang grammar; it requires an `else` value and value-producing arms. `do if ... then ... fi` and `if ... { ... } else { ... }` are imperative statements. Inside a loop, use `do if condition then break; fi`, **not** `if condition then break; fi`. `break`, `continue`, and `return` are control transfers, not conditional expression values. See [value conditionals and do-if](27-value-conditionals-and-do-if.md).
+The negated synonyms `ifnot` and `unless` are available after `do` and with braces, and as value expressions; they negate the boolean condition without changing control-flow category. Thus `do ifnot true then break; fi` and `do unless true then break; fi` both skip the break.
+
+A bare `if ... then ... fi` is not a statement in the canonical AttoLang grammar; it requires an `else` value and value-producing arms. `do if ... then ... fi` and `if ... { ... } else { ... }` are imperative statements. Inside a loop, use `do if condition then break; fi`, **not** `if condition then break; fi`. `break`, `continue`, and `return` are control transfers, not conditional expression values. See [value conditionals and do-if](27-value-conditionals-and-do-if.md).
 
 The **target** early-exit spelling is `guard condition { terminal_failure_path }` with **no `else` or `fi`**. A comma-separated guard list checks each clause once, left to right. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
 
