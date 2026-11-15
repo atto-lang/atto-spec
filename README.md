@@ -12,6 +12,10 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 - Use test fixtures and reproducible evidence to distinguish proposed behavior from implemented behavior.
 - Record breaking changes, migration notes, and dependencies on other AttoLang components.
 
+## Proposed language contracts
+
+- [Maybe/else with defer v1](language/maybe-else-defer-v1.md): value-pattern failure handling and finally-like cleanup, **proposal only**. Backend execution and parity remain unverified.
+
 ## Validation
 
 Validation should rely on checked-in tests and exact-commit CI results. When reporting parity, distinguish **passed**, **failed**, **unsupported**, and **not executed**. Avoid inferring guest-runtime support from host-only tests.
