@@ -11,6 +11,31 @@ const mandatoryCaseIds=[
   'await-borrow-live','select-write-loan','critical-write-await',
   'panic-control-only','raise-recover-boundary','unwinding-no-double-drop'
 ];
+const expectedById=Object.freeze({
+  'box-owner-transfer':'compile_accept',
+  'box-use-after-take':'compile_reject',
+  'box-loan-after-drop':'compile_reject',
+  'box-nested-return-escape':'compile_reject',
+  'arc-share-immutable':'compile_accept',
+  'arc-share-mutable':'compile_reject',
+  'arc-mutate-through-read':'compile_reject',
+  'receiver-nested-alias':'compile_reject',
+  'ternary-join-moves':'compile_reject',
+  'loop-backedge-move':'compile_reject',
+  'actor-send-owned':'runtime_success',
+  'actor-send-rejected':'runtime_invariant',
+  'actor-send-loan':'compile_reject',
+  'actor-serializable-not-sendable':'compile_reject',
+  'await-borrow-live':'compile_reject',
+  'select-write-loan':'compile_reject',
+  'critical-write-await':'compile_reject',
+  'panic-control-only':'runtime_invariant',
+  'raise-recover-boundary':'runtime_invariant',
+  'unwinding-no-double-drop':'runtime_invariant'
+});
+const partialRustWasmPrecedents=new Set([
+  'receiver-nested-alias','ternary-join-moves','loop-backedge-move','await-borrow-live'
+]);
 const mandatoryEvents=new Map([
   ['actor-send-owned',['mailbox_admission_accepted','sender_transfer_committed_once','receiver_owner_created_once']],
   ['actor-send-rejected',['mailbox_admission_rejected','payload_owned_by_exactly_one_party','sender_recovers_or_retains_payload']],
@@ -37,12 +62,17 @@ export function validateRegistry(d){
     assert.match(c.id,/^[a-z][a-z0-9-]+$/,c.id);
     assert.ok(allowedAreas.has(c.area),c.id);
     assert.ok(outcomes.has(c.expected_outcome),c.id);
+    assert.equal(c.expected_outcome,expectedById[c.id],c.id+': changed safety outcome');
     assert.equal(c.source_kind,'illustrative_fragment',c.id);
     assert.equal(c.proof_state,'NOT_EXECUTED',c.id);
     assert.ok(!('target' in c)&&!('current' in c),c.id+': ambiguous legacy status');
     assert.ok(typeof c.source==='string'&&c.source.length>=15,c.id);
     assert.ok(typeof c.rule==='string'&&c.rule.length>12,c.id);
-    if('precedent' in c)assert.equal(c.precedent,'partial-rust-wasm-pr-139-or-157',c.id);
+    if(partialRustWasmPrecedents.has(c.id)){
+      assert.equal(c.precedent,'partial-rust-wasm-pr-139-or-157',c.id);
+    } else {
+      assert.ok(!('precedent' in c),c.id+': invented backend implementation precedent');
+    }
     if(c.expected_outcome.startsWith('runtime_')){
       assert.ok(Array.isArray(c.required_observations)&&c.required_observations.length>=2,c.id);
       assert.equal(new Set(c.required_observations).size,c.required_observations.length,c.id);

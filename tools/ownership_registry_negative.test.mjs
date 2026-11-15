@@ -21,3 +21,7 @@ invalid('rejects lost payload-on-rejection observation',d=>{d.cases.find(c=>c.id
 invalid('rejects cleanup double-drop obligation weakened',d=>{d.cases.find(c=>c.id==='unwinding-no-double-drop').required_observations[1]='drop_optional';});
 invalid('rejects missing runtime observations',d=>{delete d.cases.find(c=>c.id==='panic-control-only').required_observations;});
 invalid('rejects an owned child mistaken for a copied scalar',d=>{d.cases.find(c=>c.id==='box-nested-return-escape').source='return r.scalar;';});
+
+invalid('rejects inverted use-after-move expected outcome',d=>{d.cases.find(c=>c.id==='box-use-after-take').expected_outcome='compile_accept';});
+invalid('rejects invented cross-backend precedent',d=>{d.cases.find(c=>c.id==='arc-share-immutable').precedent='partial-rust-wasm-pr-139-or-157';});
+invalid('rejects loss of proven partial precedent',d=>{delete d.cases.find(c=>c.id==='receiver-nested-alias').precedent;});
