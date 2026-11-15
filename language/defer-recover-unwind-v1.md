@@ -22,14 +22,28 @@ an application `raise` from host/runtime traps, allocator exhaustion,
 authenticated cancellation and forced termination; none can be relabeled
 as a recoverable application error.
 
-A `throw` visits ordinary typed `catch` clauses while unwinding the dynamic
-call chain. A matching catch consumes it; merely having a `try` does not.
-Only a throw that escapes all matching local/caller catches **before the
-current recovery boundary** is eligible for that boundary's recovery callbacks.
-If no callback handles it, the original failure continues outward, with
-the original effect and Error identity preserved until the explicit
-task/actor escalation boundary. A recover callback is not a second catch
-running before an ordinary matching catch.
+A `throw` visits ordinary typed `catch` clauses and caller-side `trap`
+boundaries **across the entire dynamic call chain to its task/actor failure
+boundary before any `recover` callback is eligible**. A matching catch
+consumes it; merely having a `try` does not. This includes a catch in the
+caller's caller: a recovery registration inside a callee must not preempt
+an outer caller's catch. A throw reaching a local `recover` registration
+is **not** by itself proof that all caller catches have been exhausted.
+If all catches/traps decline the throw, invoke eligible recovery callbacks
+in their original LIFO registration order. If no callback handles it,
+escalate at the explicit task/actor boundary, retaining original Error
+identity and effect. A recover callback is not a second catch.
+
+**Required implementation consequence:** full caller-chain catch precedence
+requires a two-phase failure dispatch. Record eligible recovery registrations
+in compiler-owned, lifetime-checked unwind metadata while searching outward
+for ordinary catches; do not invoke a recover callback eagerly during this
+search. A catch may win and discard these registrations without executing
+them. If no catch wins, the recovery callbacks and any necessary suspended
+typed continuations must remain valid despite cleanup of failed scopes.
+Fail closed for any backend that cannot prove this ownership/lifetime and
+resumption property. This cannot be implemented by installing one ordinary
+Wasm exception handler at each local `recover` site.
 
 ## Registration, cleanup and callback contract
 
