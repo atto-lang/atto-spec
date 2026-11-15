@@ -64,35 +64,50 @@ Allocation-minimal implementations are desirable, but zero allocation is a perfo
 
 ## Migration and implementation status
 
-Java/GraalVM guest `try writech` yields the affine
-`TryWriteResult<T>` (`Accepted`, `Full(T)`, `Closed(T)`) in draft
+Java/GraalVM guest `try writech` yields affine `TryWriteResult<T>`
+(`Accepted`, `Full(T)`, `Closed(T)`) in draft
 [Java PR #3109](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3109).
-The Java host `ChannelRuntime.Channel<T>.tryWrite(T)` Boolean method is a
-host-compatibility interface, **not** the guest-language return type.
+Java host `ChannelRuntime.Channel<T>.tryWrite(T)` remains Boolean as
+an explicit *host compatibility method*, not the guest result type.
 
-**Current source-exact Java receipt:** Source commit
-`6a4d66ba9a2d946992c7f5baf2919c7b680133b2` passed **73/73**
-channel compiler, ownership, guest, and host-runtime tests on private
-GraalVM/JDK25 CI:
-[run 43675561301](https://github.com/athlet-o/atto-ci/actions/runs/43675561301).
-The test mirror's checked-out source `src` tree SHA was
-`ca0383ea1872ed38973b610b234279f17b877ddc` and its `docs` tree
-SHA was `2a3354c9a025396c082e47e4113a2d4acf85473d`;
-both matched the source Git trees. The runner required no cross-org
-GITHUB_TOKEN or secrets.
+**Latest source-exact Java focused receipt:** source SHA
+`4ac6f06ced0132ee6281c03f0ab81bc44275fec9` passed **74/74**
+compiler-backed guest and host runtime/channel tests with zero
+failures/errors/skips:
+[private GraalVM/JDK25 run 43682284035](https://github.com/athlet-o/atto-ci/actions/runs/43682284035).
+The private runner verified source Git trees
+`src=f5ec41b9c9848c1d7c6c5f7dcc6e8e39c098a561`,
+`docs=2a3354c9a025396c082e47e4113a2d4acf85473d`, and
+`scripts=07f5074549bba8c3931d602ba533e0cbbf2b3f7a`.
+The 128-writer test and Native Image version self-test were exercised,
+without cross-organization checkout credentials.
 
-The full Java Maven test suite is **NOT GREEN**: on the preceding source
-commit `d72d0a1fd0d0b4d266e77efdbde3d85e8fe0a848`,
-[run 43675276951](https://github.com/athlet-o/atto-ci/actions/runs/43675276951)
-executed 5,755 tests (46 failures, 20 errors, 2 skipped). These results
-must not be represented as a full-suite pass. A separate latest-head full
-suite, strict actor-domain suspension/cancellation review, canonical
-parser/formatter roundtrips, and Native Image/AOT testing where claimed
-are still outstanding.
+**Matched full Java suite (earlier source head `6a4d66b` versus
+main base `a88353e`):** the same runner, JDK, Maven command and source-
+matched `src`/`docs`/`.github` trees executed 5,755 PR tests and
+5,733 base tests respectively. Both full suites were **RED**:
+PR 47 failures/20 errors/2 skips; main base 48 failures/19 errors/2
+skips. Of the 67 distinct failing methods in each, 63 were common.
+Four differed per side. Three isolation repetitions of 68 relevant
+actor/runtime tests on each revision showed intermittent failures
+in both revisions, including a base repetition with zero failures.
+The evidence supports nondeterminism but does **not** certify zero
+regressions or a full-suite pass.
+[Base full](https://github.com/athlet-o/atto-ci/actions/runs/43681442020),
+[PR full](https://github.com/athlet-o/atto-ci/actions/runs/43681323532),
+[base isolation](https://github.com/athlet-o/atto-ci/actions/runs/43681786879),
+[PR isolation](https://github.com/athlet-o/atto-ci/actions/runs/43681777925).
 
-LLVM, Wasm, Forge, and .NET compiler-backed execution and parity remain
-**NOT_EXECUTED**. The separately authored 18-case cross-backend conformance
-registry is still `DESIGN_ONLY_NOT_EXECUTED` until cases have their own
-authenticated per-backend execution receipts; passing 73 Java tests does
-not automatically mark those 18 registry entries as passing. See
-[chapter 11](11-conformance.md).
+**Native Image:** The original version admission compared
+`native-image 25.0.4.1` (JDK patch) to GraalVM/Truffle 25.3.4.1,
+and incorrectly rejected matching Oracle GraalVM. The Java PR now checks
+the GraalVM Runtime and Substrate VM release lines separately, requiring
+both to match the Maven pin; positive/negative self-tests passed.
+Actual Native AOT compilation and guest fixtures remain
+**NOT_VERIFIED** until execution evidence is available.
+
+LLVM, Wasm, Forge and .NET Native AOT compiler-backed conformance remain
+**NOT_EXECUTED**. The separate 18-case cross-backend registry stays
+`DESIGN_ONLY_NOT_EXECUTED` until each case obtains a validated
+per-backend receipt. Focused Java tests cannot automatically promote
+these case statuses. See [chapter 11](11-conformance.md).
