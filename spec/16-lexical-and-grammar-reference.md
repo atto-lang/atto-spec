@@ -63,14 +63,18 @@ Keywords may also be described linguistically as nouns (e.g. `actor`), relationa
 
 Lexical rule: `!` is a punctuation token, not part of an identifier. In the ownership-prefix grammar, the verb (`copy`, `take`, `borrow`, `share`) MUST be immediately adjacent to its `!` token. The parser matches this contextual token pair at the start of a unary expression; for `borrow! mut`, `mut` is a distinct keyword after the attached marker, and may touch `!` without whitespace. The leading `mut borrow!` compatibility form must have the same semantics and diagnostics. A source gap after `!` is optional, including zero whitespace. A source gap *before* `!` breaks the ownership operator; `copy !foo` and `borrow !foo` MUST NOT be treated as `copy!` or `borrow!`. Other identifiers followed by `!` are not ownership operators. Existing unary logical `!foo`, inequality `!=` and `!eq` retain their meanings. These spellings do not create a general macro-invocation `name!expr` rule; `copy!(foo)` is the ownership operator applied to a parenthesized expression.
 
-Ownership prefixes bind at unary precedence, with postfix place/member/index operations on their operand binding more tightly: `borrow! foo.bar` means `borrow! (foo.bar)`, and `copy! a + b` means `(copy! a) + b`. Parentheses are required to apply an ownership operation to a whole compound expression (`copy! (a + b)`). A mutating borrow or move MUST satisfy the existing type, place, lifetime, authority and effects checks; syntax acceptance cannot bypass an ownership diagnostic. The operand must be evaluated exactly once.
+Ownership prefixes bind at unary precedence, with postfix place/member/index operations on their operand binding more tightly: `borrow! foo.bar` means `borrow! (foo.bar)`, and `copy! a + b` means `(copy! a) + b`. Parentheses are required to apply an ownership operation to a whole compound expression (`copy! (a + b)`). A mutating borrow or move MUST satisfy the existing type, place, lifetime, authority and effects checks; syntax acceptance cannot bypass an ownership diagnostic. The operand must be evaluated exactly once. Duplicate mutable qualifiers (`borrow! mut mut value`, `mut borrow! mut value`) are invalid and MUST not be silently reinterpreted as a different unary operator.
 
 ```ebnf
-ownership_prefix = ("copy" | "take" | "borrow" | "share") "!"
-                 | "mut" "borrow" "!" ;
-ownership_expr   = ownership_prefix unary_expr ;
-// Lexical adjacency required between the ownership verb and "!".
-// Whitespace between "!" and unary_expr is optional.
+ownership_simple_prefix = ("copy" | "take" | "borrow" | "share") "!" ;
+ownership_mut_prefix    = "borrow" "!" "mut"
+                        | "mut" "borrow" "!" ; // compatibility only
+ownership_expr          = (ownership_mut_prefix | ownership_simple_prefix) unary_expr ;
+// Longest contextual prefix wins: borrow! mut x is BorrowMut, not Borrow(mut x).
+// The "mut" must be a separate keyword: borrow!mutfoo borrows identifier mutfoo.
+// Do not permit a second "mut" on the same borrow.
+// Lexical adjacency is required only between the ownership verb and "!".
+// Whitespace between "!" and a following operand is optional.
 ```
 
 **Formatter:** Always use one space after the final `!`, e.g. `copy! foo` and `borrow! mut foo`; preserve grouping, comments, and existing evaluation order. Do not rewrite `rt ref` / `rt deref` / `rt unref` as unsupported bang spellings. The parser MUST reject missing operands and syntax that cannot be lowered, rather than silently interpreting an unrecognized ownership operator as a generic call or other host behavior.
