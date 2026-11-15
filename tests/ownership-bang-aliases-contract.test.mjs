@@ -9,7 +9,7 @@ function reference_recognize(source) {
   const bang = /^(mut\s+borrow|copy|take|borrow|share)!(?!=|eq(?![\p{L}0-9_]))([\s\S]*)$/u.exec(source);
   if (bang && bang[2].trim()) {
     let operand = bang[2].trim();
-    const trailingMut = bang[1] === 'borrow' && /^mut(?:\\s|$)/.test(operand);
+    const trailingMut = bang[1] === 'borrow' && /^mut(?:\s|$)/.test(operand);
     if (trailingMut) operand = operand.slice(3).trim();
     if (!operand) return null;
     const op = trailingMut || bang[1] === 'mut borrow' ? 'mut_borrow' : bang[1];
