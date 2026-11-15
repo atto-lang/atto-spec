@@ -12,12 +12,16 @@ function reference_recognize(source) {
     const trailingMut = bang[1] === 'borrow' && /^mut(?:\s|$)/.test(operand);
     if (trailingMut) operand = operand.slice(3).trim();
     if (!operand) return null;
+    // Neither borrow! mut mut nor legacy mut borrow! mut may double-qualify.
+    if ((trailingMut || bang[1] === 'mut borrow') && /^mut(?:\s|$)/.test(operand)) return null;
     const op = trailingMut || bang[1] === 'mut borrow' ? 'mut_borrow' : bang[1];
     return { operation: op, canonical: op === 'mut_borrow' ? 'borrow! mut ' + operand : bang[1] + '! ' + operand };
   }
   const legacy = /^rt\s+(borrow\s+mut|mut\s+borrow|copy|take|borrow|share)\s+([\s\S]+)$/.exec(source);
   if (!legacy || !legacy[2].trim()) return null;
   const op = legacy[1].replace(/\s+/g, ' ');
+  if ((op === 'borrow mut' || op === 'mut borrow') &&
+      /^mut(?:\s|$)/.test(legacy[2].trim())) return null;
   const name = op === 'borrow mut' || op === 'mut borrow' ? 'mut borrow' : op;
   return { operation: name === 'mut borrow' ? 'mut_borrow' : name, canonical: name === 'mut borrow' ? 'borrow! mut ' + legacy[2].trim() : name + '! ' + legacy[2].trim() };
 }
