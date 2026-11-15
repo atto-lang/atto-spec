@@ -80,19 +80,32 @@ snapshots up to four immutable integer captures, and emits a sealed one-slot
 method. The method dispatches among at most 32 in-module expression-bodied
 lambda targets. Direct-only modules do not acquire a Wasm table.
 
-This is real compiled guest execution, **not** `CallableHandle` v1. The
-experimental environment uses existing bounded bump allocation and does not
-reclaim captured environments or implement generational handle validation,
-arbitrary first-class funcrefs, actor transport, nested closure captures or
-exception-safe destructor handling. The stable contract below remains
-**proposed** and must not be marked fulfilled simply because this scalar
-adapter has a `call_indirect` opcode.
+This is real compiled guest execution, **not** `CallableHandle` v1.
+The experimental environment now reserves a bounded **256 x 48-byte** guest
+slot arena from the existing bump heap, and supports explicit `.close()`:
+it wipes selector/capture fields, increments the handle generation before
+reusing the freed slot, and traps stale/closed/malformed handles with
+`panic_code = 6`. Handles use **i32**, encoded as 9 slot bits and 23
+generation bits **within one guest instance**, not the proposed 128-bit
+cross-runtime contract below. Exhausted generations retire their slots;
+capacity overflow traps instead of reusing a live environment. Invalid
+dispatch selectors trap rather than returning zero. Source-level closure
+`.close()` consumes its named binding; double close/use-after-close fails
+as `E_MOVED` before emission.
+
+This does **not** reclaim the module's reserved arena memory or implement
+automatic lexical/exception-unwind cleanup, arbitrary first-class funcrefs,
+actor transport, nested closure captures, or the general callable signature
+and ownership contract. The stable contract below remains **proposed** and
+must not be marked fulfilled merely because the scalar adapter now supports
+typed `call_indirect`, bounded recycling and private generation validation.
 
 Independent executed-test evidence: private exact-blob carrier
-`honeypot-r-us-test/hnpt-e2e`, Actions run 43764645771, including native and
-wasm32 compiler builds, executable guest parity and the fail-closed source
-fixtures. This is subset-mirror evidence, not a full source-tree SHA or
-real-browser acceptance receipt. No source-org Actions token was needed.
+`honeypot-r-us-test/hnpt-e2e`, Actions run 43767315724, including native and
+wasm32 compiler builds, executable guest parity, 1,024 recycled allocations,
+capture zeroization, 256-slot exhaustion, `E_MOVED` close diagnostics and
+host-corruption traps. This is subset-mirror evidence, not a full source-tree
+SHA or real-browser acceptance receipt. No source-org Actions token was needed.
 
 ## Candidate guest Wasm representation (feature-gated)
 
