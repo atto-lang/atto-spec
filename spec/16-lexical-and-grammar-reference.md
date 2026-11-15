@@ -10,7 +10,7 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 - Identifiers and keywords are case-sensitive.
 - An identifier starts with a letter or `_` and continues with letters, digits or `_`. The Java lexer accepts any Unicode letter. Whether every backend must do the same is open (S-22).
 - `//` starts a line comment. `/* ... */` is a block comment, and block comments nest.
-- **TARGET (decided, 2026-11-14):** block comments nest at most 128 deep. Opening a 129th level is a compile error, reported as `block comment nesting exceeds 128`, before parsing. Java main and .NET main already enforce this limit with that wording. LLVM main has no limit yet; oreslang-source.llvm#1251 adds it, with fixtures at depth 128 (accepted) and 129 (rejected).
+- **TARGET (decided, 2026-11-14):** block comments nest at most 128 deep. Opening a 129th level is a compile error, reported as `block comment nesting exceeds 128`, before parsing. Java, .NET and LLVM main all enforce this limit with that wording (LLVM via oreslang-source.llvm#1251, merged 2026-11-15, with fixtures at depth 128 accepted and 129 rejected).
 
 ## Keywords
 
