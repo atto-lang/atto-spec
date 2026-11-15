@@ -108,6 +108,7 @@ Each row is an **expected future guest trace**, not a passed test.
 | Early return evaluates expression before cleanup | return expression, B, A; snapshotted return value |
 | Raise inside a try/catch | body, finally, deferred cleanup, recover; **never catch** |
 | Throw handled locally | throw, matching catch, finally, cleanup; **never recover** |
+| Throw from a callee with recover, handled by an outer caller | callee defers, caller catch, caller finally; **never callee recover** |
 | Throw through nested calls with no matching catch | inner finally/defers, outer defers, recover with original Error |
 | Recovery delegates | newest recover calls `c.next()`, then next older recover sees same Error exactly once |
 | Recovery declines all callbacks | original error escapes to parent/task supervisor |
