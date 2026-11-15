@@ -6,14 +6,14 @@ import test from 'node:test';
 
 const fixture = JSON.parse(readFileSync(fileURLToPath(new URL('./fixtures/ownership-bang-aliases-v1.json', import.meta.url)), 'utf8'));
 function reference_recognize(source) {
-  const bang = /^(mut\\s+borrow|copy|take|borrow|share)!(?!=)([\\s\\S]*)$/.exec(source);
+  const bang = /^(mut\s+borrow|copy|take|borrow|share)!(?!=)([\s\S]*)$/.exec(source);
   if (bang && bang[2].trim()) {
     const op = bang[1] === 'mut borrow' ? 'mut_borrow' : bang[1];
-    return { operation: op, canonical: bang[1].replace(/\\s+/g, ' ') + '! ' + bang[2].trim() };
+    return { operation: op, canonical: bang[1].replace(/\s+/g, ' ') + '! ' + bang[2].trim() };
   }
-  const legacy = /^rt\\s+(borrow\\s+mut|mut\\s+borrow|copy|take|borrow|share)\\s+([\\s\\S]+)$/.exec(source);
+  const legacy = /^rt\s+(borrow\s+mut|mut\s+borrow|copy|take|borrow|share)\s+([\s\S]+)$/.exec(source);
   if (!legacy || !legacy[2].trim()) return null;
-  const op = legacy[1].replace(/\\s+/g, ' ');
+  const op = legacy[1].replace(/\s+/g, ' ');
   const name = op === 'borrow mut' || op === 'mut borrow' ? 'mut borrow' : op;
   return { operation: name === 'mut borrow' ? 'mut_borrow' : name, canonical: name + '! ' + legacy[2].trim() };
 }
