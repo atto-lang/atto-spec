@@ -15,162 +15,222 @@
     {
       "id": "box-owner-transfer",
       "area": "box",
-      "target": "accept",
-      "current": "unverified",
       "source": "val a = Box.of(new Parcel()); val b = take! a;",
-      "rule": "single owner moves exactly once"
+      "rule": "single owner moves exactly once",
+      "expected_outcome": "compile_accept",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED"
     },
     {
       "id": "box-use-after-take",
       "area": "box",
-      "target": "reject",
-      "current": "unverified",
       "source": "val a = Box.of(new Parcel()); val b = take! a; consume(a);",
-      "rule": "former owner invalid after take"
+      "rule": "former owner invalid after take",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED"
     },
     {
       "id": "box-loan-after-drop",
       "area": "box",
-      "target": "reject",
-      "current": "unverified",
       "source": "val a = Box.of(new Parcel()); val r = borrow! a; drop(a); use(r);",
-      "rule": "no owner destruction with live loan"
+      "rule": "no owner destruction with live loan",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED"
     },
     {
       "id": "box-nested-return-escape",
       "area": "box",
-      "target": "reject",
-      "current": "unverified",
-      "source": "val a = Box.of(new Parcel()); val r = borrow! a; return r.field;",
-      "rule": "field provenance cannot escape owner"
+      "source": "val a = Box.of(new ParentWithOwnedChild()); val r = borrow! a; return r.owned_child;",
+      "rule": "returning an owned child handle through borrowed parent requires explicit nested-loan provenance; copied scalar fields are not forbidden",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED"
     },
     {
       "id": "arc-share-immutable",
       "area": "arc",
-      "target": "accept",
-      "current": "unverified",
       "source": "val a = Arc.of(new FrozenSnapshot()); val b = share! a;",
-      "rule": "immutable sharing with verified contract"
+      "rule": "immutable sharing with verified contract",
+      "expected_outcome": "compile_accept",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED"
     },
     {
       "id": "arc-share-mutable",
       "area": "arc",
-      "target": "reject",
-      "current": "unverified",
       "source": "val a = new MutableParcel(); val b = share! a;",
-      "rule": "unverified mutable share forbidden"
+      "rule": "unverified mutable share forbidden",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED"
     },
     {
       "id": "arc-mutate-through-read",
       "area": "arc",
-      "target": "reject",
-      "current": "unverified",
       "source": "val a = Arc.of(new FrozenSnapshot()); a.field = 3;",
-      "rule": "Arc alone does not grant writes"
+      "rule": "Arc alone does not grant writes",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED"
     },
     {
       "id": "receiver-nested-alias",
       "area": "alias",
-      "target": "reject",
-      "current": "partial-rust-wasm",
       "source": "return item.method(drain(item));",
-      "rule": "receiver live during argument evaluation"
+      "rule": "receiver live during argument evaluation",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED",
+      "precedent": "partial-rust-wasm-pr-139-or-157"
     },
     {
       "id": "ternary-join-moves",
       "area": "control-flow",
-      "target": "reject",
-      "current": "partial-rust-wasm",
       "source": "val x = true ? take! owner : take! owner; use(owner);",
-      "rule": "post-join moved state must reject"
+      "rule": "post-join moved state must reject",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED",
+      "precedent": "partial-rust-wasm-pr-139-or-157"
     },
     {
       "id": "loop-backedge-move",
       "area": "control-flow",
-      "target": "reject",
-      "current": "partial-rust-wasm",
       "source": "while take! limit > 0 { break; }",
-      "rule": "repeated positions cannot move outer owner"
+      "rule": "repeated positions cannot move outer owner",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED",
+      "precedent": "partial-rust-wasm-pr-139-or-157"
     },
     {
       "id": "actor-send-owned",
       "area": "actor",
-      "target": "accept",
-      "current": "unverified",
-      "source": "sender.send(take! owned);",
-      "rule": "sender transfer commits only at accepted mailbox admission"
+      "source": "// runtime scenario: send one transferable, explicitly Sendable owned payload; verify mailbox accepted it and sender cannot reuse",
+      "rule": "ownership commit is linearized with acceptance and produces exactly one receiver owner",
+      "expected_outcome": "runtime_success",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED",
+      "required_observations": [
+        "mailbox_admission_accepted",
+        "sender_transfer_committed_once",
+        "receiver_owner_created_once"
+      ]
     },
     {
       "id": "actor-send-rejected",
       "area": "actor",
-      "target": "reject",
-      "current": "unverified",
-      "source": "sender.close(); sender.send(take! owned);",
-      "rule": "rejected admission must preserve sender ownership"
+      "source": "// runtime scenario: close mailbox, then attempt send(take! owned), observe failed admission and recover payload",
+      "rule": "failed admission must leave exactly one recoverable owner; whether original binding survives or Err returns payload is an open ABI decision",
+      "expected_outcome": "runtime_invariant",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED",
+      "required_observations": [
+        "mailbox_admission_rejected",
+        "payload_owned_by_exactly_one_party",
+        "sender_recovers_or_retains_payload"
+      ]
     },
     {
       "id": "actor-send-loan",
       "area": "actor",
-      "target": "reject",
-      "current": "unverified",
       "source": "val view = borrow! owned; sender.send(view);",
-      "rule": "borrow never escapes into actor mailbox"
+      "rule": "borrow never escapes into actor mailbox",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED"
     },
     {
       "id": "actor-serializable-not-sendable",
       "area": "actor",
-      "target": "reject",
-      "current": "unverified",
       "source": "sender.send(serializable_pointer);",
-      "rule": "Serializable does not imply Sendable"
+      "rule": "Serializable does not imply Sendable",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED"
     },
     {
       "id": "await-borrow-live",
       "area": "suspension",
-      "target": "reject",
-      "current": "partial-rust-wasm",
       "source": "val view = borrow! owned; await ready(); use(view);",
-      "rule": "reject live borrow across await"
+      "rule": "reject live borrow across await",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED",
+      "precedent": "partial-rust-wasm-pr-139-or-157"
     },
     {
       "id": "select-write-loan",
       "area": "suspension",
-      "target": "reject",
-      "current": "unverified",
       "source": "val w = borrow! mut owned; select { ... }; use(w);",
-      "rule": "exclusive loan cannot cross select"
+      "rule": "exclusive loan cannot cross select",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED"
     },
     {
       "id": "critical-write-await",
       "area": "suspension",
-      "target": "reject",
-      "current": "unverified",
       "source": "handle_state(critical-write |s| -> { await receive(); });",
-      "rule": "sealed actor state cannot keep writer lock while suspending"
+      "rule": "sealed actor state cannot keep writer lock while suspending",
+      "expected_outcome": "compile_reject",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED"
     },
     {
       "id": "panic-control-only",
       "area": "failure",
-      "target": "accept",
-      "current": "unverified",
       "source": "panic Error(\"fatal\");",
-      "rule": "actor panic observable only on supervisor priority CONTROL"
+      "rule": "actor panic observable only on supervisor priority CONTROL",
+      "expected_outcome": "runtime_invariant",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED",
+      "required_observations": [
+        "actor_panic",
+        "supervisor_control_admit",
+        "actor_does_not_intercept_panic"
+      ]
     },
     {
       "id": "raise-recover-boundary",
       "area": "failure",
-      "target": "accept",
-      "current": "unverified",
       "source": "defer recover |err| -> cleanup(); raise Error(\"e\");",
-      "rule": "raise bypasses catches and invokes nearest valid recover"
+      "rule": "raise bypasses catches and invokes nearest valid recover",
+      "expected_outcome": "runtime_invariant",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED",
+      "required_observations": [
+        "raise_not_caught_by_try",
+        "nearest_recover_invoked",
+        "cleanup_run_once"
+      ]
     },
     {
       "id": "unwinding-no-double-drop",
       "area": "failure",
-      "target": "reject",
-      "current": "unverified",
-      "source": "throw Error(\"e\");",
-      "rule": "controlled exit must not double cleanup; fatal traps separate"
+      "source": "// runtime scenario: allocate owned resource; register defer cleanup; throw Error(\"e\") into catch/recover; count drops",
+      "rule": "controlled unwinding drops owned resources exactly once; fatal traps may have different guarantees",
+      "expected_outcome": "runtime_invariant",
+      "source_kind": "illustrative_fragment",
+      "proof_state": "NOT_EXECUTED",
+      "required_observations": [
+        "controlled_unwind",
+        "drop_count_exactly_one",
+        "no_fatal_trap_cleanup_claim"
+      ]
     }
-  ]
+  ],
+  "registry_purpose": "proposed behavioral obligations only; not a compilable fixture suite or backend execution receipt",
+  "executable_fixtures": false,
+  "binary_release_approved": false,
+  "evidence_classification": "SPEC_PROPOSAL",
+  "backend_status": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "rust-wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED"
+  }
 }

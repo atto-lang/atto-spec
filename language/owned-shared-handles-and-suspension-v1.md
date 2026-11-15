@@ -38,6 +38,23 @@ val Arc<Snapshot> another = share! shared; // immutable only
 // share! new MutableParcel() is rejected without a verified share contract
 ```
 
+## Registry semantics and transactional mailbox ownership
+
+The companion `ownership-lifetimes-v1.json` contains **illustrative, often incomplete source fragments** and runtime scenarios. They are **not executable AttoLang programs** and must never be fed to a conformance runner as if they compiled. All backend statuses are `NOT_EXECUTED`, even where the Rust/Wasm ownership work offers an independently tested *precedent*. A precedent is not proof of this proposed future `Box`/`Arc` contract.
+
+The expected outcomes have different meanings:
+
+| Expected outcome | Meaning |
+|---|---|
+| `compile_accept` | A complete future fixture should type-check and lower |
+| `compile_reject` | A complete future fixture should produce a precise compile-time diagnostic without any guest artifact |
+| `runtime_success` | A successfully compiled fixture must emit and execute, and specified runtime observations must hold |
+| `runtime_invariant` | A separately instrumented runtime trace must satisfy the specified invariants; the scenario need not be rejected at compile time |
+
+**A failed mailbox send is not a compile-time error.** It is a runtime admission outcome. Because evaluating `take! owned` may otherwise invalidate the source before `send` knows whether admission succeeded, backends must implement an explicit *two-phase ownership transfer*: stage a transferable payload, commit exactly once only when mailbox admission is accepted, and on rejection/cancellation restore a unique recoverable owner without duplicating it. Whether the rejected `Result` returns the payload or the original binding remains usable is **not decided**; test this choice before accepting the API. A rejected/closed mailbox must not silently leak or destroy the payload.
+
+Similarly, a valid `throw Error(...)` or a recoverable `raise` is not a compile-time rejection. The safety property is exactly-once cleanup during controlled unwinding; fatal host aborts and Wasm traps must not be mislabeled as recoverable. Returning a **copied scalar field** from a borrowed parent need not escape its lifetime; the forbidden example concerns returning an **owned child handle** without nested-loan provenance.
+
 ## Mandatory conformance evidence before acceptance
 
 1. Create a typed MIR ownership ledger containing owner id/generation, loan region, transfer outcome, source span, and cleanup obligation. Do not rely only on variable names or Wasm local indices.
