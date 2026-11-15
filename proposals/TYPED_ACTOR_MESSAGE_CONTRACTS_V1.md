@@ -1,6 +1,6 @@
 # Typed actor message contracts v1 (proposal)
 
-**Status:** PROPOSED; no compiler, formatter, runtime, or backend conformance claim.
+**Status:** PROPOSED. Java reference compiler stage 1 is in a separate draft: typed `receives` is checked against the existing handler, while explicit `sends` remains fail-closed pending transitive effect checking. Other backends and runtime conformance are not established.
 
 **Scope:** AttoLang actor declarations and message send/receive semantics. Legacy Oreslang source compatibility is a separate migration gate.
 
@@ -47,6 +47,8 @@ An actor may omit `sends`; its outbound application-message effect is then **inf
 - Receiving an `ActorRef<Reply>` inside a request permits typed replies to dynamically chosen callers, subject to the sender's `sends` effect.
 - A `sends ParseResult | ParseWarning` clause does not authorize sending a `ParseResult` to an `ActorRef<ParseWarning>`.
 - Having an `ActorRef<T>` does not grant access to the target's state, supervisor relationship, or CONTROL mailbox.
+
+**Compatibility:** The Java reference compiler already represents references as `ActorRef<ActorClass>` and derives the mailbox message type from `receive(ActorMail<T>)`. V1 implementation MUST retain this spelling, allow a `receives T` header only when it is equivalent to the existing handler's payload type, and reject mismatches. A prospective `ActorRef<MessageType>` spelling is a separate, potentially ambiguous migration that requires explicit versioning and cannot be silently reinterpreted in existing code. The actor type parameter on legacy refs is a nominal actor identity, not the same as the payload type parameter of a message-typed reference.
 
 No globally declared graph edges, fixed child count, or named ports are needed for ordinary messaging. Named output ports can be library abstractions built from typed actor refs, without a new core keyword.
 
