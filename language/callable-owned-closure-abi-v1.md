@@ -7,18 +7,22 @@ explicitly negotiated callable feature version is required before emission.
 
 ## Language semantics
 
-The canonical type of a unary callback is 'fnc(int) -> int'. Parameter types
+The canonical type of a unary callback is 'fnc(int) => int'. The fat arrow
+is required for callable **type expressions** (parameters, returns, fields,
+local type annotations); using 'fnc(int) -> int' is invalid. By contrast,
+the thin arrow introduces a **lambda body**, e.g. '|n| : int -> n + offset'.
+Parameter types
 and result types are invariant and must be checked before generating guest code.
 The canonical lambda spelling is '|n| : int -> n + offset'; an explicit result
 annotation is optional when the callable signature or body determines it.
 Captures are bound at lambda **creation**, not re-resolved on invocation.
 
 ~~~atto
-fnc make_adder(int offset): fnc(int) -> int {
+fnc make_adder(int offset): fnc(int) => int {
     return |n| : int -> n + offset;
 }
 
-fnc apply_twice(fnc(int) -> int operation, int value): int {
+fnc apply_twice(fnc(int) => int operation, int value): int {
     return operation(operation(value));
 }
 
@@ -127,7 +131,7 @@ SHA pins until exact tree and release receipts are reviewed.
 | Factory capture | make_adder(1)(41) executes to 42 after creator returned |
 | Independent instances | make_adder(1) and make_adder(2) retain different environments |
 | Higher order | apply_twice((|n| -> n * 2), 10) produces 40 |
-| Bad signature | fnc(bool)->int cannot be called as fnc(int)->int |
+| Bad signature | fnc(bool) =>int cannot be called as fnc(int) =>int |
 | Forged/zero/out-of-range | Reject without accessing unvalidated memory |
 | Stale generation | Closed/recycled handle never selects a new target |
 | Owner mismatch | Reject callable use from another actor/tenant |
