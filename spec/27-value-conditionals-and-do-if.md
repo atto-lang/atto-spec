@@ -102,9 +102,15 @@ The formatter preserves `do if` versus brace-style `if`; it must never silently 
 
 Verify nested loops, statement termination, call arguments, true/false evaluation order, mismatched ownership, and both arms of static type checking in each of Java/GraalVM, LLVM, WASM, Forge, and .NET/AOT. Record each backend as PASSED, FAILED, UNSUPPORTED, or NOT EXECUTED with an exact commit SHA and an actual guest run where applicable.
 
-## Implementation snapshot (unverified)
+## Implementation snapshot (backend-specific proof, not blanket parity)
 
-At the current draft stage, the Java reference feature branch provides the negated conditional parser and JUnit guest fixtures; the canonical source-compiler profile still needs production entrypoint wiring. The .NET scalar compiler branch provides a bounded `loop` CFG with typed SSA `break`/`continue` edges and CIL regression tests. The LLVM branch provides parsed/typed negated conditionals and native compilation fixtures, but **general `loop` / `break` continuations are still rejected**, tracked in [LLVM issue #1828](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/1828). None of these branches has a passing exact-SHA guest run proven by the presently available CI; do not mark full parity.
+The Java compiler now dispatches `.atto` Truffle source units through strict Atto parsing while retaining deliberate legacy `.ores` admission. JDK 25 Parser/AST lexical conformance passed 15 real checks on an exact-tree private carrier; full Truffle/GraalVM production guest verification **remains unverified**.
+
+The .NET scalar compiler has verified typed SSA `loop`/`break`/`continue` CFG and generated CIL on exact compiler+runtime subtrees: 14 CFG/CIL checks passed. A compiler-emitted conditional CIL assembly was also linked statically into a Linux x64 Native AOT executable and executed with the correct result, [evidence](https://github.com/honeypot-r-us-test/hnpt-lambdas/actions/runs/43672575105). Windows/macOS/actor Native AOT are not proven.
+
+The LLVM compiler has verified a restricted synchronous scalar-loop CFG that supports nested `break`/`continue` and negated imperative guards. An exact-source compiler compiled to LLVM IR, Clang emitted native AOT, and 12 positive binaries plus four rejection cases passed, [evidence](https://github.com/honeypot-r-us-test/hnpt-lambdas/actions/runs/43672622634). Loops with calls, owned resources, scoped declarations, suspension or unverified cleanup fail closed. Hard-real-time, freestanding and Wasm target modes reject general `loop` until proven WCET/termination and cooperative scheduling; broader certification remains tracked in [LLVM issue #1828](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/issues/1828).
+
+Wasm and Forge source-backend conformance is **not yet verified**. The normative language syntax is wider than these currently certified implementation islands; do not infer complete five-backend parity from one backend's fixture.
 
 ## Migration
 
