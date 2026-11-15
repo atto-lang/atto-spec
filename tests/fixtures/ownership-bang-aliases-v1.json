@@ -54,6 +54,16 @@
       "operation": "borrow"
     },
     {
+      "input": "borrow!mut(value)",
+      "canonical": "borrow! mut (value)",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "borrow! mut(value)",
+      "canonical": "borrow! mut (value)",
+      "operation": "mut_borrow"
+    },
+    {
       "input": "borrow!mut foo[0]",
       "canonical": "borrow! mut foo[0]",
       "operation": "mut_borrow"
