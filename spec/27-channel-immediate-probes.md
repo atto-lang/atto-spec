@@ -64,29 +64,35 @@ Allocation-minimal implementations are desirable, but zero allocation is a perfo
 
 ## Migration and implementation status
 
-Java/GraalVM guest `try writech` now yields a move-only `TryWriteResult<T>`
-with `Accepted`, `Full(T)`, and `Closed(T)` constructor patterns in draft
+Java/GraalVM guest `try writech` yields the affine
+`TryWriteResult<T>` (`Accepted`, `Full(T)`, `Closed(T)`) in draft
 [Java PR #3109](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3109).
-The Java host `ChannelRuntime.Channel<T>.tryWrite(T)` Boolean method remains
-an internal compatibility interface, **not** the canonical guest API.
+The Java host `ChannelRuntime.Channel<T>.tryWrite(T)` Boolean method is a
+host-compatibility interface, **not** the guest-language return type.
 
-Java guest compiler/type/ownership checker and evaluator support is executed,
-but not yet an unconditional full-suite or AOT claim:
-at Java source commit `7848231f19925500824d4929c4997e9b72361feb`,
-the source-exact private GraalVM/JDK25 CI run
-[43673035969](https://github.com/3FA-app/atto-ci/actions/runs/43673035969)
-executed 9 compiler-backed guest cases and 7 host-runtime cases
-(16/16 passed, zero failures/errors/skips). The carrier checked out its
-verified exact head; source and mirror `src` and `docs` trees were identical.
-This evidence does not establish full Maven suite success.
+**Current source-exact Java receipt:** Source commit
+`6a4d66ba9a2d946992c7f5baf2919c7b680133b2` passed **73/73**
+channel compiler, ownership, guest, and host-runtime tests on private
+GraalVM/JDK25 CI:
+[run 43675561301](https://github.com/athlet-o/atto-ci/actions/runs/43675561301).
+The test mirror's checked-out source `src` tree SHA was
+`ca0383ea1872ed38973b610b234279f17b877ddc` and its `docs` tree
+SHA was `2a3354c9a025396c082e47e4113a2d4acf85473d`;
+both matched the source Git trees. The runner required no cross-org
+GITHUB_TOKEN or secrets.
 
-Outstanding before declaring complete Java implementation:
-broader compiler and runtime regression suite, parser/formatter roundtrip,
-strict actors with suspension/cancellation races, AOT runs where claimed,
-and verified drop/ownership behavior across all supported payload classes.
+The full Java Maven test suite is **NOT GREEN**: on the preceding source
+commit `d72d0a1fd0d0b4d266e77efdbde3d85e8fe0a848`,
+[run 43675276951](https://github.com/athlet-o/atto-ci/actions/runs/43675276951)
+executed 5,755 tests (46 failures, 20 errors, 2 skipped). These results
+must not be represented as a full-suite pass. A separate latest-head full
+suite, strict actor-domain suspension/cancellation review, canonical
+parser/formatter roundtrips, and Native Image/AOT testing where claimed
+are still outstanding.
 
-LLVM, Wasm, Forge and .NET Native AOT still require independent compiler-backed
-execution of the same guest fixtures. The 18-case contract remains
-DESIGN_ONLY_NOT_EXECUTED for all five until it has authenticated per-case
-per-backend receipts, including cases absent from the focused Java suite.
-See [chapter 11](11-conformance.md).
+LLVM, Wasm, Forge, and .NET compiler-backed execution and parity remain
+**NOT_EXECUTED**. The separately authored 18-case cross-backend conformance
+registry is still `DESIGN_ONLY_NOT_EXECUTED` until cases have their own
+authenticated per-backend execution receipts; passing 73 Java tests does
+not automatically mark those 18 registry entries as passing. See
+[chapter 11](11-conformance.md).
