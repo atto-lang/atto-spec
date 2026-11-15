@@ -53,6 +53,7 @@ function parse(source) {
     const binder = /^(.*?)\s+as\s+(val mut|let mut|const mut|val|let|const)\s+([a-z][a-z0-9_]*)$/.exec(s);
     if (binder) {
       const [, base, qualifier, name] = binder;
+      if (base.includes(' as ')) throw Error('stacked pattern bindings unsupported');
       if (bindings.has(name)) throw Error('duplicate pattern binder');
       bindings.add(name);
       return {kind:'bind', qualifier, name, inner:item(base,depth+1)};
