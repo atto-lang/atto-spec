@@ -1,0 +1,32 @@
+name: Pipeline observer and io.pipe host contract
+on:
+  pull_request:
+    paths:
+      - 'language/pipe-observers-and-io-pipe-v1.md'
+      - 'language/pipeline-failure-effects-v1.md'
+      - 'tests/pipe-observer-reference.test.mjs'
+      - '.github/workflows/pipe-observer-contract.yml'
+  push:
+    paths:
+      - 'language/pipe-observers-and-io-pipe-v1.md'
+      - 'language/pipeline-failure-effects-v1.md'
+      - 'tests/pipe-observer-reference.test.mjs'
+      - '.github/workflows/pipe-observer-contract.yml'
+permissions:
+  contents: read
+jobs:
+  host-only-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Log exact provenance
+        run: |
+          git rev-parse HEAD
+          git rev-parse HEAD^{tree}
+          node --version
+      - name: Run host-only model (NOT a compiler/runtime receipt)
+        run: node --test tests/pipe-observer-reference.test.mjs
