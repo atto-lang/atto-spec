@@ -10,7 +10,7 @@ function has(category, source, expect = "accept") {
 test("contract remains explicitly non-executable and versioned", () => {
   assert.equal(fixture.contract, "atto.structural_tilde.v1");
   assert.equal(fixture.status, "TARGET_NOT_EXECUTED");
-  assert.equal(cases.length, 58);
+  assert.equal(cases.length, 74);
   assert.equal(new Set(cases.map(v => v.id)).size, cases.length);
   for (const v of cases) {
     assert.match(v.id, /^ST\d{3}$/);
@@ -70,4 +70,25 @@ test("is marks structural type checks; omitting it denotes field-value matching"
   assert.ok(matches("on is ~{x: 10} as val p", "reject").length);
   assert.ok(matches("on ~{}", "reject").length);
   assert.ok(matches("on ~{x: effectful()}", "reject").length);
+});
+
+test("prefix ~ binds the next operand independently of whitespace and trivia", () => {
+  for (const [category, tight, spaced] of [
+    ["formal", "(~{x: int, y: bool} p)", "(~ {x: int, y: bool} p)"],
+    ["pattern", "on is ~{x: int} as val p", "on is ~ {x: int} as val p"],
+    ["pattern", "on ~{x: 10, y: _} as val p", "on ~ {x: 10, y: _} as val p"],
+    ["pattern", "on ~Point as val p", "on ~ Point as val p"],
+    ["argument", "(p: ~value)", "(p: ~ value)"],
+    ["argument", "(~(field: 42))", "(~ (field: 42))"],
+    ["argument", "(~(key => 42))", "(~ (key => 42))"],
+    ["argument", "(~())", "(~ ())"],
+    ["pattern", "on ~{}", "on ~ {}"],
+  ]) {
+    const expected = has(category, tight) ? "accept" : "reject";
+    assert.ok(has(category, tight, expected), tight);
+    assert.ok(has(category, spaced, expected), spaced);
+  }
+  assert.ok(has("formal", "(~ /*gap*/ {x: int} p)"));
+  assert.ok(has("pattern", "on ~ /*gap*/ {x: 10} as val p"));
+  assert.ok(has("argument", "(payload: ~ {x: 10})", "reject"));
 });
