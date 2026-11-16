@@ -13,6 +13,8 @@ on:
       - 'language/pipe-observers-and-io-pipe-v1.md'
       - 'language/pipeline-failure-effects-v1.md'
       - 'tests/pipe-observer-reference.test.mjs'
+      - 'tests/pipe-lifecycle-adversarial.test.mjs'
+      - 'tests/pipe-quiescence-reference.test.mjs'
       - '.github/workflows/pipe-observer-contract.yml'
 permissions:
   contents: read
