@@ -83,6 +83,8 @@ All reply operations count as outgoing **application data** for an actor's expli
 
 The implementation MAY lower this to a VM-private reply slab/call-binding sidecar as in the existing Java foundation. It must not change the ordinary application message bytes or leak mutable reply slots into untrusted payload graphs. An asynchronous stream continuation requires a separate leased, owner-checked writer, not misuse of a synchronous handler-turn reply token.
 
+For the proposed `define unary http actor` return-value syntax, `ActorMail<M>.respond_with(R)` one-shot sugar, optional `send_back` alias, and mandatory stage-before-commit behavior, see [Unary actor return and reply sugar v1](UNARY_ACTOR_RETURN_AND_REPLY_SUGAR_V1.md). That companion is **PROPOSED / NOT EXECUTED**, and does not confer executable compiler or runtime support.
+
 ## Identity, boundedness, race rules
 
 - Each accepted request obtains a caller- and callee-incarnation-fenced correlation key (for example a bounded slot + generation within a VM-issued endpoint incarnation). No globally unique UUID is required for local calls. Cross-host transport must authenticate a transport-bound equivalent.
