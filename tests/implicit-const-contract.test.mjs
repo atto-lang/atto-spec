@@ -21,13 +21,15 @@ test("new binding contract is versioned, independent and explicitly unverified",
   assert.ok(contract.evidence_policy.reject_evidence.includes("source_only_contract_test"));
   assert.equal(contract.rules.shorthand_equivalence, "type_first_local_equals_explicit_compile_time_const");
   assert.equal(contract.rules.non_const_initializer, "reject_not_val_fallback");
+  assert.equal(contract.rules.typed_colon_const, "const_name_colon_type_equivalent_to_const_type_name");
+  assert.equal(contract.rules.bare_mut, "reject_missing_binding_qualifier_no_implicit_const_mut");
   assert.equal(contract.rules.global_const_mut, "reject");
   assert.equal(contract.rules.contextual_const, "runtime_immutable_binding_not_compile_time");
   assert.equal(contract.rules.fields, "out_of_scope");
 });
 
 test("fixtures have unique paths and never claim guest execution", () => {
-  assert.equal(contract.fixtures.length, 10);
+  assert.equal(contract.fixtures.length, 14);
   assert.equal(byId.size, contract.fixtures.length);
   const paths = new Set();
   for (const f of contract.fixtures) {
@@ -67,6 +69,33 @@ test("implicit and explicit constants carry the same positive and negative deman
     assert.match(read(f.path), /stdio\.println\(0\)/);
   }
   assert.match(read(byId.get("val-let-runtime-positive").path), /mutable_name = immutable_name \+ 2;/);
+});
+
+test("type-right const annotation is explicit const, not runtime val", () => {
+  const accepted = byId.get("typed-colon-equivalence-positive");
+  assert.equal(accepted.kind, "compile_and_execute");
+  const positive = read(accepted.path);
+  assert.match(positive, /int shorthand = 10;/);
+  assert.match(positive, /const int explicit_type_first = 20;/);
+  assert.match(positive, /const explicit_type_right: int = 12;/);
+  assert.match(positive, /return shorthand \+ explicit_type_first \+ explicit_type_right;/);
+
+  const runtime = byId.get("typed-colon-nonconst-reject");
+  assert.equal(runtime.expected_diagnostic_category, "non_const_initializer");
+  assert.match(read(runtime.path), /const value: int = runtime_value\(\);/);
+  const rebind = byId.get("typed-colon-rebind-reject");
+  assert.equal(rebind.expected_diagnostic_category, "immutable_reassignment");
+  assert.match(read(rebind.path), /const x: int = 10;/);
+  assert.match(read(rebind.path), /x = 42;/);
+});
+
+test("bare mut is not a valid implicit const mut declaration", () => {
+  const bare = byId.get("bare-mut-missing-qualifier-reject");
+  assert.equal(bare.expected_diagnostic_category, "missing_binding_qualifier");
+  assert.match(read(bare.path), /mut int value = 10;/);
+  const chapter = read("spec/27-implicit-const-and-const-mut.md");
+  assert.match(chapter, /mut T x = e;/);
+  assert.match(chapter, /missing_binding_qualifier/);
 });
 
 test("const mut is explicit, fixed, scoped, actor-isolated by target contract", () => {
