@@ -19,8 +19,8 @@ A `let Point p` binding MAY be rebound to another Point. Neither `let` nor `val 
 
 ~~~atto
 define value class Point as
-    pub final int x: 0;
-    pub final int y: 0;
+    pub final int x;
+    pub final int y;
     constructor(int x, int y) {
         self.x = x;
         self.y = y;
@@ -44,7 +44,7 @@ The intended grammar is `define [pub] value class Name ... as ... end` with the 
 ## Required semantic invariants
 
 1. **Nominal identity.** `Point` and `Coordinate` with identical fields are different static types; no implicit structural conversion or identity equality. Instances have no identity hash, monitor, address-observable reference, or user-visible object ID.
-2. **Immutable complete initialization.** Every stored field is final and initialized exactly once before escape. Constructors may perform field initialization but cannot leak partial `self`, capture mutable aliases, access another actor's state, or invoke unsafe effects. After construction, no field mutation, interior mutability, or mutable borrow is permitted. Public fields are still read-only.
+2. **Immutable complete initialization.** Every stored field is final and initialized exactly once before escape (declaration or constructor, never both). Constructors may perform field initialization but cannot leak partial `self`, capture mutable aliases, access another actor's state, or invoke unsafe effects. After construction, no field mutation, interior mutability, or mutable borrow is permitted. Public fields are still read-only.
 3. **Transitive value safety.** The initial portable profile admits `int`, `bool`, `string`, nominal enums, and recursively proven value fields. Reject identity-class, actor, channel, mutable collection, raw pointer, mutable reference and open resource fields unless an explicit future approved deep-freeze proof exists. Recursive inline cycles and unproven generics reject. Floating-point fields await a signed-zero/NaN equality+hashing decision.
 4. **Equality.** `a == b` and `a eq b` are same-type, field-wise recursive comparisons; `!=`/`neq` negate them. Members are compared in declared order; values with no fields are all equal. The operation compares each operand once, left-to-right; it must not introduce allocations, call arbitrary user equality overrides, or compare hidden object pointers. The initial profile has no float fields. `===` or other identity tests, monitors, identity hashes and `self` address escape are invalid.
 5. **Hashing.** The compiler derives a deterministic value hash when every field has proven hash semantics. Equal values MUST hash identically across executions of the same target profile; backend-specific randomized table hashing must not be the portable derived value hash. The hash function may collide, but cannot inspect storage addresses. The concrete public hash API remains to be finalized; no backend may invent one as proof of this v1 feature.
