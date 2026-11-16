@@ -14,6 +14,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Structural tilde shorthand v1](language/structural-tilde-v1.md): candidate `~` synonym for `structural`, typed pattern matching and named/positional delimiter safety (**not guest-verified**).
+- [Statement match arm delimiters v1](language/match-arm-delimiters-v1.md): per-arm `end` or braces, plus the outer match `end`; source-only structural cases remain unexecuted.
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
 
 ## Validation
