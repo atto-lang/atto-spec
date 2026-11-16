@@ -73,6 +73,8 @@ end
 
 **Type vs value-pattern distinction (candidate decision):** `on is ~Position as val p` and `on is structural Position as val p` test **structural type compatibility** only. Without `is`, `on ~pattern_value as val p` and `on structural pattern_value as val p` are **structural value patterns**, never aliases for type tests. `pattern_value` must resolve to a statically immutable, accessible pattern constant; `on ~Position` is therefore invalid when `Position` only denotes a type. The compiler should suggest `on is ~Position` for that case. Type-pattern matches require statically reifiable fields; value-pattern matches require pure, effect-free comparable values; neither exposes private or sealed actor state.
 
+> **Extension (2026-11-16):** [anonymous-structural-shapes-v1.md](anonymous-structural-shapes-v1.md) specifies that bare nonempty `{field: Type}` in type position is structural by default; singleton literal field types (`{foo: "dog"}`) and unions (`{foo: string | int}`) are proposed. In match arms, bare `on {...}` is a value pattern and `on is {...}` is a type test. Earlier rejection of `on is ~{foo: "dog"}` is superseded; this is a singleton **type**, not an accidental value-pattern conversion. Compiler field type/projection ABI parity is still unimplemented. The grammar below is the original v1 baseline; the extension takes precedence where it differs.
+
 ## Grammar and precedence (target)
 
 ```ebnf
