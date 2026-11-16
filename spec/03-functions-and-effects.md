@@ -4,6 +4,8 @@
 
 A free function is declared with `fnc`; class and actor instance methods use an implicit `self` and canonically omit `fnc`. Callables have explicit or inferred return types where grammar permits. Each invocation returns **one value**; tuples/records are themselves one value.
 
+See [Chapter 27 — Canonical lambdas and closures](27-canonical-lambdas-and-closures.md) for the `|x| -> expression` syntax, lexical capture rules, effect constraints, and full-AOT lowering contract.
+
 ## Signatures and visibility
 
 ```atto
