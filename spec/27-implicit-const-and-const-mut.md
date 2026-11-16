@@ -9,13 +9,13 @@ A **local** declaration whose first syntax constituent is a resolved type and wh
 | Source form | Initializer | Can rebind | Mutation authority |
 | --- | --- | --- | --- |
 | `T x = e;` | compile-time constant expression | no | immutable constant value |
-| `const T x = e;` | compile-time constant expression | no | immutable constant value |
+| `const T x = e;` / `const x: T = e;` | compile-time constant expression | no | immutable constant value |
 | `const x = e;` | compile-time constant expression, type inferred | no | immutable constant value |
 | `const mut T x = e;` | compile-time constant expression, fresh owned runtime instance | no | mutable referent only under ordinary ownership checks |
 | `val T x = e;` / `val x = e;` | runtime permitted | no | determined by independent ownership and borrow permissions |
 | `let T x = e;` / `let x = e;` | runtime permitted | yes | determined by independent ownership and borrow permissions |
 
-`mut` is not a shorthand for `let`. It qualifies access to a referent, not the identity of a binding. `let mut` remains the explicitly mutable-binding/mutable-access form where otherwise admitted. The keyword combination `const mut` is **never** shortened by dropping `const`. A qualifierless declaration must not be reinterpreted as `val` merely because its initializer is not constant.
+`mut` is not a shorthand for `let`. It qualifies access to a referent, not the identity of a binding. `let mut` remains the explicitly mutable-binding/mutable-access form where otherwise admitted. The keyword combination `const mut` is **never** shortened by dropping `const`: `mut T x = e;` is invalid, including when `T` is a mutable aggregate. A qualifierless declaration must not be reinterpreted as `val` merely because its initializer is not constant.
 
 The design preserves three separate axes: binding reassignment, mutation permission for the referred-to object, and compile-time evaluation. Separately, the type/ownership system establishes lifetime, actor isolation, and whether a mutable loan is available. A fixed binding may own a mutable value; a mutable binding never grants an alias-based write capability on its own.
 
@@ -49,10 +49,13 @@ Proposed local productions (illustrative, not a complete parser grammar):
 local_decl :=
     type identifier "=" expr ";"
   | "const" type identifier "=" expr ";"
+  | "const" identifier ":" type "=" expr ";"
   | "const" identifier "=" expr ";"
   | "const" "mut" type identifier "=" expr ";"
   | ("val" | "let") [type] identifier "=" expr ";"
 ```
+
+`const x: T = e;` is the same typed constant declaration as `const T x = e;`; both have identical type checking, compile-time evaluation, rejection and immutability. Bare `mut T x = e;` is rejected with a dedicated `missing_binding_qualifier` diagnostic; it must not silently become `const mut`, `val mut` or `let mut`.
 
 The `type identifier` prefix is a declaration only after type-name/generic syntax resolution in a declaration-eligible statement position. Parser and type checker must reject ambiguities, rather than reinterpreting `T x` as an expression or confusing generic angle brackets with comparisons. Module/global, class/actor field and parameter grammars remain separate. Existing field `int id: 7` and `final int epoch: 1` are **not** transformed into compile-time local constants by this change.
 
@@ -62,6 +65,6 @@ The formatter may normalize `const T x = e;` to `T x = e;` **only for validated 
 
 ## Verification and migration gates
 
-Versioned positive and targeted-negative `.atto` fixtures must test: shorthand/explicit equivalence; constant evaluation and rejection of runtime initializers; no reassignment; runtime `val`/`let`; fresh `const mut` instance isolation; rebind rejection; illegal global mutable constants; inappropriate scalar `mut`; actor/tenant isolation; borrow aliases; and formatter round trips. Negative results must match **semantic diagnostic categories**, not incidental parser failures. Verify all required compiler families at immutable commits, with real guest execution for positives and captured failure diagnostics for negatives. A source-only contract, host oracle, test file or mirror run is not compiler parity proof.
+Versioned positive and targeted-negative `.atto` fixtures must test: shorthand/explicit equivalence, including the type-right `const x: T` form; bare `mut` qualifier rejection; constant evaluation and rejection of runtime initializers; no reassignment; runtime `val`/`let`; fresh `const mut` instance isolation; rebind rejection; illegal global mutable constants; inappropriate scalar `mut`; actor/tenant isolation; borrow aliases; and formatter round trips. Negative results must match **semantic diagnostic categories**, not incidental parser failures. Verify all required compiler families at immutable commits, with real guest execution for positives and captured failure diagnostics for negatives. A source-only contract, host oracle, test file or mirror run is not compiler parity proof.
 
 Until those gates are met, this chapter and its fixtures remain **proposed**. Legacy semantic-floor-v1 fixtures are preserved byte-for-byte and their existing unpublished execution status is unchanged.
