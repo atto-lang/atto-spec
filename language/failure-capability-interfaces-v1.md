@@ -1,6 +1,6 @@
 # Failure capability interfaces: Throwable, Raisable, Panicable (AttoLang v1 candidate)
 
-**Status:** normative candidate; **not** a claim of executable source or backend parity. The newer Rust source compiler has a restricted `throw Error(string)` path, but the currently pinned public playground Wasm compiler rejects even ordinary `throw`. Source `raises`, `panics`, effect clauses, general class/interface resolution and recovery are not yet verified as executable.
+**Status:** normative candidate; **not** a claim of public playground shipment or backend parity. The independently pinned public playground Wasm artifact still rejects ordinary `throw`. The newer Rust/Wasm browser source compiler has now executed a restricted built-in `Error` throw and checked `throws(Error)`, `raises(Error)` and `panics(Error)` bounds on top-level functions, methods and actor receiver heads. Source `raise`/`panic` operations, user-defined nominal interfaces, Error subclass transport, recovery and supervisor CONTROL dispatch remain unsupported; an actor receive handler with any potential escaping failure is deliberately rejected.
 
 ## Core nominal contracts
 
@@ -80,6 +80,18 @@ raises(Error) { throw ...; } // no implicit conversion from throw to raise
 ```
 
 Future implementations should test each operation with base `Error`, an inherited `Error` subclass, a nominally conforming non-`Error`, a scalar, an unknown type, an invalid union, and a mismatched declared effect. Run positive and negative guest compile tests on the exact compiler head before claiming parity. No preview example or syntax-only test counts as a guest execution.
+
+
+## Verified implementation boundaries (16 November 2026)
+
+This contract is broader than the currently admitted browser compilation subset.
+
+- [Rust compiler PR #179](https://github.com/atto-lang/atto-source.rs/pull/179) checks built-in `Error` throws and typed, transitive top-level effects. [Exact-tree CI](https://github.com/agent-pontifex/atto-ci/actions/runs/43795021567) passed native Rust/Wasm and Chromium with 415 conformance checks, zero failures.
+- [Rust compiler PR #228](https://github.com/atto-lang/atto-source.rs/pull/228) extends independent effect bounds and transitive checking to class/static/actor methods. [Exact-tree CI](https://github.com/cliptown/atto-ci/actions/runs/43933385384) passed 422 conformance checks and 376 native-vs-Wasm compiler-byte comparisons.
+- [Rust compiler PR #229](https://github.com/atto-lang/atto-source.rs/pull/229) validates actor receive annotations but **rejects every potential escaping receiver failure with `E_UNSUPPORTED`** until priority CONTROL dispatch exists. It also prevents declarations from shadowing `Error`, `Throwable`, `Raisable` or `Panicable`, preserving `E_RESERVED`. [Exact-tree CI](https://github.com/cliptown/atto-ci/actions/runs/43935199611) passed 430 conformance checks, zero failures, 384 native-vs-Wasm and real Chromium E2E.
+
+All listed compiler PRs remain drafts and are stacked in dependency order. Passing tests on a *private SHA-identical carrier tree* establish Rust/Wasm subset test execution, not Java/LLVM/.NET parity. The carrier binary and receipt have **not** been promoted to the public `/play` artifact. Full class/interface nomination, error subtype identity/transport, actual `raise`/`panic` guest unwinding and actor-supervisor semantics remain tracked in [Rust issue #184](https://github.com/atto-lang/atto-source.rs/issues/184).
+
 
 ## Compatibility and admission
 
