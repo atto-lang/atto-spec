@@ -5,11 +5,11 @@
 ## Surface syntax and intent
 
 ```atto
+// Correct for a proven stateless concrete class: new identity, full logical copy.
 define class Foo as
     @Override
     copy(): new Foo {
-        val mut Foo out = super.copy();
-        return out;
+        return new Foo();
     }
 end
 
