@@ -25,6 +25,7 @@ do select {
 
 - `source >> val item;` reads one unit from a readable source into an immutable binding.
 - `source >> let item;` reads into a reassignable binding (not an assertion that the referent is mutable).
+- `val int item << source;` and `val item: int << source;` are declaration-first reads with the same value/effect contract as `val int item = << source;`. The annotation must match the *checked read outcome*; an EOF/error-capable channel does not implicitly yield a bare `int`.
 - `sink << value;` writes one value to a writable sink.
 - The same operations are candidates in `when` arms of `select`, `do select`, and `nb select`, **only** for selectable capabilities.
 - `readch`/`writech` stay the explicit, canonical spelling for channels. The formatter must preserve a programmer's chosen shorthand or explicit spelling rather than rewrite one to the other.
@@ -36,12 +37,13 @@ For `Channel<T>`, this is a syntax-directed alias for the same read/write and ow
 ## Grammar (informal)
 
 ```ebnf
+read_binder    = ("val" | "let"), (identifier, [":", type] | type, identifier) ;
 io_statement   = writable_expr, "<<", value_expr, ";"
-               | readable_expr, ">>", ("val" | "let"), identifier, [" :", type], ";" 
-               | ("val" | "let"), identifier, [":", type], "<<", readable_expr, ";" ;
+               | readable_expr, ">>", read_binder, ";"
+               | read_binder, "<<", readable_expr, ";" ;
 select_io_arm  = "when", writable_expr, "<<", value_expr, "->", block
-               | "when", readable_expr, ">>", ("val" | "let"), identifier, [":", type], "->", block
-               | "when", ("val" | "let"), identifier, [":", type], "<<", readable_expr, "->", block ;
+               | "when", readable_expr, ">>", read_binder, "->", block
+               | "when", read_binder, "<<", readable_expr, "->", block ;
 ```
 
 A statement may also use a parenthesized source/sink and a qualified path (`stdio.out`, `streams.output`). The token pairs must be contiguous: `<<` and `>>`, not `< <` / `> >`. Nested generic closing delimiters such as `Result<Option<int>>` remain distinct by grammar context. Numeric bit shifts are not retroactively I/O; no inferred channel creation, arithmetic shift-to-I/O conversion, or arbitrary class operator overloading is permitted. v1 rejects chained I/O operators without explicit sequencing.
@@ -51,7 +53,7 @@ A statement may also use a parenthesized source/sink and a qualified path (`stdi
 1. Left-hand operand must resolve statically to a readable/writable capability of the corresponding element type. Otherwise emit a type error. Writing an incompatible value must fail at compile time. Read binder scope is the statement's remaining lexical scope or the winning select arm, as applicable.
 2. Reads/writes evaluate operands only once, preserve the underlying operation's result, error, EOF/closed-state, and cancellation contract, and never silently discard errors. For streams, an element read might produce `Option<T>` or `Result<Option<T>, E>`; shorthand must not flatten or disguise that result. For a channel, preserve the channel's existing close semantics.
 3. For a write, ownership transfers only upon successful admission/commit. A rejected or losing selectable write retains the original value and cannot produce a duplicate effect.
-4. Cooperative suspension is allowed for ordinary I/O; no OS-thread parking is implied. The `try` / `nb` forms and any future I/O shorthand prefixes must preserve existing scheduling behavior, not infer nonblocking from `<<`/`>>`.
+4. Direct I/O may cooperatively suspend, never park an OS thread. If the statically resolved operation can suspend, its enclosing callable **must** be declared `susp` or `suspends` (aliases), and declare the required `io`/`suspend` effects. `using io` alone does not permit suspension. `trap` cannot erase the suspend effect. The `try` / `nb` forms preserve their separately specified nonblocking/read-future semantics; neither `<<` nor `>>` implies `nb` or `try`.
 5. Select arms register **atomic** alternatives. Exactly one arm commits. Reads in losing arms consume nothing; writes in losing arms publish nothing. Candidate-value evaluation must not itself perform irreversible I/O; a selected arm cannot speculatively call `read()`/`write()` before winning. Losing registrations are safely canceled/disposed.
 6. Generic streams are **not** automatically selectable. A type must separately implement checked/selectable read or write admission, atomic commit, and cancellation/ownership rollback. Ordinary file/socket/readiness APIs without those guarantees must be rejected in select arms.
 7. Backpressure, bounded buffering, close, cancellation, task/actor ownership, effect checking, and error handling remain the responsibility of the underlying I/O contract. A stream with a terminal EOF event must not turn EOF into a phantom data message. An `io << data` statement that returns a fallible result cannot implicitly swallow that result where the language requires checked effects.
