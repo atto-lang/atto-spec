@@ -141,3 +141,48 @@ supervisor CONTROL notice. Actor references are capabilities, not raw ids.
 The portable finite-model and mutant vectors in
 `atto-platform-conformance` are a **reference gate**, not evidence of
 production serialization, protected CONTROL authority or backend parity.
+
+
+## 7. ATAD transport-profile candidate (bounded DATA-only slice)
+
+The three current Java/LLVM/.NET host implementations are independently
+reviewable candidate codecs for only \`Option<Result<int,string>>\`.
+They are **not a universal ADT ABI** and not evidence of compiled actor guest
+support, generic nominal sums, or supervisor-notice delivery.
+
+Binary layout: four literal ASCII bytes \`ATAD\`, one byte version \`01\`,
+one byte nominal family \`01\`, and one byte variant tag:
+
+| Tag | Meaning | Tail |
+|---|---|---|
+| \`00\` | \`None\` | No bytes |
+| \`01\` | \`Some(Ok(i64))\` | Exactly eight little-endian signed i64 bytes |
+| \`02\` | \`Some(Err(string))\` | Two little-endian unsigned length bytes and exactly that many strict UTF-8 bytes |
+
+The string byte length is 0–256; the total wire budget is at most 265 bytes.
+Unknown version/family/tag, malformed or overlong UTF-8, UTF-8 surrogate,
+trailing bytes, or length mismatch is a hard decode error. The format preserves
+negative signed i64 bits, Unicode round trips, empty Err strings and all three
+variant distinctions. There is no implicit conversion from \`Some(Err(e))\` to
+\`None\`, no tag inference from a zero payload, and no extensible fallback.
+
+Examples:
+
+- \`None\`: \`41544144010100\`
+- \`Some(Ok(42))\`: \`415441440101012a00000000000000\`
+- \`Some(Err("é"))\`: \`415441440101020200c3a9\`
+
+**Crucial authority separation:** these bytes are always application DATA.
+There is no CONTROL wire tag or CONTROL constructor. Matching a forged
+\`kind: Panic\` payload or sending an invalid tag is never sufficient to
+authenticate a supervisor event. A real CONTROL notice must be constructed
+through host-owned runtime authority with a checked actor generation and
+accepted message identity on an independent priority lane.
+
+Versioned executable byte and adversarial mutation cases live in
+\`atto-platform-conformance/contracts/actor-adt-data-wire-v1.json\`.
+The initial codec implementations and isolated host tests are in
+\`oreslang-source.java\`, \`oreslang-source.llvm\`, and \`oreslang-source.net\`.
+The Java and C++ tests can be locally executed on the reviewed Git source
+blobs; .NET 10 and compiled AttoLang guest execution require funded runner
+admission. No host-only test is to be promoted as compiler/backend parity.
