@@ -1,0 +1,505 @@
+{
+  "schema": "atto.full-aot-feature-coverage.v1",
+  "purpose": "Audit targets only; NOT an implementation or parity certification",
+  "source": "https://chatgpt.com/share/6afb6c39-5f90-83e8-931b-694d78c7577f",
+  "evidence_policy": "A PASS requires exact source SHA, toolchain and target, successful executed Atto guest, rejection tests, and inspectable run artifact. Host-model-only evidence is not a PASS.",
+  "backends": [
+    "java-native-image",
+    "llvm-native",
+    "dotnet-nativeaot",
+    "rust-wasm-precompiled"
+  ],
+  "statuses": [
+    "PASS",
+    "FAIL",
+    "UNSUPPORTED",
+    "NOT_EXECUTED"
+  ],
+  "features": [
+    {
+      "id": "F01",
+      "name": "Algebraic data types",
+      "aot_strategy": "closed tagged sums/products; precomputed ABI layouts",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F02",
+      "name": "Pattern matching",
+      "aot_strategy": "exhaustiveness and guard ordering compiled to finite decision trees",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F03",
+      "name": "Type inference",
+      "aot_strategy": "static local/bidirectional inference; no runtime inference engine",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F04",
+      "name": "Zero-cost abstractions",
+      "aot_strategy": "specialize or devirtualize where proven; no blanket zero-overhead claim",
+      "priority": "P1",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F05",
+      "name": "Memory safety without GC",
+      "aot_strategy": "ownership/borrowing plus bounded actor arenas and deterministic release",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F06",
+      "name": "Immutability by default",
+      "aot_strategy": "val/let and mut separated; compile-time const distinct",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F07",
+      "name": "Lightweight concurrency",
+      "aot_strategy": "AOT task/frame layouts and bounded scheduling",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F08",
+      "name": "Actor model",
+      "aot_strategy": "typed mailbox/CONTROL ABI and actor isolation without dynamic compilation",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F09",
+      "name": "Structured concurrency",
+      "aot_strategy": "lexical child lifetimes, cancellation, joins, fault propagation",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F10",
+      "name": "Async/await",
+      "aot_strategy": "compile state machines and suspension effects ahead of time",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F11",
+      "name": "Traits/typeclasses",
+      "aot_strategy": "closed-world witness tables or static specialization; no runtime instance synthesis",
+      "priority": "P1",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F12",
+      "name": "Extension methods",
+      "aot_strategy": "resolve at compile time under explicit import and ambiguity rules",
+      "priority": "P1",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F13",
+      "name": "Generics",
+      "aot_strategy": "monomorphization or precompiled dictionary dispatch with bounded specialization closure",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F14",
+      "name": "Higher-order functions",
+      "aot_strategy": "AOT function pointers and typed callable ABI",
+      "priority": "P1",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F15",
+      "name": "Closures",
+      "aot_strategy": "compile environment layouts and ownership/capture plans",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F16",
+      "name": "Iterators",
+      "aot_strategy": "finite typed iterator/adaptor pipelines and lifetime checks",
+      "priority": "P1",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F17",
+      "name": "Lazy evaluation",
+      "aot_strategy": "AOT thunk/iterator state and bounded memoization lifetime",
+      "priority": "P2",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F18",
+      "name": "Destructuring",
+      "aot_strategy": "static shape/variant binding plans; exact evaluation order",
+      "priority": "P1",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F19",
+      "name": "Null safety",
+      "aot_strategy": "Option<T> and explicit omittable argument separation; no implicit null",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F20",
+      "name": "Result/Either errors",
+      "aot_strategy": "typed Result/Option and ? early exit with ownership/effect checks",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F21",
+      "name": "Compile-time metaprogramming",
+      "aot_strategy": "sandboxed deterministic, bounded compiler-time evaluation; emitted IR frozen",
+      "priority": "P1",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F22",
+      "name": "Macros",
+      "aot_strategy": "hygienic, bounded compile-time expansion with diagnostics/source maps",
+      "priority": "P2",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F23",
+      "name": "Refinement/dependent types",
+      "aot_strategy": "compile-time decidable constraints first; undecidable/general proofs research only",
+      "priority": "P2",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F24",
+      "name": "Hot code reloading",
+      "aot_strategy": "load separately AOT-built artifacts, version ABI and generation-fence actor state",
+      "priority": "P2",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "F25",
+      "name": "Built-in concurrency primitives",
+      "aot_strategy": "typed channels, select, supervision and cooperative cancellation",
+      "priority": "P0",
+      "backends": {
+        "java-native-image": "NOT_EXECUTED",
+        "llvm-native": "NOT_EXECUTED",
+        "dotnet-nativeaot": "NOT_EXECUTED",
+        "rust-wasm-precompiled": "NOT_EXECUTED"
+      }
+    }
+  ],
+  "syntax_patterns": [
+    {
+      "id": "S01",
+      "source_language": "Rust",
+      "pattern": "exhaustive tagged-match",
+      "atto_direction": "match/on with exhaustive arms, compile checked",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S02",
+      "source_language": "Scala",
+      "pattern": "match as expression",
+      "atto_direction": "match<T> expression with return/effect inference",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S03",
+      "source_language": "Haskell",
+      "pattern": "algebraic sum declarations",
+      "atto_direction": "nominal tagged enums/ADTs with static payload layouts",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S04",
+      "source_language": "Swift",
+      "pattern": "enum associated values",
+      "atto_direction": "typed enum variant payloads",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S05",
+      "source_language": "Elixir",
+      "pattern": "pattern arguments",
+      "atto_direction": "pattern dispatch resolved with first-match and arity gates",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S06",
+      "source_language": "Kotlin",
+      "pattern": "trailing lambdas",
+      "atto_direction": "lambda literals with unambiguous call grammar; optional sugar deferred",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S07",
+      "source_language": "Ruby",
+      "pattern": "block iteration",
+      "atto_direction": "typed callable blocks and iterators",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S08",
+      "source_language": "Clojure",
+      "pattern": "functional composition",
+      "atto_direction": "|> forward functional pipeline",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S09",
+      "source_language": "Haskell",
+      "pattern": "function composition",
+      "atto_direction": "|> pipeline and named composition helper; do not conflate actor pipe",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S10",
+      "source_language": "Scala",
+      "pattern": "for comprehensions",
+      "atto_direction": "typed iterator/query combinators; syntax proposal separate",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S11",
+      "source_language": "Rust",
+      "pattern": "traits",
+      "atto_direction": "nominal interfaces/traits with static witness requirements",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S12",
+      "source_language": "Haskell",
+      "pattern": "typeclasses",
+      "atto_direction": "closed witness resolution at compile time",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S13",
+      "source_language": "TypeScript",
+      "pattern": "structural shapes",
+      "atto_direction": "statically checked structural shape projection",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S14",
+      "source_language": "Kotlin",
+      "pattern": "sealed hierarchy",
+      "atto_direction": "sealed class/interface exhaustiveness",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S15",
+      "source_language": "Go",
+      "pattern": "implicit interfaces",
+      "atto_direction": "structural satisfaction only when statically provable; ambiguity fails closed",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S16",
+      "source_language": "Go",
+      "pattern": "channels",
+      "atto_direction": "Channel<T>, readch/writech, << and >> typed IO",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S17",
+      "source_language": "Erlang",
+      "pattern": "message passing",
+      "atto_direction": "receives/emits-or-sends typed contracts; supervisor CONTROL separate",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S18",
+      "source_language": "Elixir",
+      "pattern": "spawn processes",
+      "atto_direction": "spawn Actor() with statically known actor type",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S19",
+      "source_language": "Kotlin",
+      "pattern": "structured concurrency",
+      "atto_direction": "task scopes, joins and cancellation at suspension boundaries",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S20",
+      "source_language": "Rust",
+      "pattern": "async/await",
+      "atto_direction": "susp/suspends and await with compiled continuation frames",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S21",
+      "source_language": "Rust",
+      "pattern": "ownership/borrowing",
+      "atto_direction": "copy!/take!/share!/borrow! with static loan discipline",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S22",
+      "source_language": "Zig",
+      "pattern": "explicit allocator",
+      "atto_direction": "actor arena/allocator capability; no universal GC dependency",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S23",
+      "source_language": "C++",
+      "pattern": "RAII",
+      "atto_direction": "deterministic cleanup and drop on all control-flow exits",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S24",
+      "source_language": "Swift",
+      "pattern": "defer",
+      "atto_direction": "defer/recover ordering and completion/exception safety",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "S25",
+      "source_language": "Rust",
+      "pattern": "Result ?",
+      "atto_direction": "Result<T,E>, Option<T>, ? typed early exit",
+      "status": "NOT_EXECUTED"
+    }
+  ],
+  "non_negotiable": [
+    "No runtime AttoLang source compiler or JIT required",
+    "No eval of runtime-generated AttoLang code",
+    "No runtime generic specialization or macro expansion",
+    "Fail-closed backend admission: unsupported constructs emit no executable artifact",
+    "Externally built and signed AOT plugins are distinct from JIT",
+    "No claiming parity from syntax parse, host models, or source-free shims"
+  ]
+}
