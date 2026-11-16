@@ -80,6 +80,10 @@ Zero is valid: sleep_blocking(0ms) returns immediately; await sleep(0ms)
 is an explicit cooperative suspension point, progressing on a later
 scheduler turn rather than inline recursion.
 
+## Experimental browser migration
+
+Unmerged Rust/Wasm async integration [atto-source.rs #186](https://github.com/atto-lang/atto-source.rs/pull/186) currently lowers `await rt.sleep(25)` using an integer **millisecond** argument to a JSPI `atto.sleep_ms` host import. That is a narrow experimental browser compatibility API, not the portable Duration API defined here. Keep it available on its integration branch while introducing typed `await sleep(25ms)`; do NOT reinterpret an existing `int` parameter as Duration or silently change the host import ABI. The host currently enforces a 1000-ms cap and uses `setTimeout`; its cancellation, monotonic deadline and shutdown semantics need their own audited changes. No `sleep_blocking` capability is implied by JSPI.
+
 ## Clock and lifecycle guarantees
 
 * Always use a checked **monotonic** deadline; never schedule elapsed
