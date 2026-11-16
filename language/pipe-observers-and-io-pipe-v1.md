@@ -138,3 +138,24 @@ The Node host-only oracle in tests/pipe-observer-reference.test.mjs
 verifies candidate lifecycle rules only. It is NOT an Atto compiler,
 runtime, or guest-test receipt. Unsupported syntax/runtime behavior
 MUST fail closed until executable backends are proven.
+
+
+## io name resolution and actor-local permissions
+
+A separate Java/Graal draft reserves implicit actor-local
+io.in / io.out / io.err / io.events / io.meta. That actor-local io is
+NOT an alias of process/root stdio or the general io module.
+Consequently io.pipe MUST resolve through the normal visible
+namespace/capability checker: for root code, a deliberately imported
+library io module (and appropriate platform profile); inside actors,
+either an explicitly supported actor-local pipe capability or an
+unambiguous fully qualified library name with explicit permissions.
+A shadowed/unresolved io, actor-local io with no pipe member, or a
+conflicting imported io alias is a compile-time error, not a fallback
+to process stdout/stdin, a dynamic lookup, or unchecked host reflection.
+Do not silently treat io.pipe as an actor send or supervisor CONTROL
+operation. Binding the graph transfers only explicitly admitted endpoint
+capabilities; it does not grant new process-wide file/network access.
+The core traits may remain no-OS, while actual scheduler-backed pumping
+and platform I/O adapters must respect the selected runtime/profile.
+Until these APIs exist on a backend, fail closed.
