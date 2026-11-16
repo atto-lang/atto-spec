@@ -70,6 +70,13 @@ binding_qualifier = "val" | "val mut" | "let" | "let mut"
                   | "const" | "const mut" ;
 ```
 
+Nested repetition and named binding are forbidden **transitively** inside a
+fixed-width repetition atom, including when hidden inside an inner `List.of`,
+`Array.of` or `Tuple.of`. For example,
+`List.of(...(2 of List.of(1 as val x)))` and
+`List.of(...(2 of List.of(...(3 of int))))` both fail at compile time.
+A count of zero does not suppress grammar, ownership or binding validation.
+
 `Tuple.of` still has **exact arity**, so an unbounded `...` is forbidden there.
 Fixed-width repetition is legal in tuple patterns because it expands to an
 exact number of positions. `...(0 of int)` is a zero-width segment. The
@@ -114,8 +121,10 @@ lower the resulting sequence items using a bounded DP feasibility table over
 by always preferring to consume zero rest elements when the suffix remains
 feasible. For fixed-cost atomic tests the worst case is O(m*n) time/space,
 where `m` is the **expanded** pattern length and `n` is input length. Production
-compilers must budget expanded width, nesting, input size and total matcher
-states; never permit integer overflow or unbounded stack/backtracking on
+compilers must budget expanded width, nesting, input size, matcher states
+**and cumulative work across nested sequence patterns, feasibility probes and
+binding reconstruction**; a bound applied independently to each nested DP
+table does not bound the total work of adversarial nesting. never permit integer overflow or unbounded stack/backtracking on
 adversarial patterns. AOT lowering must not invoke a runtime source interpreter
 or JIT compiler. No hidden allocation from repeated lookahead is permitted in
 hard-real-time/embedded profiles without explicit admission.
