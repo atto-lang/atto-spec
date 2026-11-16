@@ -8,10 +8,11 @@ The direction operators are typed **I/O syntax**, not general user-defined overl
 
 ```atto
 stdio.out << "effectful output";
-stdio.in >> const line;
+stdio.in >> val line;
+val line << stdio.in;
 
 do select {
-    when inbox >> const message -> {
+    when inbox >> val message -> {
         writech stdio.out, message;
     }
     when outgoing << "ready" -> {
@@ -20,11 +21,13 @@ do select {
 }
 ```
 
-- `source >> const item;` reads one unit from a readable source into an immutable binding.
+- `source >> val item;` reads one unit from a readable source into an immutable binding.
 - `source >> let item;` reads into a reassignable binding (not an assertion that the referent is mutable).
 - `sink << value;` writes one value to a writable sink.
 - The same operations are candidates in `when` arms of `select`, `do select`, and `nb select`, **only** for selectable capabilities.
 - `readch`/`writech` stay the explicit, canonical spelling for channels. The formatter must preserve a programmer's chosen shorthand or explicit spelling rather than rewrite one to the other.
+
+Important: `const` is strictly compile-time in current AttoLang. A runtime channel/stream read **cannot** initialize `const`; both `stdio.in >> const line;` and `const line << stdio.in;` are compile-time-effect errors. Use `val` for a fixed-name runtime value. The same restriction applies to read binders in `select` arms. `<<` with a `val/let` binding on its left is a **read**, not a sink write; it requires a readable right operand. Without an explicit binding declaration, `sink << value` remains a write.
 
 For `Channel<T>`, this is a syntax-directed alias for the same read/write and ownership effects as `readch`/`writech`. For any other stream/source/sink, lower to its statically resolved readable/writable protocol operation; do **not** call channel-only APIs against non-channels. The exact interface names are a type-system integration task, not a dynamic operator-overload registration feature.
 
@@ -32,9 +35,11 @@ For `Channel<T>`, this is a syntax-directed alias for the same read/write and ow
 
 ```ebnf
 io_statement   = writable_expr, "<<", value_expr, ";"
-               | readable_expr, ">>", ("const" | "val" | "let"), identifier, [" :", type], ";" ;
+               | readable_expr, ">>", ("val" | "let"), identifier, [" :", type], ";" 
+               | ("val" | "let"), identifier, [":", type], "<<", readable_expr, ";" ;
 select_io_arm  = "when", writable_expr, "<<", value_expr, "->", block
-               | "when", readable_expr, ">>", ("const" | "val" | "let"), identifier, [" :", type], "->", block ;
+               | "when", readable_expr, ">>", ("val" | "let"), identifier, [":", type], "->", block
+               | "when", ("val" | "let"), identifier, [":", type], "<<", readable_expr, "->", block ;
 ```
 
 A statement may also use a parenthesized source/sink and a qualified path (`stdio.out`, `streams.output`). The token pairs must be contiguous: `<<` and `>>`, not `< <` / `> >`. Nested generic closing delimiters such as `Result<Option<int>>` remain distinct by grammar context. Numeric bit shifts are not retroactively I/O; no inferred channel creation, arithmetic shift-to-I/O conversion, or arbitrary class operator overloading is permitted. v1 rejects chained I/O operators without explicit sequencing.
@@ -53,14 +58,14 @@ A statement may also use a parenthesized source/sink and a qualified path (`stdi
 
 ```atto
 // Standalone channel and stream operations.
-inbox >> const msg;
+inbox >> val msg;
 stdio.out << "received";
 file_reader >> const next_chunk;
 file_writer << payload;
 
 // Selectable channels.
 do select {
-    when inbox >> const message -> {
+    when inbox >> val message -> {
         stdio.out << message;
     }
     when outgoing << "ready" -> {
@@ -77,7 +82,7 @@ The `file_reader` and `file_writer` lines above are candidate source spellings f
 - Forbid `42 << "data"` and `"data" >> const message` unless their types implement the I/O capabilities (numeric shift remains a distinct grammar/typecase).
 - Reject `when stream << payload` when that stream cannot commit/cancel an atomic select write.
 - Reject `when stream >> const item` when it cannot commit/cancel an atomic select read.
-- Reject `when inbox >> message`, `when outgoing << ->`, `inbox >> const ;`, and chained `a << b << c` in v1.
+- Reject `when inbox >> message`, `when outgoing << ->`, `inbox >> val ;`, and chained `a << b << c` in v1.
 - Preserve `// inbox >> x`, `"out << x"`, nested generics, and existing `readch`/`writech` parsing.
 - Prove a losing read does not consume, a losing write does not publish/move, a closed/EOF read is not a value, and a winning write is committed exactly once.
 - Require actual compiled guest tests and exact-head execution receipts for each backend before changing status to PASS. Syntax-only parsers and host models are not guest-runtime conformance.
@@ -113,3 +118,24 @@ The `file_reader` and `file_writer` lines above are candidate source spellings f
 3. Deterministic channel/stream runtime checks: close and EOF, bounded buffer backpressure, repeated selects, cancellation before and after readiness, simultaneous ready reads/writes, and losing-arm ownership.
 4. Concurrency checks: close-versus-commit, cancellation-versus-commit, exactly-once wake and admission, and no lost payload with an instrumented linearization witness.
 5. Exact-head CI: Rust reference/oracle tests, compiler-built AttoLang guest tests, and platform runtime tests must be reported as **separate** evidence tiers. A host reference test passing never establishes guest runtime parity.
+
+## Hardening: asymmetric declaration syntax and precedence
+
+The two runtime read-declaration spellings are semantically identical:
+
+```atto
+stdio.in >> val line;
+val line << stdio.in;
+
+// Inside a select: the arm only binds if it wins.
+do select {
+    when inbox >> val message -> { stdio.out << message; }
+    when val message << inbox -> { stdio.out << message; }
+}
+```
+
+`val x << source` is parsed as an **I/O binding declaration**, not a general binary operation or an assignment to `x`. Type-directed resolution must verify that `source` implements the readable contract; in contrast, `sink << value` resolves to a write on the sink. This distinction must be made by the grammar based on the leading `val`/`let` token, never by guessing from runtime values. A declaration may only introduce a fresh local binding; it cannot overwrite an existing name. `const` is never a runtime-read binder.
+
+Outside of I/O declaration grammar, numeric bit shifts (where supported) and generic type closers remain independent syntax. There must be no dynamic operator overloading for arbitrary values. Parenthesized readable expressions, method-returned streams and index expressions require the normal expression parser and typechecker; the bounded browser preflight only recognizes qualified paths and must refuse unsupported cases without emitting bytecode.
+
+A `select` arm can use either read-binder direction or an ordinary write, but only for statically proven SelectableRead/SelectableWrite operations. Losing arms must not consume/move, including if the source is a stream wrapping a socket or file. Selected writes must not claim success before admission and error/EOF/cancellation handling completes.
