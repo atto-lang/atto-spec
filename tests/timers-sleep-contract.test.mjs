@@ -45,7 +45,7 @@ function admit(ctx,kind) {
   if(kind==='susp') {
     if(!ctx.susp) throw Error('E_SUSPEND_CONTEXT');
   } else if(kind==='blocking') {
-    if(!ctx.parkable_fiber||ctx.reactor_thread||ctx.browser_main)
+    if(!ctx.susp||!ctx.parkable_fiber||ctx.reactor_thread||ctx.browser_main)
       throw Error('E_BLOCKING_CONTEXT');
   } else throw Error('unknown sleep API');
   return true;
@@ -116,12 +116,13 @@ test('deadline overflow and clock regression reject safely',()=>{
   assert.throws(()=>q.pump(-1n),/backward/);
 });
 test('blocking sleep requires parkable fiber, never event loop or critical lease',()=>{
-  assert.equal(admit({parkable_fiber:true},'blocking'),true);
+  assert.equal(admit({susp:true,parkable_fiber:true},'blocking'),true);
   assert.equal(admit({susp:true},'susp'),true);
-  for(const ctx of [{},{parkable_fiber:true,reactor_thread:true},
-    {parkable_fiber:true,browser_main:true},
-    {parkable_fiber:true,critical:true},
-    {parkable_fiber:true,unbudgeted_hard_rt:true}])
+  for(const ctx of [{},{parkable_fiber:true},{susp:true},
+    {susp:true,parkable_fiber:true,reactor_thread:true},
+    {susp:true,parkable_fiber:true,browser_main:true},
+    {susp:true,parkable_fiber:true,critical:true},
+    {susp:true,parkable_fiber:true,unbudgeted_hard_rt:true}])
     assert.throws(()=>admit(ctx,'blocking'),/E_BLOCKING_CONTEXT/);
   assert.throws(()=>admit({},'susp'),/E_SUSPEND_CONTEXT/);
   assert.throws(()=>admit({susp:true,critical:true},'susp'),/E_BLOCKING_CONTEXT/);
