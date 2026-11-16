@@ -11,6 +11,9 @@ const MAX_VALUES = 256;
 const MAX_DEPTH = 8;
 const MAX_REPEAT_SEGMENTS = 32;
 const MAX_STATES = (MAX_ITEMS + 1) * (MAX_VALUES + 1);
+// A per-sequence cap is insufficient: nested sequence tests may allocate one
+// feasibility table for every candidate (pattern-index, value-index) pair.
+const MAX_TOTAL_STATES = MAX_STATES * 10;
 
 function comma_parts(source) {
   if (!source.trim()) return [];
@@ -106,7 +109,11 @@ function parse(source) {
     for(const kind of ['List','Array','Tuple']) {
       const prefix=kind+'.of(';
       if(text.startsWith(prefix)&&text.endsWith(')')) {
-        const raw=comma_parts(text.slice(prefix.length,-1)).map(x=>item(x,depth+1));
+        // Propagate repetition context through nested sequence atoms: otherwise
+        // `...(2 of List.of(1 as val x))` silently defines x twice, and
+        // `...(2 of List.of(...(3 of int)))` evades the nested-repeat gate.
+        const raw=comma_parts(text.slice(prefix.length,-1))
+          .map(x=>item(x,depth+1,inside_repeat));
         const items=[];
         for(const p of raw) {
           if(p.kind==='repeat') items.push(...p.atoms);
@@ -137,6 +144,9 @@ function tag(value) {
 }
 
 function match(pattern,value) {
+  // Account for all nested feasibility tables, including repeated lookahead
+  // and capture extraction. Limit aggregate work, not merely each table.
+  let remainingStates=MAX_TOTAL_STATES;
   function type_ok(p,v) {
     const equal=tag(v)===p.name;
     return p.negative?!equal:equal;
@@ -161,7 +171,10 @@ function match(pattern,value) {
     const values=p.type==='List'?v:v.items;
     if(values.length>MAX_VALUES) throw Error('sequence match budget exceeded');
     const ps=p.items, n=values.length,m=ps.length;
-    if((n+1)*(m+1)>MAX_STATES) throw Error('matcher DP budget exceeded');
+    const cells=(n+1)*(m+1);
+    if(cells>MAX_STATES) throw Error('matcher DP budget exceeded');
+    if(cells>remainingStates) throw Error('cumulative matcher DP budget exceeded');
+    remainingStates-=cells;
     const table=Array.from({length:m+1},()=>new Uint8Array(n+1));
     table[m][n]=1;
     for(let i=m-1;i>=0;i--) for(let j=n;j>=0;j--) {
@@ -281,4 +294,28 @@ test('nested sequences match without treating Array and List interchangeably',()
   assert.equal(match(p,[array(1,2),tuple(3,false)]).matched,true);
   assert.equal(match(p,[[1,2],tuple(3,false)]).matched,false);
   assert.equal(match(p,[array(1,2,3),tuple(3,false)]).matched,false);
+});
+
+test('repetition context is enforced transitively through nested sequences',()=>{
+  for(const source of [
+    'List.of(...(2 of List.of(1 as val x)))',
+    'List.of(...(2 of Tuple.of(is int as val x)))',
+    'List.of(...(2 of List.of(...(1 of int))))',
+    'List.of(...(2 of Tuple.of(...(1 of 7))))',
+    'List.of(...(2 of List.of(Tuple.of(3 as let x))))',
+  ]) assert.throws(()=>parse(source),undefined,source);
+  // Pure fixed-width nested shapes do remain legal.
+  const good=parse('List.of(...(2 of Tuple.of(is int, is bool)))');
+  assert.equal(match(good,[tuple(1,true),tuple(2,false)]).matched,true);
+  assert.equal(match(good,[tuple(1,true),tuple(2,3)]).matched,false);
+});
+
+test('cumulative matcher budget also covers nested DP and repeated lookahead',()=>{
+  const inner=Array(256).fill(1);
+  const repeated=Array.from({length:128},()=>inner.slice());
+  const adversary=parse('List.of(...(128 of List.of(..., 1, ..., 1, ..., 1, ..., 1)))');
+  assert.throws(()=>match(adversary,repeated),/cumulative matcher DP budget exceeded/);
+  // The cap must not reject ordinary bounded nested matching.
+  const simple=parse('List.of(...(2 of Tuple.of(is int, is bool)))');
+  assert.deepEqual(match(simple,[tuple(1,true),tuple(2,false)]),{matched:true,bindings:{}});
 });
