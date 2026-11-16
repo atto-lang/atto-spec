@@ -14,6 +14,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Implicit receiver and qualified calls v1](language/implicit-receiver-qualified-calls-v1.md): desired method-family precedence and distinct `self.`, `pkg::` and `imports::` lookup, including sealed-actor intrinsic protection. Its [26-case conformance matrix](conformance/implicit-receiver-qualified-calls-v1.json) and Node tests are **host-only**; real compiler/runtime/AOT parity is **not verified**.
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
 
 ## Validation
