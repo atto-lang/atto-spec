@@ -128,3 +128,77 @@ The current Rust browser subset can *recognize* a conservative
 forms. It must return \`E_UNSUPPORTED\` for otherwise recognized unary reads
 until the typed guest channel/stream read ABI is executable. This staging
 does **not** mean \`total += (<< c)\` runs in the playground.
+
+
+## Typed declaration-first shorthand and required suspension (v1 clarification)
+
+The three source forms below are **one-shot reads with the same effective
+result type, ownership transfer and effect requirements**. Parentheses only
+group the prefix expression:
+
+```atto
+pub suspends fnc receive_example(Channel<int> c): void using io, suspend {
+    val Result<Option<int>, IoError> a = << c;
+    val Result<Option<int>, IoError> b = (<< c);
+    val Result<Option<int>, IoError> d << c;
+}
+```
+
+The declaration-first binding syntax accepts both type-first and name-first
+annotations:
+
+```atto
+val Result<Option<int>, IoError> a << c;
+val a: Result<Option<int>, IoError> << c;
+c >> val a: Result<Option<int>, IoError>;
+```
+
+These are *syntax and type/effect contract examples*, not an assertion that
+the current browser compiler or production backends can execute them.
+The exact read outcome of `Channel<int>` remains checked: none of these
+three declarations coerces it to bare `int`. Thus `val int a << c` and
+`val int a = << c` are **both rejected** if `c` reads as
+`Result<Option<int>, IoError>`. They become well typed only for a
+readable whose *actual* declared read outcome is `int`.
+
+Potentially suspending operations require an enclosing callable declared
+`susp` or `suspends` (aliases), **not merely** the presence of
+`using io`. Where the effect system requires explicit capabilities,
+the callable must also declare `io` and `suspend`. These are distinct
+checks: `io` is not permission to suspend, `suspends` does not
+authorize unrelated I/O, and `trap` never erases the suspend effect.
+
+```atto
+pub susp fnc example(Channel<int> c): void using io, suspend {
+    val result = << c;
+}
+
+// Must fail effect checking, even with `using io`:
+pub fnc invalid(Channel<int> c): void using io {
+    val result = << c; // E_SUSPENDS_REQUIRED
+}
+```
+
+A non-suspending function may only use a separately specified immediate
+nonblocking operation with its own distinct type and effect contract;
+there is no implicit `nb` mode for unary `<<`.
+
+For compound assignment, `total += << c` and
+`total += (<< c)` denote the same parse, but neither can add a
+`Result<Option<int>, IoError>` to `int`. When a readable's
+actual result is `int`, evaluate the channel expression once, perform
+one read, then load/update the left-hand variable once; the read must
+finish before the write. Do not hold an exclusive reference to
+`total` across suspension or mutate shared actor state outside its
+critical access protocol. Any pending read that is cancelled or fails
+must leave `total` unchanged. For `a + (<< c) + (<< c)`, each
+receive is a separate ordered operation, without rollback of prior
+successful receives.
+
+**Conformance additions:** test type-first/name-first binding forms,
+`val int a = << c`, `val int b = (<< c)`, `val int d << c`,
+both `susp` and `suspends`, a synchronous callable negative,
+`trap << c` retaining suspension, rejected mismatched checked outcomes,
+`+=` with and without parentheses, cancellation-before-commit,
+and exact-once reads. Compare compiled, executed guests across
+Java, LLVM and .NET before claiming parity.
