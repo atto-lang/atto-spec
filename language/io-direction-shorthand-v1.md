@@ -333,6 +333,19 @@ do readch foo, |outcome| -> void {
 
 ### Proposed extension: typed read–await continuations
 
+**Latest directional-capture extension:** The two explicit reverse/forward
+spellings `nb source >> (val T result << |f| -> await f <| Future<T>)`
+and `nb source >> Future<T> pending |> await pending >> val T result`,
+and the checked `(await pending)?` / `(await f)?` propagation forms,
+are specified in `language/typed-io-continuation-pipelines-v1.md`.
+This is a contextual exception: `Future<T>` is a typed placeholder
+**only** in that `nb` read production; outside it `Future<T>` is not a
+runtime value and bare `|> await` is still invalid. `?` propagates
+`Result.Err` after await while preserving an inner `Option<T>` EOF.
+This newest draft supersedes contradictory earlier rejection wording below.
+
+
+
 **Candidate syntax, not an assertion of executable guest support.** The two
 forms below have the same typed, sequential effect. A leading `nb` controls
 **read registration only**; an explicitly written `await` may then suspend
