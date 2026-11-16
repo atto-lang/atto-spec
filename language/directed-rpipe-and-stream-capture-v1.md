@@ -151,6 +151,28 @@ separate candidate contract in
 [typed-io-continuation-pipelines-v1.md](typed-io-continuation-pipelines-v1.md).
 The new `rpipe` only connects continuous source/sink endpoints.
 
+## Checked setup and stage failures
+
+Connection creation is a checked operation. The candidate outcome shape is
+`Result<PipeHandle, PipeSetupError>` (or an explicitly declared equivalent
+effect), and later completion is
+`Result<PipeStats, PipeError>`. Discarding a failed construction or detached
+completion is never implicit. The shorthand samples above illustrate
+topology; real admitted programs must handle or explicitly propagate their
+setup/completion results.
+
+An inline `let results: Stream<T>` captures a readable endpoint only after
+the **entire** connection was admitted. The compiler must ensure this
+success-only binding does not escape a failed setup branch. On any failure,
+the resource must be cleaned up and the binder cannot remain initialized
+with a dangling handle.
+
+See [pipeline-failure-effects-v1.md](pipeline-failure-effects-v1.md) for
+`throw`, `raise`, `panic`, `trap`, `Result` / `Option`, `?`,
+cancellation, EOF, and supervisor CONTROL across both directions. In
+particular `trap` catches ordinary throws only; it must never turn a
+fatal actor panic or ordinary `Result.Err` into a silent `None`.
+
 ## Evaluation and effects
 
 Endpoint expressions are evaluated **exactly once in written lexical
