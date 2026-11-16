@@ -1,6 +1,6 @@
 # I/O direction shorthand v1 — channels, streams and read/write capabilities
 
-Status: **candidate syntax contract**. This document records the intended grammar and static/effect semantics, not proof of any executable compiler/backend support.
+Status: **candidate syntax contract**. This document records the intended grammar and static/effect semantics, not proof of general executable compiler/backend support. The Rust/Wasm browser subset has a draft implementation of **standalone `stdio.out << value`** and **`writech stdio.out, value`** via its existing checked `stdio.print` lowering (atto-source.rs #176), but no passing exact-head guest test has been observed. General channels, stream reads/writes, and atomic `select` remain unsupported in that compiler.
 
 ## Decision
 
