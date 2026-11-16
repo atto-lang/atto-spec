@@ -12,9 +12,10 @@ arm_body       = expression | block ;
 return_match   = "return", "match", [ "<", type_ref, ">" ], subject, "over", { match_arm }, "end", ";" ;
 return_switch  = "return", "switch", [ "<", type_ref, ">" ], subject, "over", { switch_arm | switch_default }, "end", ";" ;
 switch_stmt    = [ "do" ], "switch", [ "<", type_ref, ">" ], subject, "over", { switch_arm | switch_default }, "end" ;
+legacy_switch_stmt = "switch", subject, { switch_arm | switch_default }, "end" ;
 ```
 
-For `switch`, **`case Pattern` is canonical**; `on Pattern` remains an accepted compatibility spelling. `default`, `case _` and `on _` denote the wildcard arm. `match` keeps `on Pattern` as its canonical spelling. Neither statement-form `switch` nor `return switch` has C-style implicit fallthrough. An explicit `break` does not substitute for a value-producing arm; every selected arm must return/yield its checked result or definitely diverge.
+For `switch`, **`case Pattern` is canonical**; untyped legacy statement `switch subject case P -> { ... } end` without `over` is retained for Java compatibility. Typed `switch<T>` requires `over` so its result type cannot be parsed ambiguously.  `on Pattern` remains an accepted compatibility spelling. `default`, `case _` and `on _` denote the wildcard arm. `match` keeps `on Pattern` as its canonical spelling. Neither statement-form `switch` nor `return switch` has C-style implicit fallthrough. An explicit `break` does not substitute for a value-producing arm; every selected arm must return/yield its checked result or definitely diverge.
 
 The `:` **after the completed pattern/guard** and before the *arm* `->` annotates the **arm's produced value**, never the matched payload, binder type, or thrown error. A `:` inside `{ field: pattern }`, an argument, or a nested type does not terminate the pattern. Parsing is grammar-aware, not a search for the nearest colon. The arrow is `->`, never `=>`. `on _` is canonical; existing `default` variants remain accepted where already supported.
 
