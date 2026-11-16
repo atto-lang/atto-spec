@@ -14,6 +14,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Channel read Future ownership and cancellation v1](language/channel-future-lifecycle-v1.md): checked one-shot `Channel<int>` reads, consuming `abandon()`, cancellation, FIFO preservation and Worker cleanup; Rust/Wasm verified, Java/LLVM/.NET parity pending.
 - [Return-position `match` with `return` or `^` v1](language/return-match-caret-v1.md): nested lexical returns, exhaustive arm proof and typed Channel/Future example; compiler/CI acceptance remains separately gated.
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
 
