@@ -19,6 +19,15 @@ class AOTCoverageSchemaTest(unittest.TestCase):
         self.assertEqual(len(self.m["syntax_patterns"]), 25)
         self.assertEqual({x["id"] for x in self.m["features"]}, {f"F{i:02d}" for i in range(1,26)})
         self.assertEqual({x["id"] for x in self.m["syntax_patterns"]}, {f"S{i:02d}" for i in range(1,26)})
+    def test_50_language_inspirations(self):
+        self.assertEqual(len(self.m["language_inspirations"]), 50)
+        self.assertEqual({x["id"] for x in self.m["language_inspirations"]}, {f"L{i:02d}" for i in range(1,51)})
+        self.assertEqual(len({x["language"] for x in self.m["language_inspirations"]}), 50)
+        for x in self.m["language_inspirations"]:
+            self.assertTrue(x["aot_adaptation"].strip())
+            self.assertIn(x["status"], STATES)
+            if x["status"] == "PASS":
+                self.assertTrue(x.get("evidence"), f"{x['id']}: PASS without evidence")
     def test_explicit_aot_targets_and_fail_closed_status(self):
         self.assertEqual(set(self.m["backends"]), BACKENDS)
         self.assertEqual(set(self.m["statuses"]), STATES)
@@ -46,6 +55,8 @@ class AOTCoverageSchemaTest(unittest.TestCase):
             self.assertIn(f["id"], content)
         for s in self.m["syntax_patterns"]:
             self.assertIn(s["id"], content)
+        for x in self.m["language_inspirations"]:
+            self.assertIn(x["id"], content)
 
 if __name__ == "__main__":
     unittest.main()
