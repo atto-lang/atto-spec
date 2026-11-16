@@ -5,6 +5,8 @@ on:
       - "language/structural-tilde-v1.md"
       - "language/anonymous-structural-shapes-v1.md"
       - "tests/anonymous-structural-shapes-reference.test.mjs"
+      - "tests/anonymous-structural-shape-contract.test.mjs"
+      - "conformance/anonymous-structural-shapes-v1.json"
       - "conformance/structural-tilde-v1.json"
       - "tests/structural-tilde-contract.test.mjs"
       - "language/match-arm-delimiters-v1.md"
@@ -17,6 +19,8 @@ on:
       - "language/structural-tilde-v1.md"
       - "language/anonymous-structural-shapes-v1.md"
       - "tests/anonymous-structural-shapes-reference.test.mjs"
+      - "tests/anonymous-structural-shape-contract.test.mjs"
+      - "conformance/anonymous-structural-shapes-v1.json"
       - "conformance/structural-tilde-v1.json"
       - "tests/structural-tilde-contract.test.mjs"
       - "language/match-arm-delimiters-v1.md"
@@ -34,4 +38,4 @@ jobs:
         with:
           persist-credentials: false
       - name: Check fixture integrity (NOT guest compilation)
-        run: node --test tests/structural-tilde-contract.test.mjs tests/match-arm-delimiters-contract.test.mjs tests/structural-pattern-semantics-reference.test.mjs tests/anonymous-structural-shapes-reference.test.mjs
+        run: node --test tests/structural-tilde-contract.test.mjs tests/match-arm-delimiters-contract.test.mjs tests/structural-pattern-semantics-reference.test.mjs tests/anonymous-structural-shapes-reference.test.mjs tests/anonymous-structural-shape-contract.test.mjs
