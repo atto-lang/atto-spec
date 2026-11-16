@@ -29,7 +29,9 @@
     "const_mut": "explicit_fixed_binding_with_const_template_and_fresh_local_owned_mutable_instance",
     "fields": "out_of_scope",
     "global_const_mut": "reject",
-    "contextual_const": "runtime_immutable_binding_not_compile_time"
+    "contextual_const": "runtime_immutable_binding_not_compile_time",
+    "typed_colon_const": "const_name_colon_type_equivalent_to_const_type_name",
+    "bare_mut": "reject_missing_binding_qualifier_no_implicit_const_mut"
   },
   "fixtures": [
     {
@@ -110,6 +112,38 @@
       "kind": "compile_and_execute",
       "expected_exit": 42,
       "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "typed-colon-equivalence-positive",
+      "path": "contracts/implicit-const-v1/fixtures/typed-colon-equivalence-positive.atto",
+      "kind": "compile_and_execute",
+      "expected_exit": 42,
+      "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "typed-colon-nonconst-reject",
+      "path": "contracts/implicit-const-v1/fixtures/typed-colon-nonconst-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "non_const_initializer",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "typed-colon-rebind-reject",
+      "path": "contracts/implicit-const-v1/fixtures/typed-colon-rebind-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "immutable_reassignment",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "bare-mut-missing-qualifier-reject",
+      "path": "contracts/implicit-const-v1/fixtures/bare-mut-missing-qualifier-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "missing_binding_qualifier",
       "status": "AUTHORED_NOT_EXECUTED"
     }
   ],
