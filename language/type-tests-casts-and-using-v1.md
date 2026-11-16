@@ -87,6 +87,13 @@ pub fnc classify(Any value): int {
   must reject rather than lower to `as val n` silently.
 - A guard does not prove exhaustiveness; wildcard and explicit closed-case
   coverage still obey reachability, overlap and duplicate-arm diagnostics.
+- **Reachability is checked before AOT pruning**: specializing a statically
+  proven scalar tag must not erase a duplicate unguarded `on is T` /
+  `on is !T` arm or any arm after an unconditional `on _`. Canonical
+  type aliases count as the same tag. A repeated pattern is allowed when
+  the earlier occurrence had a `when` guard, since the guard can fail.
+  Invalid arms must not become silently acceptable just because the
+  optimized guest would never execute them.
 - `is !T` is NOT a reinterpret cast to a different T.
 - Switch/case must reuse these semantics once its typed patterns are supported.
 
