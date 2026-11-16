@@ -147,15 +147,15 @@
       "id": "ST021",
       "category": "argument",
       "source": "(payload: ~(field: 42))",
-      "expect": "accept",
-      "note": "record aggregate not cast"
+      "expect": "reject",
+      "note": "removed tilde-prefixed collection constructor; use Type.of(...), not a structural projection"
     },
     {
       "id": "ST022",
       "category": "argument",
       "source": "(payload: ~(key => 42))",
-      "expect": "accept",
-      "note": "map aggregate not cast"
+      "expect": "reject",
+      "note": "removed tilde-prefixed collection constructor; use Type.of(...), not a structural projection"
     },
     {
       "id": "ST023",
@@ -528,22 +528,22 @@
       "id": "ST068",
       "category": "argument",
       "source": "(~ (field: 42))",
-      "expect": "accept",
-      "note": "record aggregate whitespace independent"
+      "expect": "reject",
+      "note": "removed tilde-prefixed collection constructor; use Type.of(...), not a structural projection"
     },
     {
       "id": "ST069",
       "category": "argument",
       "source": "(~ (key => 42))",
-      "expect": "accept",
-      "note": "map aggregate whitespace independent"
+      "expect": "reject",
+      "note": "removed tilde-prefixed collection constructor; use Type.of(...), not a structural projection"
     },
     {
       "id": "ST070",
       "category": "argument",
       "source": "(p: ~ (field: 42), n: 2)",
-      "expect": "accept",
-      "note": "named arg and spaced record aggregate"
+      "expect": "reject",
+      "note": "removed tilde-prefixed collection constructor; use Type.of(...), not a structural projection"
     },
     {
       "id": "ST071",
@@ -577,15 +577,15 @@
       "id": "ST075",
       "category": "argument",
       "source": "(~(field: 42))",
-      "expect": "accept",
-      "note": "record aggregate tight prefix pair"
+      "expect": "reject",
+      "note": "removed tilde-prefixed collection constructor; use Type.of(...), not a structural projection"
     },
     {
       "id": "ST076",
       "category": "argument",
       "source": "(~(key => 42))",
-      "expect": "accept",
-      "note": "map aggregate tight prefix pair"
+      "expect": "reject",
+      "note": "removed tilde-prefixed collection constructor; use Type.of(...), not a structural projection"
     },
     {
       "id": "ST077",
