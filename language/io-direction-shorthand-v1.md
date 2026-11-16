@@ -139,3 +139,62 @@ do select {
 Outside of I/O declaration grammar, numeric bit shifts (where supported) and generic type closers remain independent syntax. There must be no dynamic operator overloading for arbitrary values. Parenthesized readable expressions, method-returned streams and index expressions require the normal expression parser and typechecker; the bounded browser preflight only recognizes qualified paths and must refuse unsupported cases without emitting bytecode.
 
 A `select` arm can use either read-binder direction or an ordinary write, but only for statically proven SelectableRead/SelectableWrite operations. Losing arms must not consume/move, including if the source is a stream wrapping a socket or file. Selected writes must not claim success before admission and error/EOF/cancellation handling completes.
+
+
+## Nonblocking and suspension modes (v1 addition)
+
+The direction shorthand is an *effect-checked operation*, not intrinsically blocking or intrinsically nonblocking. The resolved Readable/Writable operation advertises whether its direct completion can suspend. Actual readiness may complete synchronously, but a compiler must reject a potentially suspending call in a context that lacks \`suspends\` even if it happens to be ready at runtime.
+
+| Source form | Static effect | Binding/result |
+|---|---|---|
+| \`source >> val item;\` | Underlying direct read effect (possibly suspending) | Completed read outcome |
+| \`sink << value;\` | Underlying direct write effect (possibly suspending) | Completed write outcome |
+| \`nb source >> val pending;\` | Register/return promptly; never suspend caller | \`Future<ReadOutcome<T,E>>\` |
+| \`nb sink << value;\` | Register/return promptly; never suspend caller | \`Future<WriteOutcome<E>>\` when captured |
+| \`try source >> val immediate;\` | Never suspend | Immediate readiness/read outcome |
+| \`try sink << value;\` | Never suspend | Immediate readiness/write outcome |
+
+The \`ReadOutcome\` / \`WriteOutcome\` names above are illustrative schema parameters, **not new required AttoLang nominal types**. Use the concrete readable/writable capability's result type, retaining \`Option\`, \`Result\`, EOF, closure, cancellation and ownership errors. Channel-specific contracts continue to dictate exact future generic parameters; there is no blanket \`Future<string>\` promise for all streams and channels.
+
+Standalone read and explicit \`nb readch\`/ \`nb writech\` examples:
+
+\`\`\`atto
+// Inside a callable that admits 'io, suspend' effects:
+stdio.in >> val line;
+val line2 << stdio.in;
+
+// Any effect-appropriate callable: registration returns a Future, not data.
+nb stdio.in >> val pending_line;
+val pending2: Future<ReadOutcome<string, IoError>> = nb readch inbox;
+
+// Direct named, nonblocking channel operations (same underlying contracts).
+val pending_write = nb writech outgoing, "hi";
+val pending_read  = nb readch inbox;
+
+// The next statement may suspend because it AWAITS the future:
+val result = await pending_read;
+\`\`\`
+
+\`nb readch foo >> Future<string> foo;\` is deliberately **not** the syntax. It confuses a completed-channel read with a future result, omits the \`val\` / \`let\` binder, uses an ambiguous repeated name, and attempts to append a second direction operator to an already specified \`readch\` operation. Use \`val pending = nb readch foo;\` or \`nb foo >> val pending;\`; optionally annotate the latter binding as \`Future<ActualReadOutcome>\`. A type annotation does not erase EOF or errors.
+
+\`nb\` scopes one I/O operation when prefixed to the handle (\`nb foo >> val pending\`, \`nb foo << value\`), not to a \`when\` guard. A standalone reversed form may use \`val pending << nb foo;\` only if a dedicated grammar explicitly defines it; **v1 does not admit that spelling**. No generic \`Future<T> << source\` assignment form is introduced.
+
+\`try\` is an immediate readiness attempt, not error catching and not \`trap\`; it may return not-ready without consuming/committing. The type checker must distinguish its readiness result from \`Result<T,E>\` error propagation and ordinary completed reads. \`try\` must not start irreversible work or create a pending future.
+
+### Effect and select rules
+
+- A function marked \`suspends\` is allowed to perform operations whose static effect includes suspension (subject to its \`using\` permissions); it need not suspend on every call. A function **without** \`suspends\` may perform only statically proven immediate read/write operations, explicit \`try\` attempts or \`nb\` registrations, provided I/O permission is present. \`pure\` forbids I/O even for \`nb\` or \`try\`.
+- Nonblocking means **the caller does not suspend or park** while registration is admitted. It is not a promise of successful delivery or readiness. The returned future is completed only after the operation succeeds, fails, closes or is cancelled; a synchronous failure to register is reported through the declared API contract.
+- Captured futures cannot silently be dropped where typed effect/lifecycle rules require handling. A \`Future<T>\` is not equal to \`T\`; an \`await\` on a pending future requires suspension authority.
+- \`when nb source >> val x ->\`, \`when try source >> val x ->\` and \`when nb sink << value ->\` are **invalid**: the enclosing \`select\` arbitrates registrations itself. The supported spelling is \`do nb select { when source >> val x -> { ... } }\`, with the existing select-specific arm cancellation/commit behavior.
+- A \`do nb select\` registration must not suspend its caller; the winning arm may use effects only as permitted by its owner/task context. \`select<T>\` and \`nb select<T>\` return types remain specified by their separate select contract; do not confuse a future of the selection with a future of an individual read.
+- Stream I/O is nonblocking only if its implementation actually supports nonparking asynchronous admission. An OS-level blocking API cannot be hidden behind \`nb\`. An immediately available operation may complete without suspension in the ordinary form, but dynamic readiness cannot justify omitting static \`suspends\` authority.
+- The compiler must fail closed on unsupported mode, capability, result-type, or effect combinations; parser recognition alone is not proof of guest runtime support.
+
+### Required positive/negative cases for this extension
+
+1. Accept syntax-only \`nb stdio.in >> val pending;\`, \`nb outgoing << "hi";\`, \`try stdio.in >> val immediate;\`, and the corresponding ordinary forms, preserving mode and binder AST/preflight metadata.
+2. Reject \`nb readch foo >> Future<string> foo;\`, \`when nb inbox >> val x ->\`, \`when try inbox >> val x ->\`, \`when nb outgoing << 1 ->\`, and \`nb foo >> const pending;\` with stable diagnostics.
+3. Reject potential suspension inside non-\`suspends\` or \`pure\` callables at the checked effect boundary, and reject nonparking guarantees that the underlying stream cannot satisfy.
+4. Prove \`nb\` read/write futures have exactly-once completion, correct error/EOF/closure semantics and cancellation/ownership reclamation. Futures must not capture transient borrows across task suspension or actor stop.
+5. Test standalone, \`suspends\`, \`do select\`, and \`do nb select\` separately; do not use host reference-model execution as a substitute for actual compiled Atto guest tests.
