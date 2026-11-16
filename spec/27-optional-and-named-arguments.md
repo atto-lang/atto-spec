@@ -105,6 +105,18 @@ Bare `omit` and `_` are **standalone call-item markers**, not expressions. They 
 5. Preserve the original call-item index, evaluated-expression index and formal index separately. Validate each supplied expression exactly once, in lexical order, including exceptions, cancellation, moves, borrows, effects and suspended execution. Defaults and typed `None` occupy ABI slots without masquerading as evaluated source expressions.
 6. Formatter round-trips both question-mark positions, label spelling, named order, contextual omission and source spans without changing evaluation order. Generic `T=Type` syntax is independent of call `name: expr` binding. A backend lacking these semantics must reject the source before emission.
 
+## Normative precedence and versioned legacy compatibility (2026-11-16)
+
+**This chapter is the sole authority for the proposed new AttoLang parameter-presence contract.** The independent `T?` type suffix and formal `name?` omission marker here supersede the *historical source semantics* in LLVM `contracts/v1/OPTIONAL_PARAMETERS_V1.md` and Java/LLVM staged `contracts/v3/PARAMETER_PRESENCE_DEFAULT_ARG_VALS_V1.md` for **new-mode** source. Those historical documents remain versioned reference experiments; they do not silently change old source modules, serialized signatures or already-compiled code. The compiler must pin a contract version and reject incompatible imports/hot reload until explicit migration can be proved.
+
+- New-mode `T? x` is a **required** `Option<T>` slot. It stays required even if a declaration has `@DefaultArgVals(x: ...)`, unless the formal is independently marked `x?`.
+- New-mode `T x?` requires a type-checked deterministic default. If `@DefaultArgVals` is implemented, it may **supply a default for an independently omittable `name?` formal only**. It does not grant omission to a required formal or overwrite a per-formal default, even when values match. Its runtime use remains fail-closed until default, effect/ownership, source-order and full-arity ABI proof exists.
+- New-mode `T? x?` omits to a type-checked explicit default or typed outer `None`. An explicit supplied `None` never triggers the default.
+- The historical LLVM v1 interpretation of `T? x` as itself omittable and implicit supplied `T -> Some(T)` boundary lifting are **not** the new-mode language semantics. A plain `T` actual for `Option<T>` is rejected, whether the formal is required or omittable; callers must supply `Some(v)` or `None`.
+- A compiler that cannot implement a target-language case must report a stable **unsupported** diagnostic before artifact publication, not silently treat unsupported as a normative invalidity. Tests must distinguish `CANONICAL_REJECT` from `CANONICAL_ACCEPT_BUT_BACKEND_UNSUPPORTED`.
+
+The [byte-pinned Rust/Wasm guest candidate corpus](../contracts/optional-named-parameters-v1/guest-rust-slice-v1/manifest.json) extends the independent source-free call-binding shapes with eight executable positives and seven rejection cases; files share their exact Git blob SHA with [Rust/Wasm implementation PR #225](https://github.com/atto-lang/atto-source.rs/pull/225). The [host-only fixture integrity test](../tests/optional-named-executable-fixture-integrity.test.mjs) proves only byte identity and manifest integrity; runtime execution requires separate SHA-bound compiler/guest evidence.
+
 ## Conformance matrix and evidence
 
 A versioned [source-free reference contract](../contracts/optional-named-parameters-v1/cases.json) checks binding shape and source provenance; its [Node test](../tests/optional-named-parameters-contract.test.mjs) is **not** parser, typechecker, compiler or guest evidence.

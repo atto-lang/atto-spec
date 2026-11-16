@@ -1,0 +1,198 @@
+{
+  "schema": "attolang.optional-named-guest-slice.v1",
+  "canonical": "spec/27-optional-and-named-arguments.md",
+  "rust_source_repo": "atto-lang/atto-source.rs",
+  "rust_source_head": "ef02643fa395617e3fcf53b429719ba15c4b5338",
+  "rust_source_tree": "f5a71eba50afee5884509804526c3eb1cae4cdbf",
+  "status": "AUTHORED_NOT_EXECUTED_ON_NEW_HEAD",
+  "description": "Independent canonical fixture bytes are Git-blob identical to the Rust/Wasm PR #225 guest source fixtures. Host-only integrity checks are NOT compiler or guest execution. Canonical acceptance is broader than this bounded backend.",
+  "backends": {
+    "rust_wasm": "PENDING_EXACT_HEAD_GUEST",
+    "java": "NOT_CLAIMED",
+    "llvm": "NOT_CLAIMED",
+    "dotnet": "NOT_CLAIMED",
+    "forge": "NOT_CLAIMED"
+  },
+  "cases": [
+    {
+      "id": "197-omittable-option-none-runtime",
+      "kind": "pass",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/pass/197-omittable-option-none-runtime.atto",
+      "source_path": "tests/fixtures/pass/197-omittable-option-none-runtime.atto",
+      "blob_sha": "30f226e1e6c54b33fa3820397e8e1057b9418288",
+      "expected": {
+        "kind": "guest_exit",
+        "exit": 42
+      },
+      "target_classification": "CANONICAL_ACCEPT"
+    },
+    {
+      "id": "198-omittable-option-some-runtime",
+      "kind": "pass",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/pass/198-omittable-option-some-runtime.atto",
+      "source_path": "tests/fixtures/pass/198-omittable-option-some-runtime.atto",
+      "blob_sha": "6bfd0b5cf178e258b89d3a09a3157763aa4a3c73",
+      "expected": {
+        "kind": "guest_exit",
+        "exit": 42
+      },
+      "target_classification": "CANONICAL_ACCEPT"
+    },
+    {
+      "id": "199-required-option-explicit-none",
+      "kind": "pass",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/pass/199-required-option-explicit-none.atto",
+      "source_path": "tests/fixtures/pass/199-required-option-explicit-none.atto",
+      "blob_sha": "a2d2ad9cc771d899da688b4d994f11fd28874272",
+      "expected": {
+        "kind": "guest_exit",
+        "exit": 42
+      },
+      "target_classification": "CANONICAL_ACCEPT"
+    },
+    {
+      "id": "200-two-omittable-none-abi",
+      "kind": "pass",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/pass/200-two-omittable-none-abi.atto",
+      "source_path": "tests/fixtures/pass/200-two-omittable-none-abi.atto",
+      "blob_sha": "986eca3fad16104b190950400db416f99640d0c2",
+      "expected": {
+        "kind": "guest_exit",
+        "exit": 42
+      },
+      "target_classification": "CANONICAL_ACCEPT"
+    },
+    {
+      "id": "201-inline-method-omission-runtime",
+      "kind": "pass",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/pass/201-inline-method-omission-runtime.atto",
+      "source_path": "tests/fixtures/pass/201-inline-method-omission-runtime.atto",
+      "blob_sha": "33a6fb4de5e3815dbf40efb17aa81702e988e32f",
+      "expected": {
+        "kind": "guest_exit",
+        "exit": 42
+      },
+      "target_classification": "CANONICAL_ACCEPT"
+    },
+    {
+      "id": "202-out-of-line-mtd-omission-runtime",
+      "kind": "pass",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/pass/202-out-of-line-mtd-omission-runtime.atto",
+      "source_path": "tests/fixtures/pass/202-out-of-line-mtd-omission-runtime.atto",
+      "blob_sha": "998698dda642c71046061030c1c2a7e7919f7a68",
+      "expected": {
+        "kind": "guest_exit",
+        "exit": 42
+      },
+      "target_classification": "CANONICAL_ACCEPT"
+    },
+    {
+      "id": "203-nested-result-option-none-runtime",
+      "kind": "pass",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/pass/203-nested-result-option-none-runtime.atto",
+      "source_path": "tests/fixtures/pass/203-nested-result-option-none-runtime.atto",
+      "blob_sha": "efcfd10a72104385b98ff4a6fe4a3430180ac019",
+      "expected": {
+        "kind": "guest_exit",
+        "exit": 42
+      },
+      "target_classification": "CANONICAL_ACCEPT"
+    },
+    {
+      "id": "204-routine-omission-runtime",
+      "kind": "pass",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/pass/204-routine-omission-runtime.atto",
+      "source_path": "tests/fixtures/pass/204-routine-omission-runtime.atto",
+      "blob_sha": "30531bcfcb8d8f4ee150eb35d9320442a8abb6f8",
+      "expected": {
+        "kind": "guest_exit",
+        "exit": 42
+      },
+      "target_classification": "CANONICAL_ACCEPT"
+    },
+    {
+      "id": "197-required-option-cannot-omit",
+      "kind": "fail",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/fail/197-required-option-cannot-omit.atto",
+      "source_path": "tests/fixtures/fail/197-required-option-cannot-omit.atto",
+      "blob_sha": "c56caf3184fb40cbd36f7de88987c21f4d109f29",
+      "expected": {
+        "kind": "compiler_error",
+        "code": "E_ARITY"
+      },
+      "target_classification": "CANONICAL_REJECT"
+    },
+    {
+      "id": "198-no-implicit-some",
+      "kind": "fail",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/fail/198-no-implicit-some.atto",
+      "source_path": "tests/fixtures/fail/198-no-implicit-some.atto",
+      "blob_sha": "6dd428c392763107f9c72eb2c24b826a01748863",
+      "expected": {
+        "kind": "compiler_error",
+        "code": "E_TYPE"
+      },
+      "target_classification": "CANONICAL_REJECT"
+    },
+    {
+      "id": "199-omittable-scalar-needs-default",
+      "kind": "fail",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/fail/199-omittable-scalar-needs-default.atto",
+      "source_path": "tests/fixtures/fail/199-omittable-scalar-needs-default.atto",
+      "blob_sha": "7a033d6c7acb8b4a1e6cc7b8a6d425305eab9a50",
+      "expected": {
+        "kind": "compiler_error",
+        "code": "E_OMITTABLE_DEFAULT"
+      },
+      "target_classification": "CANONICAL_REJECT"
+    },
+    {
+      "id": "200-overlapping-optional-arity",
+      "kind": "fail",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/fail/200-overlapping-optional-arity.atto",
+      "source_path": "tests/fixtures/fail/200-overlapping-optional-arity.atto",
+      "blob_sha": "30ccf57375ce1e76fdf70f87a06ace707f1ffd33",
+      "expected": {
+        "kind": "compiler_error",
+        "code": "E_AMBIGUOUS"
+      },
+      "target_classification": "CANONICAL_REJECT"
+    },
+    {
+      "id": "201-named-omittable-not-yet-lowered",
+      "kind": "fail",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/fail/201-named-omittable-not-yet-lowered.atto",
+      "source_path": "tests/fixtures/fail/201-named-omittable-not-yet-lowered.atto",
+      "blob_sha": "00e58529890eb036440998d1ad6bdfd574e1ecd0",
+      "expected": {
+        "kind": "compiler_error",
+        "code": "E_UNSUPPORTED"
+      },
+      "target_classification": "CANONICAL_ACCEPT_BUT_RUST_UNSUPPORTED"
+    },
+    {
+      "id": "202-nested-question-requires-explicit-option",
+      "kind": "fail",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/fail/202-nested-question-requires-explicit-option.atto",
+      "source_path": "tests/fixtures/fail/202-nested-question-requires-explicit-option.atto",
+      "blob_sha": "7388ad126f23784e4debdc3ad978f6538f2a52ef",
+      "expected": {
+        "kind": "compiler_error",
+        "code": "E_UNSUPPORTED"
+      },
+      "target_classification": "CANONICAL_REJECT"
+    },
+    {
+      "id": "203-unknown-option-abi-denied",
+      "kind": "fail",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/fail/203-unknown-option-abi-denied.atto",
+      "source_path": "tests/fixtures/fail/203-unknown-option-abi-denied.atto",
+      "blob_sha": "a261386a91c3e4d25cd75b6cdc9b57404bdcb797",
+      "expected": {
+        "kind": "compiler_error",
+        "code": "E_UNSUPPORTED_TYPE"
+      },
+      "target_classification": "RUST_ABI_UNSUPPORTED"
+    }
+  ]
+}
