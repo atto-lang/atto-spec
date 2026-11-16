@@ -59,14 +59,27 @@ end
    ownership, copy, borrow and escape rules; do not infer it from primitive
    scalar support.
 
-## Ten executable regression scenarios
+## Twenty executable regression scenarios (two ten-case matrices)
 
 The [Rust compiler audit PR #172](https://github.com/atto-lang/atto-source.rs/pull/172)
-contains four positive and six negative `.atto` fixtures for:
+initially contained four positive and six negative `.atto` fixtures for:
 (1) bare critical mutation, (2) explicit write of a bool, (3) read snapshot,
 (4) isolation of two mutable state containers, (5) empty read-block
 escalation, (6) attempted mutation through read, (7) unguarded self access,
 (8) binder escape, (9) spaced compound keyword, and (10) nested loans.
+
+A second ten-case suite (`tests/critical_mutable_containers.rs`) adds
+five positive and five negative cases for multiple protected scalar fields,
+snapshot independence, per-instance and per-type ownership, duplicate
+fields, illegal reference fields, type confusion and impure method calls.
+The Rust audit records **20 fixture scenarios** but they remain **not
+executed** until the exact compiler candidate passes native/Wasm guest CI.
+
+Six Worker-host lease admission unit tests (including two new isolation and
+upgrade/replay cases) passed in Node.js 22 on exact GitHub blob SHA copies
+for compiler PR head `320aafe8e4dc682cc56daefc241067f910d84904`.
+That is host-only evidence and does not imply guest-source or cross-backend
+conformance.
 
 The audited Rust-to-Wasm profile admits owned `int`/`bool` state fields
 inside a **single Worker-local state container**. It has host-mediated
