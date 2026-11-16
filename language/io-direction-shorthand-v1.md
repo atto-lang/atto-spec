@@ -350,6 +350,11 @@ nb incoming >> (val Outcome resolved << await Future<Outcome>);
 nb incoming >> Future<Outcome> pending
     | await pending >> val Outcome resolved;
 
+ // Third equivalent, explicitly functional pipeline stage, with susp alias:
+nb incoming >> val pending: Future<Outcome>
+    |> susp |f| -> await f
+    >> val resolved: Outcome;
+
 // Equivalent explicit desugaring:
 nb incoming >> val pending: Future<Outcome>;
 val resolved: Outcome = await pending;
@@ -388,6 +393,13 @@ future_type_slot = "Future", "<", complete_type_ref, ">" ;
   declared future binder, which cannot escape or be consumed twice. The
   `|` delimiter is admitted **only** after the typed intermediate binder;
   elsewhere `|` keeps its existing boolean/other expression meanings.
+- The third spelling uses the existing functional `|>` to apply an explicitly
+  suspending, one-argument lambda, `susp |f| -> await f` or the long
+  `suspends |f| -> await f`. The trailing `>> val/let ...` is a
+  **contextual result capture for this nb-read continuation only**, not a
+  free-standing assignment or another stream read. Its type must match
+  the same complete awaited outcome. Bare `|> await` remains invalid.
+
 - Operand evaluation and read registration occur once before await. `nb`
   admission does not park; the explicit subsequent await may suspend or
   cooperate. The caller must have `using io` and `suspends` permission,
