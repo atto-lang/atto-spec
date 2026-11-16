@@ -1,0 +1,145 @@
+{
+  "schema": "atto.readonly-shape-projection/v1",
+  "version": 1,
+  "status": "HOST_WITNESS_CONTRACT_NOT_GUEST_ABI",
+  "description": "Bounded, statically verified read-only i64 class/record/struct field plan. No dynamic map, actor, nullable, union, singleton, owned transfer or async escape is authorized.",
+  "max_fields": 32,
+  "requirements": {
+    "actual_source_offset": true,
+    "source_identity": true,
+    "positive_layout_epoch": true,
+    "positive_loan_id": true,
+    "only_public_immutable_i64": true,
+    "reject_overlapping_offsets": true,
+    "no_pointer_reinterpretation": true,
+    "no_map_or_actor_scope": true
+  },
+  "example": {
+    "formals": "fnc read_x(p: {x: int}): int { return p.x; }",
+    "class_a": {
+      "name": "A",
+      "fields": [
+        {
+          "name": "x",
+          "slot": 0,
+          "value": 42
+        }
+      ]
+    },
+    "class_b": {
+      "name": "B",
+      "fields": [
+        {
+          "name": "padding",
+          "slot": 0,
+          "value": 10
+        },
+        {
+          "name": "x",
+          "slot": 1,
+          "value": 42
+        }
+      ]
+    },
+    "expected_result": 84,
+    "execution_status": "TARGET_GUEST_NOT_EXECUTED"
+  },
+  "cases": [
+    {
+      "id": "SP001",
+      "name": "class_a_x",
+      "expected": "ACCEPT",
+      "source_slot": 0
+    },
+    {
+      "id": "SP002",
+      "name": "class_b_reordered_x",
+      "expected": "ACCEPT",
+      "source_slot": 1
+    },
+    {
+      "id": "SP003",
+      "name": "extra_public_field",
+      "expected": "ACCEPT",
+      "source_slot": 1
+    },
+    {
+      "id": "SP004",
+      "name": "private_field",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP005",
+      "name": "missing_field",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP006",
+      "name": "wrong_field_type",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP007",
+      "name": "sealed_actor_state",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP008",
+      "name": "dynamic_map_without_snapshot",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP009",
+      "name": "mutable_field",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP010",
+      "name": "stale_layout_epoch",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP011",
+      "name": "expired_loan",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP012",
+      "name": "duplicate_source_name",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP013",
+      "name": "overlapping_source_offsets",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP014",
+      "name": "empty_requested_shape",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP015",
+      "name": "empty_source_loan",
+      "expected": "REJECT",
+      "source_slot": null
+    },
+    {
+      "id": "SP016",
+      "name": "duplicate_required_name",
+      "expected": "REJECT",
+      "source_slot": null
+    }
+  ]
+}
