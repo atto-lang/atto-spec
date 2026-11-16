@@ -1,0 +1,33 @@
+name: Copyable ownership contract (host-only)
+on:
+  pull_request:
+    paths:
+      - 'language/copyable-ownership-v1.md'
+      - 'tests/copyable-ownership-contract.test.mjs'
+      - '.github/workflows/copyable-ownership-contract.yml'
+  push:
+    paths:
+      - 'language/copyable-ownership-v1.md'
+      - 'tests/copyable-ownership-contract.test.mjs'
+      - '.github/workflows/copyable-ownership-contract.yml'
+permissions:
+  contents: read
+jobs:
+  host-copy-oracle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Prove checked out head and execute HOST-ONLY test oracle
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          echo "HOST_ONLY_COPY_ORACLE_SHA=$EXPECTED_SHA"
+          echo "HOST_ONLY_COPY_ORACLE_TREE=$(git rev-parse 'HEAD^{tree}')"
+          node --version
+          node --test tests/copyable-ownership-contract.test.mjs
