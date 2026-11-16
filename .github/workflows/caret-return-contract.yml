@@ -1,4 +1,4 @@
-name: Caret return and explicit :: contract (host only)
+name: "Caret return and explicit :: contract (host only)"
 on:
   pull_request:
     paths:
