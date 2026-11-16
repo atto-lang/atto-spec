@@ -76,44 +76,53 @@ Whether `int / int` gives a `float` or an integer is a separate decision (S-25).
 - `ArrayList` is not a core sequence type on Java `main`. Chapter 02 uses it only as a conditional example.
 - On Java, an out-of-bounds index fails with a host `IllegalArgumentException`. **TARGET:** it becomes a language-level panic with a defined class.
 
-## Canonical collection construction — Type.of and tilde forms (target)
+## Canonical collection construction — Type.of only (target)
 
-**Contract target, not an assertion of backend parity.** Each supported
-collection kind exposes a compiler-checked `Type.of(...)` factory. The
-built-in tilde shorthand must have **the same resolved type, ownership,
-effects, evaluation order and failure semantics** as its named factory.
-Existing aggregate syntaxes remain valid. `Map.of` below is a construction
-factory for an AttoLang Map, **not** a host-language dictionary.
+**2026-11-15 language decision:** the `~` sigil is shorthand for
+`structural`, not a collection value factory. `Map.of(...)`,
+`Tuple.of(...)` and other canonical `Type.of(...)` names are the
+**only** supported collection-factory spelling. This is a target
+contract, not proof of executed backend support.
 
-| Canonical factory | Tilde shorthand | Distinct result type |
-| --- | --- | --- |
-| `Map.of(k => v, ...)` | `~map(k => v, ...)` | `Map<K,V>` |
-| `Entry.of(k, v)` | `~entry(k, v)` | resolved `Entry<K,V>` |
-| `Pair.of(a, b)` | `~pair(a, b)` | resolved `Pair<A,B>` |
-| `Tuple.of(a, b, ...)` | `~tuple(a, b, ...)` | exact-arity `Tuple[A,B,...]` |
-| `Array.of(a, b, ...)` | `~array(a, b, ...)` | `Array[T]` with checked elements |
-| `List.of(a, b, ...)` | `~list(a, b, ...)` | `List[T]` |
-| `Vector.of(a, b, ...)` | `~vector(a, b, ...)` | `Vector[T]` |
-| `Set.of(a, b, ...)` | `~set(a, b, ...)` | `Set[T]` with checked uniqueness |
-| `Record.of(field: value, ...)` | `~record(field: value, ...)` | readonly named record |
+| Canonical factory | Distinct result type |
+| --- | --- |
+| `Map.of(k => v, ...)` | `Map<K,V>` |
+| `Entry.of(k, v)` | resolved `Entry<K,V>` |
+| `Pair.of(a, b)` | resolved `Pair<A,B>` |
+| `Tuple.of(a, b, ...)` | exact-arity `Tuple[A,B,...]` |
+| `Array.of(a, b, ...)` | `Array[T]` with checked elements |
+| `List.of(a, b, ...)` | `List[T]` |
+| `Vector.of(a, b, ...)` | `Vector[T]` |
+| `Set.of(a, b, ...)` | `Set[T]` with checked uniqueness |
+| `Record.of(field: value, ...)` | readonly named record |
+
+Former collection shorthand forms `~map(...)`, `~entry(...)`,
+`~pair(...)`, `~tuple(...)`, `~array(...)`, `~list(...)`,
+`~vector(...)`, `~set(...)`, `~record(...)`, and their typed
+variants are **syntax errors**, never compatibility aliases. Likewise,
+`~<T>()` is not a typed empty factory. Structural notation such as
+`~Point` and `is ~Point` continues to mean
+`structural Point` and `is structural Point`. Do not lower
+type-position `~tuple<A,B>` or `~map<K,V>` into **nominal**
+tuple/map types.
 
 Additional factories may be registered only with an explicit core type
 declaration, reviewed canonical type identity, checked construction, and
 cross-backend conformance evidence. Do not infer an API from capitalization
 or route `Type.of` through unrestricted member lookup / foreign interop.
+`Map.of` constructs an AttoLang Map, **not** a Java host Map.
 
 Type witnesses use the **existing** generic and shape channels:
 `Map.of<String,bool>(...)`, `Entry.of<String,bool>(...)`,
-`Array<T>` (type), `Vector[T]` (shape) and `Tuple[A,B]`
-(heterogeneous positional shape). Additive type aliases such as
-`~map<K,V>` or `~tuple<A,B>` never replace `Tuple[A,B]`,
-`[A,B]`, `(a,b)`, `tuple {a,b}`, `Array[T]`,
-`Vector[...(A,B)]`, `FixedArray[N of T]` or other legacy
-collection declarations and literals.
+`Array<T>` (type), `Vector[T]` (shape), `Tuple[A,B]`
+(heterogeneous positional shape). Preserve `[A,B]`, `(a,b)`,
+`tuple {a,b}`, `Array[T]`, `Vector[...(A,B)]`,
+`FixedArray[N of T]`, and other legacy collection declarations and
+literals. These are **not** permissions to accept tilde constructors.
 
 For `Map.of()` without explicit witnesses, contextual construction is
 admitted only when the compiler **already proves** the expected concrete
-`Map<K,V>` type. Bare `~()` remains invalid and cannot guess a Map or
+`Map<K,V>` type. Bare `~()` is invalid and cannot guess a Map or
 record type. Nonempty map constructors must detect duplicate *logical*
 keys, reject unsupported domains and spreads, stage writes transactionally,
 and never publish a partially constructed Map. Entry does not impose map
@@ -123,24 +132,22 @@ semantics; it is not a Map or list alias.
 `Entry`, `Pair`, `Tuple` and `Record` may have different identity
 and projection contracts. `Pair` follows its **resolved declared type
 or explicit transparent alias**, never an implicit conversion to Entry or
-a two-element Tuple. In particular, a record with `key` and `value`
-fields does not become an Entry by shape. The result of a factory must
-retain ownership, read-only projection, move/copy and actor transport rules
-of its canonical type. A missing type implementation must produce a
-deterministic **compile-time unsupported** diagnostic rather than a
-dynamic host-interop value or a fake guest success.
+a two-element Tuple. A record with `key` and `value` fields does
+not become an Entry by shape. Factory results retain ownership,
+read-only projection, move/copy and actor transport rules. Missing
+implementations fail deterministically at compile time, never via a
+host-interop fallback.
 
 Constructor arguments evaluate once in source order. Static checks that
 can be performed without running guest code happen before evaluation.
 Failed allocation, duplicates, domain errors, and ownership violations
-must not leak partially built containers, while effects of evaluating
-guest expressions are not retroactively rolled back.
+must not leak partially built containers; expression effects are not
+retroactively rolled back.
 
-**Promotion:** for each source backend, require real parser, type and
-ownership checker cases, actual compiled guest evaluation, negative
-diagnostics and mutation/alias/actor isolation tests, and exact-head
-Native AOT where supported. A manifest or source-only reference oracle
-is not guest certification.
+**Promotion:** require real parser/type/ownership tests, actual compiled
+guest evaluation, negative diagnostics, actor isolation tests, and exact-head
+Native AOT where applicable. Source-only manifests and zero-step CI are
+not compiler certification.
 
 ## Option and Result
 
