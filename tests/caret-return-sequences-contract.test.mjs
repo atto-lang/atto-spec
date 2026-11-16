@@ -8,7 +8,7 @@ const backends = ['rust_wasm','java','llvm','net','forge'];
 
 test('49 unique explicitly unverified normative cases, no default green claims', () => {
   assert.equal(contract.cases.length, 49);
-  assert.equal(contract.corpusRevision, 2);
+  assert.equal(contract.corpusRevision, 3);
   assert.equal(contract.status, 'normative-proposed-cases-not-executed-as-corpus');
   const ids = new Set();
   for(const c of contract.cases) {
@@ -45,7 +45,12 @@ test('canonical modes, negative caret-binding and explicit return remain distinc
 });
 
 test('this corpus is not silently conflated with separately executed Rust CI', () => {
-  assert.match(contract.note,/NOT these 49 normative vectors individually/);
+  assert.match(contract.note,/Revision 3 repairs the reserved-name positive case/);
+  assert.match(contract.note,/earlier 487\/0 general Rust\/Wasm suite was NOT a 49-vector/);
+  const voidCase=contract.cases.find(x=>x.id==='caret-void');
+  assert.ok(voidCase);
+  assert.match(voidCase.source,/fnc no_value_return\(\): void \{ \^;/);
+  assert.doesNotMatch(voidCase.source,/fnc stop\(/);
   const statuses = Object.values(contract.cases[0].verification);
   assert.deepEqual(statuses,['not_executed','not_executed','not_executed','not_executed','not_executed']);
 });
