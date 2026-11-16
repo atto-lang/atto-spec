@@ -12,7 +12,7 @@
 - `sends M` is an **independent** outbound actor messaging effect. It does not imply `emits M` or that `send(M)` pushes a pipeline element.
 - No actor's supervisor CONTROL path, ordinary unary request reply, or `StreamRequest` reply sidecar is a pipe event. Explicit adapters would be needed to expose correlated replies as streams.
 
-Canonical declaration order: `define actor Name receives Input emits Output sends Other as ... end`, omitting absent clauses. `receives` and `sends` come from the separate actor-contract proposal; `emits` is the sole new pipe-specific clause. Runtime does not infer an `emits` declaration from scanning method bodies. In a strict pipeline profile, actor endpoints without the required declaration are rejected; a migration profile may continue parsing older actors but must not grant them implicit pipe capabilities.
+Canonical clause order is **`receives`, `emits`, `sends`**, whether used with an inline `define actor Name ... as ... end` or a body-free nominal `declare actor Name ...;`. The parser also tolerates `receives T sends M emits O`, with formatter normalization to `receives T emits O sends M`. See [declared-actor-pipe-signatures-v1.md](declared-actor-pipe-signatures-v1.md) for public/private visibility, `implements`, namespace linker and backward-compatible `declare actor Foo;` rules. `receives` and `sends` come from the separate actor-contract proposal; `emits` is the sole new pipe-specific clause. Runtime does not infer an `emits` declaration from scanning method bodies. In a strict pipeline profile, actor endpoints without the required declaration are rejected; a migration profile may continue parsing older actors but must not grant them implicit pipe capabilities.
 
 ### Example (target AttoLang)
 
