@@ -1,6 +1,6 @@
 {
   "schema": "atto.full-aot-feature-coverage.v1",
-  "purpose": "Audit targets only; NOT an implementation or parity certification",
+  "purpose": "Audit targets: 25 feature areas, 25 syntax patterns, 50 source-language inspirations. NOT an implementation or parity certification.",
   "source": "https://chatgpt.com/share/6afb6c39-5f90-83e8-931b-694d78c7577f",
   "evidence_policy": "A PASS requires exact source SHA, toolchain and target, successful executed Atto guest, rejection tests, and inspectable run artifact. Host-model-only evidence is not a PASS.",
   "backends": [
@@ -501,5 +501,357 @@
     "Fail-closed backend admission: unsupported constructs emit no executable artifact",
     "Externally built and signed AOT plugins are distinct from JIT",
     "No claiming parity from syntax parse, host models, or source-free shims"
+  ],
+  "language_inspirations": [
+    {
+      "id": "L01",
+      "language": "Rust",
+      "idea": "ownership, borrowing, enums, traits",
+      "aot_adaptation": "compile borrow contracts and monomorphized/finite witness calls",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L02",
+      "language": "C",
+      "idea": "direct hardware and memory control",
+      "aot_adaptation": "explicit unsafe or capability-guarded AOT FFI; never unchecked safe defaults",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L03",
+      "language": "C++",
+      "idea": "RAII, templates, operator overloading",
+      "aot_adaptation": "deterministic drop and compile-time generics; no general operator overloading admission",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L04",
+      "language": "Java",
+      "idea": "interfaces, annotations",
+      "aot_adaptation": "static interface layout and compile-time annotation processors",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L05",
+      "language": "Kotlin",
+      "idea": "null safety, extensions, coroutines",
+      "aot_adaptation": "Option, statically resolved extensions, compiled suspension frames",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L06",
+      "language": "Scala",
+      "idea": "matching, comprehensions, type system",
+      "aot_adaptation": "exhaustive patterns and typed iterator lowering",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L07",
+      "language": "Go",
+      "idea": "channels, goroutines, interfaces",
+      "aot_adaptation": "compiled channels/tasks and statically checked protocol witnesses",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L08",
+      "language": "Python",
+      "idea": "readability, decorators, comprehensions",
+      "aot_adaptation": "explicit compiler-time annotations/decorators and AOT iterator lowering",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L09",
+      "language": "TypeScript",
+      "idea": "structural typing, unions, generics",
+      "aot_adaptation": "closed structural witnesses, tagged ADTs and finite generic closure",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L10",
+      "language": "JavaScript",
+      "idea": "closures, first-class functions, async",
+      "aot_adaptation": "AOT closure environments and async state machines, no eval",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L11",
+      "language": "C#",
+      "idea": "LINQ, properties, async, patterns",
+      "aot_adaptation": "typed query/iterator IR and compiled property accessors",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L12",
+      "language": "Swift",
+      "idea": "protocols, values, optionals",
+      "aot_adaptation": "protocol witness tables, value types, Option",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L13",
+      "language": "Dart",
+      "idea": "sound null safety, isolates, async",
+      "aot_adaptation": "actor/isolate boundaries and checked typed messages",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L14",
+      "language": "Ruby",
+      "idea": "blocks, metaprogramming, DSLs",
+      "aot_adaptation": "AOT blocks and compile-time DSL expansion, not method_missing JIT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L15",
+      "language": "PHP",
+      "idea": "web integration, named arguments",
+      "aot_adaptation": "static named argument resolution and typed HTTP/FFI adapters",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L16",
+      "language": "Lua",
+      "idea": "metatables, coroutines, embedding",
+      "aot_adaptation": "closed protocol tables and precompiled coroutine frames; optional interpreter not Atto codegen",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L17",
+      "language": "Perl",
+      "idea": "regexes, text processing",
+      "aot_adaptation": "precompile literal regexes to bounded automata and typed Unicode APIs",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L18",
+      "language": "R",
+      "idea": "vectorization, data frames",
+      "aot_adaptation": "AOT SIMD/SoA and statically typed data-frame adapters",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L19",
+      "language": "Julia",
+      "idea": "multiple dispatch, numerical computing",
+      "aot_adaptation": "finite compile-time multimethod table and statically specialized numerics",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L20",
+      "language": "MATLAB",
+      "idea": "matrix syntax",
+      "aot_adaptation": "typed shape-aware tensor/matrix library and AOT kernels",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L21",
+      "language": "Haskell",
+      "idea": "purity, laziness, typeclasses",
+      "aot_adaptation": "effect checking, AOT thunks, static dictionaries",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L22",
+      "language": "OCaml",
+      "idea": "ADTs, pattern matching",
+      "aot_adaptation": "closed tagged variants and exhaustiveness",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L23",
+      "language": "F#",
+      "idea": "pipelines, discriminated unions",
+      "aot_adaptation": "|> expressions and nominal tagged sums",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L24",
+      "language": "Elixir",
+      "idea": "actors, matching, pipelines",
+      "aot_adaptation": "typed actors, fault handling, and forward functional composition",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L25",
+      "language": "Erlang",
+      "idea": "fault tolerance, supervision",
+      "aot_adaptation": "precompiled supervisor policy and reserved CONTROL path",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L26",
+      "language": "Clojure",
+      "idea": "immutable data, persistent collections",
+      "aot_adaptation": "persistent typed structures with arena-aware allocation",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L27",
+      "language": "Lisp",
+      "idea": "homoiconicity, macros",
+      "aot_adaptation": "quoted AST and bounded hygienic compile-time macros only",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L28",
+      "language": "Scheme",
+      "idea": "continuations, lexical closures",
+      "aot_adaptation": "precompiled continuation/state-machine frames with ownership limits",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L29",
+      "language": "Racket",
+      "idea": "language-oriented programming",
+      "aot_adaptation": "build-time DSL/front-end plugins emitting typed Atto IR",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L30",
+      "language": "Gleam",
+      "idea": "typed functional code, actors",
+      "aot_adaptation": "typed Result/Option pipelines and actor mail protocols",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L31",
+      "language": "Zig",
+      "idea": "comptime, explicit allocation",
+      "aot_adaptation": "bounded deterministic compile-time evaluation and explicit actor allocators",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L32",
+      "language": "Nim",
+      "idea": "compile-time metaprogramming",
+      "aot_adaptation": "typed hygienic AST macros before native code generation",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L33",
+      "language": "Crystal",
+      "idea": "Ruby-like syntax, static types",
+      "aot_adaptation": "readable block syntax with fully static analysis",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L34",
+      "language": "D",
+      "idea": "systems programming, contracts",
+      "aot_adaptation": "pre/postcondition checks with erased or compiled runtime validation",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L35",
+      "language": "Ada",
+      "idea": "strong typing, contracts, tasking",
+      "aot_adaptation": "range/refinement checks and bounded scheduler tasks",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L36",
+      "language": "Fortran",
+      "idea": "array and numerical computing",
+      "aot_adaptation": "AOT loops, SIMD, layout and numerical precision guarantees",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L37",
+      "language": "COBOL",
+      "idea": "business data processing",
+      "aot_adaptation": "fixed precision decimal, schema-safe record/transaction APIs",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L38",
+      "language": "Delphi/Object Pascal",
+      "idea": "properties, interfaces, generics",
+      "aot_adaptation": "AOT property accessors, witnesses and finite generics",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L39",
+      "language": "Objective-C",
+      "idea": "dynamic messaging, introspection",
+      "aot_adaptation": "finite selector registry and retained metadata without generating methods",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L40",
+      "language": "Smalltalk",
+      "idea": "message passing, live objects",
+      "aot_adaptation": "typed message dispatch; external build/replace for live developer updates",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L41",
+      "language": "Prolog",
+      "idea": "logic, unification",
+      "aot_adaptation": "compiled or bounded interpreted term engine as a library, not generated native Atto source",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L42",
+      "language": "APL",
+      "idea": "array operators",
+      "aot_adaptation": "typed vectorization and AOT SIMD transformations",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L43",
+      "language": "Raku",
+      "idea": "grammars, operators",
+      "aot_adaptation": "compile grammars at build time; no unrestricted operator overload syntax",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L44",
+      "language": "Solidity",
+      "idea": "contract programming",
+      "aot_adaptation": "capability/effect-checked deterministic state transitions",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L45",
+      "language": "Odin",
+      "idea": "explicit control, systems",
+      "aot_adaptation": "explicit allocators, ownership and compile-time ABI/FFI checking",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L46",
+      "language": "Mojo",
+      "idea": "HPC, systems programming",
+      "aot_adaptation": "statically specialized SIMD/GPU kernels and machine target profiles",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L47",
+      "language": "V",
+      "idea": "simplicity, compilation",
+      "aot_adaptation": "small explicit surface and predictable native artifacts",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L48",
+      "language": "Pony",
+      "idea": "reference capabilities, actors",
+      "aot_adaptation": "statically checked Sendable capabilities and isolate message transfer",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L49",
+      "language": "Idris",
+      "idea": "dependent types",
+      "aot_adaptation": "first admit decidable type-level constraints; proof terms erased ahead of time",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "L50",
+      "language": "Agda",
+      "idea": "dependent types, proofs",
+      "aot_adaptation": "compile-time theorem/proof checks, erase proofs in AOT output",
+      "status": "NOT_EXECUTED"
+    }
   ]
 }
