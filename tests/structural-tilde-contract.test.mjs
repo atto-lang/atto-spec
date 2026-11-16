@@ -10,7 +10,7 @@ function has(category, source, expect = "accept") {
 test("contract remains explicitly non-executable and versioned", () => {
   assert.equal(fixture.contract, "atto.structural_tilde.v1");
   assert.equal(fixture.status, "TARGET_NOT_EXECUTED");
-  assert.equal(cases.length, 56);
+  assert.equal(cases.length, 58);
   assert.equal(new Set(cases.map(v => v.id)).size, cases.length);
   for (const v of cases) {
     assert.match(v.id, /^ST\d{3}$/);
