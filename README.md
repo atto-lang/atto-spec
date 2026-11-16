@@ -14,6 +14,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Fresh return types v1](language/fresh-return-types-v1.md): candidate `new T` and `new unique T` provenance and ownership rules, including stronger Copyable return contracts. Host-only oracle; no Java/LLVM/.NET compiler support claimed.
+
 - [Explicit Copyable / deep-copy ownership v1](language/copyable-ownership-v1.md): candidate interface and compiler proof obligations for `copy!` / `rt copy`, class/struct/collection duplication, mutable alias isolation and fail-closed diagnostics. Its checked-in tests are **host-only**; backend guest execution is **not verified**.
 
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
