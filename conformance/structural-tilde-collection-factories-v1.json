@@ -1,0 +1,161 @@
+{
+  "schema": "atto.structural-tilde-collection-factories.v1",
+  "status": "SOURCE_EXPECTATIONS_ONLY",
+  "backends": [
+    "java",
+    "llvm",
+    "wasm",
+    "forge",
+    "net",
+    "cranelift",
+    "rs",
+    "js",
+    "hdl"
+  ],
+  "cases": [
+    {
+      "id": "map-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "const v = Map.of<string,int>(\"a\" => 1);"
+    },
+    {
+      "id": "map-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const v = ~map<string,int>(\"a\" => 1);"
+    },
+    {
+      "id": "entry-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "const v = Entry.of(\"a\", 1);"
+    },
+    {
+      "id": "entry-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const v = ~entry(\"a\", 1);"
+    },
+    {
+      "id": "pair-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "const v = Pair.of(\"a\", 1);"
+    },
+    {
+      "id": "pair-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const v = ~pair(\"a\", 1);"
+    },
+    {
+      "id": "tuple-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "const v = Tuple.of(1, true);"
+    },
+    {
+      "id": "tuple-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const v = ~tuple(1, true);"
+    },
+    {
+      "id": "array-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "const v = Array.of(1, 2);"
+    },
+    {
+      "id": "array-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const v = ~array(1, 2);"
+    },
+    {
+      "id": "list-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "const v = List.of(1, 2);"
+    },
+    {
+      "id": "list-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const v = ~list(1, 2);"
+    },
+    {
+      "id": "vector-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "const v = Vector.of(1, 2);"
+    },
+    {
+      "id": "vector-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const v = ~vector(1, 2);"
+    },
+    {
+      "id": "set-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "const v = Set.of(1, 2);"
+    },
+    {
+      "id": "set-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const v = ~set(1, 2);"
+    },
+    {
+      "id": "record-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "const v = Record.of(ready: true);"
+    },
+    {
+      "id": "record-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const v = ~record(ready: true);"
+    },
+    {
+      "id": "typed-empty-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const m = ~<Map<string,int>>();"
+    },
+    {
+      "id": "empty-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const m = ~();"
+    },
+    {
+      "id": "structural-param",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "fnc accept(~Point p) -> void { }"
+    },
+    {
+      "id": "structural-is-match",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "match v over on is ~Point as val p -> { use(p); } on _ -> { } end"
+    },
+    {
+      "id": "legacy-array-literal",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "const a = [1, 2];"
+    },
+    {
+      "id": "legacy-tuple-literal",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "const t = (1, true);"
+    }
+  ]
+}
