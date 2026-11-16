@@ -166,3 +166,39 @@ Backends may reject platform-inapplicable features (such as actual dynamic loadi
 **Feature definition** (normative design) ≠ **grammar accepted** ≠ **typed HIR/MIR validated** ≠ **native code emitted** ≠ **native guest executed** ≠ **multi-backend parity**.
 
 This is a coverage ledger and release gate, not an unsupported promise to implement 50 languages or dynamic execution in a native AOT runtime.
+
+## Admission receipt schema for a claimed PASS
+
+A `PASS` is scoped to a backend and specific compiled .atto guest fixtures, never a global claim
+about a feature. `feature.evidence` is a mapping from the **same backend IDs that are PASS**
+to receipt objects. `syntax_patterns[].evidence` and `language_inspirations[].evidence`
+use the same backend-keyed map when their summary status becomes PASS.
+
+Each receipt must name: `aot_mode`, `source_repository`, exact `source_sha` and
+`source_tree_sha` (40 lowercase hex characters), `artifact_sha256` (64 lowercase hex),
+concrete GitHub Actions `run_url`, positive integer `job_id`, at least three
+`executed_steps`, nonempty `toolchain` and `target_triple`, and explicit
+`source_tree_verified: true`, `guest_execution: "PASS"`, `host_only: false`,
+`jit_required: false`, `runtime_codegen: false`. The `aot_mode` must match the
+ledger backend: `graal-native-image`, `llvm-native`, `dotnet-nativeaot`, or
+`rust-wasm-precompiled`.
+
+`positive_guest_cases` must be a nonempty list of distinct source fixture identifiers
+with `executed: true`, `result: "PASS"`, and a 64-character compiled guest
+`artifact_sha256` for each case. `negative_no_artifact_cases` must be nonempty
+with distinct fixture IDs, `executed: true`, `result: "PASS"`, an explicit
+`E_...` diagnostic and integer `artifacts_emitted: 0`.
+A failure, unsupported case, or unexecuted case must **not** be upgraded
+merely by attaching a run URL or host-model test result.
+
+The Python schema validator exercises malformed and forged-receipt mutants; it is a
+**host-only structural test**, not a cryptographic verifier or an Atto compiler
+test. Before changing any status to PASS, an independent reviewer must follow
+the run/job link, inspect successful actual checkout/build/guest steps, recompute
+source Git tree/blob digests, verify the compiler output hash, check negative
+no-artifact behavior, and confirm that the claimed AOT mode really has no
+required JIT or runtime Atto source compilation. Cross-organization CI mirrors
+must prove exact source-tree equality and not rely on a secret-bearing checkout.
+
+No source repository may claim broad Java/LLVM/.NET/Rust-Wasm parity solely
+because this ledger's validator succeeds.
