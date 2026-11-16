@@ -237,3 +237,46 @@ pub suspends fnc finish_read(Channel<string> inbox): void using io, suspend {
 \`\`\`
 
 \`ReadOutcome\`, \`IoError\` and \`inspect_read_outcome\` here stand for the actual API's checked outcome and handler; they are not declarations added by this proposal. The target compiler must resolve those types, I/O permissions and effects rather than trusting a source comment or a nominally immediate underlying implementation. Being marked \`suspends\` permits a suspension but does not force one.
+
+
+## Stdio output admission: unbounded logical channel, non-suspending sender
+
+**Normative contract.** `stdio.out` (and `process.stdout`, the same channel endpoint) is an ordered, asynchronous, *logically unbounded* channel of output messages. Logical unboundedness means it has **no finite channel-slot count** that makes a normally admitted send wait for a reader or operating-system write readiness. It is not an infinite-memory guarantee. `stdio.err` follows the same admission model; `stdio.in` does not.
+
+```atto
+// Both are effectful I/O, but do not have the suspend effect.
+pub fnc greet(): void using io {
+    writech stdio.out, "Hello";
+    stdio.out << " world";
+}
+
+// This can suspend while awaiting asynchronous sink progress:
+pub suspends fnc finish(): void using io, suspend {
+    await stdio.out.flush();
+}
+```
+
+The two write spellings are identical after capability resolution. For this special output endpoint, `writech stdio.out, value` **must not park/suspend the calling task/actor on channel capacity or OS backpressure**. A normal successful send reserves queue resources and atomically admits exactly one typed payload. It does not wait for formatting, terminal acknowledgement, pipe draining or a consumer's availability. The send retains its ordinary `io` effect and its existing channel send outcome (`Result` or language-equivalent); **a successful admission is not a delivery or durability receipt**.
+
+**Resource and lifecycle behavior:**
+
+1. A closed or revoked output endpoint rejects admission with a typed closed/capability error. No payload is consumed on a failed send.
+2. Queue-memory or per-actor/per-process byte quotas reject admission with an explicit resource/quota error **without suspending**. A backend must not silently drop, truncate or pretend to accept a payload it cannot retain. Quotas are implementation-specific but must be exposed by the target profile.
+3. Payload transfer/borrowing and formatting must be well-defined: retain immutable owned data or produce an owned encoding *before* reporting admission. Do not queue a pointer to a stack-local or mutable transient buffer. A failed admission leaves ownership with the caller.
+4. The queue is FIFO by the linearization order of successful admissions to a single endpoint. Concurrent actor senders can interleave, but one message is not partly admitted or replayed. The background writer alone handles OS-level readiness and potentially suspending drain.
+5. `await stdio.out.flush()` waits for all messages admitted before its linearization point to pass through the target's output-drain contract. It **may suspend** and may report I/O failure, cancellation or closure. It is not automatically `fsync` and cannot promise consumption by a remote terminal.
+6. Process shutdown and actor termination require explicit, bounded drain/cancellation policy. No implicit unbounded wait during actor panic or supervisor teardown. The compiler must never infer a `suspends` effect from the mere potential that stdout's consumer is slow.
+7. A `select` write arm on this endpoint is immediately *admissible* only when the channel is open and its queue resource reservation succeeds. Readiness is not a guarantee of unlimited RAM. A winning write atomically reserves/adopts its payload once; losing arms retain ownership. Implementations must preserve fairness for competing read arms even when stdout is continuously ready.
+8. `nb writech stdio.out, value` and `nb stdio.out << value` are valid but redundant for suspension: their ordinary `nb` return contract still applies, not a new ad-hoc payload or fire-and-forget type.
+
+**Capability typing:** provide a semantic distinction between potentially suspending `Writable<T>` and `NonSuspendingWritable<T>` (or an equivalent compile-time effect/capability marker). For a verified non-suspending writer, ordinary `writech` is legal in an `io`-authorized function **without** `suspends`. A bounded channel whose capacity may be full does not satisfy this capability. A generic `Writable<T>` cannot be treated as non-suspending merely because a particular write happens to complete synchronously.
+
+**Backend evidence:** a browser host that captures stdout into a fixed-size display buffer is **not** an unbounded channel. It may provide a non-suspending **quota-bounded profile** only if quota exhaustion yields an explicit failure with no truncation of an accepted write. The existing `atto.print_*` Wasm host import can demonstrate direct, non-parking admission in that restricted profile, but cannot prove the language-wide asynchronous stdout/flush runtime. Verify native and browser admission, slow-pipe backpressure, quota, closure, ownership, ordering, fairness and drain separately.
+
+### Required executable tests
+
+- `writech stdio.out, "Hello";` and `stdio.out << "Hello";` compile without `suspends`, still require `io`, and produce identical output order.
+- A deliberately stalled OS sink does not stall a writer on channel-capacity readiness; a requested `flush()` may suspend and report failure.
+- Concurrent actors preserve atomic FIFO admission and successful writers are never replayed; cancellation before admission retains payload.
+- Exhausted quota and closed writer return errors without suspending, consuming data or returning success; no successful write is silently dropped.
+- `select` with an output arm and other ready arms observes fairness and commits only its winner, including under resource exhaustion.
