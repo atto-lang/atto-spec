@@ -135,6 +135,10 @@ Only the first two forms run on free functions today. See [chapter 19](19-observ
 
 **PROPOSED** formatter rule: the formatter keeps the form the author wrote and does not rewrite one into another.
 
+## Proposed return-type extensions (not accepted-spelling evidence)
+
+`fnc f(): infer { ... }` and `fnc f(): typeof(tbr) { val tbr: int = 5; return tbr; }` are new TARGET forms, *not* included in the dated Java/LLVM accepted-spelling table below. The `infer` token remains contextual; the pre-existing `typeof` callable-type syntax and the previously proposed bare `typeof foo` type query remain distinct. Existing return delimiters and body-styles must not change. Details: [atto-spec return-type contract](https://github.com/atto-lang/atto-spec/blob/design/return-type-infer-typeof-v1-20261116/language/return-type-queries-and-inference-v1.md).
+
 ## Statements and semicolons
 
 Semicolons are the formatter's canonical output. They may be omitted only where the parser has a clear structural boundary, such as just before `}`, `fi` or `end`. There is no JavaScript-style automatic insertion. Imports and `namespace` declarations always need one.
