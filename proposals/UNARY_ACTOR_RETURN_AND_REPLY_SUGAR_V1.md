@@ -87,3 +87,51 @@ Neither respond_with(T) nor send_back(T) is a stream-item method. A UnaryRequest
 | ACTOR-REPLY-32 | Zero-argument respond_with allowed only for unit unary responses |
 
 All examples are design source, not evidence of executable compiler support. Promote Java, LLVM, .NET, Rust/Wasm and other backends independently only with exact-head compiled guest positive/negative fixtures, runtime correlation traces, and authenticated supervisor CONTROL isolation.
+
+## Supervisor application-service requests (distinct from CONTROL)
+
+Every actor still has exactly one lifecycle supervisor. The supervisor's
+runtime-authenticated priority CONTROL ingress is never an application reply
+target, cannot be forged from ActorMail, and is not counted in receives, sends
+or emits. A supervisor may also expose an explicitly authorized, typed
+application-service ActorRef. That is an ordinary DATA mailbox plus a private
+correlated reply sidecar, **not** a capability to manufacture control notices.
+
+~~~atto
+// Illustrative target source; no compiled-guest support claimed.
+// FetchPolicy implements UnaryRequest<Policy>.
+define actor SupervisorApi receives FetchPolicy sends Policy as
+    susp receive(ActorMail<FetchPolicy> m): void {
+        const result: Result<void, ReplyError> =
+            m.respond_with(current_policy());
+        // Handle a failed staging result explicitly.
+    }
+end
+
+// A worker is granted an ActorRef<SupervisorApi> application capability.
+// This does not expose the lifecycle supervisor's CONTROL ingress.
+const policy = await supervisor_app_ref.request(FetchPolicy());
+~~~
+
+A supervisor-directed DATA request follows the same nominal message mode,
+receives/sends effect, bounded mailbox admission, correlation slot, timeout,
+ownership, caller and callee incarnation fences, and Sendable/Serializable
+rules as any peer actor request. Its reply cannot travel through the priority
+CONTROL lane, even if the caller or callee is a supervisor. Backpressure on
+the DATA mailbox must not prevent authenticated actor panic/termination
+notices from reaching the supervisor's reserved CONTROL path.
+
+Normal application Result.Err responses remain DATA successes carrying an
+error-valued payload. Uncaught handler throw/raise/panic produces a terminal
+ReplyError for the caller and the existing independent supervisor failure
+notice. A supervisor restart or child hot-swap invalidates stale reply
+capabilities but must not allow a late reply to resolve a recycled slot.
+
+Additional guest conformance IDs, all NOT_EXECUTED:
+
+| ID | Requirement |
+| --- | --- |
+| ACTOR-REPLY-33 | Authorized actor-to-supervisor-service unary DATA request and typed response |
+| ACTOR-REPLY-34 | Forged CONTROL notice via ActorMail, respond_with, send or emits rejected |
+| ACTOR-REPLY-35 | Saturated application/reply mailbox cannot starve priority CONTROL failure notice |
+| ACTOR-REPLY-36 | Panic produces distinct caller reply error and supervisor CONTROL notice with fenced generation |
