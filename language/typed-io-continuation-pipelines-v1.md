@@ -180,3 +180,57 @@ Until this ABI is implemented, the browser frontend deliberately returns
 `E_UNSUPPORTED` from the `nb stdio.in` continuation production with no guest
 Wasm. Never change that diagnostic to success merely because the parser
 recognized a typed syntactic slot.
+
+### Caret return with an awaited, transformed directional capture
+
+The statement-position `^` alias of `return` is compatible with the
+existing identity-await terminal capture; it is **not** an expression-level
+prefix, a generator yield, or arithmetic XOR. With a declared transform:
+
+```atto
+fnc transform_result(int x): int { return x + 1; }
+
+pub susp fnc main(): int {
+    val pending = task { return 41; };
+
+    ^ pending
+        |> susp |f| -> await f
+        |> transform_result
+        >> val result: int;
+}
+```
+
+The last statement is exactly equivalent, for effects, value and control flow,
+to the following existing checked operations:
+
+```atto
+val result: int = transform_result(await pending);
+return result;
+```
+
+The caret form evaluates the source Future once, awaits it exactly once,
+calls the named transform once, declares the immutable runtime `result`
+binding with the ordinary type/ownership checker, and exits the enclosing
+function. The lexical capture used by the return statement does not escape
+as a separate reference; the returned value is checked against the callable's
+declared return type. `return pending |> susp |f| -> await f
+|> transform_result >> val result: int;` follows the same grammar and
+diagnostics. Unlike `::` comma-tail bodies, this is an **explicit**
+return and does not change the language version's implicit-tail policy.
+
+Both spellings require a declared `transform_result` callable that accepts
+the awaited result and returns the advertised type; the transform name is
+not implicitly provided by the standard library. `^ pending ... >> const
+result` is invalid because a suspension-dependent value is not constant;
+a non-`susp` caller is an effect violation. `^` alone is a void return
+only in a callable with `void` return type. `^` is never an assignment
+operator, and `^^` is a separate reserved boolean operator.
+
+Compiler implementation and **unverified current-head regression tests**:
+[atto-source.rs #197](https://github.com/atto-lang/atto-source.rs/pull/197).
+The broader caret language contract remains
+[atto-spec #35](https://github.com/atto-lang/atto-spec/pull/35) and its
+version-gated compiler implementation is
+[atto-source.rs #185](https://github.com/atto-lang/atto-source.rs/pull/185).
+Do not adopt the breaking `::` migration merely to use this additive
+caret/capture interaction.
