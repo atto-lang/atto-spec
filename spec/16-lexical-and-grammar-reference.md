@@ -131,7 +131,7 @@ Only the first two forms run on free functions today. See [chapter 19](19-observ
 
 ## Type-first local declarations (proposed)
 
-In declaration-eligible statement positions, `T name = expression;` is a local constant only after the type syntax resolves. It must lower identically to `const T name = expression;`, including compile-time evaluation and rejection of non-constant expressions. `const mut T name = expression;` remains explicitly qualified and has separately checked owned-instance semantics. These are **TARGET / NOT VERIFIED** and must not be confused with the observed compiler acceptance table below. See [chapter 27](27-implicit-const-and-const-mut.md). Do not apply this transformation to fields, parameters, pattern bindings, or `if ... as const`.
+In declaration-eligible statement positions, `T name = expression;` is a local constant only after the type syntax resolves. It must lower identically to `const T name = expression;`, including compile-time evaluation and rejection of non-constant expressions. `const name: T = expression;` is equivalent to `const T name = expression;` (type-right annotation), while `mut T name = expression;` is invalid because `const mut` must remain explicit. `const mut T name = expression;` remains explicitly qualified and has separately checked owned-instance semantics. These are **TARGET / NOT VERIFIED** and must not be confused with the observed compiler acceptance table below. See [chapter 27](27-implicit-const-and-const-mut.md). Do not apply this transformation to fields, parameters, pattern bindings, or `if ... as const`.
 
 ## Statements and semicolons
 
