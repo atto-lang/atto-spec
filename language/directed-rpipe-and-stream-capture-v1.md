@@ -228,3 +228,43 @@ later code in the same enclosing scope may read `results`.
 7. Track exact-source SHA, executed test steps, Rust native and Wasm guest,
    browser and other backend receipts separately. A parser-only or
    reference-model success is **not** a running pipe implementation.
+
+## Cross-backend implementation tracking (2026-11-16)
+
+This table describes **source-authored candidates**, not verified
+executable feature parity. Do not promote a draft parser or scalar
+reference oracle to a claim of a working streaming runtime.
+
+| Backend | Concrete proposed implementation | Status and limitation |
+| --- | --- | --- |
+| Java/GraalVM | [oreslang-source.java PR #3147](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3147) | Right-associative scalar `<|` implemented as checked call AST candidate; `rpipe` fails closed until typed stream ownership/error runtime |
+| LLVM/native | [oreslang-source.llvm PR #1867](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1867) | Scalar `<|` native LLVM call lowering candidate, added source→LLVM IR→Clang native-guest tests; continuous `rpipe` remains deliberately unsupported |
+| .NET/CIL NativeAOT | [oreslang-source.net PR #554](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/554) | Reverse `rpipe` accepted in the **typed scalar actor-graph planning oracle only**; shipping NativeAOT compiler rejects it, and scalar `<|` has a precise no-CIL gate |
+| Rust/Wasm | [atto-source.rs PR #224](https://github.com/atto-lang/atto-source.rs/pull/224) | Draft directional mixed-pipe AST and bounded inline stream capture preflight; no actual stream guest transport |
+
+The directed graph contract is identical for
+`source pipe transform pipe sink` and
+`sink rpipe transform rpipe source`, but none of these PRs
+establishes *all* needed runtime machinery (bounded owned
+`Stream<T>` adapters, `PipeHandle`, cancellation, checked
+`Result` completion, ordinary throw, raise/panic supervisor
+CONTROL isolation, or `trap` across a suspended task).
+
+Executed conformance gates must separately prove:
+
+- **Scalar application:** source-compiled `|>` and `<|` run
+  exactly once, in the same order, and preserve Result/Option,
+  effects and ownership; CLR scalar unsupported paths must fail
+  *before* CIL.
+- **Static continuous graph:** `pipe/rpipe` produce equivalent
+  typed edges, respecting declared actor `receives/emits`, and
+  produce an error before artifact emission if backend transport
+  is unavailable.
+- **Real streaming guest:** no result until runtime publishes
+  exact-once bounded backpressure, EOF, cancellation, error
+  propagation and authenticated supervisor CONTROL.
+- **Evidence:** exact source HEAD/tree SHA, nonzero runner steps,
+  native/guest exit-code and stderr, sanitizer findings, and
+  separate Java/JVM+GraalVM Native Image, LLVM native and
+  Linux/Windows .NET NativeAOT receipts. Prior successful CI
+  for *other* features or commits does not prove this rollout.
