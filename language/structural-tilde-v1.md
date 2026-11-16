@@ -55,7 +55,7 @@ return match<int> value over
 end
 ```
 
-`on ~Position as val p` and `on structural Position as val p` MAY be supported as precise sugar for `on is ~Position as val p`, but must never be parsed as value/constructor patterns. Type-test patterns need statically reifiable, accessible shape metadata and proven binding lifetimes; overlapping or unreachable arms and guards remain subject to normal match rules. A `~` prefix alone is never a wildcard, and structural refinement does not make an open match exhaustive.
+**Type vs value-pattern distinction (candidate decision):** `on is ~Position as val p` and `on is structural Position as val p` test **structural type compatibility** only. Without `is`, `on ~pattern_value as val p` and `on structural pattern_value as val p` are **structural value patterns**, never aliases for type tests. `pattern_value` must resolve to a statically immutable, accessible pattern constant; `on ~Position` is therefore invalid when `Position` only denotes a type. The compiler should suggest `on is ~Position` for that case. Type-pattern matches require statically reifiable fields; value-pattern matches require pure, effect-free comparable values; neither exposes private or sealed actor state.
 
 ## Grammar and precedence (target)
 
@@ -68,8 +68,13 @@ param_type          = type_ref | structural_type | shape_type ;
 formal              = param_type, identifier, ["?"]
                     | identifier, ":", param_type, ["?"] ;
 parameter_list      = "(", [formal, {",", formal}], ")" ;
-structural_pattern  = ["is"], structural_type, ["as", binding_kind, identifier]
-                    | ["is"], shape_type, ["as", binding_kind, identifier] ;
+structural_pattern  = structural_type_pattern | structural_value_pattern ;
+structural_type_pattern = "is", (structural_type | shape_type),
+                          ["as", binding_kind, identifier] ;
+structural_value_pattern = structural_mark, (immutable_pattern_value | value_shape_pattern),
+                           ["as", binding_kind, identifier] ;
+value_shape_pattern = "{", pattern_field, {",", pattern_field}, "}" ;
+pattern_field       = identifier, ":", (literal | "_" | nested_pattern) ;
 call_argument       = expression | identifier, ":", expression ;
 argument_list       = "(", [call_argument, {",", call_argument}], ")" ;
 structural_value    = structural_mark, postfix_expression ;
@@ -81,6 +86,38 @@ structural_value    = structural_mark, postfix_expression ;
 - Callee/receiver evaluation precedes argument expressions. Every source argument is evaluated **exactly once in source order**; only proven temporaries may be permuted into parameter declaration-order slots. Explicit `~` admission must not reorder, duplicate, or weaken this proof.
 - Prefix `~` does not imply that `~foo()` is a call target. Structural projection applies to the result of the ordinary postfix expression `foo()`, under a statically known expected structural target or explicit checked shape.
 - `~` in a method or routine parameter uses the **same** type AST and checking path as in free functions. Out-of-line `mtd (self: Owner)` receivers retain nominal/static receiver lookup; applying a structural mark to the receiver itself needs a distinct verified dispatch contract and is **not** authorized by this proposal.
+
+
+### Type compatibility versus structural value matching
+
+The presence of `is` is semantically decisive, not optional punctuation:
+
+```atto
+// Suppose Point is a nominal type with public x:int and y:int.
+match value over
+    on is ~Point as val p -> {
+        // Compatible fields/types; x and y can have ANY values.
+        process(p);
+    }
+    on _ -> { fallback(); }
+end
+
+// Field values: x must equal 10; y must exist, but its value is ignored.
+match value over
+    on ~{x: 10, y: _} as val p -> {
+        process(p);
+    }
+    on _ -> { fallback(); }
+end
+```
+
+An explicit value-pattern's required fields must be a **subset** of the subject's accessible fields, and **all** non-wildcard subpatterns must match (conjunction). Subject-only extra fields do not cause failure. An *any-overlap* predicate (one matching field being enough) is rejected: it makes arm dispatch unexpectedly broad and destroys useful exhaustiveness/overlap diagnostics. Equality is typed structural value equality, not object identity; recursive comparison is allowed only for statically admissible comparable fields with proven bounded evaluation. No getter side effects or automatic partial-object coercions.
+
+`on ~Position` is valid only if `Position` is bound to an immutable **value pattern constant** whose accessible field names, types, and field values are statically established. If it resolves only to the nominal **type** `Position`, the source is an error (suggest `on is ~Position`). If a language scope has both a type and value named `Position` with ambiguous resolution, reject the bare identifier and require an explicit value-pattern record such as `~{x: 10}` or a clearly qualified constant. Do not infer field values from constructors, default field initializers, or the type declaration. Empty `~{}` value patterns reject to avoid accidentally matching everything; use `on _` deliberately.
+
+The same distinction applies to the long spelling: `on structural Position` is a value pattern, whereas `on is structural Position` is a type pattern. The formatter, type checker, and generated code must retain the **type-test vs value-pattern** AST discriminant. The `as val p` binder is introduced only after the pattern and guard succeed. An omitted `is` must never be silently inserted by a formatter or parser.
+
+Value patterns with source expressions that could throw, suspend, mutate, inspect private/actor state, or carry unproved ownership are rejected. Explicit `~{x: 10}` and existing `~(x: 10)` have different contexts: the former is a **match pattern**, while the latter is a **Record aggregate expression**.
 
 ## Important collision: aggregate tilde
 
