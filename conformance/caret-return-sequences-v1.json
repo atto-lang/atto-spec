@@ -60,7 +60,8 @@
         "llvm": "not_executed",
         "net": "not_executed",
         "forge": "not_executed"
-      }
+      },
+      "note": "Literal-true loop with no loop-targeting break is non-fallthrough; the caret must exit the enclosing function. Negative branch/break tests stay in compiler regressions."
     },
     {
       "id": "caret-method",
@@ -94,14 +95,15 @@
       "id": "caret-void",
       "phase": "compile",
       "expect": "accept",
-      "source": "fnc stop(): void { ^; }\npub fnc main(): int { ^ 42; }\n",
+      "source": "fnc no_value_return(): void { ^; }\npub fnc main(): int { ^ 42; }\n",
       "verification": {
         "rust_wasm": "not_executed",
         "java": "not_executed",
         "llvm": "not_executed",
         "net": "not_executed",
         "forge": "not_executed"
-      }
+      },
+      "note": "Void caret return is valid; 'stop' is a reserved keyword and must not be used as a function identifier."
     },
     {
       "id": "caret-braceless-lambda",
@@ -206,7 +208,7 @@
       "phase": "compile",
       "expect": "accept",
       "source": "fnc pair(): (int, int) { ^ (> let x = 5, (x, x + 1)); }\n",
-      "note": "Tuple construction belongs only to the final nested tuple expression",
+      "note": "Target tuple syntax; Rust browser compiler currently cannot lower tuple return types and must report E_UNSUPPORTED_TYPE instead of mistaking a parenthesized tuple type for unrelated syntax.",
       "verification": {
         "rust_wasm": "not_executed",
         "java": "not_executed",
@@ -705,8 +707,8 @@
     "observed_return_or_exit_code",
     "diagnostics"
   ],
-  "note": "The 487/0 Rust-Wasm conformance run verified its own test suite, NOT these 49 normative vectors individually. Each is marked not_executed pending a per-case receipt. The three method call examples now use pub methods. Unsupported features are not counted as passed.",
-  "corpusRevision": 2,
+  "note": "Source exact-tree CI run #43823854425 tested all 49 revision-2 vectors: 41 passed, 4 failed, 4 unsupported. Revision 3 repairs the reserved-name fixture and needs a new exact-tree run before its per-case statuses can be asserted. Each is marked not_executed pending a per-case receipt. The three method call examples now use pub methods. Unsupported features are not counted as passed.",
+  "corpusRevision": 3,
   "migration": {
     "mode": "strict-explicit-double-colon",
     "oldUnmarkedCommaBodies": "breaking-change-requires-explicit-version-gate",
