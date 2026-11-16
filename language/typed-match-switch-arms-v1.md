@@ -6,11 +6,15 @@
 
 ```ebnf
 match_arm      = "on", pattern, [ "when", expression ], [ ":", type_ref ], "->", arm_body ;
-switch_arm     = "on", pattern, [ "when", expression ], [ ":", type_ref ], "->", arm_body ;
-default_arm    = ( "default" | "on", "_" ), [ ":", type_ref ], "->", arm_body ;
+switch_arm     = ( "case" | "on" ), pattern, [ "when", expression ], [ ":", type_ref ], "->", arm_body ;
+switch_default = ( "default" | "case", "_" | "on", "_" ), [ ":", type_ref ], "->", arm_body ;
 arm_body       = expression | block ;
-typed_value    = ("match" | "switch"), [ "<", type_ref, ">" ], subject, "over", { match_arm }, "end" ;
+return_match   = "return", "match", [ "<", type_ref, ">" ], subject, "over", { match_arm }, "end", ";" ;
+return_switch  = "return", "switch", [ "<", type_ref, ">" ], subject, "over", { switch_arm | switch_default }, "end", ";" ;
+switch_stmt    = [ "do" ], "switch", [ "<", type_ref, ">" ], subject, "over", { switch_arm | switch_default }, "end" ;
 ```
+
+For `switch`, **`case Pattern` is canonical**; `on Pattern` remains an accepted compatibility spelling. `default`, `case _` and `on _` denote the wildcard arm. `match` keeps `on Pattern` as its canonical spelling. Neither statement-form `switch` nor `return switch` has C-style implicit fallthrough. An explicit `break` does not substitute for a value-producing arm; every selected arm must return/yield its checked result or definitely diverge.
 
 The `:` **after the completed pattern/guard** and before the *arm* `->` annotates the **arm's produced value**, never the matched payload, binder type, or thrown error. A `:` inside `{ field: pattern }`, an argument, or a nested type does not terminate the pattern. Parsing is grammar-aware, not a search for the nearest colon. The arrow is `->`, never `=>`. `on _` is canonical; existing `default` variants remain accepted where already supported.
 
@@ -40,6 +44,38 @@ pub susp fnc choose(): int {
 }
 ```
 
+## Switch/case examples
+
+```atto
+// Return-position value switch.
+return switch<int> result over
+    case Err(error) : int -> -3,
+    case Ok(value) : int -> value + 1,
+    default : int -> 0,
+end;
+```
+
+```atto
+// Statement switch: each arm must exit the enclosing callable.
+switch<int> state over
+    case #ready : int -> { return 42; }
+    case #failed : int -> { return -1; }
+    default : int -> { return 0; }
+end
+```
+
+```atto
+// Awaited selected case, no eager execution of unselected tasks.
+pub susp fnc choose(): int {
+    return switch<int> result over
+        case Err(error) : int -> await task { return -3; },
+        case Ok(value) : int -> await task { return 42; },
+    end;
+}
+```
+
+A compiler must preserve match's single-evaluation, source-order, scope, exhaustiveness, and safety checks for switch, and **must not** duplicate the scrutinee evaluation or evaluate an unselected case body. In the current restricted Rust/Wasm compiler proposal, `switch<T>` in statement position means all cases must definitely return/throw from their enclosing callable. Full first-class switch values and task capture are separate milestones. The symbolic `#ready` example is target language syntax, not a claim the current Rust/Wasm backend supports symbols.
+
 ## Type, control-flow and effects
 
 1. A value-producing `match<T>`/`switch<T>` has exactly the result type `T`; every *value-yielding* arm must be compatible with `T` using existing explicit conversion rules (no implicit number, Option, Result, or Future flattening).
@@ -60,4 +96,4 @@ pub susp fnc choose(): int {
 
 ## Compatibility
 
-Unannotated `on P -> e` retains its old meaning. The new annotation is optional and does not change unrelated callable `fnc foo(): T`, pattern-field `:`, typed bindings or the existing typed `match<T>` header. Canonical formatter spacing: `on P : T -> e`.
+Unannotated `on P -> e` and existing `case P -> e` retain their meanings. The new annotation is optional and does not change unrelated callable `fnc foo(): T`, pattern-field `:`, typed bindings or the existing typed `match<T>` header. Canonical formatter spacing: `on P : T -> e` for match and `case P : T -> e` for switch; preserve guards and nested field-pattern colons.
