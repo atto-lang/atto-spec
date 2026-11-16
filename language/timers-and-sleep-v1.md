@@ -23,7 +23,8 @@ pub susp fnc main(): int {
     return 42;
 }
 
-pub fnc legacy_worker(): void {
+pub susp fnc worker(): void {
+    // Synchronous-looking call in source, compiler-lowered into suspension.
     sleep_blocking(100ms);
 }
 
@@ -37,23 +38,32 @@ Conceptual declarations:
 // core.time: Duration.milliseconds(value: uint): Duration, etc.
 // std.time / prelude
 pub susp fnc sleep(delay: Duration): void;
-pub fnc sleep_blocking(delay: Duration): void;
+pub susp fnc sleep_blocking(delay: Duration): void;
 ~~~
 
-Sleep is a suspending callable returning void, NOT a Future-of-Future. If
-a user-created sleeper returns an awaitable instead, its caller uses the
-ordinary await semantics. Await is not a first-class function.
+Both spellings have the `susp` effect; sleep is a suspending callable
+returning void, NOT a Future-of-Future. `await sleep(d)` is the explicit
+awaitable timer form. A direct `await sleeper()` invocation of a suspending
+function is proposed as an explicit call-site suspension marker; it must
+not invent a Future or add a second suspension. This direct-call spelling
+must be reconciled with the existing Java/Graal effect checker before claiming
+guest support (its current contract admits await only on an awaitable).
+If a user-created sleeper returns an actual awaitable, the ordinary await
+rules apply. Await itself is not a first-class function.
 
-The "_blocking" suffix denotes synchronous call-site syntax. In an
-actor-capable runtime the implementation must park a logical fiber/task on
-an asynchronous monotonic timer rather than block a carrier thread. No
-thread::sleep, Thread.sleep, spin waits, or blocking a sole JS/reactor
-thread in the actor path. If a parkable runtime context is absent, reject
-at compile time with E_BLOCKING_CONTEXT, or fail at runtime with an
-UnsupportedBlockingContextError (an Error subclass). Browser main threads,
-non-fiber actor dispatch, no-scheduler embedded targets and unbudgeted
-hard-real-time regions must not silently downgrade. A native synchronous
-main may use sleep_blocking only if launched on a parkable runtime fiber.
+The "_blocking" suffix denotes **synchronous-looking call-site syntax**,
+NOT permission to block a carrier. The portable implementation requires a
+`susp` frame: lower `sleep_blocking(d)` to a compiler-generated
+continuation PC plus an execution-owned timer wait, so the logical
+execution waits while its physical carrier runs other work. No
+thread::sleep, Thread.sleep, busy spin, or blocking the sole JS/NIO reactor
+thread. An ordinary `fnc` must fail the suspension-effect check; a
+separately implemented parkable-fiber target may admit synchronous roots
+only with explicit target/runtime proof. Browser non-fiber, no-scheduler
+embedded and unbudgeted hard-real-time regions fail at compile time
+(E_BLOCKING_CONTEXT or E_EFFECT) or with an Error subclass rather than
+silently downgrading. On JVM a virtual thread is not itself proof that an
+actor-state critical lease or pinned carrier can safely park.
 
 ## Duration grammar and types
 
@@ -76,13 +86,55 @@ untyped numbers passed to sleep. Errors: E_DURATION_LITERAL,
 E_DURATION_RANGE, and E_DURATION_TYPE. The formatter must preserve
 exact value and suffix without turning duration literals into arithmetic.
 
-Zero is valid: sleep_blocking(0ms) returns immediately; await sleep(0ms)
-is an explicit cooperative suspension point, progressing on a later
-scheduler turn rather than inline recursion.
+Zero is valid: both `sleep_blocking(0ms)` in a `susp` frame and
+`await sleep(0ms)` yield to a later scheduler dispatch turn. They must
+not recursively resume inline, even if their timer is already complete.
 
 ## Experimental browser migration
 
 Unmerged Rust/Wasm async integration [atto-source.rs #186](https://github.com/atto-lang/atto-source.rs/pull/186) currently lowers `await rt.sleep(25)` using an integer **millisecond** argument to a JSPI `atto.sleep_ms` host import. That is a narrow experimental browser compatibility API, not the portable Duration API defined here. Keep it available on its integration branch while introducing typed `await sleep(25ms)`; do NOT reinterpret an existing `int` parameter as Duration or silently change the host import ABI. The host currently enforces a 1000-ms cap and uses `setTimeout`; its cancellation, monotonic deadline and shutdown semantics need their own audited changes. No `sleep_blocking` capability is implied by JSPI.
+
+## Integration with NIO, the scheduler and execution contexts
+
+\`await sleep(d)\` and \`sleep_blocking(d)\` share one logical suspension
+primitive, not two scheduling designs. The compiler emits an Await/Sleep
+step and a continuation PC owned by the current execution. It does **not**
+start a child Task, dispatch through the normal actor DATA mailbox, block
+the NIO poller, or execute guest code on the timer/selector thread.
+
+The scheduler owns the reusable continuation, consistent with NIO Future
+readiness: the reactor or timer producer may *signal* readiness but only
+the owning scheduler can re-enter the suspended execution. A wake has a
+**new dispatch ID** and the **same runtime-minted ExecutionContext ID**
+and allocation-domain/generation fence. Task-local and tracing data remain
+with that logical execution, not a ThreadLocal inherited from the clock or
+reactor producer. Nested calls with \`susp\` retain the same logical
+execution unless \`task { ... }\` explicitly creates a child.
+
+Each sleep registration belongs to the current Task/ExecutionContext; its
+cancellation or scheduler/actor STOP must detach and cancel that timer.
+A separate I/O Future or channel Future awaited by the same execution
+may be shared or externally owned and MUST NOT be cancelled just because
+its waiter was cancelled. Scheduler shutdown and source lexical cleanup
+are distinct: physical frame/actor heap reclamation requires an explicit
+quiescence receipt, not merely a cancelled timer ticket.
+
+Actor single-flight, supervisor CONTROL priority and generation checks
+still gate resumed guest code. Reentrancy, stale callbacks after actor
+restart, direct callback invocation on an NIO/select reactor, and
+\`sleep_blocking\` inside a sealed critical-state lease are forbidden.
+Both standalone timer wakeups and NIO completions may arrive from foreign
+threads with **zero execution-context authority**.
+
+A Java host-only integration candidate uses
+\`OresScheduler.Sleep<T>\` with execution-owned \`OresTimers\` Futures,
+reentering through existing \`TaskRunner\` dispatch, cancellation,
+\`TraceContext\` and quiescence gates. The current Java host clock remains
+separate from \`SharedReactorPool\` and does not yet meet a unified
+no-dedicated-timer-thread target. LLVM native TimerQueue already has
+expiring/claimable tokens but no demonstrated guest sleep continuation
+bridge. .NET execution authority likewise needs an actual timer adapter.
+**No backend-wide parity is implied.**
 
 ## Clock and lifecycle guarantees
 
