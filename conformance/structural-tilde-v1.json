@@ -435,6 +435,28 @@
       "context": {
         "Point": "const_structural_value_only"
       }
+    },
+    {
+      "id": "ST057",
+      "category": "pattern",
+      "source": "on ~Point as val p",
+      "expect": "accept",
+      "pattern_kind": "value_constant",
+      "note": "short structural value-constant matching with immutable Point",
+      "context": {
+        "Point": "immutable_structural_value"
+      }
+    },
+    {
+      "id": "ST058",
+      "category": "pattern",
+      "source": "on structural Point as val p",
+      "expect": "accept",
+      "pattern_kind": "value_constant",
+      "note": "long keyword equivalent for immutable value-constant matching",
+      "context": {
+        "Point": "immutable_structural_value"
+      }
     }
   ]
 }
