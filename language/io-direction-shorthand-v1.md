@@ -81,3 +81,35 @@ The `file_reader` and `file_writer` lines above are candidate source spellings f
 - Preserve `// inbox >> x`, `"out << x"`, nested generics, and existing `readch`/`writech` parsing.
 - Prove a losing read does not consume, a losing write does not publish/move, a closed/EOF read is not a value, and a winning write is committed exactly once.
 - Require actual compiled guest tests and exact-head execution receipts for each backend before changing status to PASS. Syntax-only parsers and host models are not guest-runtime conformance.
+
+
+## Hardened semantic rules (normative for v1)
+
+### Parse and capability resolution
+
+- The operator must occupy an I/O statement or an I/O `when` guard, never an arbitrary subexpression. Reject `send << value << second` and `source >> const item >> const next` as chains. The right-hand write expression may contain nested generic type applications or parenthesized expressions; the parser must distinguish these from direction tokens by AST context.
+- The receiver is evaluated **exactly once**. It must have an accessible typed `Readable<T>` or `Writable<T>` capability, as appropriate; a channel maps to its channel-specific operation. A readable-only stream cannot be written to, and a writable-only stream cannot be read from. An untyped `any`, arbitrary method named `read`/`write`, or duck-typed numeric operand cannot opt into this syntax.
+- If numeric shift operators exist in an expression grammar, those remain separate AST operations with numeric operands. Do not select the I/O interpretation merely because a token pair appears in the lexer or because a numeric expression happens to be a bare statement. Invalid or ambiguous operands produce an error rather than silently switching effect domains.
+- Bindings accept exactly one identifier and, optionally, a **complete** type grammar after `:`. Do not accept trailing expression tokens or malformed/incomplete generic annotations. The annotation must unify with the read operation's real result type, not be used to coerce away EOF/errors.
+- `when` direction shorthand is legal only directly inside a `select` family construct and only if the capability advertises atomic selectable admission. A `when` inside a plain block cannot turn into a select arm by lexical appearance alone.
+
+### Result and terminal-state semantics
+
+- For a **standalone read**, `source >> const result;` binds the underlying read **outcome**, rather than falsely asserting that a `T` was received. Thus a fallible stream returning `Result<Option<T>, E>` binds that full type; consumers must explicitly handle `Err` and `None`. A channel must preserve the exact return contract of its explicit `readch` equivalent. The shorthand introduces no implicit `unwrap`, `?`, panics, or EOF-to-value conversion.
+- For a **select read arm**, the binding contains `T` only when a successful data read commits. EOF, close, and errors must remain observable through the enclosing select's typed termination/error outcome or explicit terminal arm contract; they must not execute the data-success arm with a fabricated `T`. This requires an explicit backend/runtime contract before any guest implementation is marked complete.
+- For writes, successful admission transfers ownership of the payload once, while close, cancellation, timeout, nonselection, and backpressure preserve or return the uncommitted payload under the underlying API's error contract. No result may be silently discarded when fallibility is checked by the language. A write arm executes its body only after successful admission.
+
+### Atomicity and scheduling
+
+- Select registration and commitment must have a single linearization point. Exactly one ready arm may win; losing arms must be unregistered and retain their values. A read must not remove an element until it wins, and a write must not publish a value until it wins. Close, cancellation, and concurrent readiness changes cannot turn a losing arm into a second winner.
+- A write payload expression may be evaluated once to prepare a value but must not perform irreversible I/O as part of *registering* a guard. Implementations must account for any effects of payload evaluation and cannot claim speculative side effects were rolled back. Ownership is transferred only by the winning commit.
+- `default` is selected only if no eligible guard is ready at the selection point. Timeout/cancellation must release registrations and payload reservations, without leaking wakeups, double-committing, or leaving stale handles. If all inputs close or no arms remain enabled, the select must reach an explicit terminal outcome rather than silently waiting forever.
+- The supported I/O operation's suspension and cancellation semantics govern standalone use. `nb select` cannot execute a blocking operation inside a nonblocking arm; this syntax does not introduce an escape from effect checks, borrow restrictions, or actor-state critical-section rules.
+
+### Required backend gates
+
+1. AST shape and contextual tokenization: strings/comments, `Result<Option<T>>`, partial generic types, numeric shifts, malformed bindings, chains, and nested `when` must be classified correctly.
+2. Compile-time capability checks: read-only/write-only misuse, incompatible payload and annotation types, unselectable streams, borrow-across-suspension, and unchecked errors.
+3. Deterministic channel/stream runtime checks: close and EOF, bounded buffer backpressure, repeated selects, cancellation before and after readiness, simultaneous ready reads/writes, and losing-arm ownership.
+4. Concurrency checks: close-versus-commit, cancellation-versus-commit, exactly-once wake and admission, and no lost payload with an instrumented linearization witness.
+5. Exact-head CI: Rust reference/oracle tests, compiler-built AttoLang guest tests, and platform runtime tests must be reported as **separate** evidence tiers. A host reference test passing never establishes guest runtime parity.
