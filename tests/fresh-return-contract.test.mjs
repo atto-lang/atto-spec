@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const fault = code => { const e = new Error(code); e.code = code; throw e; };
 const existing = () => ({fresh:false, unique:false, origin:'old'});
 const allocated = origin => ({fresh:true, unique:true, origin});
-const audit = ({result='new Foo', copyOverride=false, steps=[]}) => {
+const audit = ({result='new Foo', copyOverride=false, verifiedDirectCopy=false, steps=[]}) => {
   let allocation=0;
   const go = (steps, vars=new Map([['self',existing()],['arg',existing()]]), baseline=0, baselineOrigin='') => {
     let states=[{vars,baseline,baselineOrigin}];
@@ -41,7 +41,12 @@ const audit = ({result='new Foo', copyOverride=false, steps=[]}) => {
           const v=read(step.from);
           if (result.startsWith('new ') && !v.fresh) fault('E_FRESH_UNPROVEN');
           if (result==='new unique Foo' && !v.unique) fault('E_FRESH_NOT_UNIQUE');
-          if (copyOverride && (state.baseline!==1 || v.origin!==state.baselineOrigin)) fault('E_COPY_OVERRIDE');
+          if (copyOverride) {
+            const baselineOK=state.baseline===1 && v.origin===state.baselineOrigin;
+            // verifiedDirectCopy models a compiler-established complete copy plan, never a user assertion.
+            const directOK=state.baseline===0 && verifiedDirectCopy && v.fresh && v.origin.startsWith('alloc:');
+            if (!baselineOK && !directOK) fault('E_COPY_OVERRIDE');
+          }
           returned++;
           continue;
         }
@@ -94,4 +99,9 @@ test('Copyable override must return exactly one synthesized baseline', () => {
   no({copyOverride:true,steps:[{op:'alloc',to:'c'},{op:'return',from:'c'}]},'E_COPY_OVERRIDE');
   no({copyOverride:true,steps:[{op:'baseline',to:'c'},{op:'baseline',to:'d'},{op:'return',from:'d'}]},'E_COPY_OVERRIDE');
   no({copyOverride:true,steps:[{op:'baseline',to:'c'},{op:'alloc',to:'d'},{op:'return',from:'d'}]},'E_COPY_OVERRIDE');
+});
+
+test('Copyable allows verified stateless direct new Foo without super.copy', () => {
+  yes({copyOverride:true,verifiedDirectCopy:true,steps:[{op:'alloc',to:'x'},{op:'return',from:'x'}]});
+  no({copyOverride:true,steps:[{op:'alloc',to:'x'},{op:'return',from:'x'}]},'E_COPY_OVERRIDE');
 });
