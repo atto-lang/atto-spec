@@ -1,0 +1,26 @@
+name: Option suffix and omittable formal contract (source-only)
+on:
+  pull_request:
+    paths:
+      - 'language/option-suffix-omittable-formals-v1.md'
+      - 'tests/option-suffix-contract.test.mjs'
+      - '.github/workflows/option-suffix-contract.yml'
+  push:
+    paths:
+      - 'language/option-suffix-omittable-formals-v1.md'
+      - 'tests/option-suffix-contract.test.mjs'
+      - '.github/workflows/option-suffix-contract.yml'
+permissions:
+  contents: read
+jobs:
+  host-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Run source-only semantic reference test (not a compiler/guest proof)
+        run: |
+          node --version
+          node --test tests/option-suffix-contract.test.mjs
