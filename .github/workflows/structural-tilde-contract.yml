@@ -8,6 +8,7 @@ on:
       - "language/match-arm-delimiters-v1.md"
       - "conformance/match-arm-delimiters-v1.json"
       - "tests/match-arm-delimiters-contract.test.mjs"
+      - "tests/structural-pattern-semantics-reference.test.mjs"
       - ".github/workflows/structural-tilde-contract.yml"
   push:
     paths:
@@ -17,6 +18,7 @@ on:
       - "language/match-arm-delimiters-v1.md"
       - "conformance/match-arm-delimiters-v1.json"
       - "tests/match-arm-delimiters-contract.test.mjs"
+      - "tests/structural-pattern-semantics-reference.test.mjs"
       - ".github/workflows/structural-tilde-contract.yml"
 jobs:
   schema-only:
@@ -28,4 +30,4 @@ jobs:
         with:
           persist-credentials: false
       - name: Check fixture integrity (NOT guest compilation)
-        run: node --test tests/structural-tilde-contract.test.mjs tests/match-arm-delimiters-contract.test.mjs
+        run: node --test tests/structural-tilde-contract.test.mjs tests/match-arm-delimiters-contract.test.mjs tests/structural-pattern-semantics-reference.test.mjs
