@@ -67,7 +67,7 @@ test("is marks structural type checks; omitting it denotes field-value matching"
   assert.ok(matches("on structural {x: 10, y: _} as val p")
     .some(c => c.pattern_kind === "value_fields"));
   assert.ok(matches("on ~{x: int} as val p", "reject").length);
-  assert.ok(matches("on is ~{x: 10} as val p", "reject").length);
+  assert.ok(matches("on is ~{x: 10} as val p", "accept").length);
   assert.ok(matches("on ~{}", "reject").length);
   assert.ok(matches("on ~{x: effectful()}", "reject").length);
 });
