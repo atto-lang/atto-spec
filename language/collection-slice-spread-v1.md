@@ -9,8 +9,8 @@ Pre-existing compiler/browser subset behavior is not extended by this document a
 
 ```ebnf
 index_or_slice = primary_postfix, "[", (expression | slice_bounds), "]" ;
-slice_bounds   = [expression], (":" | "::"), [expression],
-                 [":", expression] ;
+slice_bounds   = [expression], ":", [expression], [":", expression]
+               | [expression], "::", expression ;
 spread_item    = "...", unary_expression ;
 array_elements = [array_item, {",", array_item}, [","]] ;
 array_item     = expression | spread_item ;
@@ -42,7 +42,7 @@ Non-goals for v1: `<- ` assignment arrows, implicit splat in arbitrary expressio
 * Indexes are signed integers. `a[i]` checks `-len <= i < len` and normalizes negative `i` to `len+i`. Indexing empty containers is an error. `a.get(i)` instead returns `Option<T>`.
 * Slices use **half-open** indices: `a[start:end:step]`, with an optional start, end and step; omitted step is +1. `step == 0` is always an error; a literal zero must produce a compile-time diagnostic and runtime-computed zero a checked runtime error.
 * For a positive step, default start=0 and end=len. For a negative step, default start=len-1 and end=-1 as an exclusive sentinel. **An omitted negative-step end differs from an explicit `-1`**, which normalizes to the last element. This makes `a[::-1]` reverse the collection correctly.
-* Explicit negative slice bounds normalize relative to len. Valid explicit slice endpoints are in `[-len, len]` (the normalized result must be in `[0,len]`). The implicit reversed end sentinel -1 is internal and cannot be supplied by spelling `-1`. Invalid explicit bounds trap with `E_SLICE_BOUNDS`; no Python-style silent clipping.
+* Explicit negative slice bounds normalize relative to len. Valid explicit slice endpoints are in `[-len, len]` (the normalized result must be in `[0,len]`). The implicit reversed end sentinel -1 is internal and cannot be supplied by spelling `-1`. For reverse slices, an explicit start equal to len is also invalid because it is not an element index. Invalid explicit bounds trap with `E_SLICE_BOUNDS`; no Python-style silent clipping.
 * Iterate indexes `i` from start while `i < end` for step>0, or `i > end` for step<0. Opposite-direction ranges yield an empty slice. Slicing an empty container yields an empty result for its valid default-bound forms.
 * Checked arithmetic is required for bound normalization, length, and step advancement. Each indexable operand is evaluated once. The source order of side-effectful start, end and step expressions is left-to-right, each at most once.
 
