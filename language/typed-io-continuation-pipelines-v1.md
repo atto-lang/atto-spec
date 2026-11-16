@@ -1,6 +1,6 @@
 # Typed directional I/O captures and forward/reverse await continuations
 
-Status: **candidate language contract**; the Rust/Wasm stdin guest read ABI is still unsupported. This extends `io-direction-shorthand-v1.md` and `suspending-pipeline-stage-v1.md`. Unlike the earlier version of this document, the two *contextual* typed-Future spellings below are now proposed as valid grammar. A general `future |> await` stage remains invalid.
+Status: **candidate language contract**; the Rust/Wasm stdin guest read ABI is still unsupported. The reverse functional capture below is a separate candidate compiler vertical slice, not an I/O ABI. This extends `io-direction-shorthand-v1.md` and `suspending-pipeline-stage-v1.md`. Unlike the earlier version of this document, the two *contextual* typed-Future spellings below are now proposed as valid grammar. A general `future |> await` stage remains invalid.
 
 ## Binding versus channel I/O
 
@@ -234,3 +234,90 @@ version-gated compiler implementation is
 [atto-source.rs #185](https://github.com/atto-lang/atto-source.rs/pull/185).
 Do not adopt the breaking `::` migration merely to use this additive
 caret/capture interaction.
+
+## Ordinary reverse functional pipelines and declaration-first value capture
+
+Reverse functional application is **right-associated**:
+
+~~~atto
+val v = twice <| add_three <| 4;
+// exactly: twice(add_three(4)), not add_three(twice(4))
+~~~
+
+The function call is applied to the single value on the right. This is the
+syntactic dual of `4 |> add_three |> twice`. Neither form constructs an
+actor/stream pipe: continuous connections continue to use the `pipe` keyword.
+The compiler rewrites each reverse stage to an ordinary named call with the
+value as its first argument, preserving existing argument evaluation, type,
+effect and ownership checks.
+
+A declaration-first reversed await pipeline is the dual of the existing
+checked forward `>> val` capture:
+
+~~~atto
+fnc transform_result(int x): int {
+    ^ x + 1;
+}
+
+pub suspends fnc main(): int {
+    val pending = task { return 41; };
+    val result: int <<
+        transform_result <|
+        susp |f| -> await f <|
+        pending;
+
+    guard result > 0 { ^ -1; }
+    ^ result;
+}
+~~~
+
+The precise canonical desugaring is:
+
+~~~atto
+val result: int = transform_result(await pending);
+guard result > 0 { ^ -1; }
+^ result;
+~~~
+
+A valid reverse capture must satisfy **all** of these conditions:
+
+1. `val` or `let` introduces a fresh lexical local. `const` is prohibited
+   for runtime/suspending results. `<<` does not reassign an existing local.
+2. `<<` is a **contiguous** single-result terminal binding and the RHS must
+   be a checked reverse functional pipeline containing the explicit
+   `susp |f| -> await f` or `suspends |f| -> await f` identity-await stage.
+   There is no implicit await, no bare `await` function and no general
+   lambda-value execution in this milestone.
+3. `<|` must be contiguous; `< |` is not an alternate spelling. The
+   semantics are `transform_result(await pending)`, with the source Future
+   evaluated/consumed exactly once. Unrelated await binders are rejected.
+4. The ordinary compiler must check suspension effects, full result type,
+   ownership/moves, loan lifetimes across `await`, and the guard's
+   fail-on-false and terminal-return contract. Any failure means no guest
+   artifact, not a fallback to unchecked channel semantics.
+5. General reverse calls may appear in ordinary expression contexts, e.g.
+   `val n = f <| g <| x`. Parentheses are mandatory when mixing `|>` and
+   `<|` in one chain.
+6. `val result << readable_source` **without** a reverse functional pipeline
+   retains the existing declaration-first *I/O read* contract. It must never
+   be misclassified as a pure value capture by type duck-typing. Similarly,
+   `sink << value` remains one checked write, not a permanent connection.
+
+For fallible input, an await produces its declared checked outcome; it does
+not silently unwrap `Result`, discard `IoError`, or treat `None` as a
+string. A separate explicit `(await future)?` stage and a compatible
+`Result`-returning callable are required for propagation. No syntax here
+grants the currently missing guest stdin ABI.
+
+### Rust/Wasm staging and evidence
+
+The browser compiler implementation candidate is stacked on
+[atto-source.rs #197](https://github.com/atto-lang/atto-source.rs/pull/197),
+which already stages checked forward capture. The reverse branch adds the
+right-associated named-call lowering, the narrow reverse identity-await stage,
+and a checked declaration-first binder; positive/negative Rust conformance
+tests and a guest exit-42 fixture accompany it. **Source authored is not
+evidence of tests executed.** An exact-head Rust test and real guest
+Wasm/Chromium execution receipt are required before claiming working runtime
+support or merging the draft. Native LLVM/Java/.NET/Forge parity is separate
+and not established by the browser compiler branch.
