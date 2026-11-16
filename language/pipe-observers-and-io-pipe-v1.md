@@ -159,3 +159,86 @@ capabilities; it does not grant new process-wide file/network access.
 The core traits may remain no-OS, while actual scheduler-backed pumping
 and platform I/O adapters must respect the selected runtime/profile.
 Until these APIs exist on a backend, fail closed.
+
+
+## Normative terminal event state machine (hardening)
+
+The complete terminal result type is a **tagged** PipeOutcome:
+
+- PipeOutcome.Success(PipeStats)
+- PipeOutcome.Failure(PipeError)
+- PipeOutcome.Cancelled(PipeError.Cancelled)
+
+The #settled callback receives this **whole tagged PipeOutcome**,
+not an untagged PipeError or PipeStats. #error receives PipeError;
+#complete receives PipeStats; #cancel receives PipeError.Cancelled.
+get_done() is a single, shareable awaitable terminal result, returning
+Result<PipeStats, PipeError>. A late or repeated get_done() is permitted:
+both observe the same first terminal result without consuming it.
+Each PipeHandle has one atomic terminal transition. Repeated or competing
+terminal causes are recorded as secondary diagnostics, never as an
+additional event and never as an overwrite of the first cause.
+
+Within a single event-dispatch batch, the specific terminal event
+(#error, #complete or #cancel) MUST dispatch before #settled, regardless
+of the order in which those event subscribers registered. A subscriber
+registered after settlement gets asynchronous replay exactly once.
+An observer that subscribes reentrantly during event delivery cannot
+cause duplicate delivery or synchronous recursion. Unsubscribe before
+its callback starts cancels its pending delivery, but cannot rewind an
+already-running callback. get_done() may resolve before observers finish;
+observer errors cannot change the result. No user callback executes
+under a pipe graph, mailbox, event table or scheduler lock.
+
+The terminal event snapshot is immutable. Untrusted callbacks receive
+redacted causal metadata unless authorized; neither a callback nor an
+actor from another tenant may mutate PipeError, PipeStats, the supervisor
+CONTROL notice, or stored causal provenance. Observer registration and
+event delivery have explicit per-graph quotas and bounded cooperative
+dispatch; exceeding a quota is a checked subscription error, NOT an
+unbounded allocation or swallowed original stream failure.
+Listener subscriptions have graph-owned lifetime; on unsubscribe or
+graph retirement all captured callbacks and references are released.
+Any retained callback must respect Sendable and the captured-value
+ownership/lifetime rules. Callback throws/raises/panics are isolated to
+their own execution/supervision context; they may never overwrite the
+primary pipe outcome or block unrelated subscriptions.
+
+### Partial progress and indeterminate writes
+
+PipeStats and PipeError identify admitted/committed items separately
+from read/attempted items. For byte streams, report committed bytes,
+not just an item count. If a writable reports an unambiguous partial
+byte count, preserve that prefix; if admission is indeterminate, return
+PipeError.IndeterminateWrite with an explicit "unknown commit" state,
+and fail closed. Never automatically retry an item or byte range whose
+admission state is unknown; any higher-level retry requires an explicit
+idempotency key, a replayable source, and a fresh checked pipe.
+An acknowledged admission is NOT the same as downstream processing or
+durability, and no implementation may silently claim otherwise.
+
+A readable-to-writable transfer holds exclusive ownership of the
+uncommitted item until a definitive sink admission acknowledgment.
+On failure/cancellation, the scheduler must either return it to its
+original owner or destroy it exactly once after the pending write has
+quiesced. If a cancellation races a sink acknowledgment, an atomic
+ordering decides whether that item is counted as committed; neither
+ordering may duplicate or double-free it. Cancelled/failed pumps wake
+blocked producers/consumers, preserve partial progress, and do not
+close borrowed or shared resources. Normal EOF is emitted only after
+all acknowledged items drain; a partial output is never mislabeled
+#complete. Teardown failures are retained as suppressed diagnostics
+without changing the primary cause.
+
+A user-facing example of observing without suppressing:
+
+~~~atto
+val pipe_handle: PipeHandle = io.pipe(readable, writable)?;
+pipe_handle.on(#error, |e: PipeError| -> { log_error(e); });
+pipe_handle.on(#settled, |o: PipeOutcome| -> { audit_pipe_outcome(o); });
+val stats: PipeStats = (await pipe_handle.get_done())?;
+~~~
+
+These rules apply identically to pipe, rpipe and io.pipe. A promise/
+Future used for get_done must follow the backend's ownership-safe
+shared-completion semantics; it is not an implicit unbounded queue.
