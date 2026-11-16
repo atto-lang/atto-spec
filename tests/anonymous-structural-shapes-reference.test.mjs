@@ -8,6 +8,14 @@ const lit = value => ({kind:"literal", value});
 const union = (...variants) => ({kind:"union", variants});
 const shape = fields => ({kind:"shape", fields});
 
+// Only i64-style integer singleton equality is modeled for numeric values.
+// Float/NaN singleton admission is not part of this v1 type contract.
+function literal_equal(a,b) {
+  if (typeof a === "number" || typeof b === "number")
+    return Number.isSafeInteger(a) && Number.isSafeInteger(b) && a === b;
+  return Object.is(a,b);
+}
+
 // Pure, bounded reference model. It is NOT a compiler or a runtime adapter.
 const MAX_SHAPE_DEPTH = 64;
 function type_subtype(actual, expected, depth=0) {
@@ -20,7 +28,7 @@ function type_subtype(actual, expected, depth=0) {
   if (expected.kind === "union")
     return expected.variants.some(t => type_subtype(actual, t, depth+1));
   if (actual.kind === "literal") {
-    if (expected.kind === "literal") return Object.is(actual.value,expected.value);
+    if (expected.kind === "literal") return literal_equal(actual.value,expected.value);
     if (expected.kind === "string") return typeof actual.value === "string";
     if (expected.kind === "int") return Number.isSafeInteger(actual.value);
   }
@@ -70,12 +78,12 @@ function runtime_value_pattern(subject, fields) {
   return fields.every(({name, optional=false, value=ANY}) => {
     const read = read_field(subject,name);
     if (!read.present) return optional;
-    return value === ANY || Object.is(read.value,value);
+    return value === ANY || literal_equal(read.value,value);
   });
 }
 function value_has_type(v, type, depth=0) {
   if (!type || depth >= MAX_SHAPE_DEPTH) return false;
-  if (type.kind === "literal") return Object.is(v,type.value);
+  if (type.kind === "literal") return literal_equal(v,type.value);
   if (type.kind === "string") return typeof v === "string";
   if (type.kind === "int") return Number.isSafeInteger(v);
   if (type.kind === "union")
@@ -208,4 +216,14 @@ test("nested structural type checking and cycle depth bound deny unsupported rec
   assert.equal(type_subtype(recursive,recursive),false);
   const cyc={};cyc.self=cyc;
   assert.equal(runtime_type_pattern(cyc,recursive),false);
+});
+
+test("integer singleton normalizes negative zero while rejecting float and NaN",()=>{
+  assert.equal(type_subtype(lit(-0),lit(0)),true);
+  assert.equal(type_subtype(lit(0),lit(-0)),true);
+  assert.equal(runtime_value_pattern({foo:-0},[{name:"foo",value:0}]),true);
+  assert.equal(runtime_type_pattern({foo:0},shape({foo:lit(-0)})),true);
+  assert.equal(type_subtype(lit(NaN),lit(NaN)),false);
+  assert.equal(runtime_type_pattern({foo:NaN},shape({foo:lit(NaN)})),false);
+  assert.equal(type_subtype(lit(1.5),integer),false);
 });
