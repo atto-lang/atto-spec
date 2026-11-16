@@ -43,3 +43,5 @@ This README records the intended role of this repository; it is not a claim of f
 Keep canonical AttoLang (.atto) semantics consistent with the language specification, while treating Oreslang-named tooling and .ores as compatibility surfaces.
 
 Changes asserting compiler/runtime support must identify the exact source head, target, toolchain, executed positive and negative guest tests, and failure/unsupported status; an empty CI step list is **not executed**. Documentation records responsibility, **not** a claim of feature completion.
+
+- [Anonymous structural shape types, singleton and union field values (proposed)](language/anonymous-structural-shapes-v1.md)
