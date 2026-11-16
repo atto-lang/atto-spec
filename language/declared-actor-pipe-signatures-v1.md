@@ -81,6 +81,22 @@ define actor Foo receives int emits bool as
 end
 ```
 
+An actor may repeat its inbox contract on a concrete definition while keeping its handler out-of-line:
+
+```atto
+declare actor Foo receives int;
+
+define actor Foo receives int as
+    // State and other actor members; no inline receive required here
+end
+
+mtd (Foo self) receive(ActorMail<int> message): void {
+    // Attached sealed mailbox ingress
+}
+```
+
+The nominal `receives` type, concrete `receives` type (if restated), and the attached `ActorMail<T>` payload must all agree. A concrete definition's `receives` clause without an inline handler is valid **only if** exactly one attached private receiver satisfies it in the same verified namespace. If the declaration and attached handler both say `int` but the concrete header says `bool`, that is an `E_SIGNATURE` error—not a valid override or an implicit conversion. This remains source-level linking metadata, not a runtime admission certificate.
+
 The Rust target namespace linker from merged compiler PR #91 can associate nominal headers and concrete definitions as **nonexecuting metadata**. An ordinary browser `define actor` program is a distinct execution path; do not silently redirect it to an untrusted namespace implementation. Linking by bare name across packages, unchecked symlinks, structural matches or forged `ActorRef` objects is prohibited.
 
 A declaration with `receives X` alone does not prove that a matching receive handler exists. `emits Y` alone does not prove the effectful `emit(Y)` body, or that cancellation/backpressure have been implemented. `sends Z` alone does not prove a transitive effect witness. In particular, `declare actor Foo receives x emits y;` is valid **signature grammar** even when `x` and `y` are externally defined nominal types; type resolution and executable linking are independent additional gates.
