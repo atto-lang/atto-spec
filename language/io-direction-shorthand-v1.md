@@ -60,7 +60,7 @@ A statement may also use a parenthesized source/sink and a qualified path (`stdi
 // Standalone channel and stream operations.
 inbox >> val msg;
 stdio.out << "received";
-file_reader >> const next_chunk;
+file_reader >> val next_chunk;
 file_writer << payload;
 
 // Selectable channels.
@@ -79,9 +79,9 @@ The `file_reader` and `file_writer` lines above are candidate source spellings f
 
 ## Required negative and conformance cases
 
-- Forbid `42 << "data"` and `"data" >> const message` unless their types implement the I/O capabilities (numeric shift remains a distinct grammar/typecase).
+- Reject `42 << "data"` as an invalid numeric shift or non-writable value, and `"data" >> val message` because an immutable string is not a readable capability; reject any runtime read into `const` regardless of operand type.
 - Reject `when stream << payload` when that stream cannot commit/cancel an atomic select write.
-- Reject `when stream >> const item` when it cannot commit/cancel an atomic select read.
+- Reject `when stream >> val item` when it cannot commit/cancel an atomic select read.
 - Reject `when inbox >> message`, `when outgoing << ->`, `inbox >> val ;`, and chained `a << b << c` in v1.
 - Preserve `// inbox >> x`, `"out << x"`, nested generics, and existing `readch`/`writech` parsing.
 - Prove a losing read does not consume, a losing write does not publish/move, a closed/EOF read is not a value, and a winning write is committed exactly once.
@@ -92,7 +92,7 @@ The `file_reader` and `file_writer` lines above are candidate source spellings f
 
 ### Parse and capability resolution
 
-- The operator must occupy an I/O statement or an I/O `when` guard, never an arbitrary subexpression. Reject `send << value << second` and `source >> const item >> const next` as chains. The right-hand write expression may contain nested generic type applications or parenthesized expressions; the parser must distinguish these from direction tokens by AST context.
+- The operator must occupy an I/O statement or an I/O `when` guard, never an arbitrary subexpression. Reject `send << value << second` and `source >> val item >> val next` as chains. The right-hand write expression may contain nested generic type applications or parenthesized expressions; the parser must distinguish these from direction tokens by AST context.
 - The receiver is evaluated **exactly once**. It must have an accessible typed `Readable<T>` or `Writable<T>` capability, as appropriate; a channel maps to its channel-specific operation. A readable-only stream cannot be written to, and a writable-only stream cannot be read from. An untyped `any`, arbitrary method named `read`/`write`, or duck-typed numeric operand cannot opt into this syntax.
 - If numeric shift operators exist in an expression grammar, those remain separate AST operations with numeric operands. Do not select the I/O interpretation merely because a token pair appears in the lexer or because a numeric expression happens to be a bare statement. Invalid or ambiguous operands produce an error rather than silently switching effect domains.
 - Bindings accept exactly one identifier and, optionally, a **complete** type grammar after `:`. Do not accept trailing expression tokens or malformed/incomplete generic annotations. The annotation must unify with the read operation's real result type, not be used to coerce away EOF/errors.
