@@ -100,11 +100,7 @@ test("x?: literal is optional presence, y: _ is required presence", () => {
     "on structural {x?: 10, y: _} as val p",
     "on ~{x? : 10, y: _} as val p",
     "on ~{x ? : 10, y: _} as val p",
-    "on ~{x?: _, y: _} as val p",
   ]) {
-    // x?: _ is tracked independently from both the required y: _ and
-    // the values of other pattern fields.
-    if (x === "on ~{x?: _, y: _} as val p") continue;
     assert.ok(has("pattern", x), x);
   }
   assert.ok(has("pattern", "on ~{x?: _} as val p"));
