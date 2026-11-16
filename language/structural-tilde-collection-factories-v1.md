@@ -39,6 +39,20 @@ remove the tilde-constructor aliases:
 | `Set.of(...)` | `~set(...)` |
 | `Record.of(...)` | `~record(...)` |
 
+The old bare expression-position `~(field: value)` record and
+`~(key => value)` map construction forms are also removed.
+`~(ordinary_expression)` remains a separate pre-existing unary operator
+where supported, and field/type matching syntax is governed by the
+structural-pattern contract, not by collection factory rules.
+The tilde modifier may be separated from its first operand by whitespace
+(`~ Point`), including in `is ~ Point` type tests.
+
+`on is ~Point` is the structural **type-test** spelling. Do not
+silently conflate it with `on ~Point`, a potentially distinct structural
+value/intersection pattern. Until a backend has a checked value-pattern
+contract and lowering, that latter spelling must fail closed rather
+than borrow the type-test AST/runtime.
+
 This prohibition also covers generic factory forms such as
 `~map<string,int>(...)`, `~tuple<int,bool>(...)`, ambiguous
 `~<T>()`, `~()`, and extra built-in constructor aliases such as
