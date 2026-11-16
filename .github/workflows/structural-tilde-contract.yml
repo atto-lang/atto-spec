@@ -1,0 +1,25 @@
+name: Structural tilde source-free contract integrity
+on:
+  pull_request:
+    paths:
+      - "language/structural-tilde-v1.md"
+      - "conformance/structural-tilde-v1.json"
+      - "tests/structural-tilde-contract.test.mjs"
+      - ".github/workflows/structural-tilde-contract.yml"
+  push:
+    paths:
+      - "language/structural-tilde-v1.md"
+      - "conformance/structural-tilde-v1.json"
+      - "tests/structural-tilde-contract.test.mjs"
+      - ".github/workflows/structural-tilde-contract.yml"
+jobs:
+  schema-only:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check fixture integrity (NOT guest compilation)
+        run: node --test tests/structural-tilde-contract.test.mjs
