@@ -27,7 +27,15 @@ These are **target examples**, not currently executable Rust/Wasm function calls
 - `foo: _`: **not a type** in v1. A wildcard after `:` is supported in **value-pattern** position (`on {foo: _}`) and only checks field presence. In a type position use an explicitly defined safe top type in a later proposal; do not inject implicit `Any`.
 - `foo?: T` in a **value pattern** allows absence and otherwise requires a match. Optional fields in a **type shape** remain out of scope in this extension until their presence/read type is formalized. `{foo?: string}` as a formal rejects rather than silently becoming an optional pattern.
 
-Literal types require typed equality (string contents, not pointer identity). Mixed numeric variants, null-like values, NaNs, mutable aliases, and rich/composite literals need explicit equality rules before admission.
+Literal types require typed equality (string contents, not pointer identity). The v1 **integer** singleton `-0` canonicalizes to `0` and their values compare equal; floating-point singleton types, NaN and mixed numeric coercion remain unsupported. The JS reference model uses safe JavaScript integers only; this is **not** an i64 precision proof. Null-like values, mutable aliases, and rich/composite literals need explicit equality rules before admission.
+
+## Structural identity, unions, and fail-closed bounds
+
+Read-only row field order is immaterial: `{x: int, y: string}` and `{y: string, x: int}` are identical structural shapes. Union arms are likewise commutative and idempotent: `string | int`, `int | string`, and `string | int | int` denote the same union. To prove `ActualUnion <: ExpectedUnion`, **every actual alternative** must conform to at least one expected alternative; it is unsound to test whether the actual union fits just one expected arm.
+
+Matching source fields must not invoke property getters, inspect inaccessible/protected fields, or infer map key presence from the map's generic key type. Static proofs use accessible compiler-owned field descriptors; runtime dynamic map projection requires a stable atomic lookup or immutable snapshot. If such a proof or adapter is unavailable, reject before emitting executable code. Recursion, shape width, and union arm counts must be bounded and cyclic shapes memoized or rejected.
+
+
 
 ## Static admission matrix
 
