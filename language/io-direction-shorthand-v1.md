@@ -377,7 +377,12 @@ Do not claim they execute as written against raw stdin.
 nb_await_read = "nb", readable_expr, ">>",
     ( "(", binding_decl_head, "<<", "await", future_type_slot, ")"
     | future_type_slot, identifier, "|", "await", identifier,
+      ">>", binding_decl_head
+    | future_binding_head, "|>", ("susp" | "suspends"), "|",
+      identifier, "|", "->", "await", identifier,
       ">>", binding_decl_head ) ;
+future_binding_head = ("val" | "let"), (identifier, ":", future_type_slot
+                    | future_type_slot, identifier) ;
 binding_decl_head = ("val" | "let"), (type_ref, identifier | identifier, ":", type_ref);
 future_type_slot = "Future", "<", complete_type_ref, ">" ;
 ~~~
