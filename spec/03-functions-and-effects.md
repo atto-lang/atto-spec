@@ -4,6 +4,12 @@
 
 A free function is declared with `fnc`; class and actor instance methods use an implicit `self` and canonically omit `fnc`. Callables have explicit or inferred return types where grammar permits. Each invocation returns **one value**; tuples/records are themselves one value.
 
+## Proposed explicit return inference and static binding type queries
+
+**TARGET / not yet implemented or guest-verified:** `: infer` / `-> infer` requests return inference from all reachable return paths, and `: typeof(tbr)` / `-> typeof(tbr)` queries the static type of a parameter or uniquely resolved immutable local binding. A body-local forward query is restricted to an unambiguous `val`/`const` declared directly in the callable's outer body, with a resolvable annotation or acyclic initializer type. Neither notation evaluates a value, performs runtime reflection, or relaxes ownership/effects/ABI checking. Preserve earlier `typeof fnc(...) => T` signature syntax and the existing proposed `typeof foo` value query from Java RFC #450. Do not treat `type<tbr>` as a query of a runtime value. `infer` is contextual, not globally reserved.
+
+Canonical detailed contract and diagnostics: [atto-spec return type queries v1](https://github.com/atto-lang/atto-spec/blob/design/return-type-infer-typeof-v1-20261116/language/return-type-queries-and-inference-v1.md). The [conformance source registry](https://github.com/atto-lang/atto-platform-conformance/blob/tests/return-type-infer-typeof-v1-20261116/contracts/return-type-inference-typeof-v1.json) is a **TARGET-only** matrix; it is not compiler parity evidence.
+
 ## Signatures and visibility
 
 ```atto
