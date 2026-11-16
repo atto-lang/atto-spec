@@ -2,12 +2,12 @@
   "schema": "attolang.optional-named-guest-slice.v1",
   "canonical": "spec/27-optional-and-named-arguments.md",
   "rust_source_repo": "atto-lang/atto-source.rs",
-  "rust_source_head": "ef02643fa395617e3fcf53b429719ba15c4b5338",
-  "rust_source_tree": "f5a71eba50afee5884509804526c3eb1cae4cdbf",
-  "status": "AUTHORED_NOT_EXECUTED_ON_NEW_HEAD",
-  "description": "Independent canonical fixture bytes are Git-blob identical to the Rust/Wasm PR #225 guest source fixtures. Host-only integrity checks are NOT compiler or guest execution. Canonical acceptance is broader than this bounded backend.",
+  "rust_source_head": "b0a79f68ce36a79623703f2836d815760b391567",
+  "rust_source_tree": "cb80b007252d08fd6a2d3a25717d6b11f686c8ef",
+  "status": "RUST_WASM_EXACT_TREE_CARRIER_VERIFIED",
+  "description": "Bounded Rust/Wasm compiler and compiled guest subset verified against exact source Git tree in a stepful private CI run. Host-only integrity checks cannot certify any other compiler, generic Option<X>, nontrailing named/defaulted binding, or actor ABI.",
   "backends": {
-    "rust_wasm": "PENDING_EXACT_HEAD_GUEST",
+    "rust_wasm": "VERIFIED_EXACT_TREE_GUEST",
     "java": "NOT_CLAIMED",
     "llvm": "NOT_CLAIMED",
     "dotnet": "NOT_CLAIMED",
@@ -111,6 +111,30 @@
       "target_classification": "CANONICAL_ACCEPT"
     },
     {
+      "id": "205-uncalled-option-match-memory",
+      "kind": "pass",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/pass/205-uncalled-option-match-memory.atto",
+      "source_path": "tests/fixtures/pass/205-uncalled-option-match-memory.atto",
+      "blob_sha": "80f1e1e2215c99b21fcefb7f1f81a34c59a2ce44",
+      "expected": {
+        "kind": "guest_exit",
+        "exit": 42
+      },
+      "target_classification": "CANONICAL_ACCEPT"
+    },
+    {
+      "id": "206-unused-two-option-signatures-memory",
+      "kind": "pass",
+      "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/pass/206-unused-two-option-signatures-memory.atto",
+      "source_path": "tests/fixtures/pass/206-unused-two-option-signatures-memory.atto",
+      "blob_sha": "130be756e646bc56f4fdda69667323f8f4aa49d6",
+      "expected": {
+        "kind": "guest_exit",
+        "exit": 42
+      },
+      "target_classification": "CANONICAL_ACCEPT"
+    },
+    {
       "id": "197-required-option-cannot-omit",
       "kind": "fail",
       "path": "contracts/optional-named-parameters-v1/guest-rust-slice-v1/fail/197-required-option-cannot-omit.atto",
@@ -194,5 +218,13 @@
       },
       "target_classification": "RUST_ABI_UNSUPPORTED"
     }
-  ]
+  ],
+  "evidence": {
+    "carrier_repo": "cliptown/cliptown-e2e",
+    "run_id": 43935949194,
+    "run_url": "https://github.com/cliptown/cliptown-e2e/actions/runs/43935949194",
+    "carrier_commit": "55767fa802d6235d78b6e13643090a1217a065de",
+    "source_head": "b0a79f68ce36a79623703f2836d815760b391567",
+    "source_tree": "cb80b007252d08fd6a2d3a25717d6b11f686c8ef"
+  }
 }
