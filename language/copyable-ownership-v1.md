@@ -2,6 +2,12 @@
 
 Status: **candidate contract; NOT general compiler/runtime support** (2026-11-15). This is a backend-neutral target for `copy! value` and compatibility `rt copy value`. Neither a source-only test nor parser acceptance proves guest execution. Existing Java copy-policy and legacy `Copy`/`Clone` contracts must be reconciled, not silently superseded.
 
+## Fresh-return refinement (candidate)
+
+See [Fresh object return types v1](fresh-return-types-v1.md). For reference-identity classes, synthesized Copyable methods and verified overrides return `new Self`: the root object must have been newly created during this invocation. The `new` refinement is **necessary but not sufficient** for copying: the older requirements for deep mutable graph separation, verified synthesized baselines, concrete subtype preservation and cleanup still apply. A plain factory `return new Foo()` satisfies a general fresh-return annotation but **not** the v1 manual Copyable-override protocol, which requires `super.copy()` exactly once and returns that same baseline. Value-like scalar `Copy` operations do not gain a fresh identity or require heap allocation.
+
+The general `Copyable<T>` interface written below retains `-> T` as its unrefined generic sketch until kind-aware return typing is implemented. For a concrete identity-bearing class, the synthesized witness refines that result to `new Self`; this never licenses a user override that weakens the verified contract. New source syntax remains candidate-only; host tests are not compiler execution.
+
 ## Normative intent
 
 * Ordinary argument passing/binding of a class object MUST NOT perform a deep copy. An unqualified class reference is not proof of mutation or lifetime authority; the owner/borrow checker still controls access.
@@ -42,7 +48,7 @@ define class Account implements Copyable<Account> as
 
     // Optional custom hook: only after the generated safe baseline copy.
     @Override
-    pub copy() -> Account {
+    pub copy(): new Account {
         val mut Account c = super.copy();
         c.rebuild_cache();
         return c;
@@ -50,7 +56,7 @@ define class Account implements Copyable<Account> as
 end
 ```
 
-Every otherwise-safe concrete class automatically obtains a **compiler-synthesized `Copyable<Self>` witness and a generated `copy() -> Self` operation**. An explicit declaration and override are optional. Merely declaring a method named `copy`, or `implements Copyable<T>` / `@Copyable`, cannot make forbidden fields legal. The checker must establish fresh same-concrete-type identity, nested mutable-field separation, correct allocation domain, recursive ownership/drop and absence of borrowed escapes. No hidden copy on ordinary parameter passing.
+Every otherwise-safe concrete class automatically obtains a **compiler-synthesized `Copyable<Self>` witness and a generated `copy(): new Self` operation** (for identity-bearing class values). An explicit declaration and override are optional. Merely declaring a method named `copy`, or `implements Copyable<T>` / `@Copyable`, cannot make forbidden fields legal. The checker must establish fresh same-concrete-type identity, nested mutable-field separation, correct allocation domain, recursive ownership/drop and absence of borrowed escapes. No hidden copy on ordinary parameter passing.
 
 ### Derived class copying, and precisely when to intervene
 
@@ -61,9 +67,9 @@ Every otherwise-safe concrete class automatically obtains a **compiler-synthesiz
 **Explicit opt-out of automatic copying:** a candidate class-level `@ManualCopy` annotation may require a handwritten `copy()` hook even when the ordinary fields are derivable, for invariants the compiler cannot infer. Without an override, `copy!` is `E_COPY_OVERRIDE`; implementing the override itself also opts into manual post-processing without needing the annotation. This is distinct from `@NoCopy`, which prohibits duplication altogether. `@ManualCopy` is a **proposed annotation**, not existing parser support. Once implemented, the compiler must preserve it across imports and AOT metadata; it must never make an inherently noncopyable field legal.
  A manual override is **not required** for normal fields, arrays, nested copyable classes, or inheritance. If fields are `@NoCopy`, actor-owned resources, native handles, channels, or mutexes without a verified regeneration/copy policy, the class remains noncopyable even with an override. To create a new independent resource, use a deliberately named resource-specific factory or a separately reviewed field reconstruction policy; `copy!` must never silently duplicate its handle.
 
-**Reserved `super.copy()` semantics:** within an `@Override copy() -> Self` body, `super.copy()` means *invoke the compiler's synthesized default copy plan for the entire current concrete class*, including copyable inherited fields. It is a **nonvirtual, nonrecursive compiler intrinsic**, not a conventional call to a parent `copy()` that returns only a base object. It works even for a root class with no user-declared parent. This special meaning exists **only** in a copy override; ordinary `super.method()` keeps its usual parent-dispatch semantics. The plan constructs the fresh object under a private, unpublished owner, then post-processes. Any ancestor hook must be safely composable in deterministic ancestor-to-descendant order and run at most once; otherwise reject as `E_COPY_INHERITANCE`.
+**Reserved `super.copy()` semantics:** within an `@Override copy(): new Self` body, `super.copy()` means *invoke the compiler's synthesized default copy plan for the entire current concrete class*, including copyable inherited fields. It is a **nonvirtual, nonrecursive compiler intrinsic**, not a conventional call to a parent `copy()` that returns only a base object. It works even for a root class with no user-declared parent. This special meaning exists **only** in a copy override; ordinary `super.method()` keeps its usual parent-dispatch semantics. The plan constructs the fresh object under a private, unpublished owner, then post-processes. Any ancestor hook must be safely composable in deterministic ancestor-to-descendant order and run at most once; otherwise reject as `E_COPY_INHERITANCE`.
 
-In v1, an override calls `super.copy()` **exactly once** on all successful paths, never calls `copy! self` (recursive), modifies only the new owned object under valid mutability rules, and returns that same concrete object. The compiler rejects zero calls, double calls, returns of `self`, base-class slicing, passing a partially constructed clone to external code or leaking aliases. The result cannot retain mutable source-owned aliases; an asserted method signature alone is not a proof. `val mut` permits the hook to mutate the copy without rebinding `c`; a plain `const c` does not grant mutable-referent access. Effectful or fallible reconstruction requires an explicit future checked-copy API with typed effects and rollback, not silent synchronous `copy!`.
+In v1, a `copy(): new Self` override calls `super.copy()` **exactly once** on all successful paths, never calls `copy! self` (recursive), modifies only the new owned object under valid mutability rules, and returns that same concrete object. The compiler rejects zero calls, double calls, returns of `self`, base-class slicing, passing a partially constructed clone to external code or leaking aliases. The result cannot retain mutable source-owned aliases; an asserted method signature alone is not a proof. `val mut` permits the hook to mutate the copy without rebinding `c`; a plain `const c` does not grant mutable-referent access. Effectful or fallible reconstruction requires an explicit future checked-copy API with typed effects and rollback, not silent synchronous `copy!`.
 
 **Inheritance:** a subclass with only derivable fields receives its **own generated copy** even when the parent copy was generated; the concrete subtype is preserved. A custom ancestor hook must be included once by a verified generated composition, or the compiler rejects the derived copy. The historical rule requiring each subclass to handwrite `copy()` is superseded by this candidate. If static `Base` refers to dynamic `Child`, a permitted polymorphic `copy!` must preserve `Child` or reject (never slice); AOT vtables/witnesses must enumerate all admitted concrete subtypes.
 
@@ -92,6 +98,7 @@ In v1, an override calls `super.copy()` **exactly once** on all successful paths
 
 ## Diagnostics (stable proposed codes)
 
+* `E_FRESH_TYPE` / `E_FRESH_UNPROVEN` / `E_FRESH_NOT_UNIQUE` / `E_FRESH_MISSING_RETURN` — see the companion fresh-return contract for identity and ownership refinement failures
 * `E_COPY_UNPROVEN` — unresolved type/witness, class without verified copy implementation, or dynamic dispatch not proven
 * `E_COPY_FORBIDDEN` — `@NoCopy`, noncopyable type or resource
 * `E_COPY_TRANSITIVE` — nested field/collection key/value fails a copy proof; include the field/index origin
