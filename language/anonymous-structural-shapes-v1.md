@@ -16,7 +16,7 @@ define class Service as
 end
 ```
 
-These are **target examples**, not currently executable Rust/Wasm function calls. The compiler must retain the full shape type in its checked type IR and must not collapse `{foo:"dog"}` to `{foo:string}` or silently lower it as an ordinary class pointer.
+These illustrate the intended grammar. The **first** `length_squared(~Point p)` form now has an executable **restricted Rust/Wasm class-int scalar-snapshot** profile when a statically typed ordinary class local/parameter supplies the public `int` fields. The other examples (including inline anonymous shapes and structural methods/routines) are still not executable. The compiler must retain the full anonymous shape type in checked IR and must never collapse `{foo:"dog"}` to `{foo:string}` or silently lower it as an ordinary nominal pointer.
 
 ## Field type operators
 
@@ -76,6 +76,31 @@ end
 Here bare `on {...}` is an anonymous **value pattern** (same AST as `on ~{...}`); `on is {...}` is a **type-refinement test** (same as `on is ~{...}`). `on {foo: "dog"}` and `on is {foo: "dog"}` may test the same literal at runtime, but their AST kind and the type/refinement proof they produce are distinct. `on {foo: string}` without `is` is a **type-name-in-value-pattern error**, not an implicit type test. A field named `foo` must exist for a non-optional pattern, `_` accepts any present value, and a literal enforces typed exact equality. Extra fields are ignored, all specified constraints are conjunctive, and pattern subjects are evaluated once.
 
 A runtime match on `Map<string,string>` is allowed *only after* a checked shape test establishes the key and its type. For a projected view, capture validated fields/loans atomically or ensure a stable snapshot; do not validate a mutable key and then read a different value (TOCTOU). Reflection/dynamic maps require a specified safe adapter; this is not a green light to inspect private fields or call getters. The narrowing applies only within the matched arm; outside it, the source retains its original type. A `string | int` field cannot be used as an `int` until it has been narrowed or a total common operation is selected.
+
+## Verified first executable class-only scalar-snapshot profile (Rust/Wasm only)
+
+In the narrow browser compiler, a top-level `fnc` with a single `~DeclaredClass` or `structural DeclaredClass` formal is executable when the declared class exposes 1–8 publicly readable `int` fields and a call site supplies a statically known **ordinary class local or nominal class parameter** with those fields. The compiler rewrites each `p.field` read to a distinct immutable scalar parameter, then rewrites `f(source)` to pass direct `source.field` reads in declared-field order. The normal typed checker validates each field on the **actual source class** and uses its own offsets; cross-class pointers are never reinterpreted, moved or passed into the callee. Extra fields on the source are allowed. The resulting values are call-time scalar copies, not escaping references or a general class view.
+
+```atto
+define class Point as
+    pub int x = 0;
+    pub int y = 0;
+end
+define class Shifted as
+    pub int padding = 9;
+    pub int y = 5;
+    pub int x = 4;
+end
+pub fnc length_squared(~Point p): int { return p.x * p.x + p.y * p.y; }
+pub fnc main(): int {
+    val src = new Shifted();
+    return length_squared(src); // 41, despite the shifted field offsets
+}
+```
+
+**Fail-closed boundaries:** anonymous `{foo:T}` formals, string/union/singleton/record/struct/map fields, dynamic lookup or map key presence, computed receiver arguments (including `new Other()` or `make()` directly), named arguments, mutable projected writes, actor/sealed state, receiver methods, generator/async formals, arbitrary general borrowed views, and receiver escape all remain outside this executable subset. A source-only readonly witness planner has broader record/struct/map compatibility tests but does **not** issue a runtime map snapshot or bypass the type checker. Unused structural exports and unsupported formals retain the original explicit ABI error.
+
+**Exact tested receipt:** [compiler draft #223](https://github.com/atto-lang/atto-source.rs/pull/223), source commit `ca7b7ee9b78174373f902530256de67fb676f328`, tree `38fda5158af73b615cdb80e217178f60785d7891`, 622 verified blobs; token-free carrier [run #43928206358](https://github.com/cliptown/cliptown-e2e/actions/runs/43928206358) passed 20 generated positive structural Wasm guests, 27 expected compile rejections, 20/27 browser/native oracles, full Rust regressions and Chromium/Worker E2E. The compiler branch may be rebased or extended after that verified head; this receipt does not automatically apply to a later SHA.
 
 ## Compiler obligations and gates
 
