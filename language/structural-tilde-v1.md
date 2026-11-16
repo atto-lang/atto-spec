@@ -167,6 +167,15 @@ The same prefix-token rule applies to aggregate spellings `~(field: value)` ≡ 
 
 Do not discriminate solely by whitespace (`~(x)` vs `~ (x)`), runtime type, speculative reparse, or implicit `Any`; that would make formatting affect meaning.
 
+
+### Rust/Wasm compiler implementation slice (PR #187; unverified)
+
+The candidate Rust/Wasm compiler branch now wires `on ~{ x?: 10, y: _ } as val p` through the **production** match AST and checker rather than only the reference syntax parser. The initial executable slice is intentionally restricted to statically known ordinary **class** subjects with public fixed-layout fields. Presence is checked from the statically known class layout; a missing optional field passes, while a missing required field makes that arm false. Present integer/boolean literal fields compare with typed equality; `_` only checks presence, so it performs no field read. A match subject is evaluated once and match conditions use ordinary Wasm typed expression lowering.
+
+The `as val p` binding is a **read-only scoped class loan**, not an implicit copy or transfer. Returning or passing that class handle to an ownership-consuming parameter is rejected until a verified borrowed-argument ABI is available. Private and protected state fields are rejected, including when the field is optional. Dynamic/opaque/actor subjects, nullable presence semantics, string literal comparison, mutable `as let` bindings, and `on is ~Type` are **not** implemented by this slice. Structured guest records and open structural runtime reflection likewise remain future work.
+
+New Rust fixture expectations include present/absent optional fields, wildcard presence, mismatched literal fallthrough, missing required fields, private-field rejection, non-exhaustiveness and type mismatches. These are **proposed executable fixtures**, not proof of passing tests or guest execution. GitHub Actions is failing before job steps on the source and tested private carriers; do not promote these changes to an executed parity claim without successful full host build and guest Wasm execution.
+
 ## Hard safety and diagnostic requirements
 
 1. Resolve the callee and its formal parameter-name/structural-type contract before binding names. A `~` argument does not pick an overload, change arity, or bypass nominal overload ambiguity.
