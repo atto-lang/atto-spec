@@ -8,10 +8,15 @@ const owns = (x, k) => Object.hasOwn(x, k);
 
 function value_fields_match(subject, pattern) {
   if (subject == null || typeof subject !== "object") return false;
-  // Every pattern field must exist. Additional subject fields are permitted.
-  return Reflect.ownKeys(pattern).every(key =>
-    owns(subject, key) &&
-    (pattern[key] === ANY || Object.is(subject[key], pattern[key])));
+  // For old reference cases, object entries imply required fields. The
+  // structured form models field optionality independently from wildcards.
+  const fields = Array.isArray(pattern)
+    ? pattern
+    : Reflect.ownKeys(pattern).map(name => ({name, optional: false, value: pattern[name]}));
+  return fields.every(({name, optional, value}) => {
+    if (!owns(subject, name)) return optional;
+    return value === ANY || Object.is(subject[name], value);
+  });
 }
 function is_structurally_compatible(subject, expected_types) {
   if (subject == null || typeof subject !== "object") return false;
@@ -48,4 +53,43 @@ test("empty patterns never match everything by accident", () => {
   // Empty ~{} is rejected at parsing; the reference predicate would be
   // vacuously true and must not be used to bypass that syntax gate.
   assert.equal(value_fields_match({x: 1}, {}), true);
+});
+
+test("x?: 10 permits absence but validates the value when present", () => {
+  const pattern = [
+    {name: "x", optional: true, value: 10},
+    {name: "y", optional: false, value: ANY},
+  ];
+  assert.equal(value_fields_match({y: 20}, pattern), true);
+  assert.equal(value_fields_match({x: 10, y: 20}, pattern), true);
+  assert.equal(value_fields_match({x: 10, y: null}, pattern), true);
+  assert.equal(value_fields_match({x: 10, y: 20, z: 30}, pattern), true);
+  assert.equal(value_fields_match({x: 11, y: 20}, pattern), false);
+  assert.equal(value_fields_match({x: null, y: 20}, pattern), false);
+  assert.equal(value_fields_match({x: 10}, pattern), false);
+  assert.equal(value_fields_match({}, pattern), false);
+});
+
+test("required vs optional and wildcard vs literal are independent axes", () => {
+  const cases = [
+    [{name: "x", optional: false, value: 10}, false, true, false],
+    [{name: "x", optional: false, value: ANY}, false, true, true],
+    [{name: "x", optional: true, value: 10}, true, true, false],
+    [{name: "x", optional: true, value: ANY}, true, true, true],
+  ];
+  for (const [field, absent, exact, other] of cases) {
+    assert.equal(value_fields_match({}, [field]), absent, JSON.stringify(field));
+    assert.equal(value_fields_match({x: 10}, [field]), exact, JSON.stringify(field));
+    assert.equal(value_fields_match({x: 11}, [field]), other, JSON.stringify(field));
+  }
+  // A property whose value is undefined or null is still PRESENT.
+  assert.equal(value_fields_match({x: undefined},
+    [{name: "x", optional: false, value: ANY}]), true);
+  assert.equal(value_fields_match({x: null},
+    [{name: "x", optional: true, value: 10}]), false);
+  // Field order does not change the conjunction.
+  assert.equal(value_fields_match({y: 20}, [
+    {name: "y", optional: false, value: ANY},
+    {name: "x", optional: true, value: 10},
+  ]), true);
 });
