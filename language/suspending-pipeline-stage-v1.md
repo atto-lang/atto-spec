@@ -2,6 +2,7 @@
 
 Status: **candidate language contract**; runtime/compiler support is profile-dependent.
 Supersedes the earlier tentative `future |> await` stage: **that spelling is invalid.**
+The short effect spelling `susp` is accepted as an alias for `suspends`.
 An `await` is a language suspension operation, not a callable pipeline operand.
 
 ## Canonical syntax
@@ -10,6 +11,9 @@ An `await` is a language suspension operation, not a callable pipeline operand.
 val result = future
     |> suspends |v| -> await v
     |> transform_result;
+
+// Equivalent explicit effect alias:
+val alias_result = future |> susp |v| -> await v;
 ~~~
 
 This is equivalent to evaluating `future` exactly once, applying the explicitly
