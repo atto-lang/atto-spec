@@ -74,7 +74,7 @@ structural_type_pattern = "is", (structural_type | shape_type),
 structural_value_pattern = structural_mark, (immutable_pattern_value | value_shape_pattern),
                            ["as", binding_kind, identifier] ;
 value_shape_pattern = "{", pattern_field, {",", pattern_field}, "}" ;
-pattern_field       = identifier, ":", (literal | "_" | nested_pattern) ;
+pattern_field       = identifier, ["?"], ":", (literal | "_" | nested_pattern) ;
 call_argument       = expression | identifier, ":", expression ;
 argument_list       = "(", [call_argument, {",", call_argument}], ")" ;
 structural_value    = structural_mark, postfix_expression ;
@@ -111,6 +111,32 @@ match value over
     on _ -> { fallback(); }
 end
 ```
+
+### Optional field presence and wildcard values
+
+The `?` belongs to the **field name**, directly before the `:` token: `x?: 10`. The `_` belongs to the **value pattern** after the colon, not to the field name. This separates field existence from value matching:
+
+| Pattern field | Field absent | Field present |
+| --- | --- | --- |
+| `x: 10` | fail | pass only when `x == 10` |
+| `x: _` | fail | pass for any value, including a null-like value |
+| `x?: 10` | pass | pass only when `x == 10` |
+| `x?: _` | pass | pass for any value |
+
+```atto
+match value over
+    on ~{ x?: 10, y: _ } as val p -> {
+        process(p);
+    }
+    on _ -> { fallback(); }
+end
+```
+
+Thus `{ y: 20 }` and `{x: 10, y: 20}` match; `{x: 11, y: 20}` and `{x: 10}` do not. An explicitly present null-like value is **not absence**; it is checked against the specified value pattern. The `as val p` binder always captures the original subject value, not a synthetic object with missing fields filled in. Extra fields may be present.
+
+The lexer must produce separate `identifier`, `?`, and `:` tokens in **value-pattern field context**. `x?: 10`, `x? : 10`, and `x ? : 10` have identical meaning, and whitespace/comments after `~` remain insignificant. `x??:`, `?: 10`, duplicate `x`/`x?` declarations within a single pattern, absent right-hand pattern values, and effectful or unsupported value expressions are errors. Duplicate detection keys on the base field name, ignoring optionality.
+
+`x?: 10` does **not** say that `x` is an `Option<int>`-typed member, does not make the right-hand literal optional, and does not change the function-call `name: expression` syntax, ternary/early-return operators, or the separate `is ~{x: int}` type-test grammar. Future optional **type-shape** fields (`on is ~{x?: int}`) would need a separately specified type-level compatibility rule; this proposal only adds presence optionality to **value patterns**.
 
 An explicit value-pattern's required fields must be a **subset** of the subject's accessible fields, and **all** non-wildcard subpatterns must match (conjunction). Subject-only extra fields do not cause failure. An *any-overlap* predicate (one matching field being enough) is rejected: it makes arm dispatch unexpectedly broad and destroys useful exhaustiveness/overlap diagnostics. Equality is typed structural value equality, not object identity; recursive comparison is allowed only for statically admissible comparable fields with proven bounded evaluation. No getter side effects or automatic partial-object coercions.
 
