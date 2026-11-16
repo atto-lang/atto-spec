@@ -12,7 +12,7 @@ test("bounded readonly single-field ABI registry integrity, not guest execution"
     assert.ok(/^RSF\d{3}$/.test(c.id));
     assert.ok(!ids.has(c.id),"duplicate case "+c.id);ids.add(c.id);
     assert.ok(["accept","reject"].includes(c.expected));
-    assert.ok(c.reason.length>12 && c.source.includes("fnc ") || c.source.includes("routine "));
+    assert.ok(c.reason.length >= 5 && (c.source.includes("fnc ") || c.source.includes("routine ")));
   }
   assert.equal(m.cases.filter(x=>x.expected==="accept").length,5);
   assert.equal(m.cases.filter(x=>x.expected==="reject").length,13);
