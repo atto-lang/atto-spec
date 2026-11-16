@@ -10,7 +10,7 @@ function has(category, source, expect = "accept") {
 test("contract remains explicitly non-executable and versioned", () => {
   assert.equal(fixture.contract, "atto.structural_tilde.v1");
   assert.equal(fixture.status, "TARGET_NOT_EXECUTED");
-  assert.equal(cases.length, 42);
+  assert.equal(cases.length, 56);
   assert.equal(new Set(cases.map(v => v.id)).size, cases.length);
   for (const v of cases) {
     assert.match(v.id, /^ST\d{3}$/);
@@ -46,4 +46,28 @@ test("regressions include guard, duplicates, type fields and nested colons", () 
   assert.ok(cases.some(v => v.category === "argument" && v.expect === "reject" && v.note.includes("positional after")));
   assert.ok(cases.some(v => v.category === "argument" && v.expect === "accept" && v.source.includes(" ? ")));
   assert.ok(cases.some(v => v.category === "formal" && v.expect === "accept" && v.source.includes("~{")));
+});
+
+test("is marks structural type checks; omitting it denotes field-value matching", () => {
+  const matches = (source, expect = "accept") =>
+    cases.filter(c => c.category === "pattern" && c.source === source && c.expect === expect);
+  const type = matches("on is ~Point as val p");
+  assert.ok(type.some(c => c.pattern_kind === "type_test" && c.context?.Point === "type"));
+  const value = matches("on ~Point as val p");
+  assert.ok(value.some(c => c.pattern_kind === "value_constant" &&
+    c.context?.Point === "immutable_structural_value"));
+  assert.ok(matches("on ~Point as val p", "reject")
+    .some(c => c.context?.Point === "type-only"));
+  assert.ok(matches("on ~Point as val p", "reject")
+    .some(c => c.context?.Point === "mutable_value"));
+  assert.ok(matches("on is ~Point as val p", "reject")
+    .some(c => c.context?.Point === "const_structural_value_only"));
+  assert.ok(matches("on ~{x: 10, y: _} as val p")
+    .some(c => c.pattern_kind === "value_fields"));
+  assert.ok(matches("on structural {x: 10, y: _} as val p")
+    .some(c => c.pattern_kind === "value_fields"));
+  assert.ok(matches("on ~{x: int} as val p", "reject").length);
+  assert.ok(matches("on is ~{x: 10} as val p", "reject").length);
+  assert.ok(matches("on ~{}", "reject").length);
+  assert.ok(matches("on ~{x: effectful()}", "reject").length);
 });
