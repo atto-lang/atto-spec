@@ -46,4 +46,4 @@ Changes asserting compiler/runtime support must identify the exact source head, 
 
 - [Anonymous structural shape types, singleton and union field values (proposed)](language/anonymous-structural-shapes-v1.md)
 
-- [Anonymous structural shapes: source-only 49-case registry](conformance/anonymous-structural-shapes-v1.json) — proposed, not compiler-executed.
+- [Anonymous structural shapes: source-only 50-case registry](conformance/anonymous-structural-shapes-v1.json) — proposed, not compiler-executed.
