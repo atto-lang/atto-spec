@@ -53,6 +53,27 @@ interface PipeSink<T> {}
 
 The compiler must check every adjacent `PipeSource<T> pipe PipeSink<T>` edge, including type compatibility, `Sendable`/ownership domain transfer, effects, and capabilities. An actor may independently have one supervisor and many downstream pipeline peers. Multiple downstream peers must be explicit; `pipe` does not imply broadcast. Type inference never creates an implicit channel, async task, serializer or element conversion. An actor-to-actor edge keeps the legacy explicit-spawn form valid.
 
+## Initial typed adapter constructor profile (browser frontend; no guest runtime)
+
+The narrow Rust/Wasm browser frontend can recognize these **type-checked, fail-closed** forms as direct `pipe` stages, currently with `T` limited to `int` and `bool`:
+
+```atto
+spawn Sensor() pipe Channel<int>.bounded(16);
+spawn Sensor() pipe Stream.buffered<int>(16) pipe spawn Consumer();
+spawn Sensor() pipe Stream.port<int>(16).sink();
+Stream.port<int>(16).stream() pipe spawn Consumer();
+```
+
+- `Channel<T>.bounded(capacity)` is a duplex pipe stage (`PipeSink<T>` and `PipeSource<T>`).
+- `Stream.buffered<T>(capacity)` is an explicit buffered graph adapter with both input and output capabilities. The resulting readable view belongs to the structured connection.
+- `Stream.port<T>(capacity).sink()` is **write-only**; it cannot be an internal transform/source stage or a readable stream.
+- `Stream.port<T>(capacity).stream()` is **read-only**; it cannot be a sink. Creating a port and its two views should normally be done once and retained; independently constructing the two views does not magically pair them.
+- The browser frontend's capacity must be a compile-time nonnegative integer literal in `0..=4096` (zero gives rendezvous semantics). These restrictions are staging limits, not a global upper bound for all AttoLang targets. Capacity allocation remains **unimplemented** in this compiler.
+- Static validation checks each actor's declared `receives` / `emits` role and every adjacent known item type. A syntactically recognized but not-yet-resolved general endpoint is *not* inferred to be an untyped `Any` source/sink and never grants executable guest behavior.
+- The parser and checker must still return `E_UNSUPPORTED` for a graph with valid static roles, pending actual `PipeHandle`, capability lifetimes, typed stream/channel allocation, backpressure and guest scheduler/transport ABI. These constructor expressions also fail closed when evaluated outside a pipe.
+
+The compiler source-only reference-model test suite `tests/pipe_contract_reference.mjs` checks bounded transport behavior, while `src/pipe_contract.rs` validates graph role/type admission. Neither proves Atto compiled guest transport.
+
 ## Execution and lifecycle
 
 - `source pipe sink` is **one connection expression**, not a loop of syntax-level single-read operators. Evaluate endpoint operands exactly once in their lexical order; acquire and validate capabilities before publishing the graph.
