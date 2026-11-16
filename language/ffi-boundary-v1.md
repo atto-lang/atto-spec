@@ -62,3 +62,28 @@ Likewise, Rust/Wasm [JSPI integration PR #244](https://github.com/atto-lang/atto
 Before any backend reports v1 foreign-call support it MUST execute from normal, supported AttoLang source (not only a special proof grammar): an actor-supervisor authorized FFI call; identity-checked immutable artifact binding to target + ABI + symbol signature; true `i64` range, `bool` canonicalization and `f64` edge values; checked error conversion without cross-frame unwinding; cancellation and exactly-once generation-scoped lifetime cleanup; invalid pointer/borrow/alias, missing permission and tampered signature negatives with no artifact. AOT native targets must prove actual executable and sanitizer gates; compiler-only, source-free, host-only and zero-step workflow evidence must remain **NOT_EXECUTED**.
 
 Version negotiation must happen **before** executable foreign code is loaded or guest Wasm is instantiated. Unknown capability/ABI profile combinations must fail closed, and no unreviewed `extern` declaration may become a C symbol or host import by naming convention alone.
+
+## M1 normal-compiler foreign declaration proof — narrower than FFI actors
+
+Atto LLVM [draft #23](https://github.com/atto-lang/atto-source.llvm/pull/23), stacked on the earlier M0 proof, introduces an **actual normal-parser** approved declaration and ordinary call:
+
+```atto
+extern fnc atto_add_i64(int a, int b): int using ffi;
+pub fnc main(): int using ffi {
+  return atto_add_i64(20, 22);
+}
+```
+
+The compiler routes this through normal AST resolution, scalar argument checking, ownership admission and LLVM function lowering, rather than the special M0 proof parser. Only one immutable linker symbol and two value-`int` arguments are admitted. An explicit provisional host `--ffi-grant=atto.math.i64.v1` gate is required; without it, or with a missing declared caller effect, compilation fails **with zero LLVM IR**. The first caller is a zero-parameter native main directly returning that call with literal i64 arguments. Parser-level checked arithmetic rejects literal signed 64-bit overflows/underflows before the C shim can execute undefined signed arithmetic. Real Clang C linking and native executables are tested under ASan/UBSan with wide i64 operands.
+
+**M1 must not be labeled ABI v1 complete.** The CLI grant is not flags-2-env production permissions, not a signed supervisor capability, and not authenticated artifact admission; no FFI actor is spawned and no scheduler-owned suspend, mailbox unary response, Result/FfiError, cancellation, generation-lease callback or CONTROL notice is yet implemented. The target actor contract below remains pending and cannot be inferred from success of a synchronous C call.
+
+### Required next runtime actor gate (proposal, NOT implemented)
+
+An FFI actor is a supervised special actor; its inbound `receives` contract types the admitted call messages, and `sends` types permitted downstream application messages. Supervisor CONTROL signaling is separate, and an actor may have many downstream typed destinations but only its designated supervisor. Unary calls return a checked `Result<T,FfiError>` through one scheduler-owned reply ticket; `respond_with`/`send_back` are at-most-once and must be consumed, cancelled or failed exactly once. A non-unary actor may handle unary message variants using the same one-shot ticket, without automatically making every stream message unary.
+
+The runtime, **not the source or CLI flag alone**, must mint a binding capability containing actor owner/generation, target, immutable artifact digest, permitted symbol/signature, call effects, rights and bounded quota. A call must check this tuple before dispatch and again when settling the foreign result. Revoking admission on actor stop/hot reload may not allow an old callback to enter the new generation; outstanding accepted completion leases delay arena reclamation but never grant guest memory access. Foreign failures must convert into checked FfiError and, for terminal actor failure, a priority supervisor CONTROL notice. They must not unwind C++/Java/.NET exceptions across foreign frames.
+
+Production CLI permission parsing must use the canonical [flags-2-env](https://github.com/flags-2-env/flags-2-env) project and `.cli-flags.toml` contract, with precedence CLI > environment > declared defaults; a compiler flag for a *test-only static symbol* is not authorization to dynamically load a shared library. Full native AOT, no uncontrolled GC, and explicit host/guest isolation remain mandatory.
+
+Any CI receipt for M1 proves **only** its executable source-compiled i64 static C ABI case. The five-backend ABI v1 matrix remains NOT_EXECUTED until the real actor/runtime and error/lifetime checks are executed by each backend.
