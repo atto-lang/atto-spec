@@ -280,3 +280,82 @@ The two write spellings are identical after capability resolution. For this spec
 - Concurrent actors preserve atomic FIFO admission and successful writers are never replayed; cancellation before admission retains payload.
 - Exhausted quota and closed writer return errors without suspending, consuming data or returning success; no successful write is silently dropped.
 - `select` with an output arm and other ready arms observes fairness and commits only its winner, including under resource exhaustion.
+
+
+## Candidate extension: supervised `do` I/O, callbacks, and detached-operation safety
+
+Status: **syntax/semantics candidate**, no general compiled guest support. This section does not change the established meanings of `do select`, `do nb select`, `do match`, or other existing `do` contexts. A `do` immediately governing a channel operation is a specific *supervised detached I/O* form, **not** a blanket change to every `do` statement.
+
+### Proposed syntax
+
+```atto
+// Direct: follows underlying I/O completion/effect contract.
+writech foo, "hi";
+foo << "hi";
+
+// Nonblocking: returns Future<actual checked write outcome>.
+val pending = nb writech foo, "hi";
+nb foo >> val read_future; // Future<actual checked read outcome>
+
+// Detached, supervised operation: no future is returned to caller.
+do writech foo, "hi";
+do foo << "hi";
+
+// Optional completion callback (no args = success-only).
+do writech foo, "hi", || -> void { log_success(); };
+
+// Recommended typed outcome callback (success and failure).
+do writech foo, "hi", |outcome| -> void {
+    handle_write_outcome(outcome);
+};
+
+// Read must deliver its result to an explicit consumer.
+do readch foo, |outcome| -> void {
+    handle_read_outcome(outcome);
+};
+```
+
+`log_success` and `handle_*_outcome` are placeholders for user-defined functions. A successful *channel write* means admission according to the channel protocol; it does **not** promise OS flush, persistence or delivery to an external peer. Stream APIs must define what their own write completion means.
+
+`do readch foo;` with no callback or output sink is **invalid by default**: it would silently consume an application message. For deliberate drains, require a separately named/typed discard or drain operation with explicit effect and supervision; do not turn `do readch` into accidental message disposal. `do foo >> val x` is invalid: a detached task cannot bind a local value in the caller's now-ended scope. The first version does not add a direction-only detached-read alternative.
+
+### Detached operation lifecycle
+
+1. `do writech` schedules a *supervised child I/O task*, with exactly one operation owner and a bounded runtime admission mechanism; it never calls a blocking OS I/O primitive on the caller/carrier. It must not imply an unlimited number of pending tasks. Registration/allocation/quota failures must be surfaced, not silently dropped.
+2. A detached operation can be queued when the underlying bounded channel is not ready, but it may eventually fail (closed, cancelled, quota, timeout, shutdown). The scheduler retains an owned payload until exactly one admission/terminal transition. The owner must not reuse a moved buffer; an uncommitted payload must be returned/cleaned up under the declared contract. No duplicate admission.
+3. The child belongs to the invoking actor/task group. On teardown it must either complete under an explicit join policy or be cancelled and report the cancellation. Detached is **not** orphaned; it does not permit use-after-free of borrowed stack/actor-state data or cross critical-read/write suspension boundaries.
+4. **With no callback**, terminal failures are delivered to the supervisor's dedicated control/error path. A runtime with no error sink/supervisor must reject unobservable `do` I/O or require an explicit error handler.
+5. A callback accepting the typed completion outcome receives exactly one terminal event. A zero-argument `|| -> void { ... }` callback is invoked on **success only**; failure is still delivered to supervisor. Callbacks cannot erase checked failures merely by omitting parameters. A callback that explicitly handles an error may avoid escalation according to the ordinary actor error policy; panic cannot be swallowed.
+6. Callback execution uses the owning task/actor scheduler, not a reactor/carrier thread holding I/O locks. `-> void` callbacks are non-suspending unless explicitly marked/effect-checked; no direct access to sealed actor state outside critical callbacks. Callback lifetime, capture move/borrow and cancellation have the same checks as other async closures.
+7. The language's `using io` permission is required for direct, `nb`, and `do`. `pure` forbids them all. A `do` registration does not itself require `suspends` if guaranteed nonparking, but the child operation may suspend under the runtime's own authorization; effect-check callback and task body independently. `await` still needs suspension authority in the executing callable.
+8. Bare `nb writech foo, "hi";` returns a Future which must be observed, transferred or explicitly detached. A strict profile should reject discarding a checked pending Future; use `val pending = nb writech ...` or `do writech ...`. This prevents mistakenly treating `nb` as fire-and-forget.
+9. Prefix `do sink << value;` may be accepted as the same supervised write as `do writech sink, value;` with the same source-level expression ownership and error routing. `do` does not modify `<<`/`>>` semantics generally and does not add the proposed glyph operators `<<!`, `!>>`, `<<:` or `:>>` to v1: explicit mode prefixes are clearer, avoid shift/annotation token conflicts, and preserve existing parser rules.
+
+### Reject nested future/await read form
+
+The following is **invalid**, not a useful combination of nonblocking I/O and awaiting:
+
+```atto
+nb stdio.in >> (val String pending_line << await Future<string>);
+```
+
+Reasons: a read binder cannot itself contain a second I/O operator; `Future<string>` is a type, not an awaitable expression; `await` on a pending value may suspend the caller; the annotation would conceal the actual error/EOF outcome, and nested `val String` conflicts with canonical binding syntax.
+
+Use the two-phase form:
+
+```atto
+nb stdio.in >> val pending_line: Future<ReadOutcome<string, IoError>>;
+
+// In a suspends callable with the appropriate I/O permission:
+val outcome = await pending_line;
+handle_read_outcome(outcome);
+```
+
+`ReadOutcome<string, IoError>` is illustrative of the capability's checked result, not an invented standard library type. Where a callback is needed instead of `await`, use a supervised detached read with a typed callback, or register a completion handler on the future using the future API. Neither form is allowed to hide failure, EOF or cancellation.
+
+### Required conformance gates
+
+- Direct / `nb` / `do` / `try` I/O and explicit `readch`/`writech` must have **distinct AST modes** with no confusion with `do select` or `do nb select`.
+- Runtime checks: admission of bounded writes, credit exhaustion and quota failure; supervisor error path when there is no callback; callback once on terminal success/failure; cancel vs commit; no payload duplication; no callback after owner destruction; no stack loan escaping the caller.
+- Negative parse/type tests for bare `do readch`, detached local read binders, `nb readch foo >> Future<string> foo`, the nested `await Future<string>` expression, `do` under `pure`, missing I/O capability, and bare discarded checked Futures.
+- A Rust host model or syntax-only preflight must be reported separately from actual compiled `.atto` guest runtime/driver evidence. **No claims of executable support** until each backend runs a real channel and stream fixture from an exact SHA-pinned artifact.
