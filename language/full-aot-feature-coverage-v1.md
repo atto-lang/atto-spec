@@ -79,6 +79,65 @@ Never redefine Atto syntax by analogy: preserve `pipe` for actor/stream piping, 
 
 Some mappings are existing syntax proposals, not merged/verified implementations. Pattern identifiers are identifiers for tests, **not grammatical tokens**. New syntax requires its own grammar/formatter/migration review; map conceptual features to established AttoLang syntax whenever possible.
 
+## 50 source-language contributions: AOT-safe interpretations
+
+The source comparison additionally names **50 languages** and a particularly useful idea from each. This table records those ideas, including ones AttoLang may implement as a library or compilation target rather than as first-class syntax. **It is not an implementation claim**; some require separate language-design decisions.
+
+| ID | Language | Notable idea | AOT-safe direction |
+|---|---|---|---|
+| L01 | Rust | ownership, borrowing, enums, traits | compile borrow contracts and monomorphized/finite witness calls |
+| L02 | C | direct hardware and memory control | explicit unsafe or capability-guarded AOT FFI; never unchecked safe defaults |
+| L03 | C++ | RAII, templates, operator overloading | deterministic drop and compile-time generics; no general operator overloading admission |
+| L04 | Java | interfaces, annotations | static interface layout and compile-time annotation processors |
+| L05 | Kotlin | null safety, extensions, coroutines | Option, statically resolved extensions, compiled suspension frames |
+| L06 | Scala | matching, comprehensions, type system | exhaustive patterns and typed iterator lowering |
+| L07 | Go | channels, goroutines, interfaces | compiled channels/tasks and statically checked protocol witnesses |
+| L08 | Python | readability, decorators, comprehensions | explicit compiler-time annotations/decorators and AOT iterator lowering |
+| L09 | TypeScript | structural typing, unions, generics | closed structural witnesses, tagged ADTs and finite generic closure |
+| L10 | JavaScript | closures, first-class functions, async | AOT closure environments and async state machines, no eval |
+| L11 | C# | LINQ, properties, async, patterns | typed query/iterator IR and compiled property accessors |
+| L12 | Swift | protocols, values, optionals | protocol witness tables, value types, Option |
+| L13 | Dart | sound null safety, isolates, async | actor/isolate boundaries and checked typed messages |
+| L14 | Ruby | blocks, metaprogramming, DSLs | AOT blocks and compile-time DSL expansion, not method_missing JIT |
+| L15 | PHP | web integration, named arguments | static named argument resolution and typed HTTP/FFI adapters |
+| L16 | Lua | metatables, coroutines, embedding | closed protocol tables and precompiled coroutine frames; optional interpreter not Atto codegen |
+| L17 | Perl | regexes, text processing | precompile literal regexes to bounded automata and typed Unicode APIs |
+| L18 | R | vectorization, data frames | AOT SIMD/SoA and statically typed data-frame adapters |
+| L19 | Julia | multiple dispatch, numerical computing | finite compile-time multimethod table and statically specialized numerics |
+| L20 | MATLAB | matrix syntax | typed shape-aware tensor/matrix library and AOT kernels |
+| L21 | Haskell | purity, laziness, typeclasses | effect checking, AOT thunks, static dictionaries |
+| L22 | OCaml | ADTs, pattern matching | closed tagged variants and exhaustiveness |
+| L23 | F# | pipelines, discriminated unions | |> expressions and nominal tagged sums |
+| L24 | Elixir | actors, matching, pipelines | typed actors, fault handling, and forward functional composition |
+| L25 | Erlang | fault tolerance, supervision | precompiled supervisor policy and reserved CONTROL path |
+| L26 | Clojure | immutable data, persistent collections | persistent typed structures with arena-aware allocation |
+| L27 | Lisp | homoiconicity, macros | quoted AST and bounded hygienic compile-time macros only |
+| L28 | Scheme | continuations, lexical closures | precompiled continuation/state-machine frames with ownership limits |
+| L29 | Racket | language-oriented programming | build-time DSL/front-end plugins emitting typed Atto IR |
+| L30 | Gleam | typed functional code, actors | typed Result/Option pipelines and actor mail protocols |
+| L31 | Zig | comptime, explicit allocation | bounded deterministic compile-time evaluation and explicit actor allocators |
+| L32 | Nim | compile-time metaprogramming | typed hygienic AST macros before native code generation |
+| L33 | Crystal | Ruby-like syntax, static types | readable block syntax with fully static analysis |
+| L34 | D | systems programming, contracts | pre/postcondition checks with erased or compiled runtime validation |
+| L35 | Ada | strong typing, contracts, tasking | range/refinement checks and bounded scheduler tasks |
+| L36 | Fortran | array and numerical computing | AOT loops, SIMD, layout and numerical precision guarantees |
+| L37 | COBOL | business data processing | fixed precision decimal, schema-safe record/transaction APIs |
+| L38 | Delphi/Object Pascal | properties, interfaces, generics | AOT property accessors, witnesses and finite generics |
+| L39 | Objective-C | dynamic messaging, introspection | finite selector registry and retained metadata without generating methods |
+| L40 | Smalltalk | message passing, live objects | typed message dispatch; external build/replace for live developer updates |
+| L41 | Prolog | logic, unification | compiled or bounded interpreted term engine as a library, not generated native Atto source |
+| L42 | APL | array operators | typed vectorization and AOT SIMD transformations |
+| L43 | Raku | grammars, operators | compile grammars at build time; no unrestricted operator overload syntax |
+| L44 | Solidity | contract programming | capability/effect-checked deterministic state transitions |
+| L45 | Odin | explicit control, systems | explicit allocators, ownership and compile-time ABI/FFI checking |
+| L46 | Mojo | HPC, systems programming | statically specialized SIMD/GPU kernels and machine target profiles |
+| L47 | V | simplicity, compilation | small explicit surface and predictable native artifacts |
+| L48 | Pony | reference capabilities, actors | statically checked Sendable capabilities and isolate message transfer |
+| L49 | Idris | dependent types | first admit decidable type-level constraints; proof terms erased ahead of time |
+| L50 | Agda | dependent types, proofs | compile-time theorem/proof checks, erase proofs in AOT output |
+
+**Examples of deliberate non-equivalence:** Smalltalk-style live execution becomes build-time compile + safe artifact replacement; Lisp/Nim macros are compiler-time, not runtime evaluators; Objective-C dynamic method lookup is limited to precompiled registries; Prolog unification can be an ordinary data interpreter without compiling Atto source; general dependent types are research, not a silent language promise.
+
 ## Acceptance and testing matrix
 
 The machine-readable file `conformance/full-aot-feature-coverage-v1.json` starts **all** backend cells as `NOT_EXECUTED`, intentionally. A parser accepting a word, a host-only model, a Wasm-only guest, an incomplete native slice, or a green workflow without guest execution does not elevate any other backend.
