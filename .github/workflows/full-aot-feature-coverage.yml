@@ -4,13 +4,13 @@ on:
     paths:
       - 'language/full-aot-feature-coverage-v1.md'
       - 'conformance/full-aot-feature-coverage-v1.json'
-      - 'tests/test_full_aot_feature_coverage.py'
+      - 'tests/test_full_aot_*.py'
       - '.github/workflows/full-aot-feature-coverage.yml'
   push:
     paths:
       - 'language/full-aot-feature-coverage-v1.md'
       - 'conformance/full-aot-feature-coverage-v1.json'
-      - 'tests/test_full_aot_feature_coverage.py'
+      - 'tests/test_full_aot_*.py'
       - '.github/workflows/full-aot-feature-coverage.yml'
 permissions:
   contents: read
@@ -25,4 +25,4 @@ jobs:
       - name: Check ledger JSON, coverage and evidence requirements (NOT guest parity)
         run: |
           python3 --version
-          python3 -m unittest discover -s tests -p 'test_full_aot_feature_coverage.py' -v
+          python3 -m unittest discover -s tests -p 'test_full_aot_*.py' -v
