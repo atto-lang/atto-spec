@@ -156,6 +156,36 @@
       "expected": "ACCEPT",
       "phase": "guest",
       "source": "const t = (1, true);"
+    },
+    {
+      "id": "bare-map-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const m = ~(\"a\" => 1);"
+    },
+    {
+      "id": "bare-record-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const r = ~(ready: true);"
+    },
+    {
+      "id": "spaced-map-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "const m = ~ map(\"a\" => 1);"
+    },
+    {
+      "id": "spaced-structural-param",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "fnc accept(~ Point p) -> void { }"
+    },
+    {
+      "id": "spaced-structural-is-match",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "match v over on is ~ Point as val p -> { use(p); } on _ -> { } end"
     }
   ]
 }
