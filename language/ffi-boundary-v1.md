@@ -48,3 +48,17 @@ The [29-case candidate FFI conformance matrix](https://github.com/atto-lang/atto
 - [Owned-callable ABI proposal #20](https://github.com/atto-lang/atto-spec/pull/20): callable handles, not foreign callback admission.
 - [LLVM `Pointer<int>` native AOT #14](https://github.com/atto-lang/atto-source.llvm/pull/14): intentionally denies FFI.
 - [Java external actor draft #1350](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1350): authenticated artifact foundation, not executable native linking.
+
+## M0 executed implementation evidence — strictly narrower than v1
+
+[AttoLang LLVM draft PR #22](https://github.com/atto-lang/atto-source.llvm/pull/22) compiled a narrow opt-in static `i64(i64,i64)` bridge and executed five actual native C downcalls in release and ASan/UBSan profiles. The exact **72-file** source tree `2072e788498ee1388211eb4ca8512781444d53b1` was verified on a private token-free carrier; [stepful Actions #43960288920](https://github.com/anticaptrad/atto-ci/actions/runs/43960288920) succeeded. The LLVM compiler binary SHA-256 was `c19cd1216da71ab475ad2ef4c5286884d19e638620e091c30451690af5d1a1ab`. Twelve malformed/ungranted source cases rejected without LLVM IR, and link without the fixed C shim failed.
+
+**M0 is not an implementation of this v1 contract.** It only permits decimal inputs 0..255 with sum <=255, a single statically linked symbol, and fixed output. The opt-in `--ffi-grant=atto.math.i64.v1` is an experimental compiler flag **not** a trusted supervisor capability. Its static `NativeMath.add_i64` syntax is a test-only bridge probe, not approved public actor-call syntax. No actor is spawned and no suspension occurs. Missing: authenticated artifact identity, actor ownership/lifetime leases, general i64 domain, checked native error mapping, actual `Result` adapter, 32-bit native proof, callbacks, real foreign cancellation, JVM/Graal/.NET NativeAOT parity.
+
+Likewise, Rust/Wasm [JSPI integration PR #244](https://github.com/atto-lang/atto-source.rs/pull/244) passed full source-compiled Chromium guest execution in [focused run #43957723001](https://github.com/anticaptrad/atto-ci/actions/runs/43957723001) and [full compiler run #43957722875](https://github.com/anticaptrad/atto-ci/actions/runs/43957722875). This establishes a versioned **channel guest import** boundary, not native library FFI.
+
+## Promotion gate for ABI v1
+
+Before any backend reports v1 foreign-call support it MUST execute from normal, supported AttoLang source (not only a special proof grammar): an actor-supervisor authorized FFI call; identity-checked immutable artifact binding to target + ABI + symbol signature; true `i64` range, `bool` canonicalization and `f64` edge values; checked error conversion without cross-frame unwinding; cancellation and exactly-once generation-scoped lifetime cleanup; invalid pointer/borrow/alias, missing permission and tampered signature negatives with no artifact. AOT native targets must prove actual executable and sanitizer gates; compiler-only, source-free, host-only and zero-step workflow evidence must remain **NOT_EXECUTED**.
+
+Version negotiation must happen **before** executable foreign code is loaded or guest Wasm is instantiated. Unknown capability/ABI profile combinations must fail closed, and no unreviewed `extern` declaration may become a C symbol or host import by naming convention alone.
