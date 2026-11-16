@@ -232,49 +232,67 @@
       "category": "pattern",
       "source": "on is ~Point as val p",
       "expect": "accept",
-      "note": "explicit structural type test"
+      "note": "explicit structural type test",
+      "pattern_kind": "type_test",
+      "context": {
+        "Point": "type"
+      }
     },
     {
       "id": "ST034",
       "category": "pattern",
       "source": "on is structural Point as val p",
       "expect": "accept",
-      "note": "keyword type test equivalent"
+      "note": "keyword type test equivalent",
+      "pattern_kind": "type_test",
+      "context": {
+        "Point": "type"
+      }
     },
     {
       "id": "ST035",
       "category": "pattern",
       "source": "on ~Point as let p",
       "expect": "accept",
-      "note": "structural shorthand pattern"
+      "note": "structural value-constant pattern, not a type test",
+      "pattern_kind": "value_constant",
+      "context": {
+        "Point": "immutable_structural_value"
+      }
     },
     {
       "id": "ST036",
       "category": "pattern",
       "source": "on structural Point as let p",
       "expect": "accept",
-      "note": "structural keyword pattern"
+      "note": "long structural synonym for value-constant pattern",
+      "pattern_kind": "value_constant",
+      "context": {
+        "Point": "immutable_structural_value"
+      }
     },
     {
       "id": "ST037",
       "category": "pattern",
       "source": "on is ~{x: int} as val p",
       "expect": "accept",
-      "note": "structural shape in match"
+      "note": "structural shape in match",
+      "pattern_kind": "type_test"
     },
     {
       "id": "ST038",
       "category": "pattern",
       "source": "on is ~Point as val p when p.x > 0",
       "expect": "accept",
-      "note": "guarded matching"
+      "note": "guarded matching",
+      "pattern_kind": "type_test"
     },
     {
       "id": "ST039",
       "category": "pattern",
       "source": "on ~",
       "expect": "reject",
-      "note": "missing type name"
+      "note": "missing value-constant or field-value pattern"
     },
     {
       "id": "ST040",
@@ -296,6 +314,127 @@
       "source": "on is ~{} as val p",
       "expect": "reject",
       "note": "empty structural shape"
+    },
+    {
+      "id": "ST043",
+      "category": "pattern",
+      "source": "on ~{x: 10, y: _} as val p",
+      "expect": "accept",
+      "pattern_kind": "value_fields",
+      "note": "field equality and wildcard; extra subject fields allowed"
+    },
+    {
+      "id": "ST044",
+      "category": "pattern",
+      "source": "on structural {x: 10, y: _} as val p",
+      "expect": "accept",
+      "pattern_kind": "value_fields",
+      "note": "keyword alias for structural value-field pattern"
+    },
+    {
+      "id": "ST045",
+      "category": "pattern",
+      "source": "on is structural {x: int, y: bool} as val p",
+      "expect": "accept",
+      "pattern_kind": "type_test",
+      "note": "long keyword syntax must be type test with is"
+    },
+    {
+      "id": "ST046",
+      "category": "pattern",
+      "source": "on ~{x: -1, y: true} as let p when p.y",
+      "expect": "accept",
+      "pattern_kind": "value_fields",
+      "note": "negative literal boolean literal and guard"
+    },
+    {
+      "id": "ST047",
+      "category": "pattern",
+      "source": "on ~{name: 'Ada'} as val p",
+      "expect": "accept",
+      "pattern_kind": "value_fields",
+      "note": "string scalar comparison"
+    },
+    {
+      "id": "ST048",
+      "category": "pattern",
+      "source": "on ~{x: int} as val p",
+      "expect": "reject",
+      "pattern_kind": "value_fields",
+      "note": "bare type is not a value literal: require on is ~{x: int}"
+    },
+    {
+      "id": "ST049",
+      "category": "pattern",
+      "source": "on is ~{x: 10} as val p",
+      "expect": "reject",
+      "pattern_kind": "type_test",
+      "note": "type-test fields cannot be value literals"
+    },
+    {
+      "id": "ST050",
+      "category": "pattern",
+      "source": "on ~{x: 1, x: 2}",
+      "expect": "reject",
+      "pattern_kind": "value_fields",
+      "note": "duplicate field pattern"
+    },
+    {
+      "id": "ST051",
+      "category": "pattern",
+      "source": "on ~{}",
+      "expect": "reject",
+      "pattern_kind": "value_fields",
+      "note": "empty pattern would match everything; use wildcard"
+    },
+    {
+      "id": "ST052",
+      "category": "pattern",
+      "source": "on ~{x: effectful()}",
+      "expect": "reject",
+      "pattern_kind": "value_fields",
+      "note": "effectful runtime field expressions disallowed"
+    },
+    {
+      "id": "ST053",
+      "category": "pattern",
+      "source": "on ~{x: 1,}",
+      "expect": "reject",
+      "pattern_kind": "value_fields",
+      "note": "trailing comma in value-field pattern"
+    },
+    {
+      "id": "ST054",
+      "category": "pattern",
+      "source": "on ~Point as val p",
+      "expect": "reject",
+      "pattern_kind": "value_constant",
+      "note": "Point resolves only to type, not immutable value",
+      "context": {
+        "Point": "type-only"
+      }
+    },
+    {
+      "id": "ST055",
+      "category": "pattern",
+      "source": "on ~Point as val p",
+      "expect": "reject",
+      "pattern_kind": "value_constant",
+      "note": "Point is mutable runtime value, not an immutable pattern constant",
+      "context": {
+        "Point": "mutable_value"
+      }
+    },
+    {
+      "id": "ST056",
+      "category": "pattern",
+      "source": "on is ~Point as val p",
+      "expect": "reject",
+      "pattern_kind": "type_test",
+      "note": "Point resolves only to value; type-test requires a type",
+      "context": {
+        "Point": "const_structural_value_only"
+      }
     }
   ]
 }
