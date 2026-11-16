@@ -1,95 +1,99 @@
-# Typed I/O continuation pipelines — directional binding candidate
+# Typed directional I/O captures and forward/reverse await continuations
 
-Status: **draft grammar contract**, not executable guest stdin support. This is an addendum to `io-direction-shorthand-v1.md` and `suspending-pipeline-stage-v1.md` on atto-spec #32, superseding the earlier ad hoc `Future<T> x | await x` spelling *when adopted*. Existing parser acceptance of the earlier forms is not a runtime promise.
+Status: **candidate language contract**; the Rust/Wasm stdin guest read ABI is still unsupported. This extends `io-direction-shorthand-v1.md` and `suspending-pipeline-stage-v1.md`. Unlike the earlier version of this document, the two *contextual* typed-Future spellings below are now proposed as valid grammar. A general `future |> await` stage remains invalid.
 
-## Decision boundary
+## Binding versus channel I/O
 
-- `|>` means forward callable application: `value |> f` is `f(value)`; `<|` means reverse application: `f <| value` is also `f(value)`. Both require **runtime expressions**, not type names.
-- `await` is a language operation, **not** a standalone callable. `future |> await`, `future |> await x`, and `f <| Future<string>` are invalid.
-- `susp |f| -> await f` and `suspends |f| -> await f` are the proposed short and long spellings for an explicitly suspending pipeline lambda. The compiler's existing executable subset accepts `suspends`; the `susp` alias has its own implementation/parity dependency.
-- In a directional I/O pipeline, `source >> val pending` is a read/registration operation that binds its complete result and passes the result into a following `|>` stage. A terminal `>> val resolved` after a pipeline is **value capture**, not another read. These must be *distinct AST nodes*.
-- `val/let` introduce bindings; `const` cannot be initialized from runtime I/O. The binding name must be fresh; `>>`/`<<` are not arbitrary reassignment and may not write to an existing mutable variable.
+- `source >> val item` is a *read* with a fresh immutable binding; `sink << data` is a *write* to a Writable capability.
+- `result >> val item` **only at the terminal capture of a recognized pipeline** binds its value, not another channel read. `val item << result` is a declaration-first capture *only* in the corresponding recognized reverse pipeline. Never infer the distinction from runtime duck typing.
+- An `nb source >> Future<T> x` continuation *registers a nonparking read* and binds the resulting Future to `x`. The source does not "write to a Future": it initiates a read and its completion is represented by the future. `Future<T>` is a contextual **type slot**, not an evaluated expression or a new object constructor.
+- A `val` or `let` binder must be fresh. Neither `>>` nor `<<` performs arbitrary reassignment to an existing variable. Runtime `const` capture is rejected.
 
-## Preferred forward spelling
+## The two requested forms
 
-```atto
-// ReadOutcome is a stand-in for the capability's real checked outcome type.
-nb stdio.in >> val pending: Future<ReadOutcome>
-    |> susp |f| -> await f
-    >> val resolved: ReadOutcome;
+~~~atto
+// Reverse: unnamed pending Future, applied right-to-left to a lambda.
+nb stdio.in >> (
+    val String pending_line << |x| -> await x <| Future<string>
+);
 
-// The unambiguous existing-language desugaring:
-val pending = nb readch stdio.in;
-val resolved = await pending;
-```
+// Forward: named pending Future, then a checked await of precisely x.
+nb stdio.in >> Future<string> x
+    |> await x
+    >> val String pending_line;
+~~~
 
-`nb` qualifies only the read registration. That registration must return promptly (including prompt admission failure); the explicit awaited stage can suspend and requires the surrounding callable to authorize suspension. Both effects require the appropriate I/O and suspension permissions. In the forward shorthand `pending` is a **move-through binding**: it names the Future at that stage, but passing a linear Future to the await stage consumes it. Subsequent use of `pending` is rejected if the Future is linear. No hidden copies, repeat reads, temporary task creation, or double-await.
+Both are syntactic alternatives to:
 
-An explicit example that does **not** require directional capture syntax is:
+~~~atto
+val x: Future<string> = nb readch stdio.in;
+val pending_line: string = await x;
+~~~
 
-```atto
-val resolved = (nb readch stdio.in)
-    |> suspends |f| -> await f;
-```
+That desugaring is illustrative: it is only well-typed when this source really provides `Future<string>`. A raw stdin source can report EOF, failure and cancellation; for such a source a bare `string` is not an admissible flattened result.
 
-## Reverse pipeline and `<<`
+The reverse `<|` means functional application in the general language, `f <| value = f(value)`; **only in this particular read production** is `Future<T>` the typed slot for the preceding nonblocking registration. Anywhere else, `f <| Future<T>` is invalid because `Future<T>` is a type, not a runtime value.
 
-```atto
-// Reverse application has an actual Future-producing expression on the right.
-val resolved = (suspends |f| -> await f) <| (nb readch stdio.in);
+The forward `|> await x` is a *contextual named-future control stage*, **not** `await` as a function. It is permitted only immediately after the `nb source >> Future<T> x` declaration and only when the identifier is precisely `x`. Elsewhere `future |> await` and `future |> await x` remain invalid. Existing ordinary lambda application remains:
 
-// Possible declaration-first terminal capture; candidate only:
-val resolved << ((suspends |f| -> await f) <| (nb readch stdio.in));
-```
+~~~atto
+val transformed = pending |> susp |f| -> await f |> transform_result;
+// Equivalent effect spelling: suspends |f| -> await f
+~~~
 
-The second form is **not** automatically legal merely because `val x << source` is an existing I/O read-binder shorthand. An expression returning `ReadOutcome` is not a readable stream. To adopt this additional capture spelling, the grammar must recognize an explicitly parenthesized reverse-pipeline RHS and lower the outer declaration to `BindValue`, not to a second `Read`. Do not choose I/O-vs-assignment semantics by arbitrary runtime type. Until this contextual production is implemented, prefer `val resolved = ...` for reverse pipes.
+The reverse lambda `|x| -> await x` can infer its suspension effect from its *explicit* await in this narrow inline-I/O production; a standalone general callable lambda still follows normal `susp`/`suspends` effect rules. The **enclosing** callable must authorize `suspends`, regardless of the inline marker.
 
-## Reject the original ambiguous examples
+## Checked IoError propagation with ?
 
-```atto
-// INVALID: `Future<string>` is a type, not a runtime value.
-nb stdio.in >> (val string line << |x| -> await x <| Future<string>);
+Assuming a line-oriented source's checked outcome is `Future<Result<Option<string>,IoError>>`:
 
-// INVALID: `await x` is not a callable stage and the binder lacks val/let.
-nb stdio.in >> Future<string> x |> await x >> val string line;
+~~~atto
+// Forward: propagation applies to the awaited Result, NOT to the Future.
+nb stdio.in >> Future<Result<Option<string>,IoError>> pending
+    |> (await pending)?
+    >> val Option<string> line;
 
-// ALSO INVALID: a bare await stage is not a function.
-val x = future |> await;
-```
+// Reverse:
+nb stdio.in >> (
+    val Option<string> line
+      << |f| -> (await f)? <| Future<Result<Option<string>,IoError>>
+);
+~~~
 
-The earlier contextual `await Future<T>` form is a separate **typed slot** production, not a general-purpose `await` expression or license to pass types through `<|`. Do not reinterpret the new reverse pipe as that special case.
+The semantics are:
 
-## Grammar sketch (new productions only)
+1. A nonblocking read registration is attempted **exactly once** and yields an owned Future (or its declared immediate admission failure).
+2. `await` consumes/awaits the Future, potentially suspending the current task; the result is `Result<Option<string>,IoError>`.
+3. `(await pending)?` propagates `Err(IoError)` to a compatible enclosing `Result<...,IoError>` return (or a compatible explicitly declared conversion). The successful value is `Option<string>` and is bound by the terminal `>> val` or declaration-first `val <<`.
+4. `None` is **EOF**, not a string and not an `IoError`. It remains `None` for the caller to handle. Do not silently convert it to an empty string, panic, or implicit cancellation.
+5. `await pending?` is rejected in this production: it ambiguously suggests `await (pending?)`. Require `(await pending)?` for the intended Result propagation.
 
-```ebnf
-nb_read_flow       = 'nb', readable_expr, '>>', future_binder,
-                     '|>', suspending_await_stage, '>>', outcome_binder, ';' ;
-future_binder      = ('val' | 'let'), typed_name_with_future_type ;
-outcome_binder     = ('val' | 'let'), typed_name ;
-suspending_await_stage = ('susp' | 'suspends'), '|', identifier, '|',
-                         '->', 'await', identifier ;
-reverse_apply      = callable_expr, '<|', value_expr ;
-forward_apply      = value_expr, '|>', callable_stage ;
-reverse_capture_candidate = ('val' | 'let'), typed_name, '<<',
-                            '(', reverse_apply, ')', ';' ;
-```
+An enclosing `Result<Option<string>,IoError>` callable could return `Ok(line)`. A regular `int`-returning callable must not use this `?` unless its effect/return contract has a defined compatible error propagation route. Cancellation/close/admission errors must have an observable path; they are never discarded.
 
-Use proper expression/typed-binder parsing for the final grammar; this sketch is deliberately restricted to the identity-await flow and does not imply full closures, generic I/O execution, or operator overloading. The lambda's awaited identifier must equal the lambda parameter. Its Future input must resolve to the actual pending read value. `Future<ReadOutcome>` must unify exactly with the capability's return type; `ReadOutcome` must unify with the output binder, retaining `Result`, `Option`, EOF, errors, cancellation, and ownership semantics.
+## Grammar (candidate, contextual productions only)
 
-## Precedence and effect safety
+~~~ebnf
+nb_capture =
+    "nb", readable_expr, ">>",
+    ( "(", new_binding, "<<", reverse_await, "<|", future_type_slot, ")"
+    | future_type_slot, identifier, ("|>" | "|"), named_await,
+      ">>", new_binding
+    | new_future_binding, "|>", explicit_susp_lambda,
+      ">>", new_binding ) ;
+reverse_await = [ "susp" | "suspends" ], "|", identifier, "|", "->",
+                ( "await", identifier | "(", "await", identifier, ")", ["?"] ) ;
+named_await = "await", identifier | "(", "await", identifier, ")", ["?"] ;
+explicit_susp_lambda = ("susp" | "suspends"), "|", identifier, "|", "->",
+                       ( "await", identifier | "(", "await", identifier, ")", ["?"] ) ;
+future_type_slot = "Future", "<", type_ref, ">" ;
+new_future_binding = ("val" | "let"), typed_name_with_future_type ;
+new_binding = ("val" | "let"), typed_name ;
+~~~
 
-- Parse a forward flow as `((nb-read >> pending) |> suspending-lambda) >> resolved`, **not** as `(nb-read >> (pending |> lambda))`.
-- `|>` is left-associative; `<|` is right-associative where adopted. Mixed forward/reverse pipelines require explicit parentheses. No bare `|` in place of `|>`.
-- `>>` used as terminal capture exists only in a syntactically recognized I/O flow, not globally on arbitrary expressions. `<<` used as terminal capture remains a separate candidate and must not change `sink << payload` writes or `val item << readable` reads.
-- Generic closing `>>` is part of the parsed type, not a directional operator. Directional token pairs must be contiguous; never split arithmetic shift/generic tokens based on runtime values.
-- The read is registered exactly once; no speculative read, silent Outcome flattening, unobserved checked Future, `const` runtime assignment, hidden `?`, or hidden `unwrap`.
-- Suspension is forbidden from pure, non-suspending, and unsafe actor-state critical/borrow contexts. `nb` does not make the subsequent `await` non-suspending.
+In the reverse case the awaited identifier must match the inline lambda parameter; in the forward case the awaited identifier must equal the explicitly bound pending Future. Strictly reject renamed/unbound, multiply awaited, borrowed-across-suspension, type-incorrect, and `const` captures. The pipeline operators are parsed as complete contiguous `|>` and `<|` tokens; `>>` and `<<` must be contiguous, except generic close `>>` belongs exclusively to its type grammar. Mixed forward/reverse chains outside this narrow production require explicit grouping.
 
-## Required test matrix
+## Compiler/verification boundaries
 
-1. **Syntax positive, runtime still fail-closed:** `val/let pending: Future<Outcome> |> susp |f| -> await f >> val/let resolved: Outcome`, including nested `Result<Option<string>,IoError>` types, optional long `suspends` alias, and line breaks.
-2. **Syntax/type negative:** bare `|> await`; `|> await x`; missing `val/let`; mismatched awaited binder; extra lambda arguments; untyped/interrupted `Future<...>`; mismatched resolved outcome; `const` binder; `Future<T>` passed as expression to `<|`; absent parentheses on mixed operators; nested `>>` mislexed.
-3. **Guest future execution:** compile and run an actual `.atto` read registration + await with a typed stdin/channel ABI. Verify EOF, errors, cancellation, ownership and terminal-state propagation, single read registration, no duplicate await, effect checks, and exact outcome binding.
-4. **Per-backend receipts:** record SHA and actual compiler-built guest tests separately from syntax preflight and Rust host-oracle tests; no runtime PASS until the ABI exists.
+The browser Rust compiler can currently execute an identity-await stage on its limited `Future<int>` guest path; it does **not** yet implement the general `Readable<T>`, `Future<Result<Option<T>,IoError>>`, stdin, or full capture/borrow/effect ABI. Grammar recognition must return a stable `E_UNSUPPORTED` **with no guest Wasm** until real source-compiled guest read execution is implemented.
 
-Existing atto-source.rs #197 only has executable `Future<int>` identity-await stages. A parsed `nb stdio.in` continuation must continue to return a clear `E_UNSUPPORTED` with no guest Wasm artifact until the real typed read ABI lands.
+Required tests: both exact user spellings; reverse `<|` contiguity; `|>` named binder identity; `(await x)?` preserving `Result.Err` versus `Option.None`; nested generic `>>`; incompatible `Result` payload, `const`, pure and non-suspending effect rejection; single registration and single await; cancellation/close/admission failure; no use-after-move or escaping mutable loans; no accidental change to `<<` channel writes; executable native/Chromium results pinned to source/tree SHA. Distinguish parser-only PASS from guest runtime PASS for each backend.
