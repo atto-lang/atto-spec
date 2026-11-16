@@ -2,6 +2,8 @@
 
 Status: **candidate syntax contract**. This document records the intended grammar and static/effect semantics, not proof of general executable compiler/backend support. The Rust/Wasm browser subset has a draft implementation of **standalone `stdio.out << value`** and **`writech stdio.out, value`** via its existing checked `stdio.print` lowering (atto-source.rs #176), but no passing exact-head guest test has been observed. General channels, stream reads/writes, and atomic `select` remain unsupported in that compiler.
 
+> **Expression extension:** [Unary `<< readable` reads](unary-read-expression-v1.md) are a separate prefix-expression form. Binary directional bindings/writes below keep their existing meaning. Browser guest read execution and Java/LLVM/.NET parity remain unverified.
+
 ## Decision
 
 The direction operators are typed **I/O syntax**, not general user-defined overloads:
@@ -92,7 +94,7 @@ The `file_reader` and `file_writer` lines above are candidate source spellings f
 
 ### Parse and capability resolution
 
-- The operator must occupy an I/O statement or an I/O `when` guard, never an arbitrary subexpression. Reject `send << value << second` and `source >> val item >> val next` as chains. The right-hand write expression may contain nested generic type applications or parenthesized expressions; the parser must distinguish these from direction tokens by AST context.
+- **The binary directional forms in this v1 document** occupy an I/O statement or I/O `when` guard, not an arbitrary subexpression. The separate prefix `<< readable` expression form is specified in [the unary read addendum](unary-read-expression-v1.md). Reject `send << value << second` and `source >> val item >> val next` as chains. The right-hand write expression may contain nested generic type applications or parenthesized expressions; the parser must distinguish these from direction tokens by AST context.
 - The receiver is evaluated **exactly once**. It must have an accessible typed `Readable<T>` or `Writable<T>` capability, as appropriate; a channel maps to its channel-specific operation. A readable-only stream cannot be written to, and a writable-only stream cannot be read from. An untyped `any`, arbitrary method named `read`/`write`, or duck-typed numeric operand cannot opt into this syntax.
 - If numeric shift operators exist in an expression grammar, those remain separate AST operations with numeric operands. Do not select the I/O interpretation merely because a token pair appears in the lexer or because a numeric expression happens to be a bare statement. Invalid or ambiguous operands produce an error rather than silently switching effect domains.
 - Bindings accept exactly one identifier and, optionally, a **complete** type grammar after `:`. Do not accept trailing expression tokens or malformed/incomplete generic annotations. The annotation must unify with the read operation's real result type, not be used to coerce away EOF/errors.
