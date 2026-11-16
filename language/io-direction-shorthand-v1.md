@@ -410,5 +410,5 @@ future_type_slot = "Future", "<", complete_type_ref, ">" ;
 
 - Direct / `nb` / `do` / `try` I/O and explicit `readch`/`writech` must have **distinct AST modes** with no confusion with `do select` or `do nb select`.
 - Runtime checks: admission of bounded writes, credit exhaustion and quota failure; supervisor error path when there is no callback; callback once on terminal success/failure; cancel vs commit; no payload duplication; no callback after owner destruction; no stack loan escaping the caller.
-- Negative parse/type tests for bare `do readch`, detached local read binders, `nb readch foo >> Future<string> foo`, the nested `await Future<string>` expression, `do` under `pure`, missing I/O capability, and bare discarded checked Futures.
+- Negative parse/type tests for bare `do readch`, detached local read binders, `nb readch foo >> Future<string> foo`, a standalone `await Future<string>` expression outside the contextual nb-read continuation production, `do` under `pure`, missing I/O capability, and bare discarded checked Futures.
 - A Rust host model or syntax-only preflight must be reported separately from actual compiled `.atto` guest runtime/driver evidence. **No claims of executable support** until each backend runs a real channel and stream fixture from an exact SHA-pinned artifact.
