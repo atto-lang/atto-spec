@@ -164,3 +164,13 @@ static role/type contracts but **does not execute mixed graph transport,
 general source raise/panic, or generic typed I/O**. Node reference
 models and Rust syntax tests may verify only their stated layer;
 they are not execution receipts for Atto guest code or other backends.
+
+## Lifecycle observers and io.pipe
+
+The optional terminal observer, PipeHandle.on(#event, callback), and
+checked io.pipe(source, sink) are specified in
+[pipe-observers-and-io-pipe-v1.md](pipe-observers-and-io-pipe-v1.md).
+Observers cannot consume DATA or CONTROL, suppress a get_done() failure,
+or replace mandatory checked setup and completion results. A late #error
+subscription must replay the terminal outcome exactly once; an inline
+observer is installed before activation.
