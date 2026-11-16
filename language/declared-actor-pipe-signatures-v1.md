@@ -43,9 +43,31 @@ end
 
 A declaration is a **nominal contract only**. It is *not* an empty actor, implicitly constructed receiver, public lifecycle method, `ActorRef`, supervisor, state instance, or permission to `spawn`. `implements ActorXYZ` is a contract reference only; implementing it requires an authenticated witness. `sends M` is a bounded ordinary outbound application-message effect, never an alias for `emits M`.
 
+## Attached receiver methods are mandatory implementation witnesses
+
+A body-free `declare actor` is a **nominal signature**, not a definition and not a complete `PipeSink`. Its application inbox is implemented by a separately attached, private, receiver-targeted `mtd`:
+
+```atto
+declare actor Foo receives Input emits Output;
+
+mtd (Foo self) receive(ActorMail<Input> m): void {
+    // Implementation: process input, optionally emit Output values.
+}
+```
+
+This exact `mtd (Foo self) receive(ActorMail<Input> m)` spelling is valid. The compiler recognizes **the method's owner and sealed `receive` signature together** as a private runtime-only ingress witness. It is NOT an ordinary public `Foo.receive` call or a dynamically dispatchable `ActorRef.receive` method. The earlier Java prototype used `external mtd` as an explicit ingress marker: the intended language-level unmarked form above desugars to the same restricted, runtime-controlled semantic role. Java and other backends must reconcile that spelling before claiming parity. An explicit `external mtd` may remain as a migration spelling if supported, never as a public-facing callable API.
+
+Rules:
+- A declared `receives T` specifies what the linked private handler must accept; `mtd (Foo self) receive(ActorMail<U> m)` satisfies that inbox signature **only when `U` resolves exactly to `T`**, with no implicit coercion, duck typing or invented generic payload.
+- Require **exactly one** private `receive(ActorMail<T>)` ingress per implemented actor, with `void` result, no public visibility and no writable/raw receiver loan. Reject a second inline `receive` and an attached `mtd receive` for the same actor. Ordinary methods cannot take `ActorMail<T>`.
+- A declaration without an attached ingress or other authenticated matching implementation is still valid *forward-only metadata*, but it is **unfulfilled**: the linker must refuse to mark it executable/spawnable or admit it to a `pipe` graph.
+- Multiple files may contribute the declaration and receiver mtd only through the authenticated same-package/namespace linker; never link by spelling alone.
+- `emits U` additionally requires effect-checked `emit(U)` behavior (which may output zero, one or many values); an empty `receive` body does not prove emission capability. `sends M` similarly requires transitive ordinary-message effect checking. The three proof obligations are distinct.
+- The parser/source-only linker may record the signature and private ingress without generating any guest code. Runtime admission also needs verified body effects, cancellation/backpressure, supervisor CONTROL separation, actor generation fencing and trusted mailbox dispatch.
+
 ## Namespace actor linking
 
-A verified package/namespace may link one `declare actor Foo ...;` to exactly one concrete `define actor Foo ... end` or an authenticated out-of-line private `external mtd (Foo f) init/receive` implementation. The linker must compare `receives`, `emits`, `sends` against actual message handlers, pipeline emission types and transitive send effects. It must reject mismatches and duplicate/ambiguous implementations.
+A verified package/namespace may link one `declare actor Foo ...;` to a concrete `define actor Foo ... end` or checked out-of-line private `mtd (Foo f) receive(ActorMail<T> mail)` and, where necessary, trusted activation `init`. The target language adopts the plain `mtd` spelling for the attached receiver, with compiler-controlled sealed ingress semantics; the earlier explicit `external mtd` prototype must be updated or normalized to that contract. The linker must compare `receives`, `emits`, `sends` against actual message handlers, pipeline emission types and transitive send effects. It must reject mismatches and duplicate/ambiguous implementations.
 
 ```atto
 use namespace workers;
