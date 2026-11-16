@@ -16,6 +16,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
+- [Caret return and scoped sequence expressions v1](language/return-shorthand-and-sequences-v1.md): `^` return alias, `^ seq ...;`, nested `(> ... )`, and `begin ... end` with [versioned conformance cases](conformance/caret-return-sequences-v1.json). Cross-backend executable parity is independently gated.
+- [Explicit `::` callable-body migration (draft v2)](language/callable-body-migration-v2.md): breaking change requiring a real language-version selector and opt-in checked migration. No existing edition flag has been verified; do not silently reinterpret older source.
 
 ## Validation
 
