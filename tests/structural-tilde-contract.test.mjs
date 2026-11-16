@@ -32,13 +32,17 @@ test("formals and patterns preserve alias-pair acceptance", () => {
     assert.ok(has(cat, b), b);
   }
 });
-test("aggregate delimiters remain distinct from named args and structural values", () => {
-  assert.ok(has("argument", "(payload: ~(field: 42))"));
-  assert.ok(has("argument", "(payload: ~(key => 42))"));
-  assert.ok(has("argument", "(p: ~value)"));
-  for (const ambiguous of ["(~())", "(~(value))", "(~ (value))", "(~(x: 1, k => 2))"]) {
-    assert.ok(has("argument", ambiguous, "reject"), ambiguous);
+test("all obsolete tilde constructors reject; Type.of and structural projections remain separate", () => {
+  for (const obsolete of [
+    "(payload: ~(field: 42))", "(payload: ~(key => 42))",
+    "(~(field: 42))", "(~(key => 42))",
+    "(~ (field: 42))", "(~ (key => 42))",
+    "(p: ~ (field: 42), n: 2)", "(~())", "(~(value))",
+    "(~ (value))", "(~(x: 1, k => 2))",
+  ]) {
+    assert.ok(has("argument", obsolete, "reject"), obsolete);
   }
+  assert.ok(has("argument", "(p: ~value)"));
 });
 test("regressions include guard, duplicates, type fields and nested colons", () => {
   assert.ok(cases.some(v => v.category === "pattern" && v.expect === "accept" && v.source.includes(" when ")));
