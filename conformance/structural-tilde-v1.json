@@ -457,6 +457,121 @@
       "context": {
         "Point": "immutable_structural_value"
       }
+    },
+    {
+      "id": "ST059",
+      "category": "formal",
+      "source": "(~ {x: int, y: bool} p)",
+      "expect": "accept",
+      "note": "whitespace independent prefix for type shape"
+    },
+    {
+      "id": "ST060",
+      "category": "formal",
+      "source": "(p: ~ {x: int})",
+      "expect": "accept",
+      "note": "name-first formal, spaced type shape"
+    },
+    {
+      "id": "ST061",
+      "category": "formal",
+      "source": "(~ Point p)",
+      "expect": "accept",
+      "note": "spaced nominal structural type"
+    },
+    {
+      "id": "ST062",
+      "category": "formal",
+      "source": "(~ /*gap*/ {x: int} p)",
+      "expect": "accept",
+      "note": "comment trivia between prefix and type operand"
+    },
+    {
+      "id": "ST063",
+      "category": "pattern",
+      "source": "on is ~ {x: int} as val p",
+      "expect": "accept",
+      "note": "spaced prefix structural type test"
+    },
+    {
+      "id": "ST064",
+      "category": "pattern",
+      "source": "on ~ {x: 10, y: _} as val p",
+      "expect": "accept",
+      "note": "spaced prefix structural field-value match"
+    },
+    {
+      "id": "ST065",
+      "category": "pattern",
+      "source": "on ~ Point as val p",
+      "expect": "accept",
+      "note": "spaced prefix immutable value constant",
+      "context": {
+        "Point": "immutable_structural_value"
+      }
+    },
+    {
+      "id": "ST066",
+      "category": "pattern",
+      "source": "on ~ /*gap*/ {x: 10} as val p",
+      "expect": "accept",
+      "note": "comment between prefix and field value shape"
+    },
+    {
+      "id": "ST067",
+      "category": "argument",
+      "source": "(p: ~ value)",
+      "expect": "accept",
+      "note": "labeled argument plus spaced structural projection"
+    },
+    {
+      "id": "ST068",
+      "category": "argument",
+      "source": "(~ (field: 42))",
+      "expect": "accept",
+      "note": "record aggregate whitespace independent"
+    },
+    {
+      "id": "ST069",
+      "category": "argument",
+      "source": "(~ (key => 42))",
+      "expect": "accept",
+      "note": "map aggregate whitespace independent"
+    },
+    {
+      "id": "ST070",
+      "category": "argument",
+      "source": "(p: ~ (field: 42), n: 2)",
+      "expect": "accept",
+      "note": "named arg and spaced record aggregate"
+    },
+    {
+      "id": "ST071",
+      "category": "formal",
+      "source": "(~ {})",
+      "expect": "reject",
+      "note": "empty type shape rejected regardless of spacing"
+    },
+    {
+      "id": "ST072",
+      "category": "pattern",
+      "source": "on ~ {}",
+      "expect": "reject",
+      "note": "empty value pattern rejected regardless of spacing"
+    },
+    {
+      "id": "ST073",
+      "category": "argument",
+      "source": "(payload: ~ {x: 10})",
+      "expect": "reject",
+      "note": "type shape syntax invalid in ordinary expression context even spaced"
+    },
+    {
+      "id": "ST074",
+      "category": "argument",
+      "source": "(~ ())",
+      "expect": "reject",
+      "note": "empty aggregate remains ambiguous even with whitespace"
     }
   ]
 }
