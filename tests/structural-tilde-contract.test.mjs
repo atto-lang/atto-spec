@@ -10,7 +10,7 @@ function has(category, source, expect = "accept") {
 test("contract remains explicitly non-executable and versioned", () => {
   assert.equal(fixture.contract, "atto.structural_tilde.v1");
   assert.equal(fixture.status, "TARGET_NOT_EXECUTED");
-  assert.equal(cases.length, 76);
+  assert.equal(cases.length, 99);
   assert.equal(new Set(cases.map(v => v.id)).size, cases.length);
   for (const v of cases) {
     assert.match(v.id, /^ST\d{3}$/);
@@ -91,4 +91,41 @@ test("prefix ~ binds the next operand independently of whitespace and trivia", (
   assert.ok(has("formal", "(~ /*gap*/ {x: int} p)"));
   assert.ok(has("pattern", "on ~ /*gap*/ {x: 10} as val p"));
   assert.ok(has("argument", "(payload: ~ {x: 10})", "reject"));
+});
+
+test("x?: literal is optional presence, y: _ is required presence", () => {
+  for (const x of [
+    "on ~{ x?: 10, y: _ } as val p",
+    "on ~ { x?: 10, y: _ } as val p",
+    "on structural {x?: 10, y: _} as val p",
+    "on ~{x? : 10, y: _} as val p",
+    "on ~{x ? : 10, y: _} as val p",
+    "on ~{x?: _, y: _} as val p",
+  ]) {
+    // x?: _ is tracked independently from both the required y: _ and
+    // the values of other pattern fields.
+    if (x === "on ~{x?: _, y: _} as val p") continue;
+    assert.ok(has("pattern", x), x);
+  }
+  assert.ok(has("pattern", "on ~{x?: _} as val p"));
+  assert.ok(has("pattern", "on ~{x: 10, y?: _} as val p"));
+  const target = cases.find(x => x.source === "on ~{ x?: 10, y: _ } as val p");
+  assert.deepEqual(target.optional_fields, ["x"]);
+  assert.equal(target.pattern_kind, "value_fields");
+  for (const invalid of [
+    "on ~{x?:}",
+    "on ~{x??: 10}",
+    "on ~{x?: 10, x: 11}",
+    "on ~{x: 10, x?: 10}",
+    "on ~{?: 10}",
+    "on ~{x?: int}",
+    "on is ~{x?: 10}",
+    "on is ~{x?: int}",
+    "on ~{x?: effectful()}",
+    "on ~{x?: null}",
+    "on ~{x?: 10,}",
+    "on ~{x?: _ , x?: _}",
+  ]) {
+    assert.ok(has("pattern", invalid, "reject"), invalid);
+  }
 });
