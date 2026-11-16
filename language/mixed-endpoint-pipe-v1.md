@@ -31,6 +31,10 @@ val chain = spawn Producer()
 
 An actor's *pipeline source* is its explicit `emit(T)` event stream. Its ordinary `ActorRef.send`, unary request replies, and authenticated priority supervisor CONTROL messages are separate. An actor pipeline sink accepts `T` via its typed `receives` mailbox contract. `sends` describes a broader outbound effect, not the set of emitted pipeline values.
 
+## Actor declarations and pipe roles
+
+Actor pipe source/sink capabilities are based on **declared** `emits T` and `receives T`, not arbitrary method signatures or calls to `send`. See the normative [actor pipe port declarations contract](actor-pipe-port-contracts-v1.md). A `receives I emits O` actor derives both roles and the `PipeTransform<I,O>` capability; no manually written transform interface is required. The current Rust frontend's inferred `emit` type is transitional and is not an authorization for mixed endpoint attachment. Supervisor CONTROL, unary replies, and other outbound sends remain separate.
+
 ## Static endpoint capabilities
 
 Core language or compiler-recognized contracts:
@@ -40,7 +44,7 @@ interface PipeSource<T> {}
 interface PipeSink<T> {}
 ```
 
-- `ActorRef<A>`: `PipeSource<T>` if `A` has a statically checked homogeneous `emit(T)` output contract; `PipeSink<U>` if `A receives U`. A source actor cannot be inferred from ordinary sends.
+- `ActorRef<A>`: `PipeSource<T>` only when `A emits T` is declared and checked against `emit(T)`; `PipeSink<U>` only when `A receives U` is declared and backed by the typed receive handler. Combined declarations imply `PipeTransform<U,T>`. Ordinary sends never infer a pipe source.
 - `Channel<T>`: both source and sink. A shared channel does not become exclusively owned by merely connecting it.
 - `Stream<T>`: source only, unless using a distinct writable port/sink. `Stream.port<T>(capacity)` exposes separate writable and readable capabilities.
 - `Generator<T>` and `AsyncGenerator<T>`: source only, with one consumer by default.
