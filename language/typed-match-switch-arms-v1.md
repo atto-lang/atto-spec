@@ -98,3 +98,73 @@ A compiler must preserve match's single-evaluation, source-order, scope, exhaust
 ## Compatibility
 
 Unannotated `on P -> e` and existing `case P -> e` retain their meanings. The new annotation is optional and does not change unrelated callable `fnc foo(): T`, pattern-field `:`, typed bindings or the existing typed `match<T>` header. Canonical formatter spacing: `on P : T -> e` for match and `case P : T -> e` for switch; preserve guards and nested field-pattern colons.
+
+
+## ADT payload binders, `when` and exhaustive coverage
+
+The pattern `Ok(value)` or `Err(error)` binds the selected variant's
+payload to an immutable, arm-local name. The same syntax applies to
+`Some(item)`, to `case` labels in a typed `switch`, and to whole-value
+bindings such as `on n when n > 0`. A binding exists for its guard and
+body only, never in sibling arms or after the match. The scrutinee must
+be evaluated exactly once. A guard is checked as `bool`; it is evaluated
+only after the variant matches and **after the payload binder has been
+initialized under a successful tag test**. Its false result means
+"try the next arm", not "take the selected arm anyway".
+
+An empty tagged pattern such as `Ok()`, `Err()`, `Some()`, or explicit
+`Ok(_)`, `Err(_)`, `Some(_)` matches the variant but discards its
+payload; it must not create implicit locals named `value` or `error`.
+Constructors `Ok()` and `Err()` are *not* valid payload constructors;
+`None` is a zero-payload variant and `None()` is not accepted in the
+currently admitted language profile.
+
+A guarded pattern `on Ok(v) when predicate(v)` **does not make
+`Ok` exhaustive**, because its guard can fail. Even two guarded
+patterns `on Ok(v) when v > 0` and `on Ok(v) when v <= 0` cannot
+be accepted as unconditional coverage without a separately verified
+decision procedure; the v1 checker is deliberately conservative.
+An unguarded `on Ok(v)` / `on Ok()` / `on Ok(_)` does cover all `Ok`
+values. The same applies to `Err` and `Some`. A successful unguarded
+wildcard `on _` or `default` covers the remaining cases, and must
+be unreachable to any subsequent arm. Repeated *guarded* cases of
+the same variant are allowed until an unguarded one consumes that
+variant. A later case for an already unconditionally covered variant
+is rejected as unreachable.
+
+```atto
+fnc checked(): Result<int,string> {
+    return Ok(41);
+}
+
+pub suspends fnc main(): int {
+    return match<int> checked() over
+        on Err(error) when error != "E3" : int -> 0,
+        on Ok(value) when value > 5 : int ->
+            await task { return value + 1; },
+        default : int -> 10,
+    end;
+}
+```
+
+The return arm result annotation `: int` is independent of the
+payload binder's type. `when` never affects the `match<int>` result
+type; it affects only dispatch. The `return` inside a task exits the
+task, not the parent function.
+
+The executable Rust/Wasm profile referenced by [compiler #247](https://github.com/atto-lang/atto-source.rs/pull/247)
+currently admits `Result<int,string>`, not a general
+`Result<int,Error>` with a structured `error.code` property. The
+supported inequality token there is `!=`; do not silently
+interpret `!==` as a different or equivalent operator without
+separate compiler and formatter contract approval. Java/LLVM/.NET
+must independently implement/check the same typed binding,
+guard ordering and exhaustiveness contract before parity is claimed.
+
+The arm-local binder mechanism is distinct from the ordinary
+callable/lambda argument binder `|x| -> expression`, the
+`for value in iterator` loop binder, and optional
+`if expression as let value` conditional binding. Those forms
+share lexical scoping principles, but are not interchangeable
+syntax; a backend that has not implemented them must reject
+rather than silently desugar to an untyped global.
