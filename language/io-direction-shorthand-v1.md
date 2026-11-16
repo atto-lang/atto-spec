@@ -331,27 +331,80 @@ do readch foo, |outcome| -> void {
 8. Bare `nb writech foo, "hi";` returns a Future which must be observed, transferred or explicitly detached. A strict profile should reject discarding a checked pending Future; use `val pending = nb writech ...` or `do writech ...`. This prevents mistakenly treating `nb` as fire-and-forget.
 9. Prefix `do sink << value;` may be accepted as the same supervised write as `do writech sink, value;` with the same source-level expression ownership and error routing. `do` does not modify `<<`/`>>` semantics generally and does not add the proposed glyph operators `<<!`, `!>>`, `<<:` or `:>>` to v1: explicit mode prefixes are clearer, avoid shift/annotation token conflicts, and preserve existing parser rules.
 
-### Reject nested future/await read form
+### Proposed extension: typed read–await continuations
 
-The following is **invalid**, not a useful combination of nonblocking I/O and awaiting:
+**Candidate syntax, not an assertion of executable guest support.** The two
+forms below have the same typed, sequential effect. A leading `nb` controls
+**read registration only**; an explicitly written `await` may then suspend
+the *enclosing* `suspends` callable. Neither form detaches work or installs
+a callback. The resolved binder enters lexical scope **after** the successful
+await and stays available in the remaining statement scope.
 
-```atto
-nb stdio.in >> (val String pending_line << await Future<string>);
-```
+~~~atto
+// First spelling: contextual Future<T> is a TYPE SLOT supplied by nb read,
+// not a constructor, expression, or evaluated generic.
+nb incoming >> (val Outcome resolved << await Future<Outcome>);
 
-Reasons: a read binder cannot itself contain a second I/O operator; `Future<string>` is a type, not an awaitable expression; `await` on a pending value may suspend the caller; the annotation would conceal the actual error/EOF outcome, and a declaration cannot be nested inside the right-hand side of a read-binding statement.
+// Second spelling: '|' is a delimiter ONLY in this typed I/O continuation
+// production, not a replacement for functional '|>'.
+nb incoming >> Future<Outcome> pending
+    | await pending >> val Outcome resolved;
 
-Use the two-phase form:
+// Equivalent explicit desugaring:
+nb incoming >> val pending: Future<Outcome>;
+val resolved: Outcome = await pending;
+~~~
 
-```atto
-nb stdio.in >> val pending_line: Future<ReadOutcome<string, IoError>>;
+Here `Outcome` is a type variable standing for the **actual checked return
+value** of a readable capability, not a language-defined type or an implicit
+unwrap. For ordinary stdin the outcome could be
+`Result<Option<string>, IoError>` (the exact signature remains subject
+to the concrete stdio capability). A bare `String` binder is allowed
+**only** when the capability really provides a `Future<String>` without
+discarding error, EOF, closure, or cancellation. Therefore the literal
+`nb stdio.in >> ... Future<string>` examples are *syntactically recognized
+candidates* but must fail at type checking for a fallible/EOF-bearing stdin.
+Do not claim they execute as written against raw stdin.
 
-// In a suspends callable with the appropriate I/O permission:
-val outcome = await pending_line;
-handle_read_outcome(outcome);
-```
+**Constrained grammar (illustrative EBNF):**
 
-`ReadOutcome<string, IoError>` is illustrative of the capability's checked result, not an invented standard library type. Where a callback is needed instead of `await`, use a supervised detached read with a typed callback, or register a completion handler on the future using the future API. Neither form is allowed to hide failure, EOF or cancellation.
+~~~ebnf
+nb_await_read = "nb", readable_expr, ">>",
+    ( "(", binding_decl_head, "<<", "await", future_type_slot, ")"
+    | future_type_slot, identifier, "|", "await", identifier,
+      ">>", binding_decl_head ) ;
+binding_decl_head = ("val" | "let"), (type_ref, identifier | identifier, ":", type_ref);
+future_type_slot = "Future", "<", complete_type_ref, ">" ;
+~~~
+
+- Parse `Future<T>` in these two positions as a **contextual typed
+  placeholder** for the result of the preceding `nb` registration; it is
+  not a runtime expression and does not change what `await` means elsewhere.
+- The future placeholder must match the *entire* result, including
+  `Result`/`Option`/EOF/typed errors. The final binder type must unify
+  with the resolved future value; no implicit `?`, panic, unwrap, or
+  error/EOF flattening is permitted.
+- In the second spelling, `await pending` must refer to precisely the
+  declared future binder, which cannot escape or be consumed twice. The
+  `|` delimiter is admitted **only** after the typed intermediate binder;
+  elsewhere `|` keeps its existing boolean/other expression meanings.
+- Operand evaluation and read registration occur once before await. `nb`
+  admission does not park; the explicit subsequent await may suspend or
+  cooperate. The caller must have `using io` and `suspends` permission,
+  and borrow/lease checking must forbid suspended stack loans and sealed
+  actor-state leases.
+- If registration itself fails immediately, that failure must appear in
+  the declared checked contract and must not be converted into an unresolved
+  future. Cancellation, close, EOF and other terminal outcomes remain
+  typed and observable.
+- Type parsing must disambiguate nested generic close `>>` from the
+  direction operator; reject free-standing `Future<T>` runtime values,
+  unbound/mismatched await identifiers, missing delimiters, and direction
+  chains outside this production.
+- Until the checked guest `Readable<T>`/Future ABI and checker are
+  implemented, the browser compiler must fail closed with a stable
+  unsupported diagnostic and emit **no guest Wasm**. Recognition in a
+  parser is not evidence of executable stdin I/O.
 
 ### Required conformance gates
 
