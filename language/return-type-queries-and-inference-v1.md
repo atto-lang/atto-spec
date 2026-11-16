@@ -5,6 +5,8 @@
 ## Existing `typeof` semantics and migration
 
 This proposal extends the merged Java RFC [oreslang-source.java #450](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/450) (merge commit `9d189677471398c98eb0995e15b711e1d08966ac`), and prior Java [#4](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/4).
+The canonical spelling for a static binding type query is **`typeof name`**. The parenthesized spelling **`typeof(name)`** is equivalent compatibility input; formatters MUST produce `typeof name` for either. The marker spelling **`typeof! name`** is NOT a type query, is not an ownership operation, and MUST be rejected as such. This does not introduce an expression-level `typeof` operator or runtime type reflection. Do not reinterpret `typeof !T` as a binding query or erase existing type-complement meaning. Both admitted spellings must resolve to one typed `TypeQuery` AST, not a runtime call or a synthesized nominal type.
+
 Previously proposed `type Alias = typeof foo` means the **static type of the value** `foo`; the earlier `typeof fnc(...) => T` means a **callable signature type**. Do not change either meaning. Java #1175 explicitly distinguishes `typeof cb` from callable-signature syntax; Java #1176/#1178 keep `typeof` in type position and reject runtime `typeof v == int` tests. `infer` is currently not reserved by the older Java keyword inventory and occurs in another separate proposed grammar `infer<T> struct`. Keep it **contextual**.
 
 ## Target signatures
@@ -14,11 +16,13 @@ pub fnc first(): infer {
     val tbr: int = 5;
     return tbr;
 }
-pub fnc second(): typeof(tbr) {
+pub fnc second(): typeof tbr {
     val tbr: int = 5;
     return tbr;
 }
-pub fnc third(int x): typeof(x) { return x; }
+pub fnc third(int x): typeof x { return x; }
+// Parentheses are accepted for compatibility and format to `typeof x`.
+pub fnc third_legacy(int x): typeof(x) { return x; }
 
 fnc stringify(int v): string { return "ok"; }
 type Stringifier = typeof stringify; // previous simple-name query proposal
@@ -26,8 +30,8 @@ type Stringifier = typeof stringify; // previous simple-name query proposal
 ```
 
 - `: infer` and `-> infer` infer the callable's return type from all reachable result sites. They are allowed for `fnc`, `routine`, inline methods and out-of-line `mtd` only where the callable's existing body grammar and backend are admitted. This does **not** change the default for an omitted result annotation.
-- `: typeof(tbr)` and `-> typeof(tbr)` specify the static type of a uniquely resolved **value binding**. They do not compute the value, check identity, manufacture a singleton/dependent value type, invoke runtime reflection, or execute its initializer.
-- Preserve `typeof stringify` in type positions for the previously proposed bare simple-name query. Parenthesized `typeof(stringify)` is an equivalent target spelling. `typeof fnc(...)` remains a distinct callable-type production.
+- `: typeof tbr` and `-> typeof tbr` are canonical; `: typeof(tbr)` and `-> typeof(tbr)` are equivalent compatibility input. Both specify the static type of a uniquely resolved **value binding**. They do not compute the value, check identity, manufacture a singleton/dependent value type, invoke runtime reflection, or execute its initializer.
+- Preserve `typeof stringify` in type positions for the previously proposed bare simple-name query. Parenthesized `typeof(stringify)` is an equivalent target spelling, canonically formatted without grouping parentheses. `typeof fnc(...)` remains a distinct callable-type production.
 - `type<tbr>` is **not** a value-type query and is invalid when `tbr` is a runtime variable. Generic type arguments are types. `typeof(call())`, `typeof(a.b)`, `typeof(x+1)`, `typeof(void)` and runtime `typeof(v) == int` are not introduced.
 - `infer` must remain contextual in return annotations. Do not reserve it globally or change existing `infer<T> struct` parsing.
 
@@ -36,12 +40,13 @@ type Stringifier = typeof stringify; // previous simple-name query proposal
 ```ebnf
 return_spec       = (":" | "->"), return_annotation ;
 return_annotation = type_ref | "infer" | type_query ;
-type_query        = "typeof", "(", identifier, ")" ;
-(* Historical simple-name type query: "typeof", identifier. *)
+type_query        = "typeof", (identifier | "(", identifier, ")") ;
+(* Canonical output is "typeof", space, identifier; parens are compatibility input. *)
+(* "typeof!" must not be recognized as a query or as an ownership marker. *)
 (* Pre-existing callable type syntax: "typeof", "fnc", ... . *)
 ```
 
-The parser selects this production strictly in **type position**. A malformed type annotation must not be reinterpreted as a generic specialization, expression, lambda or runtime type test. Preserve existing `: T`/`-> T` and C-brace/`::`/comma-`end` body rules without adding implicit semicolons or changing terminal-expression semantics.
+The parser selects this production strictly in **type position**. The `typeof` / `fnc` path is separately reserved for callable signature types (`typeof fnc(...) => T`) and MUST NOT be interpreted as a query of a binding called `fnc`. `typeof!foo`, `typeof !foo`, `typeof()`, `typeof(a, b)` and `typeof(x + 1)` are rejected; `typeof(x)` has exactly one bare binding identifier. A malformed type annotation must not be reinterpreted as a generic specialization, expression, lambda or runtime type test. Preserve existing `: T`/`-> T` and C-brace/`::`/comma-`end` body rules without adding implicit semicolons or changing terminal-expression semantics.
 
 ## Resolution and forward-body queries
 
@@ -63,6 +68,6 @@ For `typeof(tbr)`, every reachable return must be statically assignable to the r
 Use existing diagnostic registries to map proposed categories:
 `E_RETURN_INFER_AMBIGUOUS`, `E_RETURN_INFER_CYCLE`, `E_TYPE_QUERY_UNBOUND`, `E_TYPE_QUERY_SCOPE`, `E_TYPE_QUERY_AMBIGUOUS`, `E_TYPE_QUERY_UNSUPPORTED`, `E_RETURN_TYPE_MISMATCH`, `E_RETURN_PATH`.
 
-Conformance cases must cover positive scalar, generic, parameter, callable and forward-body queries; mixed returns, early returns, void/fallthrough, local scope and shadowing, cycles and recursion, generic-vs-value arguments, `typeof fnc` compatibility, and AOT ownership/effect preservation.
+Conformance cases must cover `typeof x` / `typeof(x)` AST equivalence and formatter idempotence, `typeof fnc` preservation, `typeof! x` and invalid expression operands as parser negatives, positive scalar, generic, parameter, callable and forward-body queries; mixed returns, early returns, void/fallthrough, local scope and shadowing, cycles and recursion, generic-vs-value arguments, `typeof fnc` compatibility, and AOT ownership/effect preservation.
 
 **Evidence policy:** host-only source fixtures, Node/Python reference tests and parser-only acceptance do not establish actual executable support. Every Java, LLVM, .NET, Rust/Wasm and Forge status must identify a pinned commit/tree SHA, positive and negative guest compilation/execution, toolchain, nonzero test steps and PASS/FAIL/UNSUPPORTED/NOT_EXECUTED. Token-free exact-tree private carrier mirroring is acceptable for unavailable source-org GitHub Actions, with blob verification.
