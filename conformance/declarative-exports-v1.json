@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "language": "AttoLang",
+  "feature": "declarative-file-exports",
+  "contract": "language/declarative-exports.md",
+  "extension": ".atto",
+  "cases": [
+    {
+      "id": "public-inferred-class-forward",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "export pub Foo;\ndefine class Foo as\nend\n"
+    },
+    {
+      "id": "public-explicit-class-trailing",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "define class Foo as\nend\nexport pub class Foo;\n"
+    },
+    {
+      "id": "package-explicit-class-forward",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "export pub[pkg] class Bar;\ndefine class Bar as\nend\n"
+    },
+    {
+      "id": "public-function-forward",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "export pub fnc calculate;\nfnc calculate(): int { return 42; }\n"
+    },
+    {
+      "id": "public-function-trailing",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "fnc calculate(): int { return 42; }\nexport pub calculate;\n"
+    },
+    {
+      "id": "missing-target",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "unresolved-export",
+      "source": "export pub Missing;\nfnc main(): int { return 42; }\n"
+    },
+    {
+      "id": "wrong-explicit-kind",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "export-kind-mismatch",
+      "source": "export pub fnc Foo;\ndefine class Foo as\nend\n"
+    },
+    {
+      "id": "duplicate-export",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "duplicate-export",
+      "source": "export pub Foo;\nexport pub class Foo;\ndefine class Foo as\nend\n"
+    },
+    {
+      "id": "invalid-visibility",
+      "phase": "parse",
+      "expect": "reject",
+      "diagnostic": "invalid-export-scope",
+      "source": "export pub[world] Foo;\ndefine class Foo as\nend\n"
+    },
+    {
+      "id": "nested-export",
+      "phase": "parse",
+      "expect": "reject",
+      "diagnostic": "invalid-export-position",
+      "source": "define module Internal as\n  export pub fnc helper;\nend\n"
+    },
+    {
+      "id": "private-cross-package-access",
+      "phase": "link",
+      "expect": "reject",
+      "diagnostic": "package-visibility",
+      "provider": {
+        "package": "pkg_a",
+        "file": "a.atto",
+        "source": "export pub[pkg] fnc helper;\nfnc helper(): int { return 42; }\n"
+      },
+      "importRequest": {
+        "consumerPackage": "pkg_b",
+        "providerPackage": "pkg_a",
+        "providerFile": "a.atto",
+        "kind": "fnc",
+        "name": "helper"
+      },
+      "note": "Importer source spelling is intentionally backend-provided until the canonical package import ABI is fixed; do not invent a parser syntax here."
+    },
+    {
+      "id": "private-same-package-access",
+      "phase": "link",
+      "expect": "accept",
+      "provider": {
+        "package": "pkg_a",
+        "file": "a.atto",
+        "source": "export pub[pkg] fnc helper;\nfnc helper(): int { return 42; }\n"
+      },
+      "importRequest": {
+        "consumerPackage": "pkg_a",
+        "providerPackage": "pkg_a",
+        "providerFile": "a.atto",
+        "kind": "fnc",
+        "name": "helper"
+      },
+      "note": "Importer source spelling is intentionally backend-provided until the canonical package import ABI is fixed; do not invent a parser syntax here."
+    }
+  ],
+  "receiptRequirements": [
+    "source_commit_sha",
+    "source_tree_sha",
+    "compiler_version",
+    "backend_name",
+    "parser_result",
+    "binder_result",
+    "linker_result_or_unsupported",
+    "guest_executed_or_not_run",
+    "compiler_diagnostics"
+  ]
+}
