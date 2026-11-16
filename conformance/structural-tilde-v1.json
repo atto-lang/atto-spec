@@ -572,6 +572,20 @@
       "source": "(~ ())",
       "expect": "reject",
       "note": "empty aggregate remains ambiguous even with whitespace"
+    },
+    {
+      "id": "ST075",
+      "category": "argument",
+      "source": "(~(field: 42))",
+      "expect": "accept",
+      "note": "record aggregate tight prefix pair"
+    },
+    {
+      "id": "ST076",
+      "category": "argument",
+      "source": "(~(key => 42))",
+      "expect": "accept",
+      "note": "map aggregate tight prefix pair"
     }
   ]
 }
