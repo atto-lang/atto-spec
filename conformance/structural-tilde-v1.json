@@ -586,6 +586,257 @@
       "source": "(~(key => 42))",
       "expect": "accept",
       "note": "map aggregate tight prefix pair"
+    },
+    {
+      "id": "ST077",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{ x?: 10, y: _ } as val p",
+      "expect": "accept",
+      "note": "exact user syntax with optional x and required wildcard y",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST078",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~ { x?: 10, y: _ } as val p",
+      "expect": "accept",
+      "note": "spaced tilde identical prefix interpretation",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST079",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on structural {x?: 10, y: _} as val p",
+      "expect": "accept",
+      "note": "keyword synonym preserves optional presence",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST080",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x?: _} as val p",
+      "expect": "accept",
+      "note": "optional and wildcard independent",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST081",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x: 10, y?: _} as val p",
+      "expect": "accept",
+      "note": "required literal plus optional wildcard",
+      "optional_fields": [
+        "y"
+      ]
+    },
+    {
+      "id": "ST082",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x? : 10, y: _} as val p",
+      "expect": "accept",
+      "note": "separate question and colon tokens",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST083",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x ? : 10, y: _} as val p",
+      "expect": "accept",
+      "note": "whitespace around question marker is trivia",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST084",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~/* gap */{x?: 10, y: _} as val p",
+      "expect": "accept",
+      "note": "prefix and operand may be separated by comments",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST085",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x?/* gap */: 10, y: _} as val p",
+      "expect": "accept",
+      "note": "comment after optional marker",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST086",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x?: -1, y: true} as let p",
+      "expect": "accept",
+      "note": "negative and boolean scalar value tests",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST087",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x?: 10, y: _} as val p when p.y > 0",
+      "expect": "accept",
+      "note": "optional field with guard",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST088",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x?:}",
+      "expect": "reject",
+      "note": "optional field missing value",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST089",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x??: 10}",
+      "expect": "reject",
+      "note": "duplicate optional marker",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST090",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x?: 10, x: 11}",
+      "expect": "reject",
+      "note": "duplicate base field name regardless of optionality",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST091",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x: 10, x?: 10}",
+      "expect": "reject",
+      "note": "duplicate base field name in reverse order",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST092",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{?: 10}",
+      "expect": "reject",
+      "note": "missing field name",
+      "optional_fields": []
+    },
+    {
+      "id": "ST093",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x?: int}",
+      "expect": "reject",
+      "note": "type name not a value pattern literal",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST094",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on is ~{x?: 10}",
+      "expect": "reject",
+      "note": "is requires a type pattern and literal is not type",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST095",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on is ~{x?: int}",
+      "expect": "reject",
+      "note": "optional structural type shape not yet specified",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST096",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x?: effectful()}",
+      "expect": "reject",
+      "note": "effectful value pattern",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST097",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x?: null}",
+      "expect": "reject",
+      "note": "null-like literal in value-pattern grammar is not yet supported",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST098",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x?: 10,}",
+      "expect": "reject",
+      "note": "trailing comma in value field pattern",
+      "optional_fields": [
+        "x"
+      ]
+    },
+    {
+      "id": "ST099",
+      "category": "pattern",
+      "pattern_kind": "value_fields",
+      "source": "on ~{x?: _ , x?: _}",
+      "expect": "reject",
+      "note": "two optional entries for same field",
+      "optional_fields": [
+        "x"
+      ]
     }
   ]
 }
