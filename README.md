@@ -37,3 +37,7 @@ This README records the intended role of this repository; it is not a claim of f
 Keep canonical AttoLang (.atto) semantics consistent with the language specification, while treating Oreslang-named tooling and .ores as compatibility surfaces.
 
 Changes asserting compiler/runtime support must identify the exact source head, target, toolchain, executed positive and negative guest tests, and failure/unsupported status; an empty CI step list is **not executed**. Documentation records responsibility, **not** a claim of feature completion.
+
+## Collection indexing and slicing (candidate v1)
+
+[Collection slice and spread v1](language/collection-slice-spread-v1.md) proposes checked negative indices, half-open slices, strided/borrowed views, iterable spread and UTF-8 scalar semantics. This is **proposed normative syntax, not implemented backend parity**; use the shared candidate conformance vectors and executed guest evidence before asserting support.
