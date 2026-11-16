@@ -7,6 +7,8 @@ on:
       - 'tests/pipe-observer-reference.test.mjs'
       - 'tests/pipe-lifecycle-adversarial.test.mjs'
       - 'tests/pipe-quiescence-reference.test.mjs'
+      - 'conformance/pipe-observer-lifecycle-v1.json'
+      - 'tests/pipe-registry-integrity.test.mjs'
       - '.github/workflows/pipe-observer-contract.yml'
   push:
     paths:
@@ -15,6 +17,8 @@ on:
       - 'tests/pipe-observer-reference.test.mjs'
       - 'tests/pipe-lifecycle-adversarial.test.mjs'
       - 'tests/pipe-quiescence-reference.test.mjs'
+      - 'conformance/pipe-observer-lifecycle-v1.json'
+      - 'tests/pipe-registry-integrity.test.mjs'
       - '.github/workflows/pipe-observer-contract.yml'
 permissions:
   contents: read
@@ -38,3 +42,6 @@ jobs:
         run: node --test tests/pipe-lifecycle-adversarial.test.mjs
       - name: Execute quiescence-barrier model (host-only)
         run: node --test tests/pipe-quiescence-reference.test.mjs
+
+      - name: Verify versioned cross-backend registry (host-only)
+        run: node --test tests/pipe-registry-integrity.test.mjs
