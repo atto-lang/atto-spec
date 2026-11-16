@@ -1,6 +1,6 @@
 # Failure capability interfaces: Throwable, Raisable, Panicable (AttoLang v1 candidate)
 
-**Status:** normative candidate; **not** a claim of executable source or backend parity. Browser Rust/Wasm currently lowers only the restricted `throw Error(string)` path. Source `raises`, `panics`, effect clauses, general class/interface resolution and recovery are not yet verified as executable.
+**Status:** normative candidate; **not** a claim of executable source or backend parity. The newer Rust source compiler has a restricted `throw Error(string)` path, but the currently pinned public playground Wasm compiler rejects even ordinary `throw`. Source `raises`, `panics`, effect clauses, general class/interface resolution and recovery are not yet verified as executable.
 
 ## Core nominal contracts
 
@@ -83,4 +83,4 @@ Future implementations should test each operation with base `Error`, an inherite
 
 ## Compatibility and admission
 
-This contract refines the Error-only rule in [defer/recover/unwind v1](defer-recover-unwind-v1.md); it does **not** authorize arbitrary interface-bearing non-Error values. For current native Rust/Wasm compiler behavior, `throw Error("message")` remains the supported restricted spelling; `new Error(...)` and advanced clauses in the example are illustrative until independently admitted. Do not mark this capability as shipped in the public playground without parser, checker, ABI, guest unwind and error-supervision evidence.
+This contract refines the Error-only rule in [defer/recover/unwind v1](defer-recover-unwind-v1.md); it does **not** authorize arbitrary interface-bearing non-Error values. For the newer Rust source compiler's restricted profile, `throw Error("message")` is supported; the published playground compiler is independently pinned to older bytes and currently rejects this syntax. `new Error(...)` and advanced clauses in the example are illustrative until independently admitted. Do not mark this capability as shipped in the public playground without parser, checker, ABI, guest unwind and error-supervision evidence.
