@@ -4,11 +4,15 @@ on:
     paths:
       - 'language/copyable-ownership-v1.md'
       - 'tests/copyable-ownership-contract.test.mjs'
+      - 'language/fresh-return-types-v1.md'
+      - 'tests/fresh-return-contract.test.mjs'
       - '.github/workflows/copyable-ownership-contract.yml'
   push:
     paths:
       - 'language/copyable-ownership-v1.md'
       - 'tests/copyable-ownership-contract.test.mjs'
+      - 'language/fresh-return-types-v1.md'
+      - 'tests/fresh-return-contract.test.mjs'
       - '.github/workflows/copyable-ownership-contract.yml'
 permissions:
   contents: read
@@ -31,4 +35,4 @@ jobs:
           echo "HOST_ONLY_COPY_ORACLE_SHA=$EXPECTED_SHA"
           echo "HOST_ONLY_COPY_ORACLE_TREE=$(git rev-parse 'HEAD^{tree}')"
           node --version
-          node --test tests/copyable-ownership-contract.test.mjs
+          node --test tests/copyable-ownership-contract.test.mjs tests/fresh-return-contract.test.mjs
