@@ -707,7 +707,7 @@
     "observed_return_or_exit_code",
     "diagnostics"
   ],
-  "note": "Source exact-tree CI run #43823854425 tested all 49 revision-2 vectors: 41 passed, 4 failed, 4 unsupported. Revision 3 repairs the reserved-name fixture and needs a new exact-tree run before its per-case statuses can be asserted. Each is marked not_executed pending a per-case receipt. The three method call examples now use pub methods. Unsupported features are not counted as passed.",
+  "note": "Revision-2 corpus was individually exercised by exact-tree private CI run 43823854425: 41 passed, 4 failed, 4 unsupported. Revision 3 repairs the reserved-name positive case and requires fresh per-case receipts. Its verification fields remain not_executed pending that run; no backend parity is inferred. The earlier 487/0 general Rust/Wasm suite was NOT a 49-vector normative corpus run.",
   "corpusRevision": 3,
   "migration": {
     "mode": "strict-explicit-double-colon",
