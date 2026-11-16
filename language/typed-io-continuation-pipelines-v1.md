@@ -97,3 +97,86 @@ In the reverse case the awaited identifier must match the inline lambda paramete
 The browser Rust compiler can currently execute an identity-await stage on its limited `Future<int>` guest path; it does **not** yet implement the general `Readable<T>`, `Future<Result<Option<T>,IoError>>`, stdin, or full capture/borrow/effect ABI. Grammar recognition must return a stable `E_UNSUPPORTED` **with no guest Wasm** until real source-compiled guest read execution is implemented.
 
 Required tests: both exact user spellings; reverse `<|` contiguity; `|>` named binder identity; `(await x)?` preserving `Result.Err` versus `Option.None`; nested generic `>>`; incompatible `Result` payload, `const`, pure and non-suspending effect rejection; single registration and single await; cancellation/close/admission failure; no use-after-move or escaping mutable loans; no accidental change to `<<` channel writes; executable native/Chromium results pinned to source/tree SHA. Distinguish parser-only PASS from guest runtime PASS for each backend.
+
+
+## Executable staging: Rust/Wasm terminal capture (2026-11-16)
+
+A narrower *non-I/O* milestone is now implemented on draft
+[atto-lang/atto-source.rs#197](https://github.com/atto-lang/atto-source.rs/pull/197):
+
+~~~atto
+fnc transform_result(int v): int { return v + 1; }
+pub suspends fnc main(): int {
+    val future = task { return 41; };
+    future
+        |> susp |f| -> await f
+        |> transform_result
+        >> val result: int;
+    return result;
+}
+~~~
+
+- The parser recognizes a **contiguous** terminal directional operator only
+  following an explicit `susp`/`suspends` identity-await stage. It checks
+  the lambda binder and desugars the terminal capture to an ordinary
+  `Stmt::Bind` initializer, preserving the existing type checker,
+  `Future<int>` consumption, and JSPI cooperative suspension.
+- The future is consumed exactly once; re-awaiting it is `E_MOVED`.
+  A mismatched annotation is `E_TYPE`. A `const` terminal binding is
+  `E_CONST_EFFECT`. An object loan surviving the suspension is `E_BORROW`.
+  Plain `await future >> val value` is not a pipeline stage.
+- This does **not** make `>>` a general assignment, overloadable operator,
+  second channel read, or arbitrary first-class lambda call. The actual
+  in-guest execution and full compiler corpus need exact-head CI receipts.
+- Nested built-in `String`/`string` type aliases are canonicalized inside
+  syntax-only read-continuation checks without rewriting qualified nominal
+  names. This is *not* a substitute for the real typed Future/Result AST.
+
+### Required stdin/channel ABI before claiming an executable read
+
+Raw stdin cannot promise bare `Future<string>`. For a readable source
+whose contract is `Result<Option<string>,IoError>`, a proposed normal
+operation is:
+
+~~~atto
+pub susp fnc main(): int using io, suspend {
+    nb stdio.in >> val pending: Future<Result<Option<string>,IoError>>
+        |> susp |f| -> await f
+        >> val outcome: Result<Option<string>,IoError>;
+
+    // match outcome explicitly: Err, Ok(None), and Ok(Some(line)).
+    return 42;
+}
+~~~
+
+The `susp` declaration and `using` spellings above are the *full-language
+design*, not a claim the current browser frontend accepts those modifiers.
+
+To make the read real, independently implement and verify:
+
+1. A **typed** `Readable<string>` stdio capability, exactly one nonparking
+   `nb` registration, and an owned single-use Future handle. Registration
+   failure must be immediate and typed; it cannot manufacture an unresolvable
+   Future or silently detach a task.
+2. A typed `Result<Option<string>,IoError>` guest data layout and generation-
+   fenced payload/handle storage. No reusing raw pointers, shared input
+   buffer clobbering, accidental UTF-8 slicing, or implicit error/EOF
+   flattening; support multiple pending reads with a documented ordering.
+3. Host-side async input delivery that actually suspends and resumes the
+   caller on the scheduler. A browser Worker input channel must be explicit:
+   the browser has no implicit OS stdin stream. No fabricated constant line
+   or JS evaluator substituted for compiled guest I/O.
+4. Cancellation/closed/EOF/error ownership and cleanup, including teardown,
+   double-await, stale wake, backpressure and producer failure. Await must
+   require the caller's suspension effect and respect actor-state leases
+   and active borrowed objects.
+5. Native Rust + wasm32 compiler tests and **actual compiled guest** tests in
+   Chromium/Worker (and separate non-browser backend receipts). Assert
+   successful message, EOF, IoError, cancelled pending read, concurrent
+   registrations, and no duplicate/ghost delivery. Exact branch commit/tree
+   SHAs are mandatory, and zero-step Actions are **not passing tests**.
+
+Until this ABI is implemented, the browser frontend deliberately returns
+`E_UNSUPPORTED` from the `nb stdio.in` continuation production with no guest
+Wasm. Never change that diagnostic to success merely because the parser
+recognized a typed syntactic slot.
