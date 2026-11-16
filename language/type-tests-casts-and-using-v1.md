@@ -31,6 +31,30 @@ fnc inspect(Any candidate): int {
 }
 ```
 
+A conditional may also bind one fresh, immutable, branch-local name only
+after the type predicate succeeds:
+
+```atto
+fnc inspect(Any candidate): int {
+    if candidate is int as val n then
+        return n + 1;
+    else
+        return 0;
+    fi
+}
+```
+
+The binder `n` is usable only in the `then` arm; it is not visible to
+`else`, later statements, or a sibling `elif`. The binder is never
+initialized or moved on a failed test. `if x is T as n` is invalid
+without a binding qualifier. A compiler supporting `as let` must implement
+distinct mutable-name semantics, not silently map it to `as val`.
+`if x is T as val n then` is the current bounded Rust/Wasm implementation
+profile; general dynamic `Any` requires typed tags and ownership proofs.
+Conditional capture currently requires a simple stable identifier operand and
+a `then` block. Other forms, including combined `&&` capture and expression
+scrutinees, need explicit grammar and dataflow validation.
+
 A successful type test refines the inspected value only while the compiler
 can prove its identity and storage are stable. For mutable variables, aliases,
 suspension, borrows, actors, or shared references, a stale refinement is
