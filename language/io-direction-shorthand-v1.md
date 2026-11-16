@@ -209,3 +209,31 @@ The syntactic `stdio.out` shortcut must never bypass lexical capability resoluti
 A `when` I/O direction guard is valid only when its **immediately enclosing** block is a `select` family block, including a typed form such as `select<Result<Option<int>, Error>> { ... }`. Nesting a plain `block` or `if` body inside a select does not make arbitrary inner `when` statements new select registrations. Local `nb` or `try` prefixes on individual select guards remain invalid.
 
 Browser preflight recognition, Rust host oracles, and compiled guest execution have separate evidence tiers. A compiler diagnostic or a successful source-only test is not proof of the corresponding transport, cancellation, or scheduler behavior. In particular, host-model tests cannot by themselves validate races between real operating-system readiness callbacks, actor mailboxes, scheduler preemption, or shutdown.
+
+
+### Example: declaring suspension permission
+
+The following is **target AttoLang syntax** for the full effect-aware compiler, not a claim that the present browser compiler can execute channel/stream reads:
+
+\`\`\`atto
+// Direct I/O may suspend, so this callable admits suspension and I/O.
+pub suspends fnc consume_stdin(): void using io, suspend {
+    stdio.in >> val read_outcome;
+    inspect_read_outcome(read_outcome); // handle EOF/errors explicitly
+}
+
+// Nonblocking registration does not itself need suspension permission.
+// The caller still needs I/O permission and must retain/handle the Future.
+pub fnc begin_read(Channel<string> inbox): Future<ReadOutcome<string, IoError>> using io {
+    return nb readch inbox;
+}
+
+// Awaiting the pending Future requires suspension permission.
+pub suspends fnc finish_read(Channel<string> inbox): void using io, suspend {
+    val pending = nb readch inbox;
+    val outcome = await pending;
+    inspect_read_outcome(outcome);
+}
+\`\`\`
+
+\`ReadOutcome\`, \`IoError\` and \`inspect_read_outcome\` here stand for the actual API's checked outcome and handler; they are not declarations added by this proposal. The target compiler must resolve those types, I/O permissions and effects rather than trusting a source comment or a nominally immediate underlying implementation. Being marked \`suspends\` permits a suspension but does not force one.
