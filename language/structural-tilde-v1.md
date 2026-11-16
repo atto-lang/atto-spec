@@ -54,7 +54,7 @@ The `~` token is contextual: `fnc length_squared(~Position p)` and `fnc length_s
 At call sites, the **target** grammar admits `fnc_name(~obj)`, `fnc_name(arg: ~obj)`, `obj.method(arg: structural obj2)` and mixed positional-then-named calls. The source-only preflight:
 - validates a complete immediate **postfix operand** such as `~obj`, `~obj.field`, `~obj.get()`, or `~obj[index]`, regardless of whitespace and comments;
 - resolves a named label against the chosen callable's formal names **before** structural admission and returns a binding plan in source evaluation order;
-- distinguishes `~(field: value)` and `~(key => value)` aggregate expressions from a `~obj` projection, and rejects `~{field: value}` (a value-pattern/type-shape spelling, not a call argument);
+- rejects obsolete `~(field: value)` and `~(key => value)` construction syntax; use `Record.of(...)` and `Map.of(...)` respectively; `~obj` remains a checked structural projection; `~{field: value}` is a shape/pattern, not an ordinary call argument;
 - rejects duplicate/unknown names, positional arguments after named arguments, collisions, extra/missing arguments, unrecognized projected operands and explicit `~` against an ordinary nominal formal, with source-based diagnostic positions.
 
 These are **syntax-only plans**, not production named-call or projected-call execution. The production Rust compiler still rejects structural argument projections and named call labels without producing Wasm. In particular, the bounded preflight currently rejects full arithmetic around the projected operand (`~obj + 1`) until typed expression precedence is implemented; this **does not** change the target rule that `~` binds to its first complete right-hand operand. No source argument may be evaluated twice or reordered by future parameter-slot permutation.
@@ -80,8 +80,10 @@ end
 ```ebnf
 structural_mark     = "structural" | "~" ;
 structural_type     = structural_mark, type_ref ;
-shape_type          = structural_mark, "{", field_type, {",", field_type}, "}" ;
-field_type          = identifier, ":", type_ref ;
+shape_type          = [structural_mark], "{", field_type, {",", field_type}, "}" ;
+field_type          = identifier, ":", (type_ref | singleton_type | union_type | shape_type) ;
+singleton_type      = string_literal | integer_literal | "true" | "false" ;
+union_type          = (type_ref | singleton_type | shape_type), "|", (type_ref | singleton_type | shape_type), {"|", (type_ref | singleton_type | shape_type)} ;
 param_type          = type_ref | structural_type | shape_type ;
 formal              = param_type, identifier, ["?"]
                     | identifier, ":", param_type, ["?"] ;
@@ -89,7 +91,7 @@ parameter_list      = "(", [formal, {",", formal}], ")" ;
 structural_pattern  = structural_type_pattern | structural_value_pattern ;
 structural_type_pattern = "is", (structural_type | shape_type),
                           ["as", binding_kind, identifier] ;
-structural_value_pattern = structural_mark, (immutable_pattern_value | value_shape_pattern),
+structural_value_pattern = (structural_mark, immutable_pattern_value | [structural_mark], value_shape_pattern),
                            ["as", binding_kind, identifier] ;
 value_shape_pattern = "{", pattern_field, {",", pattern_field}, "}" ;
 pattern_field       = identifier, ["?"], ":", (literal | "_" | nested_pattern) ;
@@ -162,29 +164,24 @@ An explicit value-pattern's required fields must be a **subset** of the subject'
 
 The same distinction applies to the long spelling: `on structural Position` is a value pattern, whereas `on is structural Position` is a type pattern. The formatter, type checker, and generated code must retain the **type-test vs value-pattern** AST discriminant. The `as val p` binder is introduced only after the pattern and guard succeed. An omitted `is` must never be silently inserted by a formatter or parser.
 
-Value patterns with source expressions that could throw, suspend, mutate, inspect private/actor state, or carry unproved ownership are rejected. Explicit `~{x: 10}` and existing `~(x: 10)` have different contexts: the former is a **match pattern**, while the latter is a **Record aggregate expression**.
+Value patterns with source expressions that could throw, suspend, mutate, inspect private/actor state, or carry unproved ownership are rejected. `~{x: 10}` and bare `{x: 10}` are value patterns in match arms. The former `~(x: 10)` aggregate constructor spelling is removed; use `Record.of(...)` for construction.
 
-## Important collision: aggregate tilde
+## Removed tilde aggregate constructors and whitespace invariance
 
-Other active language contracts reserve `~(key => value)` for typed Map aggregates and `~(field: value)` for closed readonly Record aggregates, with `~map`/`~record` explicit disambiguators. Those forms must remain **aggregate expressions**. Therefore:
+The canonical constructors are `Map.of(...)`, `Record.of(...)`, `Tuple.of(...)`, `Array.of(...)` and corresponding typed `.of` APIs where implemented. The obsolete `~(field: value)`, `~(key => value)`, and named `~map(...)`/`~record(...)` construction forms **reject** in all whitespace/comment variants; they must not be interpreted as structural projections. In particular, `~(value)` does **not** make parentheses legal structural projection syntax.
 
-| Spelling | Contextual interpretation |
+| Spelling | Meaning |
 | --- | --- |
-| `~Point`, `~ Point` | structural type/pattern if a type is expected; checked structural projection if a value is expected |
-| `~{x: int}` | structural *shape type* only in type/pattern context |
-| `~value`, `structural value` | structural value admission in expression context |
-| `~(field: value)` | Record aggregate, **not** a structural projection |
-| `~(key => value)` | Map aggregate, **not** a structural projection |
-| `~()` | reject ambiguous empty aggregate; use an explicit aggregate kind |
-| `~(value)` | reject in v1; use `structural (value)` or assign to a temporary first |
-| `~(x: int)` in call arguments | Record syntax at the expression site; **never** a named call argument |
-| `f(x: ~value)` | labeled call argument, then checked structural value |
-| `f(~value, label: other)` | one positional then one labeled argument |
+| `~Point`, `~ Point` | structural named type or projected value in the appropriate context |
+| `{foo: string}`, `~{foo: string}` | structural shape type in type position |
+| `on {foo: "dog"}`, `on ~{foo: "dog"}` | exact-value structural patterns |
+| `on is {foo: string}`, `on is ~{foo: string}` | structural type tests |
+| `~(field: 42)`, `~ (field: 42)` | reject; use `Record.of(...)` |
+| `~(key => 42)`, `~ (key => 42)` | reject; use `Map.of(...)` |
+| `f(p: ~value)` | labeled argument, with checked structural projection |
+| `f(p: Record.of(...))` | labeled ordinary aggregate argument |
 
-The same prefix-token rule applies to aggregate spellings `~(field: value)` ≡ `~ (field: value)` and `~(key => value)` ≡ `~ (key => value)`, **without** changing their aggregate meaning. A whitespace-separated operand `~ {}` is parsed as exactly the same operand as `~{}`, but empty shape or value patterns remain invalid under this v1 contract; whitespace does not permit an otherwise invalid operand. Explicit context distinguishes structural **type** shapes, **value** patterns, and ordinary **aggregate expressions**, not spacing.
-
-Do not discriminate solely by whitespace (`~(x)` vs `~ (x)`), runtime type, speculative reparse, or implicit `Any`; that would make formatting affect meaning.
-
+`~` binds the next right-hand operand regardless of spacing; spacing cannot revive removed syntax. See [anonymous-structural-shapes-v1.md](anonymous-structural-shapes-v1.md) and the removal contract [atto-spec PR #38](https://github.com/atto-lang/atto-spec/pull/38). An expression cannot masquerade as a structural type through a formatter rewrite.
 
 ### Rust/Wasm compiler implementation slice (PR #187; CI-verified for static classes)
 
