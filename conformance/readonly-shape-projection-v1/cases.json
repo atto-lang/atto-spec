@@ -131,7 +131,7 @@
     },
     {
       "id": "SP015",
-      "name": "empty_source_loan",
+      "name": "invalid_source_identity",
       "expected": "REJECT",
       "source_slot": null
     },
