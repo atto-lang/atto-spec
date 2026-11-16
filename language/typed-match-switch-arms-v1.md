@@ -7,7 +7,7 @@
 ```ebnf
 match_arm      = "on", pattern, [ "when", expression ], [ ":", type_ref ], "->", arm_body ;
 switch_arm     = ( "case" | "on" ), pattern, [ "when", expression ], [ ":", type_ref ], "->", arm_body ;
-switch_default = ( "default" | "case", "_" | "on", "_" ), [ ":", type_ref ], "->", arm_body ;
+switch_default = ( "default" | ( "case" | "on" ), "_" ), [ ":", type_ref ], "->", arm_body ;
 arm_body       = expression | block ;
 return_match   = "return", "match", [ "<", type_ref, ">" ], subject, "over", { match_arm }, "end", ";" ;
 return_switch  = "return", "switch", [ "<", type_ref, ">" ], subject, "over", { switch_arm | switch_default }, "end", ";" ;
