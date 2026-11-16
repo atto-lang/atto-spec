@@ -14,6 +14,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Return-position `match` with `return` or `^` v1](language/return-match-caret-v1.md): nested lexical returns, exhaustive arm proof and typed Channel/Future example; compiler/CI acceptance remains separately gated.
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
 
 ## Validation
