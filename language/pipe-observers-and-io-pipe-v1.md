@@ -242,3 +242,41 @@ val stats: PipeStats = (await pipe_handle.get_done())?;
 These rules apply identically to pipe, rpipe and io.pipe. A promise/
 Future used for get_done must follow the backend's ownership-safe
 shared-completion semantics; it is not an implicit unbounded queue.
+
+
+## Termination requests are not completion (quiescence barrier)
+
+PipeHandle has two separate transitions:
+
+1. Record the first terminal **cause** (EOF-after-drain, stage failure,
+   cancellation request, or supervisor stop), fence new admissions, and
+   wake/abort blocked operations. A cancellation request alone MUST NOT
+   emit #cancel or settle get_done().
+2. Wait for every in-flight transfer to resolve as admitted, returned to
+   its previous owner, or safely destroyed. Run graph-owned teardown,
+   collect suppressed cleanup errors, then publish exactly one final
+   immutable PipeOutcome, resolve get_done(), and dispatch terminal
+   observers. This is the **physical quiescence barrier**.
+
+An acknowledged transfer racing cancellation may become committed before
+that barrier, so PipeStats/PipeError must describe final authoritative
+counts, not a stale count captured at cancellation-request time. Unknown
+admission must be recorded as IndeterminateWrite rather than allowing a
+double transfer. A blocked sink/read is cancellation-aware and must
+eventually be woken, including capacity-zero rendezvous. Cancellation
+does not permit a detached in-flight producer or zombie actor task. A
+timeout/forced process kill cannot claim completed cleanup, cannot
+produce a forged clean result, and must expose incomplete shutdown
+distinctly at the runtime/supervisor boundary.
+
+A later cause while stopping cannot replace the first recorded cause,
+but cleanup failures remain suppressed diagnostics; an actor panic must
+still be delivered on its authenticated supervisor CONTROL lane even
+when a pipe's checked cancellation has already been requested.
+
+This is not a permission to wait on a host OS thread while a reactor
+is stalled: runtime schedulers must use cooperative async suspension,
+bounded state, and explicit wakeup paths. No callback may execute until
+the final outcome is published after the quiescence barrier. An observer
+registered while stopping but before settlement must receive the same
+terminal event once, after settlement.
