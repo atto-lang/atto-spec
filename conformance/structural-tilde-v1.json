@@ -1,0 +1,301 @@
+{
+  "contract": "atto.structural_tilde.v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "evidence": "source-free syntax vectors, not compiler/guest proof",
+  "cases": [
+    {
+      "id": "ST001",
+      "category": "formal",
+      "source": "(~Point p)",
+      "expect": "accept",
+      "note": "type-first tilde"
+    },
+    {
+      "id": "ST002",
+      "category": "formal",
+      "source": "(structural Point p)",
+      "expect": "accept",
+      "note": "type-first keyword"
+    },
+    {
+      "id": "ST003",
+      "category": "formal",
+      "source": "(p: ~Point)",
+      "expect": "accept",
+      "note": "name-first tilde"
+    },
+    {
+      "id": "ST004",
+      "category": "formal",
+      "source": "(p: structural Point)",
+      "expect": "accept",
+      "note": "name-first keyword"
+    },
+    {
+      "id": "ST005",
+      "category": "formal",
+      "source": "(int n, p: ~Point, verbose: bool)",
+      "expect": "accept",
+      "note": "mixed orientation"
+    },
+    {
+      "id": "ST006",
+      "category": "formal",
+      "source": "(~{x: int, y: bool} p)",
+      "expect": "accept",
+      "note": "shape-field colon"
+    },
+    {
+      "id": "ST007",
+      "category": "formal",
+      "source": "(p: ~mod.Point)",
+      "expect": "accept",
+      "note": "qualified type"
+    },
+    {
+      "id": "ST008",
+      "category": "formal",
+      "source": "(~Buffer<int> b)",
+      "expect": "accept",
+      "note": "generic named shape"
+    },
+    {
+      "id": "ST009",
+      "category": "formal",
+      "source": "(~Point p, p: int)",
+      "expect": "reject",
+      "note": "duplicate name"
+    },
+    {
+      "id": "ST010",
+      "category": "formal",
+      "source": "(p: ~)",
+      "expect": "reject",
+      "note": "missing structural type"
+    },
+    {
+      "id": "ST011",
+      "category": "formal",
+      "source": "(~Point p,)",
+      "expect": "reject",
+      "note": "trailing comma"
+    },
+    {
+      "id": "ST012",
+      "category": "formal",
+      "source": "(~{x: int, x: bool} p)",
+      "expect": "reject",
+      "note": "duplicate structural field"
+    },
+    {
+      "id": "ST013",
+      "category": "formal",
+      "source": "(~{x int} p)",
+      "expect": "reject",
+      "note": "missing field colon"
+    },
+    {
+      "id": "ST014",
+      "category": "formal",
+      "source": "(p: ~{})",
+      "expect": "reject",
+      "note": "empty shape without explicit contract"
+    },
+    {
+      "id": "ST015",
+      "category": "argument",
+      "source": "(~value)",
+      "expect": "accept",
+      "note": "positional structural projection"
+    },
+    {
+      "id": "ST016",
+      "category": "argument",
+      "source": "(structural value)",
+      "expect": "accept",
+      "note": "keyword structural projection"
+    },
+    {
+      "id": "ST017",
+      "category": "argument",
+      "source": "(p: ~value)",
+      "expect": "accept",
+      "note": "named structural projection"
+    },
+    {
+      "id": "ST018",
+      "category": "argument",
+      "source": "(~value, count: 2)",
+      "expect": "accept",
+      "note": "positional then named"
+    },
+    {
+      "id": "ST019",
+      "category": "argument",
+      "source": "(p: ~value, count: calc(1, 2))",
+      "expect": "accept",
+      "note": "named with nested positional"
+    },
+    {
+      "id": "ST020",
+      "category": "argument",
+      "source": "(a: flag ? left : right, b: nested(x: 1, y: 2))",
+      "expect": "accept",
+      "note": "ternary colon nested call labels"
+    },
+    {
+      "id": "ST021",
+      "category": "argument",
+      "source": "(payload: ~(field: 42))",
+      "expect": "accept",
+      "note": "record aggregate not cast"
+    },
+    {
+      "id": "ST022",
+      "category": "argument",
+      "source": "(payload: ~(key => 42))",
+      "expect": "accept",
+      "note": "map aggregate not cast"
+    },
+    {
+      "id": "ST023",
+      "category": "argument",
+      "source": "(x: ~value, y: structural other)",
+      "expect": "accept",
+      "note": "all named with mixed aliases"
+    },
+    {
+      "id": "ST024",
+      "category": "argument",
+      "source": "(p: 1, 2)",
+      "expect": "reject",
+      "note": "positional after named"
+    },
+    {
+      "id": "ST025",
+      "category": "argument",
+      "source": "(p: 1, p: 2)",
+      "expect": "reject",
+      "note": "duplicate label"
+    },
+    {
+      "id": "ST026",
+      "category": "argument",
+      "source": "(~())",
+      "expect": "reject",
+      "note": "ambiguous empty aggregate"
+    },
+    {
+      "id": "ST027",
+      "category": "argument",
+      "source": "(~(value))",
+      "expect": "reject",
+      "note": "grouped structural value conflicts with aggregate"
+    },
+    {
+      "id": "ST028",
+      "category": "argument",
+      "source": "(~ (value))",
+      "expect": "reject",
+      "note": "whitespace cannot change syntax"
+    },
+    {
+      "id": "ST029",
+      "category": "argument",
+      "source": "(~(x: 1, k => 2))",
+      "expect": "reject",
+      "note": "mixed map and record separators"
+    },
+    {
+      "id": "ST030",
+      "category": "argument",
+      "source": "(p: ~{x: int})",
+      "expect": "reject",
+      "note": "shape type in value position"
+    },
+    {
+      "id": "ST031",
+      "category": "argument",
+      "source": "(p: )",
+      "expect": "reject",
+      "note": "empty labeled expression"
+    },
+    {
+      "id": "ST032",
+      "category": "argument",
+      "source": "(p: 1,)",
+      "expect": "reject",
+      "note": "trailing named argument comma"
+    },
+    {
+      "id": "ST033",
+      "category": "pattern",
+      "source": "on is ~Point as val p",
+      "expect": "accept",
+      "note": "explicit structural type test"
+    },
+    {
+      "id": "ST034",
+      "category": "pattern",
+      "source": "on is structural Point as val p",
+      "expect": "accept",
+      "note": "keyword type test equivalent"
+    },
+    {
+      "id": "ST035",
+      "category": "pattern",
+      "source": "on ~Point as let p",
+      "expect": "accept",
+      "note": "structural shorthand pattern"
+    },
+    {
+      "id": "ST036",
+      "category": "pattern",
+      "source": "on structural Point as let p",
+      "expect": "accept",
+      "note": "structural keyword pattern"
+    },
+    {
+      "id": "ST037",
+      "category": "pattern",
+      "source": "on is ~{x: int} as val p",
+      "expect": "accept",
+      "note": "structural shape in match"
+    },
+    {
+      "id": "ST038",
+      "category": "pattern",
+      "source": "on is ~Point as val p when p.x > 0",
+      "expect": "accept",
+      "note": "guarded matching"
+    },
+    {
+      "id": "ST039",
+      "category": "pattern",
+      "source": "on ~",
+      "expect": "reject",
+      "note": "missing type name"
+    },
+    {
+      "id": "ST040",
+      "category": "pattern",
+      "source": "on Point",
+      "expect": "reject",
+      "note": "nominal type pattern cannot be structural shorthand"
+    },
+    {
+      "id": "ST041",
+      "category": "pattern",
+      "source": "on is ~Point as p",
+      "expect": "reject",
+      "note": "missing binding qualifier"
+    },
+    {
+      "id": "ST042",
+      "category": "pattern",
+      "source": "on is ~{} as val p",
+      "expect": "reject",
+      "note": "empty structural shape"
+    }
+  ]
+}
