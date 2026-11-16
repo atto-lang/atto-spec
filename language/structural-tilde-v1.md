@@ -1,6 +1,6 @@
 # Structural shorthand `~` — contextual alias contract (candidate v1)
 
-**Status: PROPOSED general contract; VERIFIED bounded Rust/Wasm subset.** Ordinary fixed-layout class structural **value patterns** (`on ~{x?: 10, y: _}`) and public scalar structural **type tests** (`on is ~Point`) are compiled and guest-executed on both native and browser compiler hosts. The complete 99-case contract, structural parameter/argument lowering, open/dynamic shapes, Java/LLVM/.NET and other backend parity are **not verified**. Exact evidence: [full-tree private carrier run #43827795242](https://github.com/cliptown/cliptown-e2e/actions/runs/43827795242), source SHA `0a4e95ec435d213de7b7b7731697e13f56236ef9`, 591 original source blobs and identical Git tree.
+**Status: PROPOSED general contract; VERIFIED bounded Rust/Wasm subset.** Ordinary fixed-layout class structural **value patterns** (`on ~{x?: 10, y: _}`) and public scalar structural **type tests** (`on is ~Point`) are compiled and guest-executed on both native and browser compiler hosts. The complete 99-case contract, structural parameter/argument **runtime lowering**, open/dynamic shapes, Java/LLVM/.NET and other backend parity are **not verified**. The production Rust parser now **retains** the `~Class` marker on fnc/routine/inline-method formals, while explicitly rejecting codegen until a safe projected-class loan ABI exists. Latest evidence: [full-tree carrier run #43909610197](https://github.com/cliptown/cliptown-e2e/actions/runs/43909610197), source SHA `300f94f8c278045a3bd8363706dff64b6ced9a25`, 592 original blobs and identical Git tree; 214 Rust tests, 503 conformance cases, 456 native/browser comparisons, 10 positive and 12 negative guest cases. Structural formal and named-call guest execution remain **fail-closed**, not passing feature claims.
 
 ## Decision
 
@@ -44,6 +44,22 @@ fnc use_position(Position existing): int {
 ```
 
 These are proposed acceptance fixtures, not known working programs. Structural-formal admission is never permission to expose private fields or silently copy ownership-sensitive values.
+
+### Formal and argument admission audit (2026-11-16)
+
+The `~` token is contextual: `fnc length_squared(~Position p)` and `fnc length_squared(p: structural Position)` have equivalent **target** structural-formal meaning; the same holds for `routine` and inline methods. The Rust production parser now recognizes both type-first and name-first structural class formals and explicitly stores `Param.structural = true`, rather than erasing the mark to a nominal class type. `~Point`, `~ Point`, `~/*comment*/Point`, and `structural Point` are equivalent as formal types. Mutable structural formals are rejected pending a checked exclusive-borrow ABI; `~int` and inline type shapes are rejected as currently unsupported structural formal profiles. Out-of-line `mtd` structural formals still fail closed in their separate receiver-header parser.
+
+**Crucial ABI boundary:** even when `Other` and `Position` share public fields, their **byte offsets, private headers, method tables, and lifetimes may differ**. Treating `~Position p` as an ordinary `Position` pointer, or as an implicit owned move/copy, would be unsound. The Rust checker therefore rejects a marked structural formal **before** signature registration and code emission with `E_UNSUPPORTED`; this is intentional until a validated, read-only borrowed argument descriptor/projection ABI can be generated. Merely parsing a formal is not proof that the function/method can be called.
+
+At call sites, the **target** grammar admits `fnc_name(~obj)`, `fnc_name(arg: ~obj)`, `obj.method(arg: structural obj2)` and mixed positional-then-named calls. The source-only preflight:
+- validates a complete immediate **postfix operand** such as `~obj`, `~obj.field`, `~obj.get()`, or `~obj[index]`, regardless of whitespace and comments;
+- resolves a named label against the chosen callable's formal names **before** structural admission and returns a binding plan in source evaluation order;
+- distinguishes `~(field: value)` and `~(key => value)` aggregate expressions from a `~obj` projection, and rejects `~{field: value}` (a value-pattern/type-shape spelling, not a call argument);
+- rejects duplicate/unknown names, positional arguments after named arguments, collisions, extra/missing arguments, unrecognized projected operands and explicit `~` against an ordinary nominal formal, with source-based diagnostic positions.
+
+These are **syntax-only plans**, not production named-call or projected-call execution. The production Rust compiler still rejects structural argument projections and named call labels without producing Wasm. In particular, the bounded preflight currently rejects full arithmetic around the projected operand (`~obj + 1`) until typed expression precedence is implemented; this **does not** change the target rule that `~` binds to its first complete right-hand operand. No source argument may be evaluated twice or reordered by future parameter-slot permutation.
+
+Verified audit: [GitHub Actions #43909610197](https://github.com/cliptown/cliptown-e2e/actions/runs/43909610197), including production-parser AST tests, all six new formal/call admission tests, full Rust/Node/Chromium regression, the exact mirrored 592-blob tree, and unchanged native/browser guest parity on the existing structural-matching slice. No Java, LLVM, Forge, or .NET parameter ABI parity is claimed.
 
 ### Pattern matching
 
