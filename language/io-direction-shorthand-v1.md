@@ -198,3 +198,14 @@ val result = await pending_read;
 3. Reject potential suspension inside non-\`suspends\` or \`pure\` callables at the checked effect boundary, and reject nonparking guarantees that the underlying stream cannot satisfy.
 4. Prove \`nb\` read/write futures have exactly-once completion, correct error/EOF/closure semantics and cancellation/ownership reclamation. Futures must not capture transient borrows across task suspension or actor stop.
 5. Test standalone, \`suspends\`, \`do select\`, and \`do nb select\` separately; do not use host reference-model execution as a substitute for actual compiled Atto guest tests.
+
+
+## Browser compiler admission boundary (implementation note)
+
+The restricted browser compiler may prove a *narrower* executable subset than this syntax contract. In that profile, direct `stdio.out << value;`, parenthesized `(stdio.out) << value;`, and explicit `writech stdio.out, value;` can lower to the existing typed `stdio.print(value)` Wasm import. That lowering is permitted **only** for direct standalone output with no select registration or `nb`/`try` mode. It does not establish general Channel<T>, Stream<T>, stdin, stderr, or atomic select execution.
+
+The syntactic `stdio.out` shortcut must never bypass lexical capability resolution: if a local or parameter named `stdio` shadows the builtin namespace, the restricted backend must fail closed, rather than silently printing to the built-in host output and ignoring the local. A complete backend should instead resolve the actual receiver's statically checked capability.
+
+A `when` I/O direction guard is valid only when its **immediately enclosing** block is a `select` family block, including a typed form such as `select<Result<Option<int>, Error>> { ... }`. Nesting a plain `block` or `if` body inside a select does not make arbitrary inner `when` statements new select registrations. Local `nb` or `try` prefixes on individual select guards remain invalid.
+
+Browser preflight recognition, Rust host oracles, and compiled guest execution have separate evidence tiers. A compiler diagnostic or a successful source-only test is not proof of the corresponding transport, cancellation, or scheduler behavior. In particular, host-model tests cannot by themselves validate races between real operating-system readiness callbacks, actor mailboxes, scheduler preemption, or shutdown.
