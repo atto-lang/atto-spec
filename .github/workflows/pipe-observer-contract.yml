@@ -5,6 +5,7 @@ on:
       - 'language/pipe-observers-and-io-pipe-v1.md'
       - 'language/pipeline-failure-effects-v1.md'
       - 'tests/pipe-observer-reference.test.mjs'
+      - 'tests/pipe-lifecycle-adversarial.test.mjs'
       - '.github/workflows/pipe-observer-contract.yml'
   push:
     paths:
@@ -30,3 +31,5 @@ jobs:
           node --version
       - name: Run host-only model (NOT a compiler/runtime receipt)
         run: node --test tests/pipe-observer-reference.test.mjs
+      - name: Execute adversarial lifecycle and partial-write model (host-only)
+        run: node --test tests/pipe-lifecycle-adversarial.test.mjs
