@@ -321,7 +321,7 @@ do readch foo, |outcome| -> void {
 
 ### Detached operation lifecycle
 
-1. `do writech` schedules a *supervised child I/O task*, with exactly one operation owner and a bounded runtime admission mechanism; it never calls a blocking OS I/O primitive on the caller/carrier. It must not imply an unlimited number of pending tasks. Registration/allocation/quota failures must be surfaced, not silently dropped.
+1. `do writech` schedules a *supervised child I/O task*, with exactly one operation owner and a bounded runtime admission mechanism; it never calls a blocking OS I/O primitive on the caller/carrier. It must not imply an unlimited number of pending tasks. Registration/allocation/quota failures must be delivered synchronously as a declared error or to the supervisor, never silently dropped.
 2. A detached operation can be queued when the underlying bounded channel is not ready, but it may eventually fail (closed, cancelled, quota, timeout, shutdown). The scheduler retains an owned payload until exactly one admission/terminal transition. The owner must not reuse a moved buffer; an uncommitted payload must be returned/cleaned up under the declared contract. No duplicate admission.
 3. The child belongs to the invoking actor/task group. On teardown it must either complete under an explicit join policy or be cancelled and report the cancellation. Detached is **not** orphaned; it does not permit use-after-free of borrowed stack/actor-state data or cross critical-read/write suspension boundaries.
 4. **With no callback**, terminal failures are delivered to the supervisor's dedicated control/error path. A runtime with no error sink/supervisor must reject unobservable `do` I/O or require an explicit error handler.
@@ -339,7 +339,7 @@ The following is **invalid**, not a useful combination of nonblocking I/O and aw
 nb stdio.in >> (val String pending_line << await Future<string>);
 ```
 
-Reasons: a read binder cannot itself contain a second I/O operator; `Future<string>` is a type, not an awaitable expression; `await` on a pending value may suspend the caller; the annotation would conceal the actual error/EOF outcome, and nested `val String` conflicts with canonical binding syntax.
+Reasons: a read binder cannot itself contain a second I/O operator; `Future<string>` is a type, not an awaitable expression; `await` on a pending value may suspend the caller; the annotation would conceal the actual error/EOF outcome, and a declaration cannot be nested inside the right-hand side of a read-binding statement.
 
 Use the two-phase form:
 
