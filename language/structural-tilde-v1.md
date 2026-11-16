@@ -80,6 +80,7 @@ argument_list       = "(", [call_argument, {",", call_argument}], ")" ;
 structural_value    = structural_mark, postfix_expression ;
 ```
 
+- `~` is a **standalone prefix operator token**. It applies to the next complete right-hand operand: no lexical adjacency to `{`, `(`, an identifier, or another operand token is required. Therefore `~{x: int}` and `~ {x: int}` are the same type-shape spelling; `~{x: 10}` and `~ {x: 10}` are the same field-value pattern; `~Point` and `~ Point` have the same contextual interpretation. Multiple spaces, line breaks, or comments between `~` and its operand do not change the parsed AST. The parser MUST NOT use source-byte adjacency or spaces to choose pattern/type/value/aggregate behavior.
 - `~` binds as a **prefix** to a type/reference or expression; it never changes top-level `:` parsing. The argument parser first identifies an immediate top-level `identifier :` as a label; *then* parses that argument's complete expression, so `f(p: ~point)` is one labeled argument. Within `~{x: int}`, `:` is a *type field* delimiter, not a call label.
 - In a call, positional arguments can precede labeled arguments. Once a labeled argument appears, any later ordinary positional argument is rejected. Duplicate/unknown labels, slot collisions, missing required formals, extra arguments, and unstable method/overload signatures are errors.
 - A parenthesized nested expression, ternary `?:`, nested call or record does not leak its colon into the enclosing argument-label scan. Neither `::` nor `T=Type` (generic named type argument) is a runtime named-argument delimiter.
@@ -104,7 +105,7 @@ end
 
 // Field values: x must equal 10; y must exist, but its value is ignored.
 match value over
-    on ~{x: 10, y: _} as val p -> {
+    on ~ {x: 10, y: _} as val p -> {
         process(p);
     }
     on _ -> { fallback(); }
@@ -135,6 +136,8 @@ Other active language contracts reserve `~(key => value)` for typed Map aggregat
 | `~(x: int)` in call arguments | Record syntax at the expression site; **never** a named call argument |
 | `f(x: ~value)` | labeled call argument, then checked structural value |
 | `f(~value, label: other)` | one positional then one labeled argument |
+
+The same prefix-token rule applies to aggregate spellings `~(field: value)` ≡ `~ (field: value)` and `~(key => value)` ≡ `~ (key => value)`, **without** changing their aggregate meaning. A whitespace-separated operand `~ {}` is parsed as exactly the same operand as `~{}`, but empty shape or value patterns remain invalid under this v1 contract; whitespace does not permit an otherwise invalid operand. Explicit context distinguishes structural **type** shapes, **value** patterns, and ordinary **aggregate expressions**, not spacing.
 
 Do not discriminate solely by whitespace (`~(x)` vs `~ (x)`), runtime type, speculative reparse, or implicit `Any`; that would make formatting affect meaning.
 
