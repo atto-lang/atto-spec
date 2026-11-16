@@ -367,9 +367,9 @@
       "id": "ST049",
       "category": "pattern",
       "source": "on is ~{x: 10} as val p",
-      "expect": "reject",
+      "expect": "accept",
       "pattern_kind": "type_test",
-      "note": "type-test fields cannot be value literals"
+      "note": "singleton literal field TYPE test; extension to anonymous shape grammar"
     },
     {
       "id": "ST050",
