@@ -6,6 +6,7 @@ const fail = code => { throw Error(code); };
 function parseType(raw) {
   const s = raw.trim().replace(/\s+/g, '');
   if (!s || s.endsWith('??')) fail('E_TYPE_SUFFIX');
+  if (s.includes(':') || s.includes('=') || (s.includes('?') && !s.endsWith('?'))) fail('E_FORMAL');
   if (!s.endsWith('?')) return s;
   const inner = s.slice(0, -1);
   if (!inner || inner === 'void' || inner === 'null') fail('E_TYPE_SUFFIX');
