@@ -45,7 +45,9 @@ export_visibility = "pub", [ "[", "pkg", "]" ] ;
 export_kind = "class" | "fnc" | "actor" | "enum" | "module" ;
 ```
 
-Named module exports obey the [namespace and module visibility contract](namespaced-exports-v1.md). `use namespace Name;` is a file identity header, not an exportable target; a public module does not implicitly publish its private members. Module-aware linker conformance is a **target**, not browser-backend proof.\n\nOther declaration kinds (for example `struct`, `record`, `trait`,
+Named module exports obey the [namespace and module visibility contract](namespaced-exports-v1.md). `use namespace Name;` is a file identity header, not an exportable target; a public module does not implicitly publish its private members. Module-aware linker conformance is a **target**, not browser-backend proof.
+
+Other declaration kinds (for example `struct`, `record`, `trait`,
 `interface`, or `type`) can join the `export_kind` set only when supported
 by the corresponding declaration grammar and symbol-table contract. An
 explicit `class` or `fnc` is **not required** when the named local
