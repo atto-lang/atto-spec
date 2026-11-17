@@ -207,3 +207,26 @@ Compiler evidence: exact-source token-free mirrored carrier
 executed 84 Rust tests and four Node WebAssembly guest tests. This is a
 *selected test subset*, not the entire Rust repository suite or native
 cross-backend conformance.
+
+## Authenticated immutable source snapshots (browser subset)
+
+An embedding host may compile an already-acquired immutable source graph with
+`package_resolver::compile_locked_snapshot(entry, manifest, lockfile,
+expected_lock_sha256, inputs)`. This mode does **not** read from the
+filesystem. The caller must independently authenticate the expected lock
+digest; the lockfile binds the package manifest and every source file by
+canonical relative path and SHA-256. Duplicate, missing, altered and
+unreachable-extra sources are rejected before linking.
+
+This is distinct from package-registry authentication: the browser compiler
+does not itself verify registry signatures, publish a signed lockfile, or
+safely derive trust from a digest stored beside untrusted package files.
+The Linux filesystem path uses descriptor-relative, symlink-rejecting file
+handles; other platforms still require independent hostile-FS hardening.
+
+Exact browser-crate source-mirror verification at
+[run 44196885802](https://github.com/quaestor-ledger-test/atto-ci/actions/runs/44196885802)
+included 609 original Git blobs, `cargo test --locked --all-targets`
+(387 Rust tests in 54 suites) and four executed linked-Wasm guests.
+Native Cranelift, other compilers, general registry integration, and
+per-source typed linked IR remain separate admission gates.
