@@ -1,4 +1,5 @@
-// Source-only reference graph oracle for language/copyable-ownership-v1.md.
+// Source-only DEEP copy graph oracle for language/copyable-ownership-v1.md.
+// copy!! / copy_deep() ONLY: the former deep-default copy! contract was superseded.
 // NOT an AttoLang compiler, borrow checker, guest execution or AOT proof.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -72,7 +73,7 @@ function validate_copy(root) {
   visit(root, '$');
 }
 
-function copy_bang(root) {
+function copy_double_bang(root) {
   // Admission happens before constructing any output node; model only.
   validate_copy(root);
   const seen = new WeakMap();
@@ -138,7 +139,7 @@ test('class copy separates the original, nested array and struct', () => {
     age: field(scalar(20)),
     info: field(struct({scores: field(array([scalar(1), scalar(2)]))})),
   });
-  const copied = copy_bang(original);
+  const copied = copy_double_bang(original);
   verify_detached(original, copied);
   copied.fields.info.value.fields.scores.value.elements[0].value = 99;
   assert.equal(original.fields.info.value.fields.scores.value.elements[0].value, 1);
@@ -151,7 +152,7 @@ test('arrays/lists/tuples/maps recursively detach, including keys and values', (
     list([klass('P', {x: field(scalar(3))})]),
     map([[klass('Key', {x: field(scalar(4))}), array([scalar(5)])]]),
   ]);
-  const duplicate = copy_bang(source);
+  const duplicate = copy_double_bang(source);
   verify_detached(source, duplicate);
   duplicate.elements[2].entries[0][1].elements[0].value = 17;
   assert.equal(source.elements[2].entries[0][1].elements[0].value, 5);
@@ -160,7 +161,7 @@ test('arrays/lists/tuples/maps recursively detach, including keys and values', (
 test('repeated internal aliases remain repeated but never alias source', () => {
   const child = klass('Child', {x: field(scalar(4))});
   const source = array([child, child]);
-  const copied = copy_bang(source);
+  const copied = copy_double_bang(source);
   assert.equal(copied.elements[0], copied.elements[1]);
   assert.notEqual(copied.elements[0], child);
   verify_detached(source, copied);
@@ -169,20 +170,20 @@ test('repeated internal aliases remain repeated but never alias source', () => {
 test('cycles fail closed without proof, verified cycle preserves topology', () => {
   const source = klass('Node', {});
   source.fields.next = field(source);
-  assert.throws(() => copy_bang(source), {code: 'E_COPY_GRAPH_UNPROVEN'});
+  assert.throws(() => copy_double_bang(source), {code: 'E_COPY_GRAPH_UNPROVEN'});
   source.graph_proven = true;
-  const copied = copy_bang(source);
+  const copied = copy_double_bang(source);
   assert.equal(copied.fields.next.value, copied);
   verify_detached(source, copied);
 });
 
 test('noncopyable fields and resources reject transitively', () => {
   const forbidden = klass('Credential', {token: field(scalar(5), true)});
-  assert.throws(() => copy_bang(forbidden), {code: 'E_COPY_TRANSITIVE'});
-  assert.throws(() => copy_bang(struct({socket: field(resource('socket'))})), {
+  assert.throws(() => copy_double_bang(forbidden), {code: 'E_COPY_TRANSITIVE'});
+  assert.throws(() => copy_double_bang(struct({socket: field(resource('socket'))})), {
     code: 'E_COPY_FORBIDDEN',
   });
-  assert.throws(() => copy_bang(klass('MoveOnly', {}, {no_copy: true})), {
+  assert.throws(() => copy_double_bang(klass('MoveOnly', {}, {no_copy: true})), {
     code: 'E_COPY_FORBIDDEN',
   });
 });
@@ -192,20 +193,20 @@ test('ordinary class auto-copy succeeds without handwritten method or annotation
     name: field(scalar('Alice')),
     scores: field(array([scalar(1), scalar(2)])),
   });
-  const copied = copy_bang(original);
+  const copied = copy_double_bang(original);
   copied.fields.scores.value.elements[0].value = 99;
   assert.equal(original.fields.scores.value.elements[0].value, 1);
   assert.notEqual(copied, original);
 });
 test('auto derivation fails for a forbidden field or empty generic array', () => {
-  assert.throws(() => copy_bang(klass('P', {socket: field(resource('socket'))})), {
+  assert.throws(() => copy_double_bang(klass('P', {socket: field(resource('socket'))})), {
     code: 'E_COPY_FORBIDDEN',
   });
-  assert.throws(() => copy_bang(array([], false)), {code: 'E_COPY_TRANSITIVE'});
+  assert.throws(() => copy_double_bang(array([], false)), {code: 'E_COPY_TRANSITIVE'});
 });
 
-test('views never silently alias underlying owner under copy!', () => {
-  assert.throws(() => copy_bang(view(array([scalar(1)]))), {
+test('views never silently alias underlying owner under copy!!', () => {
+  assert.throws(() => copy_double_bang(view(array([scalar(1)]))), {
     code: 'E_COPY_VIEW',
   });
 });
@@ -222,22 +223,22 @@ test('failure does not mutate or invalidate original', () => {
   const root = array([first, klass('Bad', {}, {
     copy_mode: 'manual', verified: false, override_copy: super_copy => super_copy(),
   })]);
-  assert.throws(() => copy_bang(root), {code: 'E_COPY_UNPROVEN'});
+  assert.throws(() => copy_double_bang(root), {code: 'E_COPY_UNPROVEN'});
   assert.equal(root.elements[0], first);
   assert.equal(first.fields.x.value.value, 7);
 });
 
-test('copy! and rt copy reference the same conceptual primitive', () => {
-  const copy_rt = copy_bang; // compiler lowering equivalence is still UNVERIFIED
+test('copy!! and copy_deep() reference the same reference deep-copy operation', () => {
+  const copy_rt = copy_double_bang; // compiler lowering equivalence is still UNVERIFIED
   const src = struct({x: field(scalar(42))});
-  assert.deepEqual(copy_bang(src), copy_rt(src));
-  assert.notEqual(copy_bang(src), src);
+  assert.deepEqual(copy_double_bang(src), copy_rt(src));
+  assert.notEqual(copy_double_bang(src), src);
 });
 
 test('auto-derived subclass copy includes inherited fields and preserves subtype', () => {
   const parent = klass('PersonBase', {scores: field(array([scalar(2)]))});
   const child = klass('Employee', {salary: field(scalar(10))}, {parent});
-  const duplicate = copy_bang(child);
+  const duplicate = copy_double_bang(child);
   assert.equal(duplicate.name, 'Employee');
   assert.equal(duplicate.parent.name, 'PersonBase');
   assert.notEqual(duplicate.parent, parent);
@@ -256,26 +257,26 @@ test('manual override post-processes compiler baseline copy exactly once', () =>
     c.fields.cache.value.elements[0].value = 0;
     return c;
   }});
-  const copy = copy_bang(source);
+  const copy = copy_double_bang(source);
   assert.equal(baseline_invocations, 1);
   assert.equal(copy.fields.cache.value.elements[0].value, 0);
   assert.equal(source.fields.cache.value.elements[0].value, 99);
 });
 
 test('manual override missing, repeated, or wrong-object super.copy is invalid', () => {
-  assert.throws(() => copy_bang(klass('P', {}, {copy_mode: 'manual'})), {
+  assert.throws(() => copy_double_bang(klass('P', {}, {copy_mode: 'manual'})), {
     code: 'E_COPY_UNPROVEN',
   });
-  assert.throws(() => copy_bang(klass('P', {mutable_score: field(scalar(7))}, {
+  assert.throws(() => copy_double_bang(klass('P', {mutable_score: field(scalar(7))}, {
     // Freshness alone cannot preserve the nonconstant field.
     override_copy: () => klass('P', {}),
   })), {code: 'E_COPY_OVERRIDE'});
-  assert.throws(() => copy_bang(klass('P', {}, {
+  assert.throws(() => copy_double_bang(klass('P', {}, {
     override_copy: super_copy => {super_copy(); super_copy();},
   })), {code: 'E_COPY_OVERRIDE'});
   const source = klass('P', {});
   source.override_copy = super_copy => {super_copy(); return source;};
-  assert.throws(() => copy_bang(source), {code: 'E_COPY_OVERRIDE'});
+  assert.throws(() => copy_double_bang(source), {code: 'E_COPY_OVERRIDE'});
 });
 
 test('manual override may not leak a mutable alias to the source', () => {
@@ -287,7 +288,7 @@ test('manual override may not leak a mutable alias to the source', () => {
       return c;
     },
   });
-  assert.throws(() => copy_bang(source), {code: 'E_COPY_ALIAS'});
+  assert.throws(() => copy_double_bang(source), {code: 'E_COPY_ALIAS'});
 });
 
 test('uncomposable parent hook is rejected; proven hook preserves whole type', () => {
@@ -295,9 +296,9 @@ test('uncomposable parent hook is rejected; proven hook preserves whole type', (
     override_copy: super_copy => {const c = super_copy(); c.fields.age.value.value++; return c;},
   });
   const child = klass('Child', {scores: field(array([scalar(2)]))}, {parent});
-  assert.throws(() => copy_bang(child), {code: 'E_COPY_INHERITANCE'});
+  assert.throws(() => copy_double_bang(child), {code: 'E_COPY_INHERITANCE'});
   parent.composable = true; // explicit reference-model composition receipt
-  const result = copy_bang(child);
+  const result = copy_double_bang(child);
   assert.equal(result.name, 'Child');
   assert.equal(result.parent.fields.age.value.value, 6);
   assert.equal(parent.fields.age.value.value, 5);
@@ -309,12 +310,12 @@ test('explicit implements/annotation cannot override no-copy field', () => {
     verified: true,
     override_copy: super_copy => super_copy(),
   });
-  assert.throws(() => copy_bang(source), {code: 'E_COPY_TRANSITIVE'});
+  assert.throws(() => copy_double_bang(source), {code: 'E_COPY_TRANSITIVE'});
 });
 
 test('direct new Foo is a valid copy of a proven stateless concrete class', () => {
   const original = klass('Foo', {}, {override_copy: () => klass('Foo', {})});
-  const result = copy_bang(original);
+  const result = copy_double_bang(original);
   assert.notEqual(result, original);
   assert.equal(result.name, 'Foo');
   verify_detached(original, result);
@@ -324,9 +325,9 @@ test('fresh allocation alone cannot copy stateful or inherited instances', () =>
   const original = klass('Foo', {value: field(scalar(91))}, {
     override_copy: () => klass('Foo', {}),
   });
-  assert.throws(() => copy_bang(original), {code: 'E_COPY_OVERRIDE'});
+  assert.throws(() => copy_double_bang(original), {code: 'E_COPY_OVERRIDE'});
   const parent = klass('Parent', {});
-  assert.throws(() => copy_bang(klass('Child', {}, {
+  assert.throws(() => copy_double_bang(klass('Child', {}, {
     parent, override_copy: () => klass('Child', {}),
   })), {code: 'E_COPY_OVERRIDE'});
 });
