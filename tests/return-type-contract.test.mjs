@@ -37,3 +37,20 @@ test('inference is deterministic and cannot erase safety constraints',()=>{
     'MUST NOT choose an overload', 'without writing `infer`',
   ]) assert.ok(spec.includes(phrase), phrase);
 });
+
+test('contextual infer struct target semantics', () => {
+  for (const phrase of [
+    '## Contextual `infer struct` construction',
+    'const Point p = infer struct { x: 3, y: 4 };',
+    'const empty = infer struct {};',
+    'without a usable expected struct type',
+    'compiler-private anonymous nominal struct type',
+    'zero fields',
+    'E_CONST_INIT',
+    'E_TYPE_INFER_AMBIGUOUS',
+    'Do not use the existing broad `shape_lower` exact-field-set search',
+    'not automatically valid',
+    'private/public/actor boundary checks',
+    'infer<T> struct',
+  ]) assert.ok(spec.includes(phrase), phrase);
+});
