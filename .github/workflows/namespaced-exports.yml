@@ -7,6 +7,9 @@ on:
       - "conformance/namespaced-exports-v1.json"
       - "tests/namespaced-export-contract.test.mjs"
       - ".github/workflows/namespaced-exports.yml"
+      - "conformance/visibility-linkage-final-v1.json"
+      - "language/visibility-linkage-and-final-v1.md"
+      - "tests/visibility-linkage-final-contract.test.mjs"
   push:
     branches: [main]
     paths:
@@ -24,4 +27,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run host-only contract consistency tests
-        run: node --test tests/namespaced-export-contract.test.mjs
+        run: node --test tests/namespaced-export-contract.test.mjs tests/visibility-linkage-final-contract.test.mjs
