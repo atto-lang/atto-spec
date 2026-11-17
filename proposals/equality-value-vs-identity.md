@@ -151,3 +151,31 @@ pub fnc main(): int {
 exact Rust/browser source Git commit and Git tree alongside an executed
 compiler+guest run and the negative compile diagnostics. Do not treat this
 normative design description as evidence by itself.
+
+### Identity checks inside instance methods
+
+Inside a class instance method, `self == other`, `self != other`, and
+`self == self` may project `self` to a **read-only, non-owning**
+reference identity operand. The compiler MUST reject using that projection
+as a general value or moving, returning, or sharing `self` as an owned
+alias. Static functions and actor `self` do not inherit this class
+exception.
+
+```atto
+define class Point as
+    pub final int n: 7;
+    pub equals(Point other): bool {
+        if self == other then return true; fi
+        if self != other then return self.n eq other.n; fi
+        return false;
+    }
+end
+```
+
+This `self` identity check is not a recursive call to `equals()`. It
+compares stable object handles directly. Primitive or mismatched-class
+operands still trigger `E_IDENTITY_TYPE`.
+
+The Rust/browser compiler implements this bounded same-class profile; it
+does not imply general self-as-value semantics, virtual inheritance,
+dynamic dispatch, actor capability identity, or default `Object.equals()`.
