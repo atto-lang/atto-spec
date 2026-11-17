@@ -1,0 +1,127 @@
+{
+  "contract": "atto.sealed-classes.v1",
+  "status": "PROPOSAL",
+  "verification": "HOST_ONLY_SCHEMA_NOT_COMPILER_EXECUTION",
+  "compiler_pr": "https://github.com/atto-lang/atto-source.rs/pull/270",
+  "cases": [
+    {
+      "id": "closed-final",
+      "source": "define sealed class Root permits Leaf as end define final class Leaf extends Root as end pub fnc main(): int { return 0; }",
+      "expected": "ACCEPT",
+      "diagnostic": null,
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "closed-recursive",
+      "source": "define sealed class Root permits Mid as end define sealed class Mid extends Root permits Leaf as end define final class Leaf extends Mid as end pub fnc main(): int { return 0; }",
+      "expected": "ACCEPT",
+      "diagnostic": null,
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "nonsealed-opens",
+      "source": "define sealed class Root permits Branch as end define non-sealed class Branch extends Root as end define class Open extends Branch as end pub fnc main(): int { return 0; }",
+      "expected": "ACCEPT",
+      "diagnostic": null,
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "ordinary-open",
+      "source": "define class Root as end define class Child extends Root as end pub fnc main(): int { return 0; }",
+      "expected": "ACCEPT",
+      "diagnostic": null,
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "unlisted-child",
+      "source": "define sealed class Root permits Allowed as end define final class Allowed extends Root as end define final class Bad extends Root as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "unbound-permitted",
+      "source": "define sealed class Root permits Missing as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "not-direct-child",
+      "source": "define sealed class Root permits Leaf as end define final class Leaf as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "unmarked-child",
+      "source": "define sealed class Root permits Leaf as end define class Leaf extends Root as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "missing-permits",
+      "source": "define sealed class Root as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "duplicate-permitted",
+      "source": "define sealed class Root permits Leaf, Leaf as end define final class Leaf extends Root as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "self-permitted",
+      "source": "define sealed class Root permits Root as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "final-extended",
+      "source": "define final class Root as end define class Child extends Root as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_FINAL",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "orphan-nonsealed",
+      "source": "define non-sealed class Lone as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "open-permits",
+      "source": "define class Root permits Child as end define class Child extends Root as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "sealed-trait",
+      "source": "define sealed trait Bad permits X as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "final-second-base",
+      "source": "define class First as end define final class Closed as end define class Child extends First, Closed as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_FINAL",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "abi-override",
+      "source": "define sealed class Root permits Leaf as pub f(): int { return 1; } end define final class Leaf extends Root as pub f(): int { return 2; } end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_OVERRIDE_REQUIRED",
+      "execution": "NOT_EXECUTED"
+    }
+  ]
+}
