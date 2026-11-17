@@ -5,11 +5,11 @@
 ## Purpose and spelling
 
 ```atto
-const original = {name: "Alice", age: 30};
-const birthday = original with {age: 31};
-const enriched = original with {age: 31, active: true};
-const retagged = original with {age: "thirty"};
-const nested = (enriched with {"content-type": "json"}) with {active: false};
+val original = {name: "Alice", age: 30};
+val birthday = original with {age: 31};
+val enriched = original with {age: 31, active: true};
+val retagged = original with {age: "thirty"};
+val nested = (enriched with {"content-type": "json"}) with {active: false};
 ```
 
 `with` is a contextual expression operator: `with_expression := operand, "with", "{", [field, {separator, field}], "}"`, with `field := (IDENT | STRING), ":", expression` and the same comma/newline/trailing-comma rules as Record literals. Its right side is **only** a static field-update list, not an arbitrary Record expression, statement block, Map literal, or lambda body. No spread or dynamic key syntax is introduced in v1. `with` is left-associative; parenthesize complex operands to make precedence explicit; the parser must not accidentally consume a following statement block. The formatter uses `source with {field: value}` and preserves user field spellings, otherwise canonicalizing as with ordinary Record fields.
