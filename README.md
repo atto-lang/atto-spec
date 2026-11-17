@@ -14,6 +14,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Mailman actor delivery v1](language/mailman-actor-delivery-v1.md): candidate proof-gated ownership transfer, checked cross-actor leases, immutable sharing and deep-copy/copy-elision contract. [Host-only model fixtures](conformance/mailman-actor-delivery-v1.json) and [tests](tests/mailman-actor-delivery-v1.test.mjs); no compiler/runtime execution or backend parity claimed.
+
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
 
