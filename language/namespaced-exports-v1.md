@@ -148,39 +148,58 @@ A result must separate parser, binder, linker, and guest stages, with explicit
 `passed`/`failed`/`unsupported`/`not executed` receipts and exact
 source/tree SHAs. Host JSON checks do not establish compiler support.
 
-## Executable browser subset: trusted single-hop source linker
+## Executable browser subset: checked local-package and multi-hop linking
 
-The current experimental browser compiler additionally offers the **explicit
-in-memory** API `linker::compile_linked(entry_path, &[LinkUnit])`. Every unit
-carries a normalized project-relative file path, a trusted canonical package
-identity supplied by the embedding host, and the Atto source. This API does
-not derive package identity from untrusted source attributes, resolve physical
-symlinks, or read `.atto.pkg.toml` itself.
+The current experimental Rust/Wasm browser compiler exposes the in-memory
+`linker::compile_linked(entry_path, &[LinkUnit])` API. Each source unit
+supplies a canonical project-relative path, an explicitly verified package
+identity, and its source. It resolves an **acyclic multi-hop import graph**
+deterministically, with `./file.atto` imports relative to the importing file
+and `+lib/file.atto` imports relative to the canonical package root.
 
-A leading `use namespace Name;` gives a source unit an owner identity.
-`import module Name from "./relative.atto";` may follow that header only
-before other declarations. The requested module must exist in exactly the
-specified in-memory file and must be locally declared and `pub` or
-`pub[pkg]` exported. A public module may be imported across package
-identities; a `pub[pkg]` module requires exact identity equality.
-Private module members stay private after linking; an imported module is
-**not** re-exported in either Atto export metadata or host Wasm exports.
+Every edge checks the *immediate consumer's* package ID, not the entry file's.
+Imported files may only use their own modules or names they explicitly import;
+sibling imports cannot grant ambient authority. Imported code cannot capture
+entry-only free functions. Each requested imported module must be locally
+declared and exported; private members, wrong-kind exports, duplicate module
+names, cycles, missing files and re-exports fail without guest artifacts.
+Current symbol mangling requires module names to be unique across the linked
+guest rather than silently aliasing conflicting namespaces. This is an
+**implementation subset**, not the full namespace-aware target ABI.
 
-The initial implementation composes one import hop into one actual Wasm
-guest and enforces the linked size limit. It rejects unsupported transitive
-imports, imports nested in declaration bodies, duplicate aliases/paths,
-noncanonical or traversing relative paths, missing files, self-import cycles,
-implicit or explicit re-exports, and imported source files containing unrelated
-top-level declarations. A verified package resolver must authenticate the
-supplied package identities; this API on its own cannot secure a malicious
-caller lying about a package ID. Syntax and metadata for general filesystem
-linking, aliases, roots, symlinks and multiple-hop dependency graphs remain
-target-only and MUST NOT be advertised as implemented.
+The host-only `package_resolver::compile_package(root, entry)` and native
+`attoc --package-root DIR --entry src/main.atto` use a bounded strict
+`.atto.pkg.toml` subset consisting of:
 
-An executed browser compiler subset was tested using a source-only mirrored
-carrier with original Git blob SHAs, including real Node WebAssembly guest
-execution for a cross-package public import and same-package package-private
-import. See the run receipts attached to
-[compiler PR #272](https://github.com/atto-lang/atto-source.rs/pull/272).
-Neither the host-only spec fixture validation nor browser guest execution
-establishes full native LLVM/Java/.NET/Forge backend parity.
+```toml
+[package]
+name = "storefront"
+version = "1.2.3"
+```
+
+The resolver verifies the canonical local root, rejects symlink components and
+paths outside that root, loads only reachable sources, and supplies the
+same-root package identity to the in-memory compiler. This does **not**
+authenticate external registry packages or implement dependency lockfiles.
+The strict parser is not a general TOML dependency implementation.
+
+**Filesystem threat boundary:** pre-read symlink and canonical-path checks
+cannot establish security against concurrent malicious directory replacement.
+Use only on stable trusted source trees until descriptor-based `openat2` or
+capability-backed filesystem traversal and immutable source snapshots are
+implemented and tested. The separately exposed in-memory API continues to
+require package identities authenticated by its caller.
+
+Import aliases, transitive *re-exports*, external dependency resolution,
+type-only cycles, arbitrary module initializers, package/namespace-qualified
+AOT metadata, and Java/LLVM/.NET/Forge parity remain future work. The
+standalone `compile(source)` function deliberately remains single-file.
+Neither runtime guest results nor JSON fixture schema tests establish the
+unimplemented features. See the compiler's
+[checked package-linking notes](https://github.com/atto-lang/atto-source.rs/blob/hardening/module-export-visibility-20261117/docs/package-linking.md).
+
+Compiler evidence: exact-source token-free mirrored carrier
+[run 44169061743](https://github.com/quaestor-ledger-test/atto-ci/actions/runs/44169061743)
+executed 84 Rust tests and four Node WebAssembly guest tests. This is a
+*selected test subset*, not the entire Rust repository suite or native
+cross-backend conformance.
