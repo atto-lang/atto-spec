@@ -10,7 +10,7 @@ A **local** declaration whose first syntax constituent is a resolved type and wh
 | --- | --- | --- | --- |
 | `T x = e;` | compile-time constant expression | no | immutable constant value |
 | `const T x = e;` / `const x: T = e;` | compile-time constant expression | no | immutable constant value |
-| `const x = e;` | compile-time constant expression, type inferred | no | immutable constant value |
+| `const x = e;` | compile-time constant expression, type inferred (**target**; stage one keeps a readonly binding, see [stage-one scalar slice](#stage-one-scalar-slice-backend-status)) | no | immutable constant value |
 | `const mut T x = e;` | compile-time constant expression, fresh owned runtime instance | no | mutable referent only under ordinary ownership checks |
 | `val T x = e;` / `val x = e;` | runtime permitted | no | determined by independent ownership and borrow permissions |
 | `let T x = e;` / `let x = e;` | runtime permitted | yes | determined by independent ownership and borrow permissions |
@@ -62,6 +62,17 @@ The `type identifier` prefix is a declaration only after type-name/generic synta
 Existing `if runtime_expr as const name` uses `const` as a **contextual immutable binding** and does not require the expression to be compile-time evaluable. Pattern destructuring and `for const item` likewise keep their context-specific immutable-binding roles until separately specified. No global text rewrite of the lexeme `const` is permitted.
 
 The formatter may normalize `const T x = e;` to `T x = e;` **only for validated type-first local declarations**; the reverse forms must yield identical typed IR, initializer checks, diagnostics, and observable behavior. It must preserve `const mut`, untyped `const x`, contextual `const` and explicit class/actor field modifiers. Format–parse–format is idempotent, including error cases that must not be auto-repaired into `val`.
+
+## Stage-one scalar slice (backend status)
+
+The first implementation slice, coordinated across java #3066 (leader), llvm #1779 and net #516, enforces only the **typed scalar** part of this chapter. It describes what those compilers implement; it is not a parity certificate (see the gates below).
+
+- **Scope.** `T x = e;`, `const T x = e;` and `const x: T = e;` with `T` in `int`, `bool`, `string`/`String` (llvm and java; the .NET structured compiler has `int`/`bool` only). Type-first locals of other types (generic, nominal, aggregate, `T?`) are not admitted as runtime bindings either: they need a const evaluator for that type or an explicit `val`/`let`.
+- **Constant expressions.** Literals; earlier typed scalar constants; unary `-` and `!`; checked `+ - *` on `int`; comparisons; `&& || ^^` on `bool`. Java additionally folds string `+` under a 1 MiB budget (`E_CONST_EVAL_BUDGET`) and `cond ? a : b` over constants. A call, a read of a `val`/`let`/parameter, `await`, actor state or any effect is not constant.
+- **Diagnostics.** `E_NON_CONST_INITIALIZER` -> `non_const_initializer`; `E_CONST_OVERFLOW` -> `const_eval_overflow`; `E_IMMUTABLE_REBIND` -> `immutable_reassignment`; scalar `const mut` -> `E_CONST_MUT_UNSUPPORTED` (`invalid_const_mut_target`); bare `mut T x = e;` -> `E_MUT_QUALIFIER` (`missing_binding_qualifier`) in java and .NET.
+- **Untyped `const x = e;` is deferred.** Java and .NET keep it as a fixed readonly binding: folded when the initializer is constant, otherwise evaluated once at runtime (java `docs/LANGUAGE.md`). LLVM rejects untyped scalar locals until inference lands (llvm #1256). Making untyped `const` compile-time-only needs a separate migration because java uses it widely as a runtime readonly binding, as do destructuring `const`, `for const` and `if ... as const`.
+- **`val` is unchanged.** `val` stays the runtime fixed binding and keeps its referent-mutation permission subject to ownership checks; java still rejects `val mut` as a duplicate qualifier. Removing implicit referent mutability from `val` is a separate decision.
+- **Aggregate `const` and `const mut`** keep their existing per-backend behaviour and are outside this slice; fresh-instance `const mut` materialization is not implemented anywhere yet.
 
 ## Verification and migration gates
 
