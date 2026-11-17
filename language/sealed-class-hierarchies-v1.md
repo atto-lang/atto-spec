@@ -41,3 +41,35 @@ Until that proof and actual polymorphic guest execution are implemented, backend
 ## Current implementation boundary
 
 Rust/Wasm draft PR [atto-source.rs#270](https://github.com/atto-lang/atto-source.rs/pull/270) implements the **source-local** declaration-graph guard before existing method-copying lowering. It is not a runtime subtype or sealed-pattern implementation. Authored Rust tests require executed exact-head CI before accepting any pass claim. Independently audit Java/GraalVM, LLVM, .NET Native AOT, Forge, JavaScript/browser, formatter and common conformance; no target inherits another target's evidence.
+
+## Staged source-local metadata and qualified prelink policy
+
+The Rust/Wasm draft implementation serializes compiler-validated class graph
+data into a **deterministic WebAssembly custom section** named
+`atto.nominal.hierarchy.v1`, appended only after successful parsing, type
+checking, and code emission. Its payload starts with a one-byte identity-domain
+flag, currently **0 = source-unit-local, NOT linker-authenticated**, followed by
+unsigned LEB128 record count and lexicographically ordered class records.
+Each record includes length-prefixed UTF-8 nominal name, modifier
+(`0=open`, `1=sealed`, `2=non-sealed`, `3=final`), visibility
+(`0=private`, `1=public`, `2=package`), and bounded lists of direct parent
+and permitted-child names. All list lengths use unsigned LEB128 encoding.
+These are **local names**, never linkable qualified identities by themselves.
+
+A separate bounded **prelink policy checker** operates on explicitly
+resolved `(package, namespace, class)` identities, not on bare `class`
+spellings or import aliases. It verifies graph closure, each sealed parent's
+exact permitted edges, final/non-sealed rules, multiple inheritance, visibility,
+duplicates, missing identities, and cycles. Build-assigned source-unit IDs
+must be immutable within the relevant compile/link transaction.
+
+**Security boundary:** Any actor can edit an arbitrary Wasm custom section.
+The mere presence of `atto.nominal.hierarchy.v1` **does not authenticate its
+contents** or authorize any cross-unit inheritance. A future executable
+linker must verify source-to-artifact provenance (including exact source/
+compiler identity), bind permitted names to immutable qualified declarations,
+revalidate the complete graph, check ABI/layout/method overrides, and reject
+forged or stale identities. The prelink policy checker alone does not link
+foreign method bodies, enable runtime polymorphic dispatch, or permit hot-loading.
+Until then, attempts to compile foreign sealed-class edges remain unsupported
+and must fail without an executable guest artifact.
