@@ -91,7 +91,7 @@ For `typeof(tbr)`, every reachable return must be statically assignable to the r
 ## Error categories and required tests
 
 Use existing diagnostic registries to map proposed categories:
-`E_RETURN_INFER_AMBIGUOUS`, `E_RETURN_INFER_CYCLE`, `E_TYPE_QUERY_UNBOUND`, `E_TYPE_QUERY_SCOPE`, `E_TYPE_QUERY_AMBIGUOUS`, `E_TYPE_QUERY_UNSUPPORTED`, `E_RETURN_TYPE_MISMATCH`, `E_RETURN_PATH`.
+`E_TYPE_INFER_AMBIGUOUS`, `E_INFER_CONTEXT`, `E_INFER_BUDGET`, `E_RETURN_INFER_AMBIGUOUS`, `E_RETURN_INFER_CYCLE`, `E_TYPE_QUERY_UNBOUND`, `E_TYPE_QUERY_SCOPE`, `E_TYPE_QUERY_AMBIGUOUS`, `E_TYPE_QUERY_UNSUPPORTED`, `E_RETURN_TYPE_MISMATCH`, `E_RETURN_PATH`.
 
 Conformance cases must cover `typeof x` / `typeof(x)` AST equivalence and formatter idempotence, `typeof fnc` preservation, `typeof! x` and invalid expression operands as parser negatives, positive scalar, generic, parameter, callable and forward-body queries; mixed returns, early returns, void/fallthrough, local scope and shadowing, cycles and recursion, generic-vs-value arguments, `typeof fnc` compatibility, and AOT ownership/effect preservation.
 
