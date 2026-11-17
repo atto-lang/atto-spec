@@ -82,6 +82,57 @@ AttoLang SHOULD infer **within a lexical scope** and from **already resolved exp
 
 **Minimal cross-backend acceptance suite (TARGET):** local fixed-type rebinding; annotated empty `Array<T>` / `Option<T>`; unannotated empty rejection; contextual lambda and contextless lambda rejection; direct/mutual inferred recursion rejection; explicitly typed recursion acceptance; conflicting return arms; missing return path; heterogeneous record array requiring an explicit element type; `Option<Result<T,E>>` versus `Result<Option<T>,E>` preserving distinct identities; actor message escape rejection; deterministic budget rejection; same public signature after cold and incremental builds.
 
+## Contextual `infer struct` construction (v1 target)
+
+This is **expression-position** struct construction, distinct from `: infer` in a callable signature, local initializer synthesis (`const x = e`), and the previously proposed declaration grammar `infer<T> struct`. The token `infer` is contextual only before `struct` in a value expression; it is not a global reserved type, runtime reflection operator, or automatic search for a named shape.
+
+### Expected-type form (nominal)
+
+```atto
+define struct Point as
+    int x;
+    int y;
+end
+
+const Point p = infer struct { x: 3, y: 4 };
+val Point q = infer struct { x: 5, y: 6 };
+```
+
+- Where the assignment, argument, return or field position provides a uniquely resolved expected **nominal struct type `T`**, `infer struct { ... }` constructs exactly `T`. Check each named initializer against the declared field type, visibility, ownership/effect rules and const-evaluation limits. It does not invent a second anonymous nominal type, structurally coerce a different nominal type, or select from unrelated declarations. For a generic `T`, its substitution must already be unique from surrounding constraints; an unconstrained generic parameter is not constructible merely by writing `infer`.
+- Fields are identified by ordinary **identifier** names only (unlike a Record's quoted field names and a Map's expression keys). Reject unknown fields, duplicates, inaccessible/private fields, invalid assignments, missing required fields and invalid field order/initialization contracts at compile time. Evaluate explicit initializers once in source order. Preserve the declaration's layout/ABI and field ownership; do not invoke reflection.
+- A missing field is legal only if it has an independently verified default or the struct's language-defined, type-safe default-construction contract supplies it. **Do not equate default construction with raw zeroed memory**, and never synthesize invalid pointers, capabilities, references or uninitialized invariants. `const T x = infer struct {};` is admitted only if all defaults are compile-time evaluable; otherwise reject `E_CONST_INIT`. A runtime default that has permitted effects may be used under `val` or `let`, subject to the ordinary effect/ownership gates. Constructors must not be bypassed when they protect invariants.
+- `const Point p = infer struct {};` is therefore **not automatically valid** solely because Point contains `int` fields; it requires a specified default-initialization rule for those fields and for the overall type.
+
+### No expected type (anonymous)
+
+```atto
+const s = infer struct { x: 3, name: "Lima", active: true };
+const empty = infer struct {};
+```
+
+- Without a usable expected struct type, synthesize one **compiler-private anonymous nominal struct type** from the field names and uniquely inferred static expression types. The first example has fields `x: int`, `name: string`, `active: bool`; the second has **zero fields**. An empty anonymous struct is a meaningful zero-field product value, **not** `void`, the tuple `()`, a Record `{}`, a Map, or an unresolved type variable.
+- The anonymous nominal identity is specific to its literal declaration site (or another formally specified interned identity), deterministic under incremental/cold builds and independent of runtime addresses. Do not silently equate two anonymous struct literals by matching field sets and do not silently convert an anonymous struct into an unrelated declared nominal `T`. This preserves the distinction between Struct (nominal, identifier-only fields) and Record (structural, quoted fields allowed).
+- An unannotated field initializer that cannot determine a unique type, such as `None` or `[]` without its own element/payload context, rejects with `E_TYPE_INFER_AMBIGUOUS`; `infer` does not erase its type to `any`. The fully empty `infer struct {}` is exceptional only because **it has no unresolved field types**; it needs no runtime inference.
+- Anonymous struct values can be stored in locals, and used in positions whose contracts admit their nominal type. They **must not implicitly escape** into a public signature, FFI ABI, serialized schema, hot-load boundary or actor message. If a portable public boundary needs this shape, declare a named `struct` or use an explicitly admitted structural `Record` interface. Do not publish a compiler-generated private type as an unstable cross-backend ABI.
+- `const` requires every explicit initializer to be compile-time evaluable; `val` and `let` use the same inference and construction algorithm for runtime expressions, without granting referent mutation or allowing illegal ownership escape.
+
+### Grammar and bounded lowering (TARGET)
+
+```ebnf
+struct_infer_expression = "infer", "struct", "{",
+                           [struct_field, {separator, struct_field}, [","]], "}" ;
+struct_field             = identifier, ":", expression ;
+separator                = "," | NEWLINE ;
+```
+
+A newline separator follows the existing same-level inline-literal rule; same-line entries require commas, and existing `block { ... }` statement blocks remain distinct. `infer struct { ... }` is an expression, not a declaration, and `infer<T> struct` is an independent grammar family. An explicit bare `T{...}` construction retains its own existing rules.
+
+**Implementation order:** parse and retain a `StructInferExpr` AST with source field order; pass `Option<ExpectedStructType>` from a known typed context; resolve exactly one nominal target or synthesize one private type; check/default each field; freeze the concrete type before typed-MIR/borrow-check/codegen. Memoize shape metadata, cap field count and nesting depth, and reject unsupported backend lowering without an artifact.
+
+**Do not use the existing broad `shape_lower` exact-field-set search to choose an arbitrary declared `T`** when no expected type exists. Two declarations with the same fields are distinct nominal types: contextual `T` resolves the choice, otherwise an anonymous type is constructed. Never silently take the first name from a source declaration map or turn ambiguous matches into an arbitrary winner.
+
+**Required compiler conformance:** expected-type exact construction; omitted field with a compile-time default; omitted required field rejection; `const` runtime-default rejection; empty expected-type and anonymous constructions; no-context heterogeneous inferred fields; identical-shape declared struct ambiguity avoided without guessing; duplicate/unknown/quoted field rejection; `None`/`[]` without context rejection; deterministic anonymous type identity; private/public/actor boundary checks; source-ordered effects, no-artifact failures, and per-backend exact-head guest output evidence.
+
 ## Inference semantics
 
 Every reachable explicit `return e`, supported `^ e` early return, and terminal expression of a comma/`end` function body contributes its **static type**. A reachable expression-value path must be type-compatible with every other result path under the language's ordinary checked compatibility rules. No invented union, numeric widening, `Option`/`Result` wrapping, generalized `any`, or overload-choice based on a guessed return type. A `never` path contributes no return value. If no reachable value is returned, `infer` yields `void` only if **all** reachable completions are valid void paths. Mixing bare returns, value returns, missing-return fallthrough, or incompatible types is a compile error. Static contexts do not execute effects while inferring.
