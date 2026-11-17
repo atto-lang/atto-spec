@@ -103,6 +103,61 @@ A direct fresh-return override without super is allowed only when a separately v
 
 **Generic/static calls:** a type parameter T needs a proven T: Copyable<T> for copy! or T: DeepCopyable<T> for copy!!. Dynamic dispatch, imported modules, AOT interfaces, and all vtable/ABI slots must maintain the respective witnesses and concrete subtype. Intrinsic scalar Copy remains separate from these identity-bearing operations.
 
+## Actor message fan-out: independent deep-copy domains (2026-11-17)
+
+**Normative objective:** when one source value is copied for independent actors, each explicit copy!! operation creates a **separate mutable graph**, independent both of the source and of every other recipient's graph. A copy must not leak writable aliases via nested arrays, maps, class fields, inheritance, closures, ADTs, shared mutable smart pointers, or repeated references. Immutable data with a proven cross-actor lifetime/Sendable permission may retain an immutable backing store. A mutable Shared<T> pointee MUST be deeply cloned or fail closed; calling share! to preserve the same mutable identity is an independent operation with different contracts.
+
+~~~atto
+val original = new WorkItem();
+worker_a.send(copy!! original);
+worker_b.send(copy!! original);
+// Both actor messages have independent owned mutable graphs.
+// send(...) continues to return its ordinary admission Result.
+~~~
+
+- Every **top-level copy!! invocation** owns a fresh identity memo and rollback ledger. Do **not** reuse a graph memo across separate calls, different actors, retries, or subsequent sends. Within one invocation, use **one** memo for all fields, including superclass and subclass fields, nested containers and custom copy hooks, so duplicate internal references remain duplicated *once* and cycles preserve their topology. An object's original runtime identity is keyed together with its allocation domain, not its mutable/reused address alone.
+- The typed actor send checks both the declared outgoing/incoming message contract (**sends/receives**) and the resulting **Sendable** ownership/transfer policy. **DeepCopyable does not automatically imply Sendable**, and serialization across processes/networks remains a distinct **Serializable** requirement. Actor, channel, task, lock, socket, native pointer, and capability-containing fields are denied by default until a deliberately designed type-specific transfer/copy capability exists.
+- Sending a copy MUST NOT grant the recipient access to the sender's actor-private mutable allocations. First-class semantics: copy!! creates a detached owned value, and the send operation transfers the resulting value into the recipient's permitted ownership domain under its normal admission rules. An optimizer MAY fuse deep-copy allocation directly into the recipient's heap if it proves observational equivalence, the source remains unchanged, no temporary alias leaks, all effects and failure behavior are preserved, and mailbox publication is atomic. It MUST NOT silently send the sender's original through sharing.
+- Multi-actor fan-out is **not** implicitly one atomic transaction. Each actor's send returns its own admission Result; if B rejects a message after A admitted its independent copy, A's message remains valid. A failed send must clean up only that unaccepted copy exactly once, without altering source or other admitted recipients. On retries, use fresh ownership or a new independent copy; never double-send a moved value.
+- A manual copy!! is **not** implicit on every send. A caller chooses take!, copy!!, or an explicitly safe shared message. For hard-real-time actors, bound graph traversal, memory budget, allocation domain, and admission deadline must be proven or the operation is rejected.
+- An arbitrary identity-bearing mutable graph cannot be Sendable merely because it has an unverified copy_deep override. The compiler must validate nested field policies transitively and preserve the check through type erasure, generics, FFI and AOT code generation.
+
+## Superclass copy_deep(), field traversal and FULL AOT
+
+**No runtime reflection/JIT is necessary.** Compile-time structural inspection is required: the compiler sees declared field layouts (including private fields), inherited base classes, generic instantiations, ADT variants and their ownership/lifetime policies, then emits **statically linked copy plans and readonly type descriptors** for each admitted concrete type. Descriptors are implementation metadata, NOT an unrestricted reflective API that lets user code read private fields.
+
+Conceptual compiler-generated ABI (illustrative C-like pseudocode, not source Atto code):
+
+~~~c
+struct DeepCopyDescriptor {
+    TypeId stable_type_id;
+    LayoutId layout_version;
+    size_t size, alignment;
+    bool is_sendable;
+    void (*copy_into)(const void *source, void *unpublished_target,
+                      GraphCopyContext *ctx);
+    void (*drop_partial)(void *target, GraphCopyContext *ctx);
+    const FieldCopyDescriptor *fields; // includes all inherited fields
+    size_t field_count;
+};
+~~~
+
+The emitted descriptor need not contain a **runtime-walkable fields array**: a statically generated per-type function that directly accesses each known offset is sufficient and preferable for native/hard-RT AOT. Optional closed-world descriptors support compiled virtual dispatch and diagnostic introspection. Whether emitted as direct code or a metadata-driven static walker, the contract must be equivalent:
+
+1. Resolve the source's **concrete dynamic type ID**, not merely its static Object/base type. Dispatch through a link-time known/registered **verified DeepCopyable witness**. For a base-typed reference pointing to Derived, allocate a Derived shell in the correct target allocation domain, never slice to Base.
+2. Before following references, allocate the shell **without replaying effectful constructors, destructors or arbitrary field initializers**, memoize source identity to unpublished target, and then copy all Base and Derived instance state exactly once in deterministic layout order. Scalar fields are copied by value; nested mutable owned references recurse through their **concrete type's** emitted function with the *same* GraphCopyContext. Verify subtype/generic witnesses, private/hidden fields, overlap/union tags, weak references and resource policies before admission.
+3. If Base implements/overrides copy_deep(), an inherited dispatch on Derived must still copy **Derived**. The generated whole-concrete-type baseline behind super.copy_deep() is a reserved nonvirtual compiler operation, not a virtual call back to Base.copy_deep() that recurses and not a Base-only memberwise clone. AOT-generated hook chaining includes verified base and derived user hooks at most once each in deterministic ancestor-to-descendant order. Reentrant deep-copy of a graph node consults the memo instead of creating a second shell. Reject uncomposable hooks or any hook that publishes a partially constructed target.
+4. Distinguish **user-visible no-argument** copy_deep() from the **compiler-internal** helper copy_deep_into(source, ctx, destination_domain) / generated vtable entry. The hidden ctx and allocation domain can be passed by registers/ABI or specialized compile-time constants; neither becomes an optional user argument.
+5. All reachable types and dispatch targets must have a compiled witness in the final AOT image or separately **precompiled**, integrity-checked registration module with a compatible layout/provenance ABI (for intentional hot loading). No runtime code synthesis, general reflection-based constructor invocation, dynamic class loading as a proof substitute, or fallback to raw memcpy on reference-bearing objects. Unknown, erased, unregistered, stale-layout, noncopyable, or open-world objects MUST reject deterministically (E_COPY_AOT_WITNESS or E_COPY_LAYOUT) rather than silently clone incomplete state.
+6. Foreign/native fields need an explicit verified hook/descriptor or are noncopyable. Private fields are accessible to the generated compiler code but remain protected from user programs. Backend optimizations may elide descriptor iteration or use direct memcpy **only for representation-trivial, identity-free fields** with an established Copy proof.
+
+Copying data into another actor's arena requires a **destination-aware allocation plan**. Cross-actor pointers to mutable data are prohibited; source pointers remain usable only within source read authority. A compiled field descriptor is *not* permission to ignore actor state sealing, borrow checker critical-read/critical-write rules or native object lifetime.
+
+**Diagnostics:** E_COPY_AOT_WITNESS for missing concrete dynamic witness/closed-world dispatch; E_COPY_LAYOUT for unrecognized layout/version/field shape; E_COPY_ACTOR_ISOLATION for an illegal mutable cross-actor alias; E_COPY_SENDABLE for failed message transfer/Sendable proof. Preserve existing E_COPY_GRAPH_UNPROVEN, E_COPY_OVERRIDE, E_COPY_EFFECT, E_COPY_TRANSITIVE and cleanup diagnostics.
+
+**Required AOT and actor conformance:** base-typed/erased reference to Derived with Base and Derived private fields; inherited Base copy_deep() overridden or not; mixed generic field instantiations; nested mutable Array and Map; shared child within one message but detached across two copy!! invocations; cycles, missing witness, failing custom override, failed second-recipient send cleanup, and no initializers rerun. Verify compiler-emitted dispatch and real native-AOT binaries, not just a source-only graph oracle. The independent recipient property must hold even if messages are processed concurrently on different actors. Hard-real-time compile gates must separately constrain work and allocation.
+
+
 ## Lexing, precedence and lowering
 
 - Lex **copy!!** as a dedicated maximal-munch prefix token before **copy!** (not as copy! followed by logical negation). Tokens are separate from **!** / **!=**; whitespace inside copy!! is not allowed.
