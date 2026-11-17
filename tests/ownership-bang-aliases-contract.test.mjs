@@ -55,3 +55,20 @@ test('checked-handle aliases preserve identity and fail closed for mut-qualified
     assert.equal(reference_recognize(`${name} !h`), null);
   }
 });
+
+test('checked-handle semantic-negative gates stay explicit and source-only', () => {
+  const mustCheck = [
+    'invalid or forged checked handle',
+    'stale arena or allocation generation',
+    'checked handle wrong actor/domain',
+    'checked handle out-of-bounds or misaligned access',
+    'double unref release',
+    'deref after unref',
+    'checked handle escape across actor isolation',
+  ];
+  for (const gate of mustCheck) assert.ok(fixture.required_compiler_semantic_negative.includes(gate), gate);
+  for (const op of ['ref', 'deref', 'unref']) {
+    assert.ok(fixture.accepted.some(c => c.input === `${op}! h` || c.input === `${op}! x`));
+    assert.ok(fixture.accepted.some(c => c.input === `rt ${op} h` || c.input === `rt ${op} x`));
+  }
+});
