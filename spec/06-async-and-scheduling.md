@@ -111,12 +111,19 @@ is verified, use the explicit channel keywords.
 - Record backend-specific fixture and CI run links; parser-only acceptance
   never counts as runtime parity
 
-**Observed Java baseline (2026-11-17):** `oreslang-source.java` has
-`SourceChannelCooperativeBackpressureTest` exercising pending read and write
-resumptions and `ChannelLanguageCombinationTest` exercising `nb` Futures.
-A new draft branch adds `do readch/writech` parser lowering and targeted
-tests; neither this branch nor channel `<<`/`>>` is claimed as merged or
-five-backend verified.
+**Verified Java/JVM baseline (2026-11-17):** `oreslang-source.java`
+PR [#3170](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3170)
+at exact head `9ba62afe639e1e431ab4f6d3e34a18c4cb137a8d` admits
+`do readch/writech` via the existing cooperative SourceTask channel path.
+An alternate private token-free CI mirror verified all 315 production-source
+blob SHAs and three relevant test files (319 pinned paths including `pom.xml`).
+[Run #44201622299](https://github.com/quaestor-ledger-test/atto-ci/actions/runs/44201622299)
+passed 14 JVM guest/channel tests (6 new, 8 existing) with zero
+failures, errors or skips. The production compiler change is **in review,
+not merged**; the run was focused rather than full-repository, Native Image
+AOT or multi-backend conformance. Channel `<<`/`>>` remains
+**TARGET / NOT IMPLEMENTED**, tracked by
+[issue #3171](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/3171).
 
 Channels are typed and capacity-bounded. `readch` and `writech` operations obey ownership transfer, closure, cancellation and fairness. `select` observes readiness and chooses one admitted case, without silently losing a message. `nb-select` (or admitted compatibility `nb select`) does not block the underlying worker. Typed `select<T>` must produce a `T`-compatible result from each value arm; a `do select` with `return` exits the enclosing callable where admitted.
 
