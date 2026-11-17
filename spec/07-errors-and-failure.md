@@ -24,13 +24,33 @@ For non-actor `main`, an unhandled throw/raise/panic terminates the root guest i
 
 ## trap
 
-The currently described expression `trap expression` contract converts **ordinary escaping throws** to `Option<T>`: normal result `v` becomes `Some(v)`, escaping ordinary throw becomes `None`. Nested Option/Result values are *not flattened*. Panic, raise, cancellation and VM fatal bypass `trap`.
+**Decided 2026-11-17 (owner): `trap` yields `Result`, and never wraps a `Result` twice.** This replaces the earlier `Option`-returning contract and settles the conflict this section used to record.
+
+`trap expression` evaluates `expression` exactly once and catches only **ordinary escaping throws**:
+
+| Operand type | `trap` type | Normal completion | Caught ordinary throw |
+| --- | --- | --- | --- |
+| `T` (not a `Result`) | `Result<T, Error>` | `Ok(v)` | `Err(Error)` |
+| `Result<T, E>` | `Result<T, E \| Error>`, or `Result<T, E>` when `E` already accepts `Error` | the value itself; its own `Err(E)` passes through unchanged | `Err(Error)` |
+
+- **No double wrapping.** A `Result` is never wrapped in a second `Result`, so `Result<Result<T, E>, Error>` is never produced. A widened error type `E | Error` never narrows back to `E` implicitly.
+- **Other values are ordinary data.** An `Option` or `void` value is data inside `Ok`, e.g. `Result<Option<T>, Error>` or `Result<void, Error>`.
+- **The caught `Error` is sanitized.** It carries a bounded, printable type name and message, never a host exception object, cause chain or stack trace.
+- **`trap fnc`** callables have the same call type. An async or scheduled trap boundary settles its Future with it: `Future<Result<T, Error>>`.
+- **`trap await f`** spans the suspension. Whether `f` is already complete or suspends first, its ordinary failure becomes `Err(Error)`. `await trap f` is a type error, because `trap f` is not a Future.
+- **Bypass.** `panic`, `raise`, cancellation, forced termination and VM-fatal failures bypass `trap`. `unwrap()` on an `Err` or `None` is a panic and cannot be made safe with `trap`.
 
 ```atto
-val maybe_value = trap parse_or_throw(text) // Option<T> target
+val Result<Config, Error> loaded = trap parse_or_throw(text)
+val Result<int, String | Error> id = trap checked_id(raw)   // checked_id(): Result<int, String>
 ```
 
-A separate requested design treats `trap worker.send(msg)` as a `Result<T,E>`-returning admission form. That conflicts with existing Option-returning trap contracts: **do not silently promise both types**. Until settled, use the explicit `Result` produced by the send API (or an explicit conversion) and see [open questions](12-open-questions.md).
+**Backend status (2026-11-17):**
+- **Java/GraalVM:** implements this contract (oreslang-source.java #3165).
+- **LLVM:** lowers only pure-integer `trap` operands, still as `Option<int>`.
+- **.NET:** lowers only pure-integer `trap` operands, still as `Option<int>`.
+
+LLVM and .NET must move to `Result<_, Error>`, or reject `trap` with a diagnostic. They must not keep producing `Option`.
 
 ## Cleanup and effect precedence
 
