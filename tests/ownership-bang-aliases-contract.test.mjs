@@ -6,19 +6,21 @@ import test from 'node:test';
 
 const fixture = JSON.parse(readFileSync(fileURLToPath(new URL('./fixtures/ownership-bang-aliases-v1.json', import.meta.url)), 'utf8'));
 function reference_recognize(source) {
-  const bang = /^(mut\s+borrow|copy|take|borrow|share)!(?!=|eq(?![\p{L}0-9_]))([\s\S]*)$/u.exec(source);
+  const bang = /^(mut\s+borrow|copy|take|borrow|share|ref|deref|unref)!(?!=|eq(?![\p{L}0-9_]))([\s\S]*)$/u.exec(source);
   if (bang && bang[2].trim()) {
     let operand = bang[2].trim();
     const trailingMut = bang[1] === 'borrow' && /^mut(?=\s|\(|$)/.test(operand);
     if (trailingMut) operand = operand.slice(3).trim();
     if (!operand) return null;
+    if (bang[1] !== 'borrow' && bang[1] !== 'mut borrow' && /^mut(?=\s|\(|$)/.test(operand)) return null;
     // Neither borrow! mut mut nor legacy mut borrow! mut may double-qualify.
     if ((trailingMut || bang[1] === 'mut borrow') && /^mut(?=\s|\(|$)/.test(operand)) return null;
     const op = trailingMut || bang[1] === 'mut borrow' ? 'mut_borrow' : bang[1];
     return { operation: op, canonical: op === 'mut_borrow' ? 'borrow! mut ' + operand : bang[1] + '! ' + operand };
   }
-  const legacy = /^rt\s+(borrow\s+mut|mut\s+borrow|copy|take|borrow|share)\s+([\s\S]+)$/.exec(source);
+  const legacy = /^rt\s+(borrow\s+mut|mut\s+borrow|copy|take|borrow|share|ref|deref|unref)\s+([\s\S]+)$/.exec(source);
   if (!legacy || !legacy[2].trim()) return null;
+  if (!legacy[1].includes('borrow') && /^mut(?=\s|\(|$)/.test(legacy[2].trim())) return null;
   const op = legacy[1].replace(/\s+/g, ' ');
   if ((op === 'borrow mut' || op === 'mut borrow') &&
       /^mut(?=\s|\(|$)/.test(legacy[2].trim())) return null;
@@ -42,4 +44,14 @@ test('mutable borrows canonically place mut after borrow! while preserving old a
   }
   assert.equal(reference_recognize('borrow! mut'), null);
   assert.equal(reference_recognize('borrow!mut'), null);
+});
+
+test('checked-handle aliases preserve identity and fail closed for mut-qualified spellings', () => {
+  for (const name of ['ref', 'deref', 'unref']) {
+    for (const spelling of [`${name}! h`, `${name}!h`, `rt ${name} h`]) {
+      assert.deepEqual(reference_recognize(spelling), { operation:name, canonical:`${name}! h` }, spelling);
+    }
+    assert.equal(reference_recognize(`${name}! mut h`), null);
+    assert.equal(reference_recognize(`${name} !h`), null);
+  }
 });
