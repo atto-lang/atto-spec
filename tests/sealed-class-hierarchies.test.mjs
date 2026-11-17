@@ -33,7 +33,8 @@ test("coverage includes open, recursive sealed, final, non-sealed and adversaria
         "unmarked-child", "missing-permits", "duplicate-permitted",
         "self-permitted", "final-extended", "orphan-nonsealed",
         "open-permits", "sealed-trait", "final-second-base",
-        "abi-override", "spaced-nonsealed", "modified-class-export"
+        "abi-override", "spaced-nonsealed", "modified-class-export",
+        "sealed-diamond-authorized", "sealed-diamond-second-parent-unlisted"
     ];
     const seen = new Set(entries.map(c => c.id));
     required.forEach(c => assert.ok(seen.has(c), "missing " + c));
