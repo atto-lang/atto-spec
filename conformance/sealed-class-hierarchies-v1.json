@@ -136,6 +136,20 @@
       "expected": "ACCEPT",
       "diagnostic": null,
       "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "sealed-diamond-authorized",
+      "source": "define sealed class Left permits Leaf as end define sealed class Right permits Leaf as end define final class Leaf extends Left, Right as end pub fnc main(): int { return 0; }",
+      "expected": "ACCEPT",
+      "diagnostic": null,
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "sealed-diamond-second-parent-unlisted",
+      "source": "define sealed class Left permits Leaf as end define sealed class Right permits Other as end define final class Leaf extends Left, Right as end define final class Other extends Right as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
     }
   ]
 }
