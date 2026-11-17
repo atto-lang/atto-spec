@@ -15,6 +15,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 ## Language contracts
 
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
+- [Visibility, foreign linkage and final fields v1](language/visibility-linkage-and-final-v1.md): distinguish internal, external, protected and final; includes fail-closed browser frontend matrix. Native link parity remains unverified.
 - [Namespaced and module exports v1](language/namespaced-exports-v1.md): explicit `export pub module`, qualified member access, source namespace identity, package gates and negative cross-file cases. This is a target contract; linker and native guest parity are **not verified**.
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
 
