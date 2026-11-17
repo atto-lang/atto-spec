@@ -81,6 +81,14 @@ ownership_expr          = (ownership_mut_prefix | ownership_simple_prefix) unary
 
 **Checked handles:** `ref!`, `deref!` and `unref!` are contextual unary prefixes with exactly the same checked-handle AST/IR semantics as `rt ref`, `rt deref` and `rt unref`. They are **not** ordinary borrows, reference-count increments by assumption, raw address operators, or macro invocations. The parser MUST disallow `mut` qualifiers on these three prefixes; their effects, proof requirements and result types must be resolved identically to their respective `rt` forms. The checker/runtime must reject invalid or forged handles, stale actor/arena/allocation generations, out-of-bounds/misaligned access, unauthorized domains, double release and use after release. Absent checked-handle lowering, both spellings fail closed.
 
+**Procedural conditional `do if` (canonical):** The preferred spelling for a statement conditional, including inside a checked-handle `block`, is `do if condition then ... else ... fi`. The optional `else` and existing `elif`/`elseif` variants retain their existing behavior. The Rust/browser prototype accepts both `do if` and the legacy bare `if` form, lowering both to the same typed conditional node. While a checked handle is live, **every** branch must preserve the same checked handle and read-only views, without releasing/moving them or bypassing the required final `unref!`. This is enforced with a bounded all-path CFG preflight in the prototype, not a full typed-MIR borrow proof.
+
+```ebnf
+procedural_if_stmt = "do" "if" expression "then" { statement }
+                     { ( "elif" | "elseif" ) expression "then" { statement } }
+                     [ "else" { statement } ] "fi" ;
+```
+
 **Nested block statement and borrowed function parameter (TARGET / prototype):** The nested lexical scope must be spelled `block { statements }`; a bare `{ statements }` in statement position is NOT an alternative form. This does not change brace-delimited callable bodies, condition arms or class declarations. When a function explicitly expects a nonescaping, read-only class argument, its contextual signature form may be `fnc inspect_readonly(borrow! Payload item): int`. This is parameter-declaration syntax, not a new general prefix expression or a statement form. The `borrow` verb and `!` must be adjacent; only a named class type is permitted in the initial Rust/Wasm profile (not `int`, mutable references, actors or FFI). Passing a scoped view as `inspect_readonly(view)` must not move or escape it; passing a view to a by-value class parameter must be rejected. Do not allow borrowed arguments to outlive their enclosing `block`, cross suspension/actor boundaries without a validated lifetime plan, or be stored/returned as owned values. The formatter emits `borrow! Payload item`. Codegen on other backends fails closed until their typed signature and lifetime checks exist.
 
 ```ebnf
