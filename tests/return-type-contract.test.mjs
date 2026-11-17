@@ -17,3 +17,23 @@ test('canonical queries and compatibility grammar are explicit',()=>{
     assert.ok(spec.includes(phrase),phrase);
   assert.ok(spec.includes('MUST produce `typeof name`'));
 });
+
+test('bounded local inference and contextual lambda are explicit target rules',()=>{
+  for(const phrase of [
+    '## Bounded, bidirectional inference engine',
+    'Local synthesis', 'Contextual checking', 'Explicit callable inference',
+    'Boundary stability', '|x| -> expression', 'val x = None;',
+    'val x: Option<int> = None;', 'val xs = [];',
+    'val xs: Array<int> = [];', 'Array<Record>',
+    'Option<Result<T,E>>', 'Result<Option<T>,E>',
+  ]) assert.ok(spec.includes(phrase), phrase);
+});
+test('inference is deterministic and cannot erase safety constraints',()=>{
+  for(const phrase of [
+    'unconstrained global Hindley', 'three-color DFS',
+    'unrestricted let-polymorphism', 'E_INFER_BUDGET',
+    'no partial guest artifact', 're-infer a dependency',
+    'Sendable', 'Serializable', 'borrow',
+    'MUST NOT choose an overload', 'without writing `infer`',
+  ]) assert.ok(spec.includes(phrase), phrase);
+});
