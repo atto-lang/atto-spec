@@ -1,0 +1,197 @@
+{
+  "contract": "generic-callables-v1",
+  "status": "TARGET_ONLY",
+  "created": "2026-11-17",
+  "backend_evidence": "NOT_EXECUTED",
+  "cases": [
+    {
+      "id": "colon_braces",
+      "expectation": "accept",
+      "feature": "colon",
+      "source": "fnc identity<T>(T value): T { return value; } pub fnc main(): int { return identity<int>(7); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "arrow_braces",
+      "expectation": "accept",
+      "feature": "arrow",
+      "source": "fnc identity<T>(T value) -> T { return value; } pub fnc main(): int { return identity<int>(7); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "colon_arrow_braces",
+      "expectation": "accept",
+      "feature": "colon_arrow",
+      "source": "fnc identity<T>(T value): T -> { return value; } pub fnc main(): int { return identity<int>(7); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "arrow_end_tail",
+      "expectation": "accept",
+      "feature": "arrow_end",
+      "source": "fnc identity<T>(T value) -> T value end pub fnc main(): int { return identity<int>(7); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "arrow_end_double_colon",
+      "expectation": "accept",
+      "feature": "arrow_end",
+      "source": "fnc identity<T>(T value) -> T :: value end pub fnc main(): int { return identity<int>(7); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "inferred_scalar",
+      "expectation": "accept",
+      "feature": "inference",
+      "source": "fnc identity<T>(T value): T { return value; } pub fnc main(): int { return identity(42); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "named_generics",
+      "expectation": "accept",
+      "feature": "named",
+      "source": "fnc choose<T, U=int>(T value, U hint): T { return value; } pub fnc main(): int { return choose<U=bool,T=int>(7, true); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "dependent_default",
+      "expectation": "accept",
+      "feature": "defaults",
+      "source": "fnc choose<T, U=T>(T value, U hint): T { return value; } pub fnc main(): int { return choose<int>(7, 9); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "nested_return",
+      "expectation": "accept",
+      "feature": "nested",
+      "source": "fnc wrap<T>(Option<T> value) -> Option<T> { return value; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_method",
+      "expectation": "accept",
+      "feature": "methods",
+      "source": "define class Box as fnc identity<T>(T value): T { return value; } end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_static_method",
+      "expectation": "accept",
+      "feature": "methods",
+      "source": "define class Box as static fnc identity<T>(T value) -> T { return value; } end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_routine",
+      "expectation": "accept",
+      "feature": "routine",
+      "source": "routine identity<T>(T value) -> T value end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "void_empty_body",
+      "expectation": "accept",
+      "feature": "return",
+      "source": "fnc consume<T>(T value): void { }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "empty_generic_return",
+      "expectation": "reject",
+      "feature": "return",
+      "source": "fnc missing<T>(): T { }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "empty_generic_end",
+      "expectation": "reject",
+      "feature": "return",
+      "source": "fnc missing<T>() -> T end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "duplicate_generic_parameter",
+      "expectation": "reject",
+      "feature": "binder",
+      "source": "fnc identity<T, T>(T value): T { return value; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "duplicate_value_parameter",
+      "expectation": "reject",
+      "feature": "binder",
+      "source": "fnc identity<T>(T value, T value): T { return value; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_value_name_collision",
+      "expectation": "reject",
+      "feature": "binder",
+      "source": "fnc identity<T>(int T): int { return T; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "unknown_generic_name",
+      "expectation": "reject",
+      "feature": "binder",
+      "source": "fnc identity<T>(U value): T { return value; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "unknown_named_argument",
+      "expectation": "reject",
+      "feature": "named",
+      "source": "fnc identity<T>(T value): T { return value; } pub fnc main(): int { return identity<Wrong=int>(7); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "duplicate_named_argument",
+      "expectation": "reject",
+      "feature": "named",
+      "source": "fnc identity<T>(T value): T { return value; } pub fnc main(): int { return identity<T=int,T=bool>(7); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "positional_after_named",
+      "expectation": "reject",
+      "feature": "named",
+      "source": "fnc choose<T,U>(T value,U hint): T { return value; } pub fnc main(): int { return choose<T=int,bool>(7,true); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "unbound_no_inputs",
+      "expectation": "reject",
+      "feature": "inference",
+      "source": "fnc missing<T>(): T { return default_value<T>(); } pub fnc main(): int { return missing(); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_return_mismatch",
+      "expectation": "reject",
+      "feature": "return",
+      "source": "fnc identity<T>(T value): T { return true; } pub fnc main(): int { return identity<int>(7); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "bad_type_argument_bound",
+      "expectation": "reject",
+      "feature": "constraints",
+      "source": "fnc clone<T: Copyable>(T value): T { return copy! value; } fnc main(): int { return clone<NonCopyable>(make_noncopyable()); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "unterminated_parameters",
+      "expectation": "reject",
+      "feature": "syntax",
+      "source": "fnc identity<T(T value): T { return value; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "unsupported_runtime_abi",
+      "expectation": "gate",
+      "feature": "abi",
+      "source": "fnc move<T>(T value): T { return value; } pub fnc main(): int { return move<int>(7); }",
+      "status": "NOT_EXECUTED"
+    }
+  ]
+}
