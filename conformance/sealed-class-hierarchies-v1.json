@@ -122,6 +122,20 @@
       "expected": "REJECT",
       "diagnostic": "E_OVERRIDE_REQUIRED",
       "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "spaced-nonsealed",
+      "source": "define sealed class Root permits Child as end define non - sealed class Child extends Root as end pub fnc main(): int { return 0; }",
+      "expected": "REJECT",
+      "diagnostic": "E_SEALED",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "id": "modified-class-export",
+      "source": "export pub class Root; define sealed class Root permits Leaf as end define final class Leaf extends Root as end pub fnc main(): int { return 0; }",
+      "expected": "ACCEPT",
+      "diagnostic": null,
+      "execution": "NOT_EXECUTED"
     }
   ]
 }
