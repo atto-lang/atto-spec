@@ -15,9 +15,9 @@ AttoLang uses explicit rights operations. **TARGET (decided, 2026-11-14):** the 
 | `share! value` | `share!value` | `rt share value` | Convert to explicitly authorized shared/frozen ownership |
 | `ref! value` | `ref!value` | `rt ref value` | Create a checked handle under validated ownership and domain authority |
 | `deref! handle` | `deref!handle` | `rt deref handle` | Access through a validated, live checked handle; not an ordinary borrow |
-| `unref! handle` | `unref!handle` | `rt unref handle` | Release the checked handle once, under its existing provenance and lifetime rules |
+| `unref! handle` | `unref!handle` | `rt unref handle` | Consume/retire the checked handle exactly once; unwrap ownership only when the checked-handle contract permits |
 
-`ref!`, `deref!` and `unref!` are **syntax-only aliases** for the existing checked-handle `rt ref`, `rt deref`, and `rt unref` operations, respectively; they do not desugar to `borrow!`, `take!` or `share!`. The frontend MUST lower both spellings of each operation to the same typed checked-handle IR instruction, with identical evaluation count, handle kind, actor/arena/domain identity, allocation extent, generation, bounds, alignment, permissions, lifetime and release checks. `unref!` must not allow a double release or a later `deref!` on the released handle; `deref!` must not grant an owned value, borrow, mutable access, cross-actor capability or raw host pointer that the legacy form could not grant. If a backend cannot implement the original checked-handle operation safely, it MUST reject both spellings (not silently reinterpret them as raw pointers, generic calls, or ordinary loans). These are TARGET contracts, not assertions of implemented compiler or guest support.
+`ref!`, `deref!` and `unref!` are **syntax-only aliases** for the existing checked-handle `rt ref`, `rt deref`, and `rt unref` operations, respectively; they do not desugar to `borrow!`, `take!` or `share!`. The frontend MUST lower both spellings of each operation to the same typed checked-handle IR instruction, with identical evaluation count, handle kind, actor/arena/domain identity, allocation extent, generation, bounds, alignment, permissions, lifetime and release checks. `unref!` consumes the handle, must not permit double consumption or subsequent `deref!` on the retired handle, and MUST preserve any owned-value unwrap result defined by `rt unref` (never guess reference-count semantics); `deref!` must not grant an owned value, borrow, mutable access, cross-actor capability or raw host pointer that the legacy form could not grant. If a backend cannot implement the original checked-handle operation safely, it MUST reject both spellings (not silently reinterpret them as raw pointers, generic calls, or ordinary loans). These are TARGET contracts, not assertions of implemented compiler or guest support.
 
 The formatter MUST emit a single ASCII space after `!` in the preferred forms (e.g. `copy! foo`, `borrow! mut foo`). It MUST accept the compact forms without warning and normalize old `rt` forms only when it can preserve the same AST, effects, precedence and evaluation order. No space or comment is allowed between an ownership verb and its `!` marker: `copy !foo` is *not* the `copy!` operator. `mut` follows the attached `borrow!` marker as a separate keyword. The earlier `mut borrow! value` form remains a compatibility alias, never the formatter output. See [chapter 16](16-lexical-and-grammar-reference.md#ownership-prefix-operators-target).
 
@@ -30,9 +30,14 @@ val payload_copy = copy! data;
 val reader = borrow! record;
 val writer = borrow! mut record;
 val frozen = share! payload;
-val checked_handle = ref! payload;
-val checked_view = deref! checked_handle;
-unref! checked_handle;
+// A separate owned value is consumed when creating a checked handle.
+val owned_for_handle = make_payload();
+val checked_handle = ref! owned_for_handle;
+{
+  val checked_view = deref! checked_handle;
+  inspect_readonly(checked_view);
+}
+val returned_owner = unref! checked_handle;
 ```
 
 For `copy!foo`, the scanner must recognize `copy`, `!`, `foo` with a context-sensitive ownership-prefix parse; `!` is not part of the identifier. These are **TARGET semantics**, not a claim that every backend currently compiles the new spelling. In particular, mutable borrowing still requires an addressable writable place, shared ownership still requires explicit authority and the immutable/frozen proof, and `take!` never permits later use of a moved place.
