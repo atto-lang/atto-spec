@@ -1,6 +1,6 @@
 # Trap-to-Result typing and ordinary throw capture v1
 
-**Status:** normative language contract; executable compiler/backend support must be proven separately. Supersedes any earlier `trap`-to-`Option` description. In particular, the Rust/Wasm candidate currently implements the obsolete Option behavior and is **not conformant** until migrated.
+**Status:** normative language contract; executable compiler/backend support must be proven separately. Supersedes any earlier `trap`-to-`Option` description. The Rust/Wasm draft compiler now executes a **bounded** Result/Error subset (int, Option<int>, void and existing Result<...,Error>) with exact-tree guest validation on PR #275; generic error joins, Error subclasses, actors, remaining backends and publication are **not** thereby certified.
 
 ## Meaning
 
@@ -57,6 +57,42 @@ val found: Result<Option<User>, Error> = trap maybe_user(1);
 With `Result`-returning operands, `trap` preserves returned `Err` objects unchanged and returns existing `Ok` values unchanged. With non-`Result` operands, normal completion becomes `Ok(value)`. Only caught ordinary throws become `Err(error)`.
 
 `trap` does not implicitly unwrap or propagate: `(trap f())?` explicitly propagates the outer `Err` using the existing `?` rules. Pattern matching must support `on Ok(...)` and `on Err(...)`; `on Some`/`on None` do not match the outer `trap` result.
+
+## Cleanup-aware propagation and caught Error identity
+
+A `?` on `Result<T,E>` propagates the **original tagged Err handle** when
+the expression is `Err`; `?` on `Option<T>` propagates the original `None`.
+This is a **function return**, not a source `throw`: ordinary `catch` and
+`recover` handlers are not invoked for a returned `Err`.
+
+If the function has dynamically registered `defer` callbacks and/or active
+`try/finally` scopes, the failed `?` must traverse the **same cleanup exit**
+as an explicit return, preserving the exact Error/Result identity. Nested
+`finally` scopes execute **inner to outer**, followed by registered `defer`
+callbacks **LIFO**, each exactly once. A defer registration that the program
+has not executed yet must not run. Error propagation must close any owned
+iterator/continuation resources required on early return and restore
+compiler-managed exception handler depth.
+
+While the pending-outcome replacement semantics for an implicit early return
+*inside* `defer`, `recover` or `finally` are not specified, a backend must
+reject such `?` use deterministically rather than silently discard an existing
+throw, raise, panic or pending return. That restriction is **not** permission to
+reject ordinary `?` in a function containing cleanup.
+
+A typed `catch (Error e)` binder denotes the **original caught Error object**
+(including its subtype, payload and identity), not a new Error constructed
+from the same message. The binding is scoped to the catch handler. A separate
+Error object with identical message text must not compare as object-identical.
+An implementation may expose a dedicated identity-testing builtin for
+conformance; its name does not change the core value-vs-reference equality
+contract.
+
+A nested `trap` must never leak an active ordinary-throw handler after an
+early return or non-ordinary unwind. `raise`, `panic`, host faults and other
+exception tags bypass ordinary capture; rethrowing an escaping exception must
+preserve its tag and payload. The next independent recover/supervisor decision
+must observe the correct handler state.
 
 ## Required negative tests and versioning
 
