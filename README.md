@@ -14,6 +14,9 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Deep-learning computation v1](language/deep-learning-computation-v1.md): proposed tensor/shape, model/layer, training, inference, differentiable-IR, actor orchestration and explicit `as` / `do` / `over` / `end` syntax contract. Parser/runtime/backend support is **NOT_VERIFIED**.
+
+
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
 
