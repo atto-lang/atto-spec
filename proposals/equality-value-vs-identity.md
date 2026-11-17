@@ -25,9 +25,9 @@ a != b;    // compile-time error
 
 val User x = new User("Alex");
 val User y = new User("Alex");
-val User z = x;
 x == y;    // false: distinct instances
-x == z;    // true: same instance
+x == x;    // true: same live instance
+// val User z = x; would MOVE ownership; using x after that is invalid.
 x eq y;    // invokes value equality; true only if User.equals defines it
 x neq y;   // logical negation of x eq y
 ```
