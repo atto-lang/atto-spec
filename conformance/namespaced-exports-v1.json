@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "feature": "namespaced-module-exports",
+  "language": "AttoLang",
+  "status": "target-not-backend-proof",
+  "contract": "language/namespaced-exports-v1.md",
+  "cases": [
+    {
+      "id": "public-module-forward",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "export pub module Arithmetic;\ndefine module Arithmetic as\n  pub fnc double(int n): int { return n * 2; }\nend\npub fnc main(): int { return Arithmetic.double(21); }\n"
+    },
+    {
+      "id": "public-module-trailing",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "define module Arithmetic as\n  pub fnc double(int n): int { return n * 2; }\nend\nexport pub module Arithmetic;\npub fnc main(): int { return Arithmetic.double(21); }\n"
+    },
+    {
+      "id": "explicit-namespace-and-function",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "use namespace storefront;\nexport pub fnc calculate;\nfnc calculate(int n): int { return n + 1; }\n"
+    },
+    {
+      "id": "package-module",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "export pub[pkg] module Internal;\ndefine module Internal as\n  pub fnc verify(): int { return 1; }\nend\n"
+    },
+    {
+      "id": "module-export-wrong-kind",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "export-kind-mismatch",
+      "source": "export pub fnc Arithmetic;\ndefine module Arithmetic as end\n"
+    },
+    {
+      "id": "module-export-unknown",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "unresolved-export",
+      "source": "export pub module Missing;\n"
+    },
+    {
+      "id": "module-export-duplicate",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "duplicate-export",
+      "source": "export pub module Math;\nexport pub[pkg] module Math;\ndefine module Math as end\n"
+    },
+    {
+      "id": "nested-module-export",
+      "phase": "parse",
+      "expect": "reject",
+      "diagnostic": "invalid-export-position",
+      "source": "define module Math as\n export pub fnc hidden;\n fnc hidden(): int { return 1; }\nend\n"
+    },
+    {
+      "id": "export-namespace-header",
+      "phase": "parse",
+      "expect": "reject",
+      "diagnostic": "invalid-export-target",
+      "source": "use namespace storefront;\nexport pub namespace storefront;\n"
+    },
+    {
+      "id": "export-dotted-member",
+      "phase": "parse",
+      "expect": "reject",
+      "diagnostic": "qualified-export-disallowed",
+      "source": "export pub fnc Math.double;\ndefine module Math as\n pub fnc double(int n): int { return n + 1; }\nend\n"
+    },
+    {
+      "id": "namespace-header-late",
+      "phase": "parse",
+      "expect": "reject",
+      "diagnostic": "invalid-namespace-position",
+      "source": "fnc calculate(): int { return 1; }\nuse namespace storefront;\n"
+    },
+    {
+      "id": "namespace-no-import-reexport",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "unresolved-export",
+      "source": "use namespace storefront;\nimport module Other from \"./other.atto\";\nexport pub module Other;\n"
+    },
+    {
+      "id": "conflicting-inline-export",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "export-visibility-conflict",
+      "source": "define pub module Internal as end\nexport pub[pkg] module Internal;\n"
+    },
+    {
+      "id": "package-module-cross-package",
+      "phase": "link",
+      "expect": "reject",
+      "diagnostic": "package-visibility",
+      "provider": {
+        "package": "pkg_a",
+        "namespace": "service",
+        "file": "a.atto",
+        "source": "use namespace service;\nexport pub[pkg] module Internal;\ndefine module Internal as\n pub fnc verify(): int { return 1; }\nend\n"
+      },
+      "importRequest": {
+        "consumerPackage": "pkg_b",
+        "consumerNamespace": "client",
+        "kind": "module",
+        "name": "Internal",
+        "member": "verify"
+      }
+    },
+    {
+      "id": "package-module-same-package",
+      "phase": "link",
+      "expect": "accept",
+      "provider": {
+        "package": "pkg_a",
+        "namespace": "service",
+        "file": "a.atto",
+        "source": "use namespace service;\nexport pub[pkg] module Internal;\ndefine module Internal as\n pub fnc verify(): int { return 1; }\nend\n"
+      },
+      "importRequest": {
+        "consumerPackage": "pkg_a",
+        "consumerNamespace": "client",
+        "kind": "module",
+        "name": "Internal",
+        "member": "verify"
+      }
+    },
+    {
+      "id": "public-module-private-member",
+      "phase": "link",
+      "expect": "reject",
+      "diagnostic": "private-module-member",
+      "provider": {
+        "package": "pkg_a",
+        "namespace": "service",
+        "file": "a.atto",
+        "source": "use namespace service;\nexport pub module Math;\ndefine module Math as\n fnc hidden(): int { return 42; }\nend\n"
+      },
+      "importRequest": {
+        "consumerPackage": "pkg_b",
+        "consumerNamespace": "client",
+        "kind": "module",
+        "name": "Math",
+        "member": "hidden"
+      }
+    },
+    {
+      "id": "unexported-module-public-member",
+      "phase": "link",
+      "expect": "reject",
+      "diagnostic": "module-not-exported",
+      "provider": {
+        "package": "pkg_a",
+        "namespace": "service",
+        "file": "a.atto",
+        "source": "use namespace service;\ndefine module Math as\n pub fnc answer(): int { return 42; }\nend\n"
+      },
+      "importRequest": {
+        "consumerPackage": "pkg_b",
+        "consumerNamespace": "client",
+        "kind": "module",
+        "name": "Math",
+        "member": "answer"
+      }
+    },
+    {
+      "id": "namespace-identity-not-leaf-name",
+      "phase": "link",
+      "expect": "reject",
+      "diagnostic": "namespace-mismatch",
+      "provider": {
+        "package": "pkg_a",
+        "namespace": "service",
+        "file": "a.atto",
+        "source": "use namespace service;\nexport pub fnc make;\nfnc make(): int { return 42; }\n"
+      },
+      "importRequest": {
+        "consumerPackage": "pkg_b",
+        "consumerNamespace": "client",
+        "expectedProviderNamespace": "client",
+        "kind": "fnc",
+        "name": "make"
+      }
+    }
+  ],
+  "receiptRequirements": [
+    "source_commit_sha",
+    "source_tree_sha",
+    "compiler_version",
+    "backend_name",
+    "parser_result",
+    "binder_result",
+    "linker_result_or_unsupported",
+    "guest_executed_or_not_run",
+    "compiler_diagnostics"
+  ]
+}
