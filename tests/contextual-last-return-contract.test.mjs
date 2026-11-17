@@ -9,7 +9,8 @@ const backends=['rust_wasm','java','llvm','net','forge'];
 test('contextual caret corpus has unique, evidence-honest vector IDs',()=>{
   assert.equal(suite.feature,'contextual-return-caret-last-sequence');
   assert.equal(suite.status,'draft-not-executed-across-backends');
-  assert.equal(suite.cases.length,28);
+  assert.equal(suite.cases.length,37);
+  assert.equal(suite.corpusRevision,2);
   const ids=new Set();
   for(const c of suite.cases){
     assert.match(c.id,/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
@@ -25,6 +26,15 @@ test('contextual caret corpus has unique, evidence-honest vector IDs',()=>{
 test('literal return selector, standalone tuple and empty sequence are distinct',()=>{
   const find=id=>suite.cases.find(x=>x.id===id);
   assert.match(find('two-values').source,/return \^ \(1, 42\)/);
+  assert.equal(find('implicit-comma').expect,'accept');
+  assert.equal(find('implicit-comma').expectedReturn,42);
+  assert.match(find('bare-three-values').source,/return 1, 2, 42/);
+  assert.match(find('caret-bare-comma-values').source,/\^ 1, 42/);
+  for(const id of ['reject-bare-trailing-comma','reject-bare-double-comma',
+                    'reject-bare-final-declaration','reject-bare-final-type-mismatch',
+                    'reject-bare-pure-effect']){
+    assert.equal(find(id).expect,'reject',id);
+  }
   assert.match(find('tuple-ordinary').source,/return \(1, 42\)/);
   assert.match(find('tuple-caret-statement').source,/\^ \(1, 42\)/);
   assert.match(find('tuple-last-value').source,/return \^ \(\(1, 42\)\)/);
