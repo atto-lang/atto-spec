@@ -179,7 +179,11 @@ version = "1.2.3"
 
 The resolver verifies the canonical local root, rejects symlink components and
 paths outside that root, loads only reachable sources, and supplies the
-same-root package identity to the in-memory compiler. This does **not**
+same-root package identity to the in-memory compiler.
+The opt-in `compile_discovered(entry)` and `attoc --package entry.atto`
+locate the nearest ancestor manifest, reject supplied symlink/traversal
+components, and apply the same checks. Ordinary `compile(source)` does not
+implicitly discover packages. This does **not**
 authenticate external registry packages or implement dependency lockfiles.
 The strict parser is not a general TOML dependency implementation.
 
