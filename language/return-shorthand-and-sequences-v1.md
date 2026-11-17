@@ -2,7 +2,7 @@
 
 Status: **proposed normative syntax**, pending resolution of the body-mode compatibility break and implementation receipts. This specification is not executable backend-parity evidence. `atto-source.rs` caret-return lowering is tracked separately; `seq` and `(> ... )` require their own parser, type-checker, ownership and backend admission gates.
 
-## One return operation, two sequence spellings
+## One checked sequence operation, several return spellings
 
 `^` is a statement-position alias of `return`, except for one **contextual return-operand spelling**: a literal `return ^ (steps..., tail)` selects the last value of a nonempty sequence. No other expression-position `^` is admitted. In particular, standalone `^ (a, b)` is a regular return of a tuple and must never become last-value sequencing. This is not exponentiation, XOR, or a nonlocal lambda return.
 
@@ -42,6 +42,26 @@ pub fnc main(): int {
 }
 ```
 
+### Comma returns and literal `return ^ ( ... )` select the last value
+
+An **unparenthesized, top-level comma list** after `return` or its standalone statement alias `^` evaluates each expression once in source order, discards intermediate values under normal effect/ownership rules, and returns the final expression. This is return-statement syntax, **not a general comma expression operator**:
+
+```atto
+fnc last(): int {
+    return 1, 2, 42; // return 42
+}
+fnc same(): int {
+    ^ 1, 2, 42;      // return 42
+}
+fnc with_calls(): int {
+    return print_header(), calculate_result(); // return calculate_result() value
+}
+```
+
+The single-expression spelling `return x;` retains its existing meaning. Use `return seq ...;` if the list contains local declarations. A comma inside `f(a, b)`, `(a, b)`, collection literals, nested sequences, or other delimited expressions never becomes a return-list separator. In a `::` comma-delimited callable body, an unparenthesized comma remains a **body item separator**; use `return ^ (a, b)` for an explicitly delimited last-value return in that mode. This avoids silently changing prior callable-body semantics.
+
+Malformed bare returns such as `return a,;`, `return a,,b;` and `return a, val b = 42;` must fail closed. The final expression supplies the return type, and all earlier expressions undergo the exact same borrow, move, effect, suspension and cleanup checks as `seq`.
+
 ### Literal `return ^ ( ... )` selects the last value
 
 The contextual `^` immediately following the **literal `return` keyword** and before a parenthesized, nonempty sequence is a last-value selector, not a second return statement. It uses the same lexical `ExprKind::Sequence` / effect / ownership / cleanup semantics as `seq` and `(> ... )`. It is not a general prefix expression operator. Whitespace between tokens is optional, though the formatter prints `return ^ (`.
@@ -64,11 +84,11 @@ fnc invalid(): int {
 }
 ```
 
-A one-element sequence `return ^ (x);` returns `x`. `return ^ (x, y);` returns `y`; `return ^ ((x, y));` returns the tuple. A trailing comma is forbidden. Nested function argument commas and tuple/grouping commas are always owned by the innermost construct. `return x, y;` without an explicit sequence marker is **not** introduced by this proposal. `return ^ seq ...;` and arbitrary `return ^ x;` are errors.
+A one-element sequence `return ^ (x);` returns `x`. `return ^ (x, y);` returns `y`; `return ^ ((x, y));` returns the tuple. A trailing comma is forbidden. Nested function argument commas and tuple/grouping commas are always owned by the innermost construct. `return x, y;` and `^ x, y;` return `y` without constructing a tuple. `return ^ seq ...;` and arbitrary `return ^ x;` are errors.
 
 All earlier steps execute exactly once, in source order, with the same checked ownership, effects, suspension, error propagation, lexical bindings, and cleanup as explicit `seq`. A terminal binding rather than a value, an empty sequence, or a trailing comma is rejected. `return ^ (...)` is forbidden in generators when it returns a value, just as `return seq ...;` is.
 
-This additive syntax does not resolve the separate `::` callable-body migration. It must be version-gated with the parent proposal and cannot make unmarked comma bodies acquire implicit return.
+This additive return syntax does not resolve the separate `::` callable-body migration. It must be version-gated with the parent proposal and cannot make unmarked comma bodies acquire implicit return.
 
 ### Callable bodies: `::` explicitly enables implicit tail return
 
@@ -104,9 +124,12 @@ or compiler parity should be inferred from the document change.
 
 ```ebnf
 return_stmt        = ("return" | "^"), [return_operand], statement_terminator ;
-return_operand     = expression | return_sequence | contextual_last_sequence ;
+return_operand     = expression, {",", expression}
+                   | return_sequence
+                   | contextual_last_sequence ;
 return_sequence    = "seq", sequence_items ; (* same terminating ';' as return *)
 contextual_last_sequence = "^", "(", sequence_items, ")" ; (* only after literal "return" *)
+(* Bare return commas are disabled in a :: body, where commas separate body items. *)
 sequence_stmt      = "seq", sequence_items, statement_terminator ;
 paren_sequence     = "(>", sequence_items, ")" ;
 begin_sequence     = "begin", sequence_items, "end" ;
