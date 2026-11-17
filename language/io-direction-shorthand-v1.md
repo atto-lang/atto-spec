@@ -35,12 +35,25 @@ For `Channel<T>`, this is a syntax-directed alias for the same read/write and ow
 
 ```ebnf
 io_statement   = writable_expr, "<<", value_expr, ";"
-               | readable_expr, ">>", ("val" | "let"), identifier, [" :", type], ";" 
+               | readable_expr, ">>", [ "=" ], ("val" | "let"), identifier, [" :", type], ";" 
                | ("val" | "let"), identifier, [":", type], "<<", readable_expr, ";" ;
 select_io_arm  = "when", writable_expr, "<<", value_expr, "->", block
-               | "when", readable_expr, ">>", ("val" | "let"), identifier, [":", type], "->", block
+               | "when", readable_expr, ">>", [ "=" ], ("val" | "let"), identifier, [":", type], "->", block
                | "when", ("val" | "let"), identifier, [":", type], "<<", readable_expr, "->", block ;
 ```
+
+Optional `=` after a read-direction `>>` is accepted only when it is
+separated from `>>` by whitespace and followed by a fresh `val`/`let`
+binding; it is redundant and the target formatter canonicalizes it away.
+For example, `inbox >> = val item;` is equivalent to
+`inbox >> val item;`, including in selectable read arms. `>>=` as a
+contiguous operator, `>> ==`, `>> = =`, and
+`>> = existing_variable` are **not** valid read-binding spellings.
+The same optional marker is admitted for the contextual typed Future slot
+and terminal checked-pipeline captures in
+`language/typed-io-continuation-pipelines-v1.md`; the underlying
+directional operation still evaluates exactly once. No optional `=` is
+introduced after `<<` writes, and this is not a general assignment alias.
 
 A statement may also use a parenthesized source/sink and a qualified path (`stdio.out`, `streams.output`). The token pairs must be contiguous: `<<` and `>>`, not `< <` / `> >`. Nested generic closing delimiters such as `Result<Option<int>>` remain distinct by grammar context. Numeric bit shifts are not retroactively I/O; no inferred channel creation, arithmetic shift-to-I/O conversion, or arbitrary class operator overloading is permitted. v1 rejects chained I/O operators without explicit sequencing.
 
