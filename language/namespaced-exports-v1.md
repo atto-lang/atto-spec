@@ -147,3 +147,40 @@ The executable fixture registry is
 A result must separate parser, binder, linker, and guest stages, with explicit
 `passed`/`failed`/`unsupported`/`not executed` receipts and exact
 source/tree SHAs. Host JSON checks do not establish compiler support.
+
+## Executable browser subset: trusted single-hop source linker
+
+The current experimental browser compiler additionally offers the **explicit
+in-memory** API `linker::compile_linked(entry_path, &[LinkUnit])`. Every unit
+carries a normalized project-relative file path, a trusted canonical package
+identity supplied by the embedding host, and the Atto source. This API does
+not derive package identity from untrusted source attributes, resolve physical
+symlinks, or read `.atto.pkg.toml` itself.
+
+A leading `use namespace Name;` gives a source unit an owner identity.
+`import module Name from "./relative.atto";` may follow that header only
+before other declarations. The requested module must exist in exactly the
+specified in-memory file and must be locally declared and `pub` or
+`pub[pkg]` exported. A public module may be imported across package
+identities; a `pub[pkg]` module requires exact identity equality.
+Private module members stay private after linking; an imported module is
+**not** re-exported in either Atto export metadata or host Wasm exports.
+
+The initial implementation composes one import hop into one actual Wasm
+guest and enforces the linked size limit. It rejects unsupported transitive
+imports, imports nested in declaration bodies, duplicate aliases/paths,
+noncanonical or traversing relative paths, missing files, self-import cycles,
+implicit or explicit re-exports, and imported source files containing unrelated
+top-level declarations. A verified package resolver must authenticate the
+supplied package identities; this API on its own cannot secure a malicious
+caller lying about a package ID. Syntax and metadata for general filesystem
+linking, aliases, roots, symlinks and multiple-hop dependency graphs remain
+target-only and MUST NOT be advertised as implemented.
+
+An executed browser compiler subset was tested using a source-only mirrored
+carrier with original Git blob SHAs, including real Node WebAssembly guest
+execution for a cross-package public import and same-package package-private
+import. See the run receipts attached to
+[compiler PR #272](https://github.com/atto-lang/atto-source.rs/pull/272).
+Neither the host-only spec fixture validation nor browser guest execution
+establishes full native LLVM/Java/.NET/Forge backend parity.
