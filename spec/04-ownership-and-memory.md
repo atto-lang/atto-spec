@@ -73,6 +73,32 @@ val owned = rt take packet
 
 Borrow checking is not optional for a native backend. Aliased writes, use-after-take, escaping stack borrows, double-drops, stale actor references, and mutable aliases crossing isolation domains MUST be rejected or safely represented with explicit runtime guards, never silently trusted.
 
+### Loan-preserving procedural `do if` (TARGET / checked Rust-browser profile)
+
+A conditional over live checked-handle loans uses **`do if ... then ... else ... fi`** as its preferred procedural spelling. Every reachable arm must preserve the outstanding checked handle and all live immutable views, and no branch may skip the required post-scope `unref!`. Branches are admitted for read-only calls with explicitly `borrow! Class` parameters; a plain by-value class parameter still consumes ownership and MUST reject a borrowed view.
+
+```atto
+fnc inspect_readonly(borrow! Payload item): int { return item.value; }
+fnc inspect_other(borrow! Payload item): int { return item.value; }
+
+fnc get_payload(bool condition): Payload {
+  val original = make_payload();
+  val handle = ref! original;
+  block {
+    val view = deref! handle;
+    do if condition then
+      inspect_readonly(view);
+    else
+      inspect_other(view);
+    fi
+  }
+  val restored = unref! handle;
+  return restored;
+}
+```
+
+The initial Rust/browser prototype adds a bounded, path-sensitive **type-admitted source-to-CFG bridge** to the canonical borrow-checker model, with explicit `Ref`, `Deref`, scope-end `EndView`, `Unref`, `Exit` and conditional edges. This is a precursor to general typed-MIR certificates; it is not a complete NLL/Polonius implementation and does not permit unchecked loops, unverified effects, suspension or cross-actor handle transfers. Implementations without corresponding compiler/runtime proof MUST fail closed.
+
 ### Checked-handle exceptional-call gate (current Rust/Wasm prototype)
 
 The eventual language contract requires all-path retirement, including exceptional and cancellation exits. The current compiler does **not** yet have typed unwind/drop edges for checked handles and therefore must reject code that could bypass a required `unref!`. This includes transitive calls to known `throw`/`raise`/early-exit callees, even when the immediate caller contains no explicit failure statement. Unknown effects and suspendable calls must fail closed until their cleanup and lifetime proofs are available.
