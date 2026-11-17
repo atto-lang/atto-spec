@@ -1,6 +1,6 @@
 # Fresh object return types — candidate v1
 
-**Status: normative proposal, not implemented by Java/LLVM/.NET compilers.** This extends [Copyable v1](copyable-ownership-v1.md), rather than replacing its deeper graph/ownership requirements.
+**Status: normative candidate, not implemented by Java/LLVM/.NET compilers.** This refines fresh identities used by [Copyable shallow/deep v2](copyable-ownership-v1.md). The revised copy! is shallow and copy!! is deep; prior deep-by-default copy! text in historical discussion is superseded.
 
 ## Surface syntax and intent
 
@@ -45,26 +45,39 @@ The type/ownership checker MUST track an allocation-provenance refinement alongs
 
 Subtyping: `new T` may be used where `T` is expected (forgetting provenance), but not vice versa. `new unique T` may weaken to `new T`, then to `T`. Refined return contracts may be strengthened but not weakened by overrides, trait implementations, or exported ABI changes. A fresh result is not automatically a deep copy.
 
-## Copyable reconciliation
+## Copyable / DeepCopyable reconciliation (2026-11-17)
 
-For identity-bearing objects, the compiler-generated `Copyable<Self>.copy()` contract should be written **`copy(): new Self`**. This is in addition to, **not instead of**, the existing deep logical duplication rule (no mutable alias back into the source graph, subtype preservation, and fail-atomic cleanup). Scalar/value `Copy` requires no fresh heap identity.
+For identity-bearing objects, the compiler-generated methods are **copy(): new Self** and **copy_deep(): new Self**, each admitted under separate Copyable<Self> and DeepCopyable<Self> capabilities. Root Object exposes guarded method names, but does not grant every object an unconditional copy witness.
 
-An `@Override copy(): new Self` is **more restricted** than a general `new Self` method: every successful path must satisfy *both* fresh root identity and a verified complete logical copy of the source-owned state. There are **two admitted proof modes**: (1) call the synthesized, whole-concrete-type `super.copy()` exactly once and return that baseline after safe post-processing; or (2) return a directly allocated object whose full manual construction has an independently verified copy plan covering all fields/ancestors, mutable graph separation, alias topology, effects, and concrete dynamic subtype. The simplest direct case is a concrete stateless `Foo` with no fields or ancestors: `copy(): new Foo { return new Foo(); }` is valid. For a class with mutable state, `return new Foo()` that resets fields is **not** a correct copy unless the compiler can establish state equivalence on every path. A method signature or positive annotation is never a substitute for the proof, and a direct constructor may not silently slice an inherited dynamic subtype. Where general equivalence or alias topology cannot be proved, require the generated `super.copy()` baseline or reject.
+- **copy! x / x.copy()** produces a freshly allocated root of the exact concrete subtype, copies immediate stored fields, and may retain nested references only with a verified share/lifetime capability. Freshness does **not** make its entire mutable graph unique: a shallow copy may deliberately share a mutable child with the source.
+- **copy!! x / x.copy_deep()** produces a fresh root and a recursively detached mutable graph, preserving repeated aliases/cycles through one hidden graph context where verified. Immutable backing may be safely shared. Root freshness alone is not proof of deep separation.
+- Neither method accepts user-visible arguments. A hidden graph memo/arena argument inside compiler-generated deep-copy lowering is not part of its public signature or caller syntax.
+- **new unique Self** requires strictly stronger full ownership proof than new Self. Never assume the shallow copy with shared children can satisfy the unique refinement merely because the root is new.
 
-```atto
-// Ordinary fresh result; not automatically a Copyable implementation.
+A user override must establish the corresponding *mode-specific* complete copy contract. It may call the reserved nonvirtual synthesized baseline **super.copy()** or **super.copy_deep()** exactly once, or use separately compiler-proven complete direct construction. A stateless concrete Foo returning new Foo() can satisfy either mode. Returning a fresh object while dropping state, reusing an exclusively owned child, or returning a different dynamic subtype is not sufficient. Dynamic dispatch, trait witness tables, exports and Native AOT metadata preserve both copy capabilities and the new Self return provenance.
+
+~~~atto
+// Ordinary fresh result; not automatically a copy witness.
 fnc make_foo(): new Foo { return new Foo(); }
 
-// Copyable v1 post-copy hook (generated baseline is essential).
+// Shallow customization: only if immediate child aliases are legal.
 @Override
 copy(): new Self {
     val mut Self result = super.copy();
-    result.rebuild_cache();
+    result.rebuild_shallow_cache();
     return result;
 }
-```
 
-Where user-written `Copyable<T>` is supported for both reference and value targets, the interface needs a *kind-aware* result (fresh `new T` for identity-bearing T, ordinary `T` for identity-less scalar/value T), **not** a blanket `new T` for all types. The compiler can model this as a verified `copy_result<T>` capability without introducing that name into source syntax. A future separate `FreshCopyable<T>` witness may be introduced if kind-dependent dispatch proves ambiguous. Do not require allocation for scalar `copy! 5`.
+// Deep customization shares compiler-hidden graph context.
+@Override
+copy_deep(): new Self {
+    val mut Self result = super.copy_deep();
+    result.rebuild_deep_cache();
+    return result;
+}
+~~~
+
+For a generic user-written Copyable<T> or DeepCopyable<T>, the result is kind-aware: new T for identity-bearing object types, ordinary T for scalar/identity-free types. This is a compiler-level refinement, not an illegal promise that new int allocates. A class that cannot be shallow-copied due to a unique child can still be DeepCopyable if the deep duplication plan is proven.
 
 ## Diagnostics and acceptance
 
@@ -74,6 +87,6 @@ Where user-written `Copyable<T>` is supported for both reference and value targe
 * `E_FRESH_MISSING_RETURN`: a normally completing path does not yield an appropriate result.
 * `E_COPY_OVERRIDE`: the existing strict Copyable protocol has no synthesized baseline, duplicates it, or returns a different object.
 
-Compiler-backed positive/negative fixtures MUST cover constructor, local alias/move, verified helper, all return/control-flow paths, self/parameter/cache, type erasure, overloaded/virtual dispatch, ownership transfer, unique alias leakage, `copy!` and `rt copy`, derived base copy and a custom `super.copy()` hook. Report Java, LLVM, and .NET results separately at exact SHA and do not count a host reference oracle as compiled guest evidence. Native AOT / isolated tenant-VM semantics remain separate gates.
+Compiler-backed positive/negative fixtures MUST cover constructor, local alias/move, verified helper, return/control-flow paths, self/parameter/cache, type erasure, virtual dispatch, ownership transfer, shared-child versus unique ownership, both `copy!` and `copy!!`, and the distinct `super.copy()` / `super.copy_deep()` hooks. Report Java, LLVM, and .NET results separately at exact SHA and do not count a host reference oracle as compiled guest evidence. Native AOT / isolated tenant-VM semantics remain separate gates.
 
-**Migration:** existing `copy(): Foo` source may continue to compile as an *ordinary method*, but MUST NOT be treated as a verified implementation of the fresh Copyable witness without rechecking and strengthening the declaration. Existing stateless direct-constructor copy methods may be upgraded once type/provenance checking proves them; stateful methods require a full copy plan, not a signature-only upgrade. No silent ABI break or unverified implicit upgrade.
+**Migration:** existing copy(): Foo source may continue to compile as an *ordinary method*, but MUST NOT be treated as a verified Copyable witness without checking the new shallow contract. Existing deep-copy implementations must migrate to copy_deep() if they intend deep semantics. Existing stateless direct-constructor copy methods may be upgraded once type/provenance checking proves them; stateful methods require a full copy plan, not a signature-only upgrade. No silent ABI break or unverified implicit upgrade.
