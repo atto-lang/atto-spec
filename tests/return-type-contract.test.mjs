@@ -43,7 +43,7 @@ test('contextual infer struct target semantics', () => {
     '## Contextual `infer struct` construction',
     'const Point p = infer struct { x: 3, y: 4 };',
     'const empty = infer struct {};',
-    'without a usable expected struct type',
+    'Without a usable expected struct type',
     'compiler-private anonymous nominal struct type',
     'zero fields',
     'E_CONST_INIT',
