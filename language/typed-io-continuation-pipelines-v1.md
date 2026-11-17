@@ -9,6 +9,45 @@ Status: **candidate language contract**; the Rust/Wasm stdin guest read ABI is s
 - An `nb source >> Future<T> x` continuation *registers a nonparking read* and binds the resulting Future to `x`. The source does not "write to a Future": it initiates a read and its completion is represented by the future. `Future<T>` is a contextual **type slot**, not an evaluated expression or a new object constructor.
 - A `val` or `let` binder must be fresh. Neither `>>` nor `<<` performs arbitrary reassignment to an existing variable. Runtime `const` capture is rejected.
 
+## Optional equals on directional bindings
+
+An optional separated `=` is accepted **only immediately after the
+contiguous `>>` directional operator when the next grammar item is a
+fresh typed declaration or read-binder**. This is a cosmetic marker,
+not another assignment, evaluation, I/O operation, or new operator.
+
+~~~atto
+// Canonical (the formatter removes redundant equals):
+nb stdio.in >> Future<Result<Option<string>, IoError>> x
+    |> |f| -> (await f)?
+    >> val Option<string> pending_line;
+
+// Accepted equivalent: both markers are independent and optional.
+nb stdio.in >> = Future<Result<Option<string>, IoError>> x
+    |> |f| -> (await f)?
+    >> = val Option<string> pending_line;
+
+// Also available on ordinary typed read binders and terminal value
+// captures after a checked suspending pipeline:
+inbox >> = val result;
+pending |> susp |f| -> await f >> = val result: int;
+~~~
+
+`>> Future<T> pending`, `>> = Future<T> pending`,
+`>> val T outcome`, and `>> = val T outcome` are equivalent at
+their respective **authorized** read/capture sites. The optional marker
+is not valid for an existing-variable target, plain arithmetic/shift
+expression, sink write, reverse `<<` operation or a fresh standalone
+assignment form. `>>=` (contiguous), `>> ==`, `>> = =`, and
+`>> = existing_variable` are invalid. `>>` itself must remain
+contiguous; generic closers `>>` remain part of a type, not a capture.
+
+Parsing must not manufacture a second storage write or a second read,
+and the compiler must preserve the same type, ownership, lifetime,
+`IoError`, `Option.None`/EOF, and suspension checks as the canonical
+spelling. The formatter's target canonical spelling omits the `=`;
+formatter support itself requires a separate implementation/test gate.
+
 ## The two requested forms
 
 ~~~atto
@@ -74,12 +113,14 @@ An enclosing `Result<Option<string>,IoError>` callable could return `Ok(line)`. 
 
 ~~~ebnf
 nb_capture =
-    "nb", readable_expr, ">>",
+    "nb", readable_expr, directional_binding_arrow,
     ( "(", new_binding, "<<", reverse_await, "<|", future_type_slot, ")"
     | future_type_slot, identifier, "|>", inline_await_lambda,
-      ">>", new_binding
+      directional_binding_arrow, new_binding
     | new_future_binding, "|>", inline_await_lambda,
-      ">>", new_binding ) ;
+      directional_binding_arrow, new_binding ) ;
+directional_binding_arrow = ">>", [ separated_equals ] ;
+separated_equals = "=" ;  (* must have whitespace after >>, never contiguous >>= *)
 reverse_await = [ "susp" | "suspends" ], "|", identifier, "|", "->",
                 ( "await", identifier | "(", "await", identifier, ")", ["?"] ) ;
 inline_await_lambda = [ "susp" | "suspends" ], "|", identifier, "|", "->",
