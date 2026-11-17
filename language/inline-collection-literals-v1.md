@@ -43,6 +43,15 @@ let array<record> lower = [
 
 The equivalent \`let name: Type = literal;\` binding form is valid.
 
+**Record vs Struct layout contract:** see
+[record-struct-layout-v1.md](record-struct-layout-v1.md). A closed Record
+has a canonical field-name/type shape independent of source ordering,
+while initializer expressions still run in original source order.
+Nominal Struct uses declaration-order fields, has no dynamic key table,
+and is distinct from structural Record. Both can have fixed, directly
+indexed fields when types are resolved. This remains a candidate
+optimizer contract; no guest Struct parser or physical ABI is implied.
+
 ## Contextual typing and identity
 
 - A \`{ field: value }\` literal is a **record**, using field names (identifiers or quoted string keys) as named fields. A \`{ key => value }\` literal is a **map**. A single brace literal may not mix \`:\` and \`=>\`. A duplicate static record field is a compile-time error.
