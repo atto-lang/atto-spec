@@ -335,13 +335,15 @@ do readch foo, |outcome| -> void {
 
 **Latest directional-capture extension:** The two explicit reverse/forward
 spellings `nb source >> (val T result << |f| -> await f <| Future<T>)`
-and `nb source >> Future<T> pending |> await pending >> val T result`,
-and the checked `(await pending)?` / `(await f)?` propagation forms,
+and `nb source >> Future<T> pending |> |f| -> await f >> val T result`,
+and the checked inline-lambda `(await f)?` propagation form,
 are specified in `language/typed-io-continuation-pipelines-v1.md`.
 This is a contextual exception: `Future<T>` is a typed placeholder
 **only** in that `nb` read production; outside it `Future<T>` is not a
-runtime value and bare `|> await` is still invalid. `?` propagates
-`Result.Err` after await while preserving an inner `Option<T>` EOF.
+runtime value and both bare `|> await` and `|> await pending` are invalid.
+The explicit inline-lambda stage is lowered in the enclosing callable,
+so `?` propagates `Result.Err` after await to that caller while preserving
+an inner `Option<T>` EOF; ordinary first-class lambdas retain local `?` scope.
 This newest draft supersedes contradictory earlier rejection wording below.
 
 
@@ -358,10 +360,9 @@ await and stays available in the remaining statement scope.
 // not a constructor, expression, or evaluated generic.
 nb incoming >> (val Outcome resolved << await Future<Outcome>);
 
-// Second spelling: '|' is a delimiter ONLY in this typed I/O continuation
-// production, not a replacement for functional '|>'.
+// Second spelling: a real inline lambda is the callable pipeline stage.
 nb incoming >> Future<Outcome> pending
-    | await pending >> val Outcome resolved;
+    |> |f| -> await f >> val Outcome resolved;
 
  // Third equivalent, explicitly functional pipeline stage, with susp alias:
 nb incoming >> val pending: Future<Outcome>
