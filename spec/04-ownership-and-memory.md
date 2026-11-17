@@ -33,12 +33,35 @@ val frozen = share! payload;
 // A separate owned value is consumed when creating a checked handle.
 val owned_for_handle = make_payload();
 val checked_handle = ref! owned_for_handle;
-{
+block {
   val checked_view = deref! checked_handle;
   inspect_readonly(checked_view);
 }
 val returned_owner = unref! checked_handle;
 ```
+
+### Checked-handle lexical block and borrowed callable boundary (TARGET / browser Rust prototype)
+
+The canonical scoped statement is **`block { ... }`**, not a bare `{ ... }` statement. Callables such as `fnc main() { ... }` retain their existing braced-body syntax; the `block` keyword creates a separate, explicit **nested lexical scope**. The checked view returned by `deref!` must end at that scope's exit. An `unref!` that would consume the handle with any live view (including on an exceptional or suspension path) is invalid.
+
+The first browser Rust/Wasm compiler prototype proposes an explicit borrowed class parameter contract, `fnc inspect_readonly(borrow! Payload item): int`. It is not a general new `Pointer<T>` or transferable capability and is **not yet tested as compiled guest behavior**. The call site remains `inspect_readonly(view)`; the callee's parameter is a readonly, nonescaping loan with no ownership transfer. A by-value class parameter (`fnc consume(Payload item)`) still moves its argument and MUST reject a checked view. The compiler MUST not let a borrowed parameter escape as a result, owned field, owned argument, suspended continuation, actor message, or closure; it MUST reject mutations through the loan. Nested synchronous calls with explicitly borrowed parameters may preserve the same loan while its caller's `block` stays active.
+
+```atto
+fnc inspect_readonly(borrow! Payload item): int { return item.value; }
+
+val original = make_payload();
+val handle = ref! original;
+// original has moved
+
+block {
+  val view = deref! handle;
+  inspect_readonly(view);
+}
+
+val restored = unref! handle;
+```
+
+Other backends MUST fail closed until the same parameter/loan provenance and runtime lifetime guarantees are implemented and tested. The initial browser profile only admits named local class values, synchronous top-level functions and explicit `val` handle/view/restore bindings; that restriction is an implementation gate, not a limit on the eventual language contract.
 
 For `copy!foo`, the scanner must recognize `copy`, `!`, `foo` with a context-sensitive ownership-prefix parse; `!` is not part of the identifier. These are **TARGET semantics**, not a claim that every backend currently compiles the new spelling. In particular, mutable borrowing still requires an addressable writable place, shared ownership still requires explicit authority and the immutable/frozen proof, and `take!` never permits later use of a moved place.
 
