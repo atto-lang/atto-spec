@@ -1,6 +1,8 @@
 # Deferred cleanup and recovery chains (proposed AttoLang v1)
 
 **Status: normative candidate; not an executable-backend parity claim.**
+
+**Trap result migration:** [trap-result-v1](trap-result-v1.md) replaces the legacy `Option` trap result with `Result` and requires nonconformant backends to reject the old lowering.
 The Rust/Wasm browser compiler currently executes a restricted ordinary
 `throw Error(message)` / caller-side `trap expr` path, but not source `try`,
 `catch`, `defer`, `recover`, or `raise`. Java has experimental host
@@ -11,7 +13,7 @@ Neither constitutes full guest-source conformance.
 
 | Source effect | Ordinary `catch` | `trap expression` | Registered `recover` | Ultimate failure |
 | --- | --- | --- | --- | --- |
-| `throw Error` | Nearest matching catch in the caller chain | Can wrap as `None` at a reached trap boundary | **Only if still unhandled** on reaching an eligible recovery boundary | Escalate at actor/task boundary |
+| `throw Error` | Nearest matching catch in the caller chain | Catches as `Err(original Error)` in a Result at a reached trap boundary (see [trap-result-v1](trap-result-v1.md)) | **Only if still unhandled** on reaching an eligible recovery boundary | Escalate at actor/task boundary |
 | `raise Error` | Bypass | Bypass | Nearest eligible recover callback | Parent task or supervisor CONTROL |
 | `panic Error` | Bypass | Bypass | **Never locally recoverable** | Supervisor CONTROL / root fatal policy |
 | cancellation, host fatal | Bypass | Bypass | **Never** | Scheduler / host policy |
