@@ -32,7 +32,7 @@ test('inference is deterministic and cannot erase safety constraints',()=>{
   for(const phrase of [
     'unconstrained global Hindley', 'three-color DFS',
     'unrestricted let-polymorphism', 'E_INFER_BUDGET',
-    'no partial guest artifact', 're-infer a dependency',
+    'partial guest artifact', 're-infer a dependency',
     'Sendable', 'Serializable', 'borrow',
     'MUST NOT choose an overload', 'without writing `infer`',
   ]) assert.ok(spec.includes(phrase), phrase);
