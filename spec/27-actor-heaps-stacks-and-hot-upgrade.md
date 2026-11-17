@@ -137,8 +137,8 @@ creates a new incarnation (see section 4).
 | Backend | Heap | Frames | Upgrade substrate |
 | --- | --- | --- | --- |
 | Java / GraalVM | `ActorNativeArena`: direct-buffer slabs, u32 actor-relative offsets; `ActorLinearMemory` pages over it. Facades and metadata are JVM-managed (minimum GC, not zero GC). | Truffle frames, bounded by `LogicalStackQuota`; arena `TaskFrame` for persistent task state | `ActorUpgradeEpochGate`, `ActorCodeImageContinuationV1`, `SupervisorHotUpgradeGateV1` (host-only, not yet wired to actor turns) |
-| LLVM / native | Native heap32 (#1872): per-actor arena, ref32 offsets, 8-byte natural alignment for 64-bit fields (the i386 `alignof(int64_t) == 4` trap) | Per-actor logical frame arenas (#1537, open) | Native supervisor lifecycle FSM (#864, open) |
-| .NET | `ActorNativeArena`: unmanaged slabs outside the CLR GC. Handles are generational and must move to u32 offsets. | `ActorFrameStack`, one per serial actor; per-invocation stacks are pending | None yet |
+| LLVM / native | Compiled source actors own an `ActorOwnedI64Heap` (scalar i64 slots, 64-bit slot handles). `ActorArena` + `ActorRegionV1` provide the u32-offset arena (`OresActorOffset32`; hardened for 32-bit hosts in #1872; 8-byte natural alignment for 64-bit fields, the i386 `alignof(int64_t) == 4` trap) but only as a host ABI, not yet behind source actors | Per-actor logical frame arenas (#1537, open) | Native supervisor lifecycle FSM (#864, open) |
+| .NET | `ActorArena`, one per actor of every kind, opened at spawn and bound to the incarnation: `NativeMemory` persistent and scratch regions outside the CLR GC, int32 offsets, at most 64 MiB, turn-scoped (`ActorArenaTurn`) | `ActorExecutionStack`, one per actor (`ActorStackBytes`); per-invocation stacks are pending | None yet |
 | Wasm / rs | Per-actor linear memory, which is natively 32-bit | Call-depth quota (atto-source.rs #261) | Re-instantiation per incarnation (planned) |
 
 ## 6. Conformance
@@ -161,8 +161,8 @@ creates a new incarnation (see section 4).
 
 | Item | Java | LLVM | .NET | Wasm |
 | --- | --- | --- | --- | --- |
-| One heap per incarnation, all kinds | **yes**: oreslang-source.java `feat/actor-heap32-per-incarnation-20261117` | arena per native actor (#1872) | arena exists; not wired per actor | per-actor memory, host only |
-| u32 offsets | yes | yes | no (generational handles) | yes (native) |
-| Turn-scoped access | yes | yes (owner/turn fences) | partial | host only |
+| One heap per incarnation, all kinds | **yes**: oreslang-source.java #3164 | yes, but a scalar i64 heap | **yes** (`ActorArena` at spawn) | per-actor memory, host only |
+| u32 offsets | yes | arena/region ABI only; source actors use 64-bit slot handles | yes (int32, at most 64 MiB) | yes (native) |
+| Turn-scoped access | yes | yes (owner/turn fences) | yes | host only |
 | Frames charged to the actor | quota only | #1537 (open) | per serial actor | depth quota |
 | Hot upgrade drain + migrate | no (gates are host-only) | no | no | no |
