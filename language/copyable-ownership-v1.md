@@ -1,131 +1,142 @@
-# Explicit Copyable and ownership-safe copying — v1 candidate
+# Copyable and DeepCopyable — shallow/deep ownership-safe copying (v2 draft)
 
-Status: **candidate contract; NOT general compiler/runtime support** (2026-11-15). This is a backend-neutral target for `copy! value` and compatibility `rt copy value`. Neither a source-only test nor parser acceptance proves guest execution. Existing Java copy-policy and legacy `Copy`/`Clone` contracts must be reconciled, not silently superseded.
+**Status: candidate language contract; NOT implemented across compilers. Updated 2026-11-17.** This revision supersedes the earlier deep-by-default interpretation of copy! in this draft PR. Existing host-only oracle tests and prior CI reports are **not** evidence of compiled AttoLang behavior. Reconcile the older Java and Rust copy contracts before implementation.
 
-## Fresh-return refinement (candidate)
+## Decision
 
-See [Fresh object return types v1](fresh-return-types-v1.md). For reference-identity classes, synthesized Copyable methods and verified overrides return `new Self`: the root object must have been newly created during this invocation. The `new` refinement is **necessary but not sufficient** for copying: the older requirements for deep mutable graph separation, verified synthesized baselines, concrete subtype preservation and cleanup still apply. A direct `return new Foo()` can also implement Copyable for a concrete **stateless** Foo (with no inherited mutable graph) when a full copy proof exists. For stateful classes, the normal verified `super.copy()` baseline is the recommended route. Fresh allocation **alone** never proves logical copying. Value-like scalar `Copy` operations do not gain a fresh identity or require heap allocation.
+- **copy! expression** means *shallow copy*. Evaluate its operand exactly once. For an identity-bearing class, construct a **fresh concrete root object** and copy every immediate field without recursively copying referenced objects. Embedded value fields are copied by value. Immutable references may be reused; mutable references may be reused **only** when a statically verified sharing/ownership capability makes that alias legal.
+- **copy!! expression** means *deep copy*. Evaluate its operand exactly once. Construct a **fresh mutable graph**, recursively duplicating owned mutable reachable objects, while preserving internal repeated references and cycles where the backend admits a verified graph copier. Proven immutable interned data may be shared.
+- **obj.copy()** corresponds to copy! obj and **obj.copy_deep()** corresponds to copy!! obj, subject to the same static witness and dynamic subtype obligations.
+- The two public methods accept **zero arguments**. Implementation-specific allocation/graph context is an **invisible compiler/runtime parameter**, not a user-visible argument. Application-specific variants may have named methods like copy_with(options), but operators NEVER forward arguments.
+- copy! and copy!! require separate capabilities. DeepCopyable does not imply Copyable: a type with uniquely owned mutable descendants may support a deep copy but not a shallow copy. Do not automatically change copy! into copy!! when shallow copying is unsafe.
+- take! transfers ownership of the original. share! shares the original identity with separately verified permissions. Neither is an alias or fallback for either copy operator.
 
-The general `Copyable<T>` interface written below retains `-> T` as its unrefined generic sketch until kind-aware return typing is implemented. For a concrete identity-bearing class, the synthesized witness refines that result to `new Self`; this never licenses a user override that weakens the verified contract. New source syntax remains candidate-only; host tests are not compiler execution.
+These are copying operations, **not** ordinary passing/binding: passing a class as a parameter never silently copies it.
 
-## Normative intent
+## Core object model and capabilities
 
-* Ordinary argument passing/binding of a class object MUST NOT perform a deep copy. An unqualified class reference is not proof of mutation or lifetime authority; the owner/borrow checker still controls access.
-* `copy! e` and `rt copy e` MUST evaluate `e` once, retain the source as valid, and return a new independently owned logical value if its *resolved type, concrete subtype, source place and ownership provenance* prove explicit copyability.
-* A copy MUST NOT retain a mutable alias into the source-owned object graph. Distinct identity of the root is insufficient: nested arrays, class fields, owned buffers and views must be covered. Reusing genuinely immutable backing data is legal only with an immutable-lifetime/share proof.
-* `take! e` transfers ownership, `borrow! e` loans it, and `share! e` shares **the same** identity under a separate proof. They MUST NOT be substitutions for a failed `copy!`.
-* Unsupported or unresolved code paths MUST fail closed at type/ownership checking or AOT admission: do not silently degrade `copy!` into reference assignment, pointer duplication, shallow clone, serialization or `share!`.
+Illustrative source syntax (the root-class declaration form and the capability requirement clause are **semantic sketches**, not claims of parser support):
 
-## Capability vocabulary
-
-* **`Copy`**: existing compiler-recognized trivial value duplication proof (e.g., scalar), potentially eligible for low-cost layout copies; it does **not** bless copies of owning references.
-* **`Copyable<Self>`**: proposed public, explicit *logical duplication* capability, **derived automatically** for ordinary classes and aggregates when every owned field and inherited component has a proven copy plan. `copy! x` requires an intrinsic Copy proof or a verified derived/custom Copyable witness. Explicit `implements Copyable<Person>` is optional for otherwise derivable classes, not a prerequisite or a substitute for proof. Name `Copyable` rather than `Cloneable`, because the user-facing operator is `copy!`; existing `Clone` remains separate until reconciled.
-* **`NoCopy`**: a negative type/field/instance policy which takes precedence over any positive witness. Existing `@NoCopy` and `NoCopy<T>` design must retain transitive provenance.
-* **`@WarnOnCopy`**: optional legal-copy lint; never a substitute for a proof.
-* **`@Copyable`**: existing proposed Java annotation is a legacy opt-in request, **not a required class annotation and not proof**. Once automatic derivation exists, a redundant positive annotation cannot confer additional copying rights; `@NoCopy` still wins.
-
-Illustrative future interface syntax (not asserted to parse today):
-
-```atto
+~~~atto
 define pub interface Copyable<T> as
     copy() -> T;
 end
 
-// No implements clause, @Copyable annotation or handwritten method needed.
-define class Person as
-    pub val string name = "";
-    pub val Array<int> scores = Array.of();
+define pub interface DeepCopyable<T> as
+    copy_deep() -> T;
 end
 
-val original = new Person();
-val independent = copy! original;
-val independent_legacy = rt copy original;
+// Object exposes both names as guarded virtual operations.
+// Neither method is callable without a proved corresponding witness.
+define pub class Object as
+    // conceptual: copy(): new Self requires Copyable<Self>
+    // conceptual: copy_deep(): new Self requires DeepCopyable<Self>
+end
 
-// A developer may opt into explicit conformance for clarity:
-define class Account implements Copyable<Account> as
-    pub val string label = "";
-    pub val Array<int> history = Array.of();
+val a = copy! original;
+val b = copy!! original;
+// equivalent when the type is admitted:
+val c = original.copy();
+val d = original.copy_deep();
+~~~
 
-    // Recommended stateful override: customize the generated safe baseline copy.
+All identity-bearing Atto classes inherit the **names** copy and copy_deep from root Object. They do **not** inherit permission to use either method: the resolved receiver must have a verified Copyable<Self> or DeepCopyable<Self> witness, respectively. A bare Object-typed erased reference requires verified virtual witness dispatch or fails E_COPY_UNPROVEN; a method declaration, annotation, cast, or FFI stub is not proof. This avoids the unsound promise that arbitrary handles, actors, or native resources can always be copied.
+
+A class/aggregate obtains its **Copyable** witness automatically if the compiler can prove a field-wise shallow plan, including inherited fields. A separate **DeepCopyable** witness is derived if the compiler can prove recursive duplication of mutable owned state. Users do not need to write implements Copyable or copy() in the common case. An explicit implements clause or positive annotation cannot grant an unproved capability; @NoCopy/NoCopy prohibits copying by default; @WarnOnCopy remains a lint.
+
+For identity-bearing classes, the verified method returns **new Self** (a new logical root identity for the *concrete dynamic subtype*), as refined by fresh-return-types-v1.md. This does **not** imply unique ownership of all nested fields after a shallow copy. A type's copy! may be legal under shared child handles but fail a new unique Self refinement; a mutable root is independently owned while reachable children retain their authorized sharing. For scalar/identity-free values no fresh allocation is required.
+
+## Field, array and collection rules
+
+| Shape | copy! (shallow) | copy!! (deep) |
+| --- | --- | --- |
+| int, bool, number, identity-free value | Duplicate stored value | Same value (no meaningless allocation) |
+| Immutable string/interned value | Reuse immutable backing | Reuse immutable backing where safe |
+| struct / tuple / record / ADT with inline values | Copy immediate representation; inline values are naturally duplicated | Recursively copy owning mutable reference members |
+| Class root | Fresh same-concrete-type object, copy fields one level; nested references remain the same only if legally shared | Fresh same-concrete-type object plus recursively copied owned mutable referents |
+| Array<int> | New array storage containing copied integers | Equivalent result |
+| Array<Array<int>> | New outer storage; inner array *references* are shared only if legally shareable; otherwise E_COPY_SHALLOW_ALIAS | New outer storage plus new inner arrays |
+| List<T>, Set<T>, Map<K,V> | New container metadata/buckets; shallow element/key/value copy with alias proofs, including hash/equality invariant checks | New containers; recursively copy element/key/value with cycle/repeated-reference preservation |
+| Borrowed view/slice, unique handle, actor, mutex, channel, socket | Reject without a type-specific verified capability; never copy raw ownership | Reject unless a separately proved deep reconstruction operation exists |
+| Shared<T>, immutable reference | Retain same child with authorized sharing and correct refcount/lifetime | Recursively duplicate if contract calls for it; immutable backing may be reused |
+
+A shallow copy must **not** copy a raw pointer/unique owner handle in a way that creates two independently droppable owners. For a mutable child reference that can legally be shared, preserve the reference identity and introduce exactly the checked sharing/lifetime obligations of the field type. If the child is exclusive/unshareable, fail with E_COPY_SHALLOW_ALIAS and suggest copy!! (if available), a deliberately shareable wrapper, or a resource-specific API. This is deliberate: copy! cannot promise a legal shallow copy of literally *every* object.
+
+For arrays, copy! duplicates the **outer buffer and immediate element slots** (if element representation is inline; copy by value). Reference-typed element slots retain their referents only under share permission. A shallow array copy is not just copying the array descriptor/address, because then the outer container itself would still alias. Empty typed collections must still have an admitted element/key/value plan; no unproved generic specialization may pass only because runtime length is zero.
+
+Shallow sharing is not actor transfer: actor-private references must not become accessible to another actor through a copy. Borrowed aliases may not be extended past their valid lifetime or out of critical regions. Shared children remain subject to read/write synchronization and borrower exclusion. A shallow copy is not a shortcut around ownership or mutation isolation.
+
+## Deep-copy graph protocol
+
+copy!! uses a **single copy context for the entire operation**: a source-identity-to-target map, allocation arena/domain, and rollback ledger. For an admitted mutable graph, allocate a fresh destination shell, register it **before** visiting children, and fill fields recursively with the *same* context. This preserves both repeated aliases and cycles. Each original mutable object gets one corresponding fresh object. Never expose a partially built graph; failure releases unpublished allocations exactly once. The source remains valid and unchanged.
+
+A backend incapable of proving cycles, heterogeneous polymorphism, lazy fields, unsafe FFI, or unbounded graph depth must reject that case (E_COPY_GRAPH_UNPROVEN), rather than silently recurse forever or flatten identity. Hard-real-time profiles require bounded work and allocation, or explicit admission restrictions. Deep copy never serializes/deserializes secretly, suspends, does I/O, or migrates actor memory across domains without a separate proof.
+
+## Overrides and Object dispatch
+
+The compiler synthesizes no-argument copy() and copy_deep() for derivable types. Each method may be overridden **independently**; override signatures take no user arguments and retain their verified fresh-root return refinement.
+
+~~~atto
+define class Person as
+    val string name = "";
+    val Array<int> scores = Array.of();
+
     @Override
-    pub copy(): new Account {
-        val mut Account c = super.copy();
-        c.rebuild_cache();
+    copy(): new Self {
+        val mut Self c = super.copy(); // synthesized SHALLOW baseline
+        c.rebuild_shallow_cache();
+        return c;
+    }
+
+    @Override
+    copy_deep(): new Self {
+        val mut Self c = super.copy_deep(); // synthesized DEEP baseline
+        c.rebuild_deep_cache();
         return c;
     }
 end
-```
+~~~
 
-Every otherwise-safe concrete class automatically obtains a **compiler-synthesized `Copyable<Self>` witness and a generated `copy(): new Self` operation** (for identity-bearing class values). An explicit declaration and override are optional. Merely declaring a method named `copy`, or `implements Copyable<T>` / `@Copyable`, cannot make forbidden fields legal. The checker must establish fresh same-concrete-type identity, nested mutable-field separation, correct allocation domain, recursive ownership/drop and absence of borrowed escapes. No hidden copy on ordinary parameter passing.
+Within the corresponding override, super.copy() / super.copy_deep() are **reserved nonvirtual whole-concrete-type compiler baselines**, even when Object is the only parent. They include inherited state, never slice a derived subtype, and are invoked exactly once on every successful synthesized-baseline path. The deep baseline must reuse the operation's hidden graph context; a developer-visible optional context argument is forbidden. The override can post-process only the newly owned/root-authorized state and may not forge mutable aliases or publish an incomplete target.
 
-### Derived class copying, and precisely when to intervene
+A direct fresh-return override without super is allowed only when a separately verified full-copy construction plan proves the relevant mode's state/ownership obligations (e.g., concrete stateless class returning new Foo()). A signature claiming new Self alone is not proof. Overrides that silently convert shallow to deep, deep to shallow, or leak source-owned mutable children must be rejected. Custom ancestor hooks must be composable once in a deterministic order. Resource-specific reinitialization is not granted merely by implementing a copy method.
 
-**Automatic by default:** for a concrete class with scalar, immutable string, copyable struct/record/ADT, ordinary copyable nested class, and Array/List/Set/Map/Tuple fields, the compiler derives an owned copy plan. Each copyable nested class is handled recursively; mutable arrays/collections get independent owned backing and elements. Private fields remain visible to compiler derivation. The plan accounts for ancestor fields; it does not invoke a reference-aliasing constructor or replay arbitrary effectful initialization. A class lacking any required witness does not become Copyable by asserting conformance.
+**Generic/static calls:** a type parameter T needs a proven T: Copyable<T> for copy! or T: DeepCopyable<T> for copy!!. Dynamic dispatch, imported modules, AOT interfaces, and all vtable/ABI slots must maintain the respective witnesses and concrete subtype. Intrinsic scalar Copy remains separate from these identity-bearing operations.
 
-**Manual hook only when value-preserving post-processing is needed:** recompute a derived index, refresh a cache, regenerate a non-identity internal field where a separately audited reset policy permits it, or restore a class invariant.
+## Lexing, precedence and lowering
 
-**Explicit opt-out of automatic copying:** a candidate class-level `@ManualCopy` annotation may require a handwritten `copy()` hook even when the ordinary fields are derivable, for invariants the compiler cannot infer. Without an override, `copy!` is `E_COPY_OVERRIDE`; implementing the override itself also opts into manual post-processing without needing the annotation. This is distinct from `@NoCopy`, which prohibits duplication altogether. `@ManualCopy` is a **proposed annotation**, not existing parser support. Once implemented, the compiler must preserve it across imports and AOT metadata; it must never make an inherently noncopyable field legal.
- A manual override is **not required** for normal fields, arrays, nested copyable classes, or inheritance. If fields are `@NoCopy`, actor-owned resources, native handles, channels, or mutexes without a verified regeneration/copy policy, the class remains noncopyable even with an override. To create a new independent resource, use a deliberately named resource-specific factory or a separately reviewed field reconstruction policy; `copy!` must never silently duplicate its handle.
+- Lex **copy!!** as a dedicated maximal-munch prefix token before **copy!** (not as copy! followed by logical negation). Tokens are separate from **!** / **!=**; whitespace inside copy!! is not allowed.
+- Both operators occupy the same prefix-expression precedence slot as existing ownership bangs (take!, share!, borrow!) and bind their full operand according to the existing ownership-prefix grammar. Parenthesized expressions are accepted; operand is evaluated once.
+- Lower to two **distinct** checked IR nodes, e.g. SHALLOW_COPY and DEEP_COPY. Preserve the source place, concrete dynamic type, ownership/lifetime, effects, and the verified witness; do not erase mode before borrow checking or AOT.
+- Canonical formatter outputs copy! x and copy!! x. If compatibility rt copy exists, it retains **shallow** semantics as an alias of copy! (never old implicit deep semantics).
+- Both operations are explicit, deterministic at their typed boundary, synchronous unless a separate future effectful API is introduced, and must be fail-atomic if a permitted allocator/copy hook can fail.
 
-**Reserved `super.copy()` semantics:** within an `@Override copy(): new Self` body, `super.copy()` means *invoke the compiler's synthesized default copy plan for the entire current concrete class*, including copyable inherited fields. It is a **nonvirtual, nonrecursive compiler intrinsic**, not a conventional call to a parent `copy()` that returns only a base object. It works even for a root class with no user-declared parent. This special meaning exists **only** in a copy override; ordinary `super.method()` keeps its usual parent-dispatch semantics. The plan constructs the fresh object under a private, unpublished owner, then post-processes. Any ancestor hook must be safely composable in deterministic ancestor-to-descendant order and run at most once; otherwise reject as `E_COPY_INHERITANCE`.
+## Required negative diagnostics
 
-In the **synthesized-baseline mode**, a `copy(): new Self` override calls `super.copy()` **exactly once** on all successful paths, never calls `copy! self` (recursive), modifies only the new owned object under valid mutability rules, and returns that same concrete object. Alternatively, a **direct-construction mode** is allowed only with an independently compiler-verified full copy plan: the returned fresh object must preserve source state, graph topology, concrete subtype and ownership safety. A stateless root class can trivially satisfy this with `return new Foo()`. Ordinary stateful classes without a complete proof must use the synthesized baseline or fail closed; a `new Foo` return annotation is insufficient. The compiler rejects zero/double baseline calls **when baseline mode was selected**; direct mode requires a separately proven full-construction plan instead of a baseline. Both modes reject returns of `self`, base-class slicing, publishing a partially constructed clone, or leaking aliases. The result cannot retain mutable source-owned aliases; an asserted method signature alone is not a proof. `val mut` permits the hook to mutate the copy without rebinding `c`; a plain `const c` does not grant mutable-referent access. Effectful or fallible reconstruction requires an explicit future checked-copy API with typed effects and rollback, not silent synchronous `copy!`.
+- E_COPY_UNPROVEN: missing appropriate mode-specific witness, unresolved generic/dispatch, wrong Object virtual target.
+- E_COPY_FORBIDDEN: @NoCopy, unique resource, actor-private disallowed type, or forbidden payload.
+- E_COPY_SHALLOW_ALIAS: mutable nested alias is not shareable or would create two unique/droppable owners.
+- E_COPY_TRANSITIVE: nested type/field/index cannot satisfy the chosen copy mode; report provenance.
+- E_COPY_GRAPH_UNPROVEN: unsupported deep-copy graph topology, depth, cycles, or dynamic subtype.
+- E_COPY_ALIAS: copy or deep copy returns same root identity; deep copy retains unauthorized source mutable nodes.
+- E_COPY_OVERRIDE: wrong baseline, duplicate/missing baseline without direct proof, cross-mode call, forged alias or leaked target.
+- E_COPY_INHERITANCE: ancestor/child cannot compose safely or would slice.
+- E_COPY_VIEW: lifetime/view copy cannot satisfy contract.
+- E_COPY_EFFECT: I/O, suspension, unbounded work in hard-RT profile, unsupported failure or cleanup effects.
+- E_FRESH_*: see fresh-return-types-v1.md; freshness and unique ownership are separate promises.
 
-**Inheritance:** a subclass with only derivable fields receives its **own generated copy** even when the parent copy was generated; the concrete subtype is preserved. A custom ancestor hook must be included once by a verified generated composition, or the compiler rejects the derived copy. The historical rule requiring each subclass to handwrite `copy()` is superseded by this candidate. If static `Base` refers to dynamic `Child`, a permitted polymorphic `copy!` must preserve `Child` or reject (never slice); AOT vtables/witnesses must enumerate all admitted concrete subtypes.
+## Execution and audit acceptance
 
-**Graph caveat:** automatic derivation of a nominal copy witness does not imply that arbitrary cyclic/shared mutable graphs can be copied by naive recursion. A graph-aware, memoized, two-phase plan is required when alias topology/cycles are present; without it emit `E_COPY_GRAPH_UNPROVEN`.
+1. Parser + formatter round-trip both bang spellings and reject copy! !x as an accidental deep copy, missing operand, and invalid user arguments to the operators.
+2. Actual compiled guest tests: copy! Array<int> allocates a new outer buffer; copy! Array<Shared<Array<int>>> creates a new outer buffer but retains child references; copy!! Array<Array<int>> duplicates children; nested repeated child pointers remain repeated within the deep result, not shared with source; deep cycles succeed only with verified memoized support.
+3. Actual negative guest tests: copying nested exclusive owners shallowly, unshareable actor/private handles, @NoCopy, unproved erased types, source-identity copy return, shallow alias in deep result, wrong subtype, unverified custom override, wrong effect, dangling borrowed view, and resource double-drop.
+4. Test custom copy() versus copy_deep() overrides, their independent baselines, zero argument arity, once-only source evaluation, ancestor hook composition, and failure rollback.
+5. Require exact-source compiler-backed parser/type/lowering/guest and native-AOT/sanitizer evidence independently from Java/GraalVM, LLVM, .NET, Wasm, Forge and Rust/JS where supported. Host-only graph tests are **not** compiler support. A zero-step Actions run is **NOT_EXECUTED**.
 
-**Override safety:** custom post-processing runs on a private copy, must leave the source intact, and is guarded against publishing mutable aliases or crossing actor domains. Compiler and runtime verification must prove clone separation, cleanup and concrete identity. The reference tests below are deliberately weaker host-only models; they do not certify arbitrary user method bodies.
+## Related work requiring reconciliation
 
-## Aggregate table
+- Older deep-default draft in this PR and companion fresh-return-types-v1.md; this file is the revised source of truth for mode selection.
+- oreslang-source.java PRs #148, #2337, #2580; atto-source.rs #135; ownership-bang spec #67, Java frontend #3112, formatter #144.
+- atto-platform-conformance PR #45 currently assumes the earlier deep-default profile; its fixtures must be revised, not recorded as passing for this change.
 
-| Type | Required `copy!` semantics |
-| --- | --- |
-| `int`, `bool`, floats, other admitted scalars | Duplicate value; resolved concrete Copy proof |
-| Immutable `string` / immutable interned values | Value-equivalent result; immutable backing may be shared safely |
-| `struct`, record, tuple, pair, Option, Result | Compiler-derived recursive logical copy of **all owned** fields/variants; deny on any uncopyable constituent |
-| `class` | Automatically derived `Copyable<Self>` for provably copyable fields and ancestors, with optional safe `copy()` override; new concrete identity and nested mutable separation |
-| `Array<T>`, `List<T>`, `Set<T>`, `Map<K,V>` | New owned container and owned mutable storage; copy each logical element/key/value recursively; type witnesses required even for an *empty* typed container |
-| `Slice<T>`, mutable view, borrowed span | `copy! view` denied until a distinct view/owned-buffer contract is defined; `Array.copy_of(view)` can be a separately checked materialization API |
-| Actor, channel, task, mutex, atomic, socket, file, unique handle, singleton, `NoCopy<T>` | No `Copyable` proof by default; explicit resource-specific duplication APIs do not retroactively grant `copy!` |
-| `Box<T>`, `Arc<T>`, other smart pointers | Duplicating a handle or reference count is `share!`/handle semantics, **not** copying the pointee; require separately defined explicit copy policy |
-
-**Identity and graphs.** A permitted copy of a graph must preserve observable logical value and internal alias topology without preserving any *mutable cross-copy alias*. A graph copier may use a memoized source-to-copy map and two-phase construction to preserve repeated identities and cycles. Until that algorithm is independently proven for a given type/backend, cycles, unbounded graphs, untracked aliasing and abstract/erased subtypes are `E_COPY_GRAPH_UNPROVEN`, not partially cloned results. Polymorphic class copies must preserve the concrete runtime subtype or reject; no object slicing.
-
-**Generics and unions.** A generic `T` cannot be copied just because a particular call site happens to hold an integer. A resolved `T: Copyable<T>` (or intrinsic `Copy`) proof is required at the call site and at every lowered specialization. Union variants and ADT arms must each prove the applicable copy contract. A nominal witness must remain present across exports, FFI, AOT tree shaking and separately compiled package ABI.
-
-**Ownership and lifetime.** The copy receives its own owner/drop obligations and must not reuse a mutable actor-private allocation from the source actor. Failure midway must not publish a partially constructed copy; allocated temporaries must be retired exactly once and the source must remain valid. The operation cannot escape borrow, `critical-read`, mutable receiver or actor-isolation restrictions. All effects (allocations and potential failure) must be preserved; no silent suspension or hidden I/O in a synchronous copy method. Hard-real-time profiles must reject unbounded copy depth, allocation, work or time.
-
-## Diagnostics (stable proposed codes)
-
-* `E_FRESH_TYPE` / `E_FRESH_UNPROVEN` / `E_FRESH_NOT_UNIQUE` / `E_FRESH_MISSING_RETURN` — see the companion fresh-return contract for identity and ownership refinement failures
-* `E_COPY_UNPROVEN` — unresolved type/witness, class without verified copy implementation, or dynamic dispatch not proven
-* `E_COPY_FORBIDDEN` — `@NoCopy`, noncopyable type or resource
-* `E_COPY_TRANSITIVE` — nested field/collection key/value fails a copy proof; include the field/index origin
-* `E_COPY_GRAPH_UNPROVEN` — cyclic, aliased or polymorphic graph without a verified graph-aware copier
-* `E_COPY_VIEW` — borrowed slice/view would alias instead of producing an independent owned value
-* `E_COPY_ALIAS` — implementation returns the original object or retains mutable reachable storage
-* `E_COPY_OVERRIDE` — override has neither one synthesized baseline nor a proven complete direct-copy plan, repeats a baseline, returns a wrong object in baseline mode, recurses via `copy! self`, or leaks a partial object
-* `E_COPY_INHERITANCE` — parent and child copy plans/hooks cannot compose without slicing or double execution
-* `E_COPY_EFFECT` — copy method violates synchrony/effect or cleanup requirements
-* `W_COPY_DISCOURAGED` — legal but annotated discouraged copy
-
-Prove legality at compile time; runtime assertions may supplement but cannot replace that proof. Diagnostics must be deterministic and must not report a failed backend as an accepted copy.
-
-## Acceptance matrix (not yet implemented)
-
-1. Resolve `copy!` and `rt copy` to the **same checked IR operation**, single operand evaluation and identical diagnostics. Formatter emits `copy! value` while keeping compatibility input.
-2. Execute positive tests: scalar, nested struct, class with owning mutable array, array-of-arrays, list, map, tuple, pair, Option/Result, immutable string. Mutate cloned nested data and verify the original is unchanged.
-3. Compile-negative: implicit deep-copy on ordinary class argument passing, explicit witness/annotation without supporting field proof, no-copy nested field, empty generic collection with forbidden element type, original-return, shallow nested alias, invalid manual override (missing baseline **without independently verified direct plan**, duplicate `super.copy`, wrong subtype, source alias, wrong mutability), uncomposable ancestor hook, resource handle, mutable view, unresolved generics, cycles/polymorphism without proof, incompatible copy effects.
-4. Exercise immutable-backed sharing, copy of repeated graph references (where admitted), failure cleanup and no double-drop; test source and destination actor heaps/isolation.
-5. Report **compiler-backed** positive and negative results independently for Java/GraalVM, LLVM, .NET Native AOT, Wasm and Forge, plus additional Rust/JS backends. Pin exact head, source tree, executed workflow steps and full-native-AOT provenance. Do not count host-only reference models or zero-step GitHub checks as parity.
-
-### Existing evidence and dependency notes
-
-* Java draft [oreslang-source.java#2337](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2337) retains `@NoCopy`, `@WarnOnCopy`, `@Copyable`, but conservatively denies unproved class copies. Its reported exact-file-subset JUnit result does not establish general class/array duplication.
-* Older [Java #148](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/148) documents recursive structs and a previously required per-class handwritten `copy()` method. **The manual-method requirement is superseded by the new automatic derivation candidate**; preserve its safety invariants and negative cases when reconciling with #2337.
-* [atto-source.rs#135](https://github.com/atto-lang/atto-source.rs/pull/135) covers a checked scalar `copy!` subset, not arbitrary heap graph copies.
-* [ownership-bang spec #67](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/pull/67), [Java frontend #3112](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3112) and [formatter #144](https://github.com/ores-truffle-oreslang/oreslang-format/pull/144) concern alias syntax and parsing, not proof of deep-copy execution.
-* Existing `Copy` and `Clone` terminology in `docs/OWNERSHIP_SMART_POINTERS_DOP.md` must be explicitly reconciled during promotion; this candidate does not change implicit-copy rules.
-
-**Source-only tests** for this candidate demonstrate a bounded reference graph-checking oracle, never the AttoLang parser, compiler, guest runtime or exact-head conformance.
+This remains a design and reference-test proposal. No cross-backend runtime support is claimed.
