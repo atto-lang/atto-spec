@@ -118,3 +118,44 @@ This source-link slice does not support hot-loading, arbitrary imported
 functions, trait/interface cross-unit ABIs, inherited field/constructor
 layouts, polymorphic runtime upcasting, or sealed-pattern exhaustiveness.
 Those remain separate compiler and runtime work.
+
+## Pinned-source catalogue hardening (P0)
+
+The executable Rust/Wasm source-link profile now supports a strict, versioned
+input catalogue. For every `(package, namespace, module)` unit, the trusted
+build supplies a package version and a lowercase 64-character SHA-256 digest
+over the **exact UTF-8 source bytes compiled**. No imported source is fetched
+from the network, and imported names remain bound to the complete module key.
+
+The native `attoc-linked` CLI accepts `--pin
+package/namespace/module=VERSION@SHA256` alongside each `--unit`. It rejects
+missing pins, unexpected or malformed digests, source substitutions and
+multiple versions of the same package within one linked executable. It keeps
+an explicit `--allow-unpinned-local` development-only escape hatch for
+previously supported local runs; that mode is neither the default nor a
+pinned-build verification claim.
+
+Successful pinned compilation emits a deterministic
+`atto.source.catalogue.v1` WebAssembly custom section listing the sorted
+module keys, package versions and verified source digests. Its identity-domain
+flag is **0 = build-local input evidence**, not a signature or independent
+proof of package-publisher authority. A future installer / package resolver
+must separately authenticate the expected lockfile and publisher.
+
+The linker also restricts class-name relocation to validated nominal
+declaration/export headers and explicit construction contexts. Ambiguous
+unqualified class-name uses, including value or callable shadowing, fail
+closed rather than being rewritten as type identities. More type contexts
+will require proper typed IR symbol resolution, not a broader token sweep.
+
+Source files are read through one bounded opened file descriptor. On Linux
+and macOS the last component uses `O_NOFOLLOW`; component checks reject
+detected symbolic links and absolute/path-traversal arguments. This is
+defense in depth, **not a proof of race-free directory traversal**, and is not
+a substitute for compiler-input digest pins. Windows and other platforms
+require a separate handle-relative filesystem security audit.
+
+Known exclusions: authenticating external lockfiles, trusted publisher
+signatures, simultaneous multi-version package linking, typed-IR linker
+objects, independently linked binary artifacts, hot-loading generation
+validation, inherited field/constructor ABI and runtime polymorphism.
