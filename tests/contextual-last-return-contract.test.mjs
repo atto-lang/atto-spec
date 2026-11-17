@@ -9,8 +9,8 @@ const backends=['rust_wasm','java','llvm','net','forge'];
 test('contextual caret corpus has unique, evidence-honest vector IDs',()=>{
   assert.equal(suite.feature,'contextual-return-caret-last-sequence');
   assert.equal(suite.status,'draft-not-executed-across-backends');
-  assert.equal(suite.cases.length,37);
-  assert.equal(suite.corpusRevision,2);
+  assert.equal(suite.cases.length,38);
+  assert.equal(suite.corpusRevision,3);
   const ids=new Set();
   for(const c of suite.cases){
     assert.match(c.id,/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
@@ -32,7 +32,7 @@ test('literal return selector, standalone tuple and empty sequence are distinct'
   assert.match(find('caret-bare-comma-values').source,/\^ 1, 42/);
   for(const id of ['reject-bare-trailing-comma','reject-bare-double-comma',
                     'reject-bare-final-declaration','reject-bare-final-type-mismatch',
-                    'reject-bare-pure-effect']){
+                    'reject-bare-pure-effect','reject-bare-move-after-prefix']){
     assert.equal(find(id).expect,'reject',id);
   }
   assert.match(find('tuple-ordinary').source,/return \(1, 42\)/);
@@ -42,6 +42,10 @@ test('literal return selector, standalone tuple and empty sequence are distinct'
   assert.equal(find('empty-whitespace').diagnostic,'E_EMPTY_SEQUENCE');
   assert.equal(find('seq-return-equivalent').expectedReturn,42);
   assert.equal(find('caret-seq-equivalent').expectedReturn,42);
+  assert.equal(find('extra-operator').diagnostic,'E_SEMICOLON');
+  assert.match(find('effect-in-pure').source,/pub fnc main\(\): int/);
+  assert.match(find('reject-bare-pure-effect').source,/pub fnc main\(\): int/);
+  assert.equal(find('reject-bare-move-after-prefix').diagnostic,'E_MOVED');
 });
 test('target tuple vectors never masquerade as executed scalar browser passes',()=>{
   for(const id of ['tuple-ordinary','tuple-caret-statement','tuple-last-value']){
