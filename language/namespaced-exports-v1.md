@@ -1,6 +1,8 @@
 # Namespaced exports and module boundaries — v1 target contract
 
 **Status: Proposed normative AttoLang semantics, not a claim of compiler/linker parity.**
+
+The per-source type-checking and linking boundary is specified separately in [typed linked IR v1](typed-linked-ir-v1.md); that architecture is a **target**, not an executable backend claim.
 This extends [declarative file-level exports](declarative-exports.md), without changing
 its existing `export pub` and `export pub[pkg]` forms. Backend implementations
 MUST fail closed when they cannot establish namespace, package, or member visibility.
