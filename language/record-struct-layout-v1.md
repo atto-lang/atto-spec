@@ -134,20 +134,46 @@ quoted field names into the Struct's internal type identity.
   exact SHA evidence. **Host-only optimizer-plan tests are not proof of
   executable runtime layout or speedups.**
 
-## Implementation-stage evidence
+## Implementation-stage evidence (2026-11-17)
 
-The Rust browser frontend on `atto-source.rs#274` has a **syntax/typed
-literal preflight** for inline `{...}` Records and Maps; those inline collection
-values still fail closed with `E_UNSUPPORTED` when compiled to guest Wasm.
-Separately, its existing `shape_lower` recognizes **restricted declared
-`define struct` and `define record` scalar products**, lowering them
-through checked **nominal class** constructors and field reads. That legacy
-subset can produce genuine guest Wasm but does **not** implement structural
-Record interning or a dedicated fixed-layout Struct ABI; declared Records
-in that subset are currently nominal classes. The proposed canonical
-structural Record contract is a staged change: do not silently change the
-nominal subset's identity or ownership behavior without migration tests.
+The parser and contextual collection-type preflight are staged in
+[`atto-source.rs#274`](https://github.com/atto-lang/atto-source.rs/pull/274);
+the compiler-owned canonical logical slot planner is in
+[`atto-source.rs#277`](https://github.com/atto-lang/atto-source.rs/pull/277).
 
-The new compiler layout planner is **host-only logical slot planning**,
-not byte offsets, guest allocation, memory footprint or speedup evidence.
-This contract does not override either frontend's existing safety gates.
+A first **executable, restricted closed-scalar Record** profile now exists
+in [`atto-source.rs#284`](https://github.com/atto-lang/atto-source.rs/pull/284).
+It accepts direct local bindings with **1–8 statically typed, owned scalar**
+int/bool/float/string fields. The compiler checks the canonical type/slot
+inventory, interns equivalent field-name/type sets, evaluates the field
+initializers in original source order and passes those values to a generated
+private constructor in canonical slot order.
+
+The current guest implementation reuses the existing **checked nominal
+class Wasm allocation and 8-byte field slot layout**, including constant
+field offsets and typed loads. A direct local closed Record supports
+`record.field` and `record["literal-field"]` (also Unicode labels) via
+checked static field lookup. Missing names produce `E_NO_FIELD`.
+Computed keys remain `E_UNSUPPORTED`. There is **no Map hash-lookup
+fallback**. Unproven nested data/effectful field expressions, open Record
+runtime fields, mutable borrowing of the generated storage, unsafe aliases,
+actor transport, value-equality semantics and general Record/Struct
+conversion remain unimplemented or checked by existing restrictive gates.
+
+Existing `shape_lower` also supports **restricted declared**
+`define struct` and `define record` scalar products through nominal
+classes. This does not silently make those declared records structural,
+nor does it prove packed/unboxed Struct values or target-independent ABI.
+
+**Executed validation:** exact-head private [Actions run #44174750860](https://github.com/atto-poc/atto-nats-clone.atto/actions/runs/44174750860)
+passed 61 Rust tests, strict Clippy, native and browser wasm32 compiler
+release builds, 4 real guest executions and 5 no-artifact negatives, with
+9 native/browser decisions and byte-identical admitted Wasm modules.
+The carrier verified **37 individual source blobs by SHA**, not the
+complete 723-blob source tree.
+
+Static field slots are currently **not a memory-size or speed advantage
+over the pre-existing class layout**. An independent packed Struct ABI,
+full typed/effectful Record initialization, open-record shape checks,
+cross-actor copying and measured performance comparisons remain future
+work. No multi-backend parity is claimed.
