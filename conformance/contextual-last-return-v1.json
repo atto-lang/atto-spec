@@ -301,17 +301,18 @@
     },
     {
       "id": "implicit-comma",
-      "phase": "parse",
-      "expect": "reject",
+      "phase": "execute",
+      "expect": "accept",
       "source": "pub fnc main(): int { return 1, 42; }\n",
-      "diagnostic": "E_SYNTAX",
       "verification": {
         "rust_wasm": "not_executed",
         "java": "not_executed",
         "llvm": "not_executed",
         "net": "not_executed",
         "forge": "not_executed"
-      }
+      },
+      "expectedReturn": 42,
+      "note": "Unparenthesized return commas form a checked last-value sequence, not a tuple."
     },
     {
       "id": "selector-in-expression",
@@ -396,6 +397,132 @@
         "net": "not_executed",
         "forge": "not_executed"
       }
+    },
+    {
+      "id": "bare-three-values",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "pub fnc main(): int { return 1, 2, 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "caret-bare-comma-values",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "pub fnc main(): int { ^ 1, 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "bare-nested-calls",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "fnc add(int a, int b): int { return a + b; }\npub fnc main(): int { return add(10,20), add(20,22); }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "bare-sequence-first",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "pub fnc main(): int { return (> let x = 1, x), 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "reject-bare-trailing-comma",
+      "phase": "parse",
+      "expect": "reject",
+      "source": "pub fnc main(): int { return 1,; }\n",
+      "diagnostic": "E_SYNTAX",
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "reject-bare-double-comma",
+      "phase": "parse",
+      "expect": "reject",
+      "source": "pub fnc main(): int { return 1,,42; }\n",
+      "diagnostic": "E_SYNTAX",
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "reject-bare-final-declaration",
+      "phase": "parse",
+      "expect": "reject",
+      "source": "pub fnc main(): int { return 1, val x = 42; }\n",
+      "diagnostic": "E_SYNTAX",
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "reject-bare-final-type-mismatch",
+      "phase": "typecheck",
+      "expect": "reject",
+      "source": "pub fnc main(): int { return 1, true; }\n",
+      "diagnostic": "E_TYPE",
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "reject-bare-pure-effect",
+      "phase": "typecheck",
+      "expect": "reject",
+      "source": "pure fnc f(): int { return stdio.println(5), 42; }\n",
+      "diagnostic": "effect-check",
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
     }
   ],
   "receiptRequirements": [
@@ -409,5 +536,6 @@
     "observed_return_or_diagnostic",
     "formatter_roundtrip"
   ],
-  "notes": "Proposed conformance vectors only. Rust scalar compiler deliberately rejects target tuple positives as unsupported until real tuple codegen exists; no backend results are inferred from adding the corpus."
+  "notes": "Proposed conformance vectors only. Rust scalar compiler deliberately rejects target tuple positives as unsupported until real tuple codegen exists; no backend results are inferred from adding the corpus. Bare top-level return commas added to the same Sequence AST; :: callable-body outer separators stay unchanged.",
+  "corpusRevision": 2
 }
