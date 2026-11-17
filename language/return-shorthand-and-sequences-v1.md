@@ -4,7 +4,7 @@ Status: **proposed normative syntax**, pending resolution of the body-mode compa
 
 ## One return operation, two sequence spellings
 
-`^` is **exactly** a statement-position alias of `return`. It does not introduce a new value category, implicit return, nonlocal lambda return, or exponent/XOR operator.
+`^` is a statement-position alias of `return`, except for one **contextual return-operand spelling**: a literal `return ^ (steps..., tail)` selects the last value of a nonempty sequence. No other expression-position `^` is admitted. In particular, standalone `^ (a, b)` is a regular return of a tuple and must never become last-value sequencing. This is not exponentiation, XOR, or a nonlocal lambda return.
 
 ```atto
 fnc square(int x): int { ^ x * x; }
@@ -42,6 +42,34 @@ pub fnc main(): int {
 }
 ```
 
+### Literal `return ^ ( ... )` selects the last value
+
+The contextual `^` immediately following the **literal `return` keyword** and before a parenthesized, nonempty sequence is a last-value selector, not a second return statement. It uses the same lexical `ExprKind::Sequence` / effect / ownership / cleanup semantics as `seq` and `(> ... )`. It is not a general prefix expression operator. Whitespace between tokens is optional, though the formatter prints `return ^ (`.
+
+```atto
+fnc scalar(): int {
+    return ^ (first(), second(), 42); // first and second run once; return 42
+}
+fnc equivalent(): int {
+    return seq first(), second(), 42;
+}
+fnc tuple_value(): (int, int) {
+    return (10, 20);    // tuple, not a sequence
+}
+fnc also_tuple(): (int, int) {
+    ^ (10, 20);         // statement ^ is still return
+}
+fnc invalid(): int {
+    return ^ ();        // E_EMPTY_SEQUENCE: there is no final value
+}
+```
+
+A one-element sequence `return ^ (x);` returns `x`. `return ^ (x, y);` returns `y`; `return ^ ((x, y));` returns the tuple. A trailing comma is forbidden. Nested function argument commas and tuple/grouping commas are always owned by the innermost construct. `return x, y;` without an explicit sequence marker is **not** introduced by this proposal. `return ^ seq ...;` and arbitrary `return ^ x;` are errors.
+
+All earlier steps execute exactly once, in source order, with the same checked ownership, effects, suspension, error propagation, lexical bindings, and cleanup as explicit `seq`. A terminal binding rather than a value, an empty sequence, or a trailing comma is rejected. `return ^ (...)` is forbidden in generators when it returns a value, just as `return seq ...;` is.
+
+This additive syntax does not resolve the separate `::` callable-body migration. It must be version-gated with the parent proposal and cannot make unmarked comma bodies acquire implicit return.
+
 ### Callable bodies: `::` explicitly enables implicit tail return
 
 `::` after `-> Type` is a **callable-body mode marker** (not an expression operator).
@@ -76,8 +104,9 @@ or compiler parity should be inferred from the document change.
 
 ```ebnf
 return_stmt        = ("return" | "^"), [return_operand], statement_terminator ;
-return_operand     = expression | return_sequence ;
+return_operand     = expression | return_sequence | contextual_last_sequence ;
 return_sequence    = "seq", sequence_items ; (* same terminating ';' as return *)
+contextual_last_sequence = "^", "(", sequence_items, ")" ; (* only after literal "return" *)
 sequence_stmt      = "seq", sequence_items, statement_terminator ;
 paren_sequence     = "(>", sequence_items, ")" ;
 begin_sequence     = "begin", sequence_items, "end" ;
@@ -89,7 +118,7 @@ sequence_step      = local_binding_without_terminator
 
 Here `^ match ... end;` uses the normal value-position match grammar. `^ seq ...;` is special-cased at the **statement** boundary, not parsed as a regular identifier named `seq`. The final sequence step must be a value-producing expression, never a declaration or bare control-flow statement, whenever a value is required. An empty sequence or trailing comma is an error.
 
-The scanner recognizes `^` as a single token only in its own right, without consuming the subsequent operand. `^^` is a distinct reserved boolean XOR spelling and is never two adjacent return tokens; `^=` is not return-assignment. Longest-match lexing applies. A `^` in expression position (`x ^ y`, `foo(^ x)`, `const x = ^ 3`) is rejected, not treated as XOR, exponentiation, a unary operator or a lambda shortcut. Whitespace after `^` is formatter-canonical but is not required for tokenization.
+The scanner recognizes `^` as a single token only in its own right, without consuming the subsequent operand. The parser tests the literal preceding keyword: the `return ^ (` selector is valid, whereas `^ ^ (` and `^ ^` are not. `^^` is a distinct reserved boolean XOR spelling and is never two adjacent return tokens; `^=` is not return-assignment. Longest-match lexing applies. A `^` in expression position (`x ^ y`, `foo(^ x)`, `const x = ^ 3`) is rejected, not treated as XOR, exponentiation, a unary operator or a lambda shortcut. The sole exception is the contextual `return ^ ( ... )` operand, which cannot appear inside arbitrary expressions. Whitespace after `^` is formatter-canonical but is not required for tokenization.
 
 The parser must distinguish the special `(>` opening from ordinary `(expression)`, tuples `(a, b)`, comparisons `a > b`, generics, `|>` pipelines, the `>>` channel read spelling and `pkg::symbol`. In particular `(> a, b)` is a sequence yielding `b`; `(a, b)` stays a tuple. A comma inside calls, tuples, lists, generics, lambda parameters or nested sequences belongs to that **innermost** construct, not an enclosing sequence. A comma is not a general-purpose infix operator.
 
