@@ -73,3 +73,48 @@ forged or stale identities. The prelink policy checker alone does not link
 foreign method bodies, enable runtime polymorphic dispatch, or permit hot-loading.
 Until then, attempts to compile foreign sealed-class edges remain unsupported
 and must fail without an executable guest artifact.
+
+## Bounded executable cross-source profile (Rust/Wasm draft)
+
+The initial executable source linker uses build-owned unit identities of the
+form (package, namespace, module), with classes identified by the full tuple
+(package, namespace, module, class name). Input sources use a deliberately
+restricted top-level import:
+
+```atto
+import class Animal from "animals/core/base";
+import class Dog as SelectedDog from "animals/pets/dog";
+```
+
+The build caller supplies exact source bytes for those unit keys; neither the
+quoted target string nor the imported alias is proof of provenance by itself.
+The resolver must bind each import to an actual declaration in the supplied
+build catalogue and check that it is visible. A sealed root can import its
+permitted child while that child imports its parent; the complete type graph
+is evaluated before code generation.
+
+The Rust implementation supports a bounded set of source units and an entry
+unit whose top-level functions are compiled together with dependency classes.
+Each class gets a deterministic compiler-reserved relocation symbol; the
+qualified source identity is retained for link-policy decisions. The complete
+sealed graph is checked for reciprocal permitted edges, accessibility, final
+parents, malformed identities, cycles and duplicate aliases. The existing
+class compiler then validates method signature overrides and rejects inherited
+field or constructor layouts that it cannot safely lower. Successful links
+produce one executable WebAssembly guest. This is **closed-program source
+relocation**, not an arbitrary binary-Wasm linker or virtual base-object ABI.
+
+The native attoc-linked tool takes --root, --entry and repeated --unit
+arguments with explicit relative paths. It rejects absolute/traversal paths,
+and checks each path component for symbolic links. This path check is a
+defensive boundary, **not a cryptographic package signature** or a general
+race-free filesystem sandbox. A trusted build resolver must supply and pin
+the actual bytes and module identities.
+
+The existing atto.nominal.hierarchy.v1 section continues to mark its
+identity domain as source-local (0). A future independent module linker must
+not treat that custom section as authenticated evidence of inheritance rights.
+This source-link slice does not support hot-loading, arbitrary imported
+functions, trait/interface cross-unit ABIs, inherited field/constructor
+layouts, polymorphic runtime upcasting, or sealed-pattern exhaustiveness.
+Those remain separate compiler and runtime work.
