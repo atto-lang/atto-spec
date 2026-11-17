@@ -46,7 +46,7 @@ x neq y;   // logical negation of x eq y
 
 - **Numeric cross-type comparisons:** Should `1 eq 1.0` be accepted with exact numeric equivalence, or require explicit conversion? Avoid lossy implicit coercion.
 - **Floating point:** Specify NaN, signed zero, and IEEE-754 rules for `eq` and `neq`.
-- **Nullable references:** Decide whether null is compared by `eq`, `==`, or both, without invoking `equals()` on null.
+- **Absence and Option:** AttoLang rejects the `null` literal. Define future `Option<Class>` comparison separately, with an explicit presence/tag test and no implicit null-like reference dispatch; `Option<Class>` is not yet executable in the Rust/browser subset.
 - **Equality method contract:** Decide default object `equals()`, inheritance/override behavior, symmetry, hash consistency, and whether equality may throw.
 - **Values versus references:** Define behavior for enums, strings, tuples, records, structs, symbols, and boxed primitives. A boxed primitive reference may have identity even though an unboxed primitive does not.
 - **Pointers:** Explicitly distinguish raw address equality, provenance, and object identity; never assume `==` compares addresses.
@@ -68,7 +68,7 @@ x neq y;   // logical negation of x eq y
 ### Operator typing and evaluation
 
 - Evaluate the left operand once, then the right operand once, left-to-right; `neq` and `!=` must not evaluate either operand twice.
-- `eq`/`neq` produce `bool`. On a nullable reference, first check for null: two nulls are equal, exactly one null is unequal; invoke `equals()` only for non-null operands.
+- `eq`/`neq` produce `bool`. Do not confuse `Option<Class>` with a nullable raw pointer. `null` is not an AttoLang value (`E_NULL`); the Rust/browser compiler currently rejects `Option<Class>` (`E_UNSUPPORTED_TYPE`). Future optional equality must be specified as tagged-value semantics, without dereferencing absent values.
 - For references, `==`/`!=` must not invoke user code or allocate. Equality must remain stable across relocation and representation changes.
 - Never implement `neq` by invoking a separate user-defined `not_equals()`; it is the logical complement of `eq`.
 - A user-defined `equals()` must be callable without suspension and return exactly `bool`; reject ambiguous overloads. Error effects must be declared and propagated according to the language's effect rules rather than silently swallowed.
@@ -89,8 +89,8 @@ x neq y;   // logical negation of x eq y
 | `ref_a == alias_a` | true |
 | `ref_a == separately_allocated_equal_value` | false |
 | `ref_a eq separately_allocated_equal_value` | calls resolved `equals()` |
-| `nullable_null eq nullable_null` | true under proposed null rule |
-| `nullable_null eq nonnull_ref` | false, no method dispatch |
+| `null eq null` | compile-time `E_NULL` (no null literal in AttoLang) |
+| `Option<MyClass>` in Rust/browser | `E_UNSUPPORTED_TYPE` until checked object-option ABI exists |
 | `lhs() neq rhs()` | each operand evaluated exactly once, in order |
 | `value_struct_a == value_struct_b` | compile-time error when no reference identity |
 | `x eq y` formatter round trip | same operator and meaning |
@@ -108,9 +108,10 @@ x neq y;   // logical negation of x eq y
 ## Bounded checked class-equality profile (Rust/browser implementation slice)
 
 The initial full-AOT browser profile admits **only same-concrete-class**
-`eq` and `neq` calls where the class itself declares a checked instance
-method `pub equals(Class other): bool`. No JIT, reflection, implicit
-subclass/virtual method dispatch, or `Object.equals` fallback is claimed.
+`eq` and `neq` calls where the class has a checked instance
+method `pub equals(Class other): bool`, either declared directly or
+safely specialized from a source-local, fieldless ancestor. No JIT,
+reflection, runtime virtual dispatch, or `Object.equals` fallback is claimed.
 
 ```atto
 define class Point as
@@ -142,10 +143,10 @@ pub fnc main(): int {
 - The parser currently rejects suspending instance methods. A future
   suspension-capable backend MUST reject an effectful/suspending `equals`
   unless the equality effect contract is revised explicitly.
-- The profile is intentionally static, same-class only; inheritance,
-  dynamic dispatch, nullable objects, all cross-actor transfers, and other
-  backend implementations remain unresolved and must not count as passing
-  conformance merely because this subset compiles.
+- The profile is intentionally static, same-class only; *dynamic* inheritance,
+  base-typed upcasts, virtual dispatch, `Option<Class>` object absence,
+  cross-actor transfers, and other backends remain unresolved. Source-local
+  method copying must not be described as runtime subtype dispatch.
 
 **Evidence gate:** Before claiming this implementation as tested, record the
 exact Rust/browser source Git commit and Git tree alongside an executed
@@ -179,3 +180,45 @@ operands still trigger `E_IDENTITY_TYPE`.
 The Rust/browser compiler implements this bounded same-class profile; it
 does not imply general self-as-value semantics, virtual inheritance,
 dynamic dispatch, actor capability identity, or default `Object.equals()`.
+
+## Closed-world inherited equality specialization (proposed bounded AOT profile)
+
+When nominal lowering already admits a source-local class inheritance graph,
+a **stateless, constructor-free ancestor** may provide
+`pub equals(Ancestor other): bool`. For each concrete descendant, the
+checked lowerer can clone that method and specialize the single parameter
+from `Ancestor` to the concrete class before normal parsing, type checking,
+borrow enforcement and AOT emission. This preserves the same-class operator
+contract without inventing implicit upcasts.
+
+```atto
+define class Base as
+    pub equals(Base other): bool { return self == other; }
+end
+define class Derived extends Base as end
+pub fnc main(): int {
+    val a = new Derived();
+    val b = new Derived();
+    if a eq a, a neq b then return 49; fi
+    return 0;
+}
+```
+
+An explicit `override equals(Ancestor other): bool` must match the inherited
+source signature before specialization. Mismatched overrides and conflicting
+multiple-inheritance origins fail closed. Inherited fields/constructors and
+unverified changes in object layout remain prohibited. The method is still
+statically selected using the *concrete* class; a `Base`-typed reference to a
+`Derived` object, runtime vtables, and polymorphic method dispatch are **not
+implemented by this lowering**.
+
+No automatic value-equality default is introduced: absent `equals` is
+`E_EQUALS`. Inherited signatures that cannot be proven same-class after
+specialization must fail as `E_EQUALS_INHERITANCE`. IEEE NaN value equality
+is false and `neq` its logical inverse; positive and negative infinity
+follow normal IEEE `float` semantics. A separately defined hashing contract
+must be adopted before promising hash-key behavior for user-defined equality.
+
+**Verification boundary:** This is a bounded static source transformation.
+Any full-inheritance or nullable-object work needs separate checked runtime
+metadata, a new conformance phase, and exact-head AOT evidence.
