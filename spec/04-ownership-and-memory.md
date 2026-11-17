@@ -73,6 +73,12 @@ val owned = rt take packet
 
 Borrow checking is not optional for a native backend. Aliased writes, use-after-take, escaping stack borrows, double-drops, stale actor references, and mutable aliases crossing isolation domains MUST be rejected or safely represented with explicit runtime guards, never silently trusted.
 
+### Checked-handle exceptional-call gate (current Rust/Wasm prototype)
+
+The eventual language contract requires all-path retirement, including exceptional and cancellation exits. The current compiler does **not** yet have typed unwind/drop edges for checked handles and therefore must reject code that could bypass a required `unref!`. This includes transitive calls to known `throw`/`raise`/early-exit callees, even when the immediate caller contains no explicit failure statement. Unknown effects and suspendable calls must fail closed until their cleanup and lifetime proofs are available.
+
+An independent bounded CFG proof prototype in `atto-borrow-checker.rs` tracks distinct handle/loan facts across branch joins and rejects missing cleanup on any path, including abrupt exits. This oracle is **not wired into compiler typed MIR**, and it does not yet establish runtime reclamation, actor-domain validity, or five-backend parity. Until native and Wasm guest tests run, the Rust frontend's straight-line checked-handle profile remains draft.
+
 ## Lifetimes across suspension
 
 `await`, `select`, `nb` task creation, cancellation, and actor turn boundaries are suspension or ownership checkpoints. A loan can cross only if its owner is pinned for the full continuation, aliasing remains valid, cleanup and cancellation are generation-fenced, and no conflicting turn can access the region. A critical writer or reactor callback may not accidentally hold an actor-state loan across an unrelated suspension.
