@@ -1,0 +1,37 @@
+name: Mailman actor delivery contract (host-only)
+on:
+  push:
+    paths:
+      - 'language/mailman-actor-delivery-v1.md'
+      - 'conformance/mailman-actor-delivery-v1.json'
+      - 'tests/mailman-actor-delivery-v1.test.mjs'
+      - '.github/workflows/mailman-actor-delivery-contract.yml'
+  pull_request:
+    paths:
+      - 'language/mailman-actor-delivery-v1.md'
+      - 'conformance/mailman-actor-delivery-v1.json'
+      - 'tests/mailman-actor-delivery-v1.test.mjs'
+      - '.github/workflows/mailman-actor-delivery-contract.yml'
+permissions:
+  contents: read
+jobs:
+  host-model-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact source HEAD and execute host-only model
+        shell: bash
+        env:
+          EXPECTED_SHA: \${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          echo "MAILMAN_HOST_ONLY_SHA=$EXPECTED_SHA"
+          echo "MAILMAN_HOST_ONLY_TREE=$(git rev-parse 'HEAD^{tree}')"
+          node --version
+          node --check tests/mailman-actor-delivery-v1.test.mjs
+          node --test tests/mailman-actor-delivery-v1.test.mjs
