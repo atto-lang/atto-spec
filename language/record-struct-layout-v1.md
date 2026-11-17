@@ -23,7 +23,10 @@ guest allocation, field access, ABI, or backend parity.
   identity, not only a field set. A Struct field name is a valid identifier,
   not a quoted dynamic key. Declared fields and types are known at compile
   time. `define struct` examples here are **candidate syntax**; this
-  contract does not assert that any current frontend parses Struct.
+  the executable Rust/browser frontend already recognizes a **restricted**
+  `define struct Name as ... end` scalar-product form and lowers it through
+  checked nominal classes, not a dedicated value-layout ABI. This document
+  does not claim that the full Struct contract is implemented.
 - **Map<K,V>:** a runtime key/value collection. String map keys may be
   arbitrary strings; keys may also be other explicitly hashable/equatable
   types. A dynamic key lookup needs the Map key semantics. Converting a
@@ -133,8 +136,18 @@ quoted field names into the Struct's internal type identity.
 
 ## Implementation-stage evidence
 
-The Rust browser frontend on `atto-source.rs#274` currently has syntax and
-contextual literal types, but guest collection values still fail closed with
-`E_UNSUPPORTED`. Optimized closed Record layout and Struct runtime support
-are staged objectives, not available production features. This contract
-does not change those admission gates.
+The Rust browser frontend on `atto-source.rs#274` has a **syntax/typed
+literal preflight** for inline `{...}` Records and Maps; those inline collection
+values still fail closed with `E_UNSUPPORTED` when compiled to guest Wasm.
+Separately, its existing `shape_lower` recognizes **restricted declared
+`define struct` and `define record` scalar products**, lowering them
+through checked **nominal class** constructors and field reads. That legacy
+subset can produce genuine guest Wasm but does **not** implement structural
+Record interning or a dedicated fixed-layout Struct ABI; declared Records
+in that subset are currently nominal classes. The proposed canonical
+structural Record contract is a staged change: do not silently change the
+nominal subset's identity or ownership behavior without migration tests.
+
+The new compiler layout planner is **host-only logical slot planning**,
+not byte offsets, guest allocation, memory footprint or speedup evidence.
+This contract does not override either frontend's existing safety gates.
