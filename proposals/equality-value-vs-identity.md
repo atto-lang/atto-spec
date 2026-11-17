@@ -104,3 +104,50 @@ x neq y;   // logical negation of x eq y
 5. Do not mark this draft ready until semantic questions are resolved and real CI evidence exists. Clean up temporary mirror branches after evidence is retained.
 
 **Verification status:** This document is a test plan, not an executed CI report.
+
+## Bounded checked class-equality profile (Rust/browser implementation slice)
+
+The initial full-AOT browser profile admits **only same-concrete-class**
+`eq` and `neq` calls where the class itself declares a checked instance
+method `pub equals(Class other): bool`. No JIT, reflection, implicit
+subclass/virtual method dispatch, or `Object.equals` fallback is claimed.
+
+```atto
+define class Point as
+    pub mut int n = 0;
+    constructor(int n) { self.n = n; }
+    pub equals(Point other): bool { return self.n eq other.n; }
+end
+pub fnc main(): int {
+    val a = new Point(7);
+    val b = new Point(7);
+    if a eq b, a != b then return 42; fi
+    return 0;
+}
+```
+
+- The compiler resolves `eq` to a concrete method index in the static
+  class method table and emits one native/Wasm call with receiver and argument
+  in source order. `neq` emits exactly that call plus one boolean negation.
+- Neither operand is implicitly moved: the method's `other` parameter is
+  a borrowed, non-owning reference for the duration of the call. A method
+  attempting to `take!`, transfer, or forward `other` as an owned handle
+  is rejected (not silently allowed).
+- A declared `equals` with wrong arity, return type, visibility, static
+  modifier, mutable argument, or non-self class argument must fail closed as
+  `E_EQUALS_SIGNATURE`, even if that declaration is never called.
+- When no checked `equals` is available, `eq`/`neq` on class references
+  emit `E_EQUALS` and **no guest artifact**. In particular, this profile
+  does not use reference identity as a default value-equality method.
+- The parser currently rejects suspending instance methods. A future
+  suspension-capable backend MUST reject an effectful/suspending `equals`
+  unless the equality effect contract is revised explicitly.
+- The profile is intentionally static, same-class only; inheritance,
+  dynamic dispatch, nullable objects, all cross-actor transfers, and other
+  backend implementations remain unresolved and must not count as passing
+  conformance merely because this subset compiles.
+
+**Evidence gate:** Before claiming this implementation as tested, record the
+exact Rust/browser source Git commit and Git tree alongside an executed
+compiler+guest run and the negative compile diagnostics. Do not treat this
+normative design description as evidence by itself.
