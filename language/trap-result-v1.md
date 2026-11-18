@@ -34,7 +34,7 @@ fnc checked_id(int id): Result<int, Error> {
     return Ok(id);
 }
 
-fnc checked_or_throw(int id): Result<int, Error> throws(Error) {
+fnc checked_or_throw(int id): Result<int, Error> throws Error {
     if id eq 13 then
         throw Error("unexpected id");
     fi
@@ -49,7 +49,7 @@ val thrown: Result<int, Error> = trap checked_or_throw(13); // Err(Error("unexpe
 The last two have the same container but distinct origins; neither may be translated into `None`.
 
 ```atto
-fnc maybe_user(int id): Option<User> throws(Error) { /* body */ }
+fnc maybe_user(int id): Option<User> throws Error { /* body */ }
 val found: Result<Option<User>, Error> = trap maybe_user(1);
 // Ok(Some(user)), Ok(None), or Err(error); never Option<Option<User>>
 ```
