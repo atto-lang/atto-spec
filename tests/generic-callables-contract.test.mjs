@@ -43,3 +43,26 @@ test('the two signature spellings and every body style remain distinct cases', (
   assert.equal(byId.empty_generic_return.expectation, 'reject');
   assert.equal(byId.empty_generic_end.expectation, 'reject');
 });
+
+
+test('Go-style generic-method regression and independent dispatch gates are pinned', () => {
+  const byId = Object.fromEntries(registry.cases.map(c => [c.id, c]));
+  const accept = ['nongeneric_receiver_generic_method',
+    'generic_receiver_independent_method','generic_receiver_uses_two_binders',
+    'generic_receiver_static_method','generic_method_with_independent_bound',
+    'serial_actor_local_generic_helper'];
+  const reject = ['method_reuses_receiver_type_name',
+    'duplicate_method_type_parameter','method_unbound_return_type'];
+  const gate = ['generic_method_dynamic_interface_witness',
+    'generic_method_open_world_interface_call','generic_bound_method_value',
+    'uninstantiated_generic_method_value','generic_actor_message_dispatch'];
+  for (const id of accept) assert.equal(byId[id]?.expectation, 'accept', id);
+  for (const id of reject) assert.equal(byId[id]?.expectation, 'reject', id);
+  for (const id of gate) assert.equal(byId[id]?.expectation, 'gate', id);
+  for (const id of [...accept,...reject,...gate])
+    assert.equal(byId[id]?.status, 'NOT_EXECUTED', id);
+  assert.match(byId.generic_receiver_uses_two_binders.source, /Box<T>.*replace<U>\(T old_value,U new_value\)/);
+  assert.match(byId.generic_method_open_world_interface_call.source, /target\.transform<U>\(value\)/);
+  assert.match(byId.uninstantiated_generic_method_value.source, /return u\.identity;/);
+  assert.match(byId.serial_actor_local_generic_helper.source, /define serial actor/);
+});
