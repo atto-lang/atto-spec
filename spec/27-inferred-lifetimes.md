@@ -81,10 +81,18 @@ specified; do not silently infer mutability from `Pointer<T>`.
 
 ### Checked-handle admission and anti-erasure audit
 
-Until a backend implements a verified, typed checked-handle runtime,
-**no** `ref!`, `deref!`, `unref!` or legacy `rt ref` /
-`rt deref` / `rt unref` expression is executable. Reject them
-with a dedicated diagnostic and no emitted guest bytes.
+By default, a backend without a **verified, typed, explicitly
+bounded checked-handle profile** rejects every `ref!`, `deref!`,
+`unref!` or legacy `rt` counterpart with a dedicated diagnostic
+and no guest bytes. A backend **may** admit only an independently
+checked subset, such as source-minted non-reused local class handles
+with all-path lifetime proof. This does not confer wider pointer,
+actor transport, allocation-reuse or FFI permissions. The
+single-worker Wasm compiler's bounded checked-handle guest profile
+is described in [compiler PR #264](https://github.com/atto-lang/atto-source.rs/pull/264);
+the conservative NLL frontend's all-reject profile is in
+[compiler PR #311](https://github.com/atto-lang/atto-source.rs/pull/311).
+Reconciliation must be profile aware, never a blind gate merge.
 
 The fail-closed scan runs on the complete parsed source AST **before**
 lambda lifting, optimizer dead-code elimination, generated methods,
@@ -108,6 +116,37 @@ operand and disallow an extra `mut` qualifier. Once true codegen
 exists, the lifetime and generation verifier still must prove
 exactly-once retirement and cancellation/exception safety: a
 **successful syntax test does not authorize handle execution**.
+
+### Generational arena and owner-preserving failure obligations
+
+A future general checked-handle arena must validate **arena, actor,
+domain, allocation slot, generation and access permissions** before
+returning a view. A reused slot must advance generation; when the
+generation representation is exhausted, the slot must be retired,
+never wrapped to a previously valid capability. Copying a handle
+token cannot create or duplicate ownership. `unref!` must fail
+while any dependent checked view remains active, and a second
+`unref!` or stale `deref!` must always fail.
+
+**Creation failures must preserve ownership.** If `ref! owner` cannot
+admit a handle (e.g. bounded capacity or unavailable domain authority),
+its failure result must make the original owned value recoverable or
+otherwise preserve an explicitly proven cleanup obligation; it must
+never silently drop a still-live owner during a failed conversion.
+Precise guest `Result`/error spelling remains subject to typed
+effects integration.
+
+The Rust-side generational arena foundation is currently in
+[compiler #264](https://github.com/atto-lang/atto-source.rs/pull/264)
+and [compiler #311](https://github.com/atto-lang/atto-source.rs/pull/311).
+Its unit tests have been **authored but not executed** at the new
+source head because private Actions carriers failed at admission
+with zero job steps. Its `CheckedArena<T>` is a host-memory model,
+**not** a wired guest ABI or authenticated actor scheduler. Earlier
+executed guest tests prove only the restricted, non-reusing local
+class profile. Do not use this host module as evidence of native/
+Wasm/actor-domain parity, cancellation safety, or a general
+`Pointer<T>` contract.
 
 ### Canonical named lifetimes: `lt! a` and `lt=a`
 
