@@ -65,6 +65,33 @@ The compiler must analyze the callee body and the **transitive**, statically res
 
 The compiler MUST NOT quietly interpret `take!`/ `copy!!` / `share!` as an implicit borrow to suppress a type error. Conversely, passing `foo` to an ordinary `Foo` formal MUST NOT consume it. Explicit owned-formal syntax and migration strategy (candidate `take! Foo f`) need grammar review in a separate patch; no backend may invent an ABI convention or continue silently moving class values under this v1 mode.
 
+## Lifetime inference and borrowed results
+
+Ordinary nonprimitive `fnc inspect(Foo foo)` or `class M { read(Foo foo) }` inputs have an **inferred lifetime tied to the actual caller owner**, just as `Borrow<Foo>` would. The default hides *notation*, never lifetime constraints.
+
+1. **Ordinary synchronous nonescaping call:** infer a short read loan for each argument. Track its origin, exclusivity, full argument-evaluation window, body last use, cleanup and NLL end. The formal remains permanently tagged `borrowed` even after its active loan ends; expiry does not grant drop/move authority.
+2. **Borrowed result, single input:** require return type `Borrow<Child>` (to distinguish from an owned `Child`). If every returned view is provably rooted in the sole borrowed parameter or method `self`, elide the result lifetime by associating it with that input. On return the *input's* loan survives as needed for all caller uses; callee's stack cannot be the owner.
+3. **Borrowed result, multiple inputs:** require an explicit owner-to-result lifetime relation when it cannot be independently and unambiguously proven from the exported signature. Canonical `lt! a` binder and `lt=a` named reference; `lifetime! a` is a source alias. Never accept Rust apostrophes or positional lifetime arguments. `Borrow<T>` remains available for such formal annotations.
+4. **Stored/escaping borrows:** require a containing type/closure/task lifetime contract and a proven outlives relationship. Without it, return, field-store, callback capture, FFI export, `await`, actor messaging, or detached task escape rejects with no output artifact. `borrow!` cannot override this.
+5. **Public signature metadata:** preserve the borrowed-formal mode, origin/region, mutable effects and quantified lifetime relationships across compilation units, virtual/interface dispatch, closed-world AOT and error/unwind paths. Unknown effects are not treated as read-only.
+
+```atto
+// A) Ordinary borrowed parameter: no Borrow<T> required.
+fnc inspect(Foo foo): int { return foo.value; }
+
+// B) Explicit borrowed result, but the lifetime is elided because there
+//    is exactly one unambiguous origin: the borrowed Parent argument.
+fnc get_child(Parent p): Borrow<Child> { return p.child; }
+
+// C) Explicit source/result relationship where multiple roots exist.
+fnc choose_left<lt! a, lt! b>(
+  Borrow<Foo, lt=a> left,
+  Borrow<Foo, lt=b> right
+): Borrow<Foo, lt=a> { return left; }
+```
+
+The grammar **does not** introduce `Foo<lt=a>` for ordinary formals. `Borrow<Foo, lt=a>` is the accepted target for explicit lifetime-bearing parameter types. Neither target signature above is claimed to compile yet. See [lifetime proposal #78](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/pull/78) and the separate [fifteen-case conformance registry #74](https://github.com/atto-lang/atto-platform-conformance/pull/74).
+
 ## Scope, compatibility and staged implementation
 
 This is a **breaking ownership default** for code that currently treats `fnc consume(Foo f)` as an owned/moving formal. Preserve old semantics only in an explicit versioned compatibility profile; no mixed silent behavior in one module. Compiler admission should (a) report unsafe ambiguous/legacy owned calls with a migration diagnostic, (b) require an explicitly consuming formal plus `take!` at the site, and (c) reject unsupported positions rather than inferring ownership from the caller.
