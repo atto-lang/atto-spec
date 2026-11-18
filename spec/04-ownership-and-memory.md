@@ -25,11 +25,16 @@ Borrow checking is not optional for a native backend. Aliased writes, use-after-
 
 ## Inferred lifetime syntax (target, not executable today)
 
-AttoLang's target reference types are `Borrow<T>` and `BorrowMut<T>`, with
-lifetime inference by default and optional named generic lifetime parameters
-(`fnc f<lifetime a>(x: Borrow<T, lifetime=a>)`). No Rust apostrophe syntax
-(`'a`) is required or adopted. Returned borrows must carry input/receiver
-provenance, never new owned-handle authority. The full syntax, NLL, CFG,
+AttoLang's target reference types are `Borrow<T>` and `BorrowMut<T>`,
+with lifetime inference by default and optional named generic lifetime
+parameters (`fnc f<lifetime a>(x: Borrow<T, lifetime=a>)`). The
+shorter `Borrow<T, a>` is allowed when `a` is an in-scope lifetime
+parameter. `Shared<T>` denotes explicitly authorized shared ownership
+and `Pointer<T>` denotes a separately checked pointer/handle, never
+an implied borrow or independently owned object. The target does
+**not** use Rust's `'a` lifetime spellings, `&T` / `&mut T`
+borrow shorthand, or `*T` pointer shorthand. Returned borrows must
+carry input/receiver provenance, never new owned-handle authority. The full syntax, NLL, CFG,
 reborrow, async and actor lifetime proof obligations are recorded in
 [chapter 27](27-inferred-lifetimes.md).
 
