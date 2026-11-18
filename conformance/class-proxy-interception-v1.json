@@ -711,6 +711,36 @@
         "rust_cranelift": "not_executed",
         "js": "not_executed"
       }
+    },
+    {
+      "id": "typed-before-shared-helper-graph",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "A typed before-hook class with two different public interception slots referencing one local synchronous helper reuses a bounded transitive analysis and invokes each hook and delegated target once.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-oversized-helper-table",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "A typed before-hook interceptor class containing more than the bounded 4096 local method slots fails closed before constructing an unbounded helper call graph.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
     }
   ],
   "receiptRequirements": [
