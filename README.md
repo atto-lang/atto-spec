@@ -1,5 +1,13 @@
 # AttoLang Language Specification
 
+## AttoLang migration and authoritative specification (2026-11-18)
+
+**AttoLang** is the current public name of Oreslang. This `ores-truffle-oreslang/attolang-language-spec.md` repository retains its historical context. **Current AttoLang destination:** [atto-lang/atto-spec](https://github.com/atto-lang/atto-spec). **This is a historical specification snapshot, not the normative entry point for new proposals.** Use atto-spec for language changes; preserve historic chapter and PR links for traceability. These repositories are not assumed to have identical Git histories, issues, pull requests, or implementation results.
+
+**The canonical language specification is [atto-lang/atto-spec](https://github.com/atto-lang/atto-spec)**. Portable `.atto` modules belong in [atto-common-source](https://github.com/atto-lang/atto-common-source) and executed cross-backend positive/negative fixtures in [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance). The proposed modern rules include `snake_case` methods, ownership `borrow!`/`take!`/`share!`/`copy!`/`copy!!`, [implicit borrowing](https://github.com/atto-lang/atto-spec/blob/main/language/implicit-argument-borrow-v1.md), [file/module constants including nonthrowing launch-time environment reads](https://github.com/atto-lang/atto-spec/blob/main/language/file-module-const-v1.md), and [separate bitwise-shift and directional-stream operators](https://github.com/atto-lang/atto-spec/blob/main/language/bitwise-and-stream-operators-v1.md). These are contract/design directions, not a claim this legacy implementation supports all syntax.
+
+Preserve historic `.ores` paths, command names, ABI/wire names and pinned fixtures until verified replacements exist. Avoid Python support tooling/tests; prefer Rust. Do not infer successful compilation, actor isolation or cross-backend parity from README examples, host-only tests, or zero-step GitHub Actions. Document exact commit/tree, target, toolchain, executed guest tests and explicit failures/unsupported status.
+
 > **Draft v0.1 — design and conformance target, not an implementation certification.**
 > AttoLang was formerly called Oreslang. New sources and examples use `.atto`; legacy `.ores` is retained under the [versioned branding compatibility contract](https://github.com/ores-truffle-oreslang/oreslang-common-source/blob/main/contracts/v1/attolang-brand-compat-v1.json).
 
