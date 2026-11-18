@@ -10,7 +10,7 @@ and the canonical Rust MIR verifier. Fail closed on unsupported backends.
 
 AttoLang requires Rust-grade memory and alias safety, with **inferred lifetimes
 by default** and no Rust-style apostrophe identifier syntax (`'a`, `'static`).
-When annotation is necessary, a compile-time generic *kind* `lifetime` and a
+When annotation is necessary, a compile-time generic *kind* introduced by `lt!` (long form `lifetime!`) and a
 named lifetime argument are used:
 
 ```atto
@@ -18,10 +18,10 @@ fnc identity<T>(x: Borrow<T>) -> Borrow<T> {
     return x;
 }
 
-fnc first<T, lifetime a, lifetime b>(
-    x: Borrow<T, lifetime=a>,
-    y: Borrow<T, lifetime=b>
-) -> Borrow<T, lifetime=a> {
+fnc first<T, lt! a, lt! b>(
+    x: Borrow<T, lt=a>,
+    y: Borrow<T, lt=b>
+) -> Borrow<T, lt=a> {
     return x;
 }
 ```
@@ -30,7 +30,7 @@ These are **target signatures** and are not yet admitted by the browser compiler
 `Borrow<T>` means a non-owning shared loan; `BorrowMut<T>` means an exclusive
 mutable loan, both carrying compiler-proven provenance. Neither is an independently
 owned `T`, a raw pointer, a `ref!` handle, nor a transferable actor capability.
-Named `lifetime=a` is compile-time metadata; it has no runtime value and no
+Named `lt=a` is compile-time metadata; it has no runtime value and no
 allocation or reclamation side effect.
 
 `borrow! owner` and `borrow! mut owner` are the preferred *loan-creation*
@@ -109,20 +109,22 @@ exists, the lifetime and generation verifier still must prove
 exactly-once retirement and cancellation/exception safety: a
 **successful syntax test does not authorize handle execution**.
 
-### Lifetime shorthand without new punctuation
+### Canonical named lifetimes: `lt! a` and `lt=a`
 
 Default lifetime elision is the shortest notation: `Borrow<T>` or
 `BorrowMut<T>`. When provenance is ambiguous across multiple inputs,
-declare a named lifetime parameter using `lifetime a`. Within the
-borrow-type generic argument list, positional `a` is optional shorthand
-for `lifetime=a` **only when `a` names an in-scope lifetime parameter**.
+declare a named lifetime parameter using **`lt! a`**. The long form
+`lifetime! a` is a source-compatible alias; formatters emit `lt! a`.
+Reference it by the **named** generic argument `lt=a`, never a positional
+`a`: this prevents silent confusion with type/value generic parameters.
+The `!` must be attached to the declaration keyword (`lt!`, not `lt !`).
 
 | Source type | Equivalent full spelling |
 | --- | --- |
 | `Borrow<T>` | `Borrow<T>` with an inferred lifetime |
 | `BorrowMut<T>` | `BorrowMut<T>` with an inferred lifetime |
-| `Borrow<T, a>` | `Borrow<T, lifetime=a>` |
-| `BorrowMut<T, a>` | `BorrowMut<T, lifetime=a>` |
+| `Borrow<T, lt=a>` | Shared loan tied to named lifetime `a` |
+| `BorrowMut<T, lt=a>` | Exclusive loan tied to named lifetime `a` |
 
 ```atto
 // Target signatures, NOT executable compiler conformance yet:
@@ -134,10 +136,10 @@ fnc identity<T>(person: Borrow<T>) -> Borrow<T> {
     return person;
 }
 
-fnc choose_left<T, lifetime a, lifetime b>(
-    left: Borrow<T, a>,
-    right: Borrow<T, b>
-) -> Borrow<T, a> {
+fnc choose_left<T, lt! a, lt! b>(
+    left: Borrow<T, lt=a>,
+    right: Borrow<T, lt=b>
+) -> Borrow<T, lt=a> {
     return left;
 }
 ```
@@ -147,9 +149,21 @@ borrow_type = "Borrow" "<" type_ref [ "," lifetime_argument ] ">"
             | "BorrowMut" "<" type_ref [ "," lifetime_argument ] ">" ;
 pointer_type = "Pointer" "<" type_ref ">" ;
 shared_type  = "Shared" "<" type_ref ">" ;
-lifetime_argument = lifetime_ident | "lifetime" "=" lifetime_ident ;
-lifetime_parameter = "lifetime" lifetime_ident ;
+lifetime_argument  = "lt" "=" lifetime_ident ;
+lifetime_parameter = ("lt!" | "lifetime!") lifetime_ident ;
+lifetime_ident     = identifier ;
 ```
+
+`lt!` and `lifetime!` are contiguous lexical prefixes, not `lt` followed
+by an arbitrary `!` expression. Generic lifetime arguments always use `lt=`.
+Declarations of the same lifetime in one parameter scope are errors; a named
+reference requires an in-scope lifetime, and omitted lifetimes are inferred.
+Lifetime names are identifiers resolved in a **separate namespace** from
+ordinary type and value names. `lt` and `lifetime` are reserved in binder
+positions; neither an apostrophe spelling nor a positional lifetime argument
+is accepted. A standalone `lt! a;` is a lifetime declaration only in a grammar
+scope that permits lifetime parameters; a runtime statement cannot manufacture
+a valid lifetime.
 
 The lifetime parameter namespace is separate from type/value parameters.
 A missing lifetime argument introduces an inference variable; an explicitly
@@ -250,8 +264,8 @@ lowering.
    named relationship unless the compiler generates an equivalent, separately
    verified public signature contract. Never assign a result to the lifetime
    of a fresh local, temporary, or callee-owned result.
-4. `lifetime a` introduces a universally quantified named lifetime variable.
-   All occurrences of `lifetime=a` refer to that variable. At a call site,
+4. `lt! a` (or source alias `lifetime! a`) introduces a universally quantified
+   named lifetime variable. All occurrences of `lt=a` refer to that variable. At a call site,
    the instantiated lifetime must satisfy *all* input and output constraints;
    sharing one variable does not extend either caller's loan.
 5. Lifetime subtyping, shared/unique reborrow permissions, and outlives
@@ -262,7 +276,7 @@ lowering.
    inferred lifetime bound and must never outlive the referenced owner.
    This includes collections, tuples, closures, iterator elements and
    dynamically selected projections.
-7. `lifetime=static` is reserved for genuinely static storage proven by the
+7. `lt=static` is reserved for genuinely static storage proven by the
    compiler; annotations alone cannot upgrade a loan to static authority.
    No apostrophe-prefixed spelling is introduced as an alias.
 
@@ -328,8 +342,8 @@ stage, executed steps, and source->typed-MIR->emission proof coverage.
 
 ## Implementation phases
 
-1. Ratify this grammar, reconcile PRs #33 and #67, and add reserved
-   lifetime-name/keyword parsing without admitting unsound codegen.
+1. Ratify `lt! a`/`lt=a`, reconcile PRs #33 and #67, and add bounded
+   lexer/parser lifetime binder recognition without admitting unsound codegen.
 2. Add typed `Borrow`/`BorrowMut` provenance, region constraints and
    same-scope NLL last use. Preserve existing rejection of returned borrows
    until actual result-lifetime constraints are checked.
