@@ -116,3 +116,46 @@ test('a live unobserved Result remains pending, not falsely certified resolved',
   assert.equal(s.resolution,null);
   assert.notEqual(s.resolution,'observed');
 });
+
+// Miniature nominal error ancestry model: source effects are typed, not bits.
+const parent = new Map([
+  ['Error', null], ['IOError','Error'], ['FileError','IOError'],
+  ['ParseError','Error'], ['RecoveryError','Error'], ['PanicError','Error'],
+]);
+function covered(type, declared) {
+  for (let cursor=type; cursor !== null; cursor=parent.get(cursor) ?? null) {
+    if (declared.includes(cursor)) return true;
+  }
+  return false;
+}
+function dischargeTyped(effects, handlerKind, typeNames) {
+  return effects.filter(({kind,type}) =>
+    !(kind === handlerKind && covered(type,typeNames)));
+}
+function checkDeclared(effects, declarations) {
+  return effects.map(x => {
+    const bound=declarations[x.kind];
+    return { ...x, status:bound === undefined ? 'inferred-unproven'
+      : covered(x.type,bound) ? 'within-declared-bound' : 'undeclared-escape' };
+  });
+}
+
+test('typed catch covers matching subclasses but not sibling error types or raises',()=>{
+  const effects=[{kind:'throw',type:'FileError'},
+    {kind:'throw',type:'ParseError'}, {kind:'raise',type:'FileError'}];
+  assert.deepEqual(dischargeTyped(effects,'throw',['IOError']),[
+    {kind:'throw',type:'ParseError'},{kind:'raise',type:'FileError'}]);
+});
+test('empty throws annotation is strict without asserting empty raises/panics',()=>{
+  const effects=[{kind:'throw',type:'IOError'},{kind:'raise',type:'RecoveryError'}];
+  assert.deepEqual(checkDeclared(effects,{throw:[]}).map(x=>x.status),
+    ['undeclared-escape','inferred-unproven']);
+});
+test('generic top-level Error bound covers nominated subtypes only within same kind',()=>{
+  const effects=[{kind:'throw',type:'FileError'},
+    {kind:'raise',type:'RecoveryError'},{kind:'panic',type:'PanicError'}];
+  assert.deepEqual(checkDeclared(effects,{throw:['Error'],raise:['Error'],panic:['Error']})
+    .map(x=>x.status), Array(3).fill('within-declared-bound'));
+  assert.deepEqual(checkDeclared(effects,{throw:['Error'],raise:[],panic:['Error']})
+    .map(x=>x.status), ['within-declared-bound','undeclared-escape','within-declared-bound']);
+});
