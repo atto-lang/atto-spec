@@ -136,7 +136,7 @@ creates a new incarnation (see section 4).
 
 | Backend | Heap | Frames | Upgrade substrate |
 | --- | --- | --- | --- |
-| Java / GraalVM | `ActorNativeArena`: direct-buffer slabs, u32 actor-relative offsets; `ActorLinearMemory` pages over it. Facades and metadata are JVM-managed (minimum GC, not zero GC). | Truffle frames, bounded by `LogicalStackQuota`; arena `TaskFrame` for persistent task state | `ActorUpgradeEpochGate`, `ActorCodeImageContinuationV1`, `SupervisorHotUpgradeGateV1` (host-only, not yet wired to actor turns) |
+| Java / GraalVM | `ActorNativeArena`: direct-buffer slabs, u32 actor-relative offsets; `ActorLinearMemory` pages over it. Facades and metadata are JVM-managed (minimum GC, not zero GC). | Truffle frames, bounded by `LogicalStackQuota`; arena `TaskFrame` for persistent task state | `ActorRef.upgrade(ActorUpgrade)`: freeze, drain, rebind or migrate copy-then-switch, rollback, queued-mail filter (host Behaviors; compiled source actors fail closed until the compiler emits state schemas) |
 | LLVM / native | Compiled source actors own an `ActorOwnedI64Heap` (scalar i64 slots, 64-bit slot handles). `ActorArena` + `ActorRegionV1` provide the u32-offset arena (`OresActorOffset32`; hardened for 32-bit hosts in #1872; 8-byte natural alignment for 64-bit fields, the i386 `alignof(int64_t) == 4` trap) but only as a host ABI, not yet behind source actors | Per-actor logical frame arenas (#1537, open) | Native supervisor lifecycle FSM (#864, open) |
 | .NET | `ActorArena`, one per actor of every kind, opened at spawn and bound to the incarnation: `NativeMemory` persistent and scratch regions outside the CLR GC, int32 offsets, at most 64 MiB, turn-scoped (`ActorArenaTurn`) | `ActorExecutionStack`, one per actor (`ActorStackBytes`); per-invocation stacks are pending | None yet |
 | Wasm / rs | Per-actor linear memory, which is natively 32-bit | Call-depth quota (atto-source.rs #261) | Re-instantiation per incarnation (planned) |
@@ -165,4 +165,7 @@ creates a new incarnation (see section 4).
 | u32 offsets | yes | arena/region ABI only; source actors use 64-bit slot handles | yes (int32, at most 64 MiB) | yes (native) |
 | Turn-scoped access | yes | yes (owner/turn fences) | yes | host only |
 | Frames charged to the actor | quota only | #1537 (open) | per serial actor | depth quota |
-| Hot upgrade drain + migrate | no (gates are host-only) | no | no | no |
+| Hot upgrade drain + migrate | **yes** for host Behaviors (oreslang-source.java, `ActorHotUpgradeTest`); compiled source actors fail closed | no | no | no |
+| Restart = new incarnation + new heap | **yes** (`SupervisorStrategy`, #3174) | no | no | no |
+| Drain deadline policy (rule 12) | roll back only; cancel-at-safepoint pending | no | no | no |
+| Rejected queued mail (rule 19) | handed with its sender to the plan's `onRejected` sink and counted; the typed reply is the plan's job | no | no | no |
