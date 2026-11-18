@@ -109,7 +109,19 @@ not `::`.
 ## Conformance and evidence
 
 `conformance/class-proxy-interception-v1.json` enumerates positive and
-negative **planned** checks. The manifest now includes six additional **experimental** typed-before-hook\nchecks, without accepting their surface spelling as normative. The source\nform \`new Proxy(new Foo(), new FooHooks())\` is being prototyped in the\nlegacy Java compiler draft and requires independent syntax, effect, and\nownership review before standardization. Its \`before_foo\` method uses a\nvoid, synchronous, exact-parameter signature; the current prototype rejects\nnon-scalar argument re-use rather than silently duplicating owned objects.\nNo typed \`around\` or affine \`proceed\` exists yet.\n\nThe manifest is a design review and executable
+negative **planned** checks. The manifest includes experimental typed-before-hook and affine
+continuation **design** checks. The source form
+`new Proxy(new Foo(), new FooHooks())` is prototyped in the legacy Java
+compiler draft and requires independent syntax, effect and ownership review.
+The current before-hook prototype accepts only copyable scalar arguments
+and statically resolved, bounded helper-call chains.
+
+The separate [affine proceed protocol](class-proxy-affine-proceed-v1.md)
+specifies the one-shot continuation state machine, identity fencing and
+failure precedence. It is **not** source syntax, guest implementation or
+completed backend conformance.
+
+The manifest is a design review and executable
 test plan only after backend-specific harnesses implement each case.
 Each backend must report `passed`, `failed`, `unsupported`, or
 `not_executed` **per case** with the exact source commit, source tree,
