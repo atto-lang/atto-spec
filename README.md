@@ -2,6 +2,10 @@
 
 Canonical AttoLang language specification, including syntax, semantics, types, ownership, and concurrency.
 
+## Canonical naming and documentation migration
+
+[AttoLang](https://github.com/atto-lang) is the sole canonical project name; configure repository remotes as `https://github.com/atto-lang/atto-spec.git` and refer to `.atto` in new examples. [atto-spec](https://github.com/atto-lang/atto-spec) owns normative grammar, ownership, lifetime, effects and actor contracts; [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance) tracks executed verification. Distinguish design proposals from tested compiler support and do not advertise zero-step CI as guest conformance.
+
 ## Purpose
 
 Define normative syntax and semantics; document actor isolation, effects, ownership, and portability requirements.
@@ -50,6 +54,6 @@ This README records the intended role of this repository; it is not a claim of f
 
 **Safety and verification boundary:** Require explicit migration and negative cases for no implicit conversions, no operator overloading, forbidden percent/power operators, no auto-flattening of nested Option/Future, and critical/suspends admission.
 
-Keep canonical AttoLang (.atto) semantics consistent with the language specification, while treating Oreslang-named tooling and .ores as compatibility surfaces.
+This repository is the normative AttoLang (`.atto`) specification; migration-era syntax is not automatically part of current supported semantics.
 
 Changes asserting compiler/runtime support must identify the exact source head, target, toolchain, executed positive and negative guest tests, and failure/unsupported status; an empty CI step list is **not executed**. Documentation records responsibility, **not** a claim of feature completion.
