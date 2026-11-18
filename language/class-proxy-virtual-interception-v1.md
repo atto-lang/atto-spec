@@ -178,3 +178,13 @@ than being copied with weakened policy or state-locking semantics. These four
 cross-backend cases are **planned**; the Java current-main integration draft
 [#3184](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3184)
 defines AST/JUnit regression tests but has no executed JDK25/GraalVM proof.
+
+### Shared helper validation must account for entry depth
+
+When a helper is called from multiple before-hook roots, its subtree may be
+safe at a shallow depth but invalid through a deeper second call path.
+A memoized success must therefore record the deepest validated entry depth,
+not merely the helper method name/arity; if the new call is deeper, the bounded
+analysis must rerun the subtree and reject overflow. Recursion detection
+precedes memoized reuse. This is a planned conformance assertion, **not** an
+executed backend receipt.
