@@ -31,6 +31,33 @@ type EquivalentColumns = Array<layout=soa, T=Particle>;
 - The specialization identity includes the resolved nominal collection declaration, resolved element type, canonical layout value (and AoSoA block size), and any other declared compile-time parameters. The compiler MUST NOT key identity solely by a display-name string or silently coerce between physically different layouts.
 - For v1, a layout-bearing collection MUST have contiguous, owning storage semantics. `Array` is required by the target; `Vector` and `List` accept `layout` only when their resolved declarations explicitly implement the capability. A linked-node `List` cannot claim column-contiguous storage by naming `layout=soa`. Unsupported kinds reject the argument precisely.
 
+## Struct field initialization: colon braces and equals parentheses
+
+The following source forms are both admitted **for a resolved, eligible nominal struct with an implicit compiler-synthesized fieldwise initializer**. They construct the same logical value. The formatting policy preserves the programmer's chosen form rather than silently changing braces to parentheses or vice versa:
+
+```atto
+Particle{x: 10, y: 20, velocity: 1}
+Particle(x=10, y=20, velocity=1)
+```
+
+The braces/colon form is a **typed struct field literal**. The parentheses/equals form is a **dedicated fieldwise struct initializer shorthand**, not a general named-argument call, an assignment expression, an arbitrary map literal, or a constructor invocation with effects. It is permitted only when the compiler resolves the callee to an eligible nominal struct and its generated field-initialization surface. Ordinary named function/method/custom-constructor calls retain `label: expression` (chapter 03); `label=expression` MUST NOT be silently admitted for those calls. An explicit user-defined constructor, including one with side effects, follows ordinary checked invocation syntax and is not silently bypassed or confused with the aggregate shorthand.
+
+Both struct forms MUST check exact nominal type, field visibility and mutability, required/defaulted fields, unique field labels, static field types, ownership, and evaluation effects. Each provided field expression evaluates **once in lexical source order** before placing values into declaration-order fields; no reordering side effects, implicit aliasing, fabricated missing field values, or implicit fallback to a dynamic Map is permitted. Duplicate, unknown, inaccessible, or conflicting fields fail before guest code generation. Neither spelling changes how an enclosing `Array<T, layout=soa>` or `aosoa(N)` lays out storage.
+
+```atto
+let from_equals: Array<Particle, layout=soa> = [
+    Particle(x=10, y=20, velocity=1),
+    Particle(x=30, y=40, velocity=2)
+];
+
+let from_colons: Array<Particle, layout=soa> = [
+    Particle{x: 10, y: 20, velocity: 1},
+    Particle{x: 30, y: 40, velocity: 2}
+];
+```
+
+**Implementation status:** the Rust/Wasm browser compiler's restricted source-local scalar product lowering currently recognizes the braces/colon form. This spec does not certify the equals-parentheses shorthand or actual SoA array guest execution. Both require dedicated positive and negative guest evidence.
+
 ## Contextual literals, views and mutation
 
 A collection literal `[p1, p2, p3]` in an expected `Array<Particle, layout=soa>` context constructs an SoA representation while evaluating element/field expressions exactly once in source order. If no expected type can determine the collection kind, element type, and physical layout, inference must use separately documented rules or require an explicit type. It cannot choose a layout based on guessed runtime profiling.
