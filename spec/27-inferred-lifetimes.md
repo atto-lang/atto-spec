@@ -40,34 +40,55 @@ types must not silently reinterpret those expressions as owned values.
 Compiler acceptance of `borrow!` today does not certify `Borrow<T>` types.
 
 
-## Borrow-type shorthand (target, apostrophe-free)
+## Explicit reference and pointer types (target, no sigils)
 
-**Preferred descriptive notation** is `Borrow<T>` and `BorrowMut<T>`.
-For concise signatures, permit the following **type-only** shorthands:
+**Decision:** AttoLang spells borrowed and pointer types by name. There are no
+pointer or borrow type sigils, and no dereference/borrow operators based on
+`*` or `&`. These characters retain unrelated uses, such as multiplication
+(`a * b`) or logical conjunction (`a && b`), where already specified.
 
-| Type shorthand | Exactly equivalent descriptive form |
+| Type | Semantic capability |
 | --- | --- |
-| `&T` | `Borrow<T>` (compiler-inferred lifetime) |
-| `&mut T` | `BorrowMut<T>` (compiler-inferred lifetime) |
+| `T` | Ordinary owned value |
+| `Borrow<T>` | Shared immutable loan, lifetime inferred by default |
+| `BorrowMut<T>` | Exclusive mutable loan, lifetime inferred by default |
+| `Shared<T>` | Explicitly authorized shared/frozen ownership |
+| `Pointer<T>` | Pointer-like address or checked handle, **not** a safe borrow and **not** an owned `T` |
+
+A `Pointer<T>` value must never automatically confer read, write, drop,
+actor-transport, or ownership rights. Construction, pointer conversion,
+dereference and lifetime validity require separately checked runtime/FFI
+capabilities and provenance. Where applicable, existing `rt ref`,
+`rt deref` and `rt unref` forms provide explicit pointer/handle
+operations. Their specific result types and safety preconditions must be
+defined and independently verified per backend; `Pointer<T>` is **not**
+a new spelling for `Borrow<T>` and is not a portable raw wire address.
+Additional pointer access qualifiers, if ever needed, must be separately
+specified; do not silently infer mutability from `Pointer<T>`.
+
+### Lifetime shorthand without new punctuation
+
+Default lifetime elision is the shortest notation: `Borrow<T>` or
+`BorrowMut<T>`. When provenance is ambiguous across multiple inputs,
+declare a named lifetime parameter using `lifetime a`. Within the
+borrow-type generic argument list, positional `a` is optional shorthand
+for `lifetime=a` **only when `a` names an in-scope lifetime parameter**.
+
+| Source type | Equivalent full spelling |
+| --- | --- |
+| `Borrow<T>` | `Borrow<T>` with an inferred lifetime |
+| `BorrowMut<T>` | `BorrowMut<T>` with an inferred lifetime |
 | `Borrow<T, a>` | `Borrow<T, lifetime=a>` |
 | `BorrowMut<T, a>` | `BorrowMut<T, lifetime=a>` |
 
-`lifetime a` remains the explicit, readable **declaration** syntax.
-An unqualified `a` in a borrow type's second generic-argument position
-resolves **only** if `a` is an in-scope lifetime parameter; it must not
-silently be resolved as a user type, value generic, or implicit `static`.
-The named spelling `lifetime=a` is useful when named arguments or
-generics need disambiguation. Positional and named forms cannot both
-name the lifetime in one instantiation.
-
 ```atto
-// Target signatures; not currently executable in the browser compiler.
-fnc inspect<T>(x: &T) -> int {
+// Target signatures, NOT executable compiler conformance yet:
+fnc inspect<T>(person: Borrow<T>) -> int {
     return 1;
 }
 
-fnc get_ref<T>(x: &T) -> &T {
-    return x;
+fnc identity<T>(person: Borrow<T>) -> Borrow<T> {
+    return person;
 }
 
 fnc choose_left<T, lifetime a, lifetime b>(
@@ -78,45 +99,37 @@ fnc choose_left<T, lifetime a, lifetime b>(
 }
 ```
 
-**Disambiguation and grammar:**
-
 ```ebnf
-borrow_type = "&" [ "mut" ] type_ref
-            | "Borrow" "<" type_ref [ "," lifetime_argument ] ">"
+borrow_type = "Borrow" "<" type_ref [ "," lifetime_argument ] ">"
             | "BorrowMut" "<" type_ref [ "," lifetime_argument ] ">" ;
+pointer_type = "Pointer" "<" type_ref ">" ;
+shared_type  = "Shared" "<" type_ref ">" ;
 lifetime_argument = lifetime_ident | "lifetime" "=" lifetime_ident ;
 lifetime_parameter = "lifetime" lifetime_ident ;
 ```
 
-The `&T` and `&mut T` tokens are shorthand **in type positions**
-(parameter annotations, return types, local annotations, fields and nested
-generic type arguments). In expression positions, the preferred loan
-creation operations remain `borrow! x` and `borrow! mut x`.
-Do **not** silently reinterpret `&x` as an ownership transfer,
-`share!`, or a new unverified reference-lowering operation; any
-pre-existing expression-side `&` is governed by its separate grammar
-and diagnostics. The prefix `&` binds only the following type, with
-generic/optional structure parsed using the normal type grammar.
-The `mut` qualifier binds to the loan **mode**, not to a writable
-owner or a change to the underlying `T` type.
+The lifetime parameter namespace is separate from type/value parameters.
+A missing lifetime argument introduces an inference variable; an explicitly
+named lifetime never manufactures validity. If an exported return borrow
+could originate from several inputs, require a named relation or an
+independently proven equivalent contract rather than guessing.
 
-With one unique input provenance, lifetime elision applies to `&T`
-return values. With multiple borrow inputs, elision does **not** guess:
-use `Borrow<T, a>` on the relevant arguments and result, or the
-equivalent fully named form. Formatting may preserve the type shorthand;
-both forms must resolve to identical typed lifetime constraints.
+**No `&T`, `&mut T`, `*T`, `*const T`, `*mut T`,
+`&x`, `&mut x`, or `*p` borrow/pointer notation is part of
+AttoLang's target grammar.** Do not add Rust-style apostrophe names,
+`@a` annotations or `[a]` lifetime suffixes. Expression-side loans
+remain `borrow! owner` and `borrow! mut owner`; ownership transfer and
+sharing remain `take!` and `share!`. Raw-pointer manipulation uses
+separately validated explicit operations, never implicit reference-to-pointer
+or pointer-to-owner conversion.
 
-**No `'a` identifiers, `@a` suffix, `&T[a]` brackets, or new lifetime
-operators are introduced.** `@` is already used for annotations and `[]`
-for collection/shape syntax, so appropriating either for lifetime
-annotations would create unnecessary collisions. `&` and `&mut` are
-already described in chapter 16's legacy unary grammar; implementation
-must explicitly distinguish type context from expression context.
-
-**Admission status:** This is a specification target. Compiler parsing
-may recognize the aliases and emit `E_UNSUPPORTED_TYPE` until
-typed region constraints and backend lowering exist; mere syntactic
-recognition must never emit an unproved owned reference.
+**Admission status:** This is a target language contract. A frontend can
+recognize `Borrow<T>`, `BorrowMut<T>`, `Shared<T>` and
+`Pointer<T>` but MUST reject unsupported lowering with
+`E_UNSUPPORTED_TYPE` and emit no guest bytes. Discarded `&` or `*`
+borrow/pointer syntax is a syntax error, not a planned shorthand.
+Neither syntax recognition nor a copied runtime handle proves
+returned-borrow safety, cross-actor transport, or native pointer validity.
 
 ## Ownership operations versus ownership-bearing types
 
