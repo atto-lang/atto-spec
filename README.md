@@ -17,6 +17,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
 
+- [Compiler-generated proxy virtual interception candidate](language/class-proxy-virtual-interception-v1.md): typed virtual dispatch, one-shot continuation, ownership and effect-safety obligations; **not implemented or guest-verified**. Planned [25-case conformance matrix](conformance/class-proxy-interception-v1.json) is host-validated only.
+
 ## Validation
 
 Validation should rely on checked-in tests and exact-commit CI results. When reporting parity, distinguish **passed**, **failed**, **unsupported**, and **not executed**. Avoid inferring guest-runtime support from host-only tests.
