@@ -13,13 +13,38 @@ AttoLang uses explicit rights operations, expressed as reserved `rt` forms:
 | `rt borrow value` | Acquire a bounded immutable loan |
 | `rt borrow mut value` | Acquire a bounded exclusive mutable loan |
 | `rt share value` | Convert to explicitly authorized shared/frozen ownership |
-| `rt ref` / `rt deref` / `rt unref` | Managed or checked handle operations, never unchecked cross-isolate escape |
+| `ref! value` | Construct a checked handle only under verified ownership, domain, and generation authority; legacy `rt ref value` |
+| `deref! handle` | Access a valid live checked handle without manufacturing ownership; legacy `rt deref handle` |
+| `unref! handle` | Consume/retire a checked handle exactly once, or restore ownership only when its contract proves it safe; legacy `rt unref handle` |
 
 ```atto
 val packet = make_packet()
 val owned = rt take packet
 // using packet here is a compile-time use-after-move error
 ```
+
+**Canonical checked-handle operations:** `ref!`, `deref!`, and
+`unref!`. They are contextual prefix operators, not macros, raw-pointer
+sigils, reference-count increments by assumption, or synonyms for
+`borrow!`/`take!`/`share!`. The compact forms `ref!value`,
+`deref!handle`, `unref!handle` are accepted; the formatter emits
+`ref! value`, `deref! handle`, `unref! handle`. Legacy `rt`
+forms remain compatibility spellings and must resolve to the same
+typed checked-handle operation and effects, not a different lifetime
+contract. `mut` is not valid after these three prefixes.
+
+The handle records and validates actor/arena, allocation extent,
+generation, domain, alignment, permissions, and liveness before access.
+`unref!` invalidates the handle on every path, rejects double
+consumption and use-after-release, and cannot run while dependent
+checked views remain live. It may return an owned value *only if*
+the verified handle contract explicitly allows ownership restoration;
+it must not be hardcoded as free(), raw-pointer cast, or generic
+reference-count decrement. If a backend lacks such a verified
+lowering, it rejects **both** the bang and legacy forms without
+emitting guest code. `Pointer<T>` is a distinct explicit pointer
+type; no assumption that every checked handle is a raw
+`Pointer<T>` or that pointer conversion is safe is permitted.
 
 Borrow checking is not optional for a native backend. Aliased writes, use-after-take, escaping stack borrows, double-drops, stale actor references, and mutable aliases crossing isolation domains MUST be rejected or safely represented with explicit runtime guards, never silently trusted.
 
