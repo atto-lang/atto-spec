@@ -91,7 +91,11 @@ Ternary conditions must have static type `bool`. AttoLang has no truthiness conv
 
 AttoLang's target grammar spells reference and pointer capabilities
 explicitly: `Borrow<T>`, `BorrowMut<T>`, `Shared<T>`, and
-`Pointer<T>`. Ordinary `T` denotes an owned value. The compiler
+`Pointer<T>`. A nonprimitive `T` in an **ordinary function or method
+parameter** means an implicitly borrowed value in the new target model;
+`T` as an owned binding/return remains independently owned. Explicit
+consuming formals and `take!` at call sites will be required for ownership
+transfer once the migration grammar is ratified. The compiler
 infers borrow lifetimes where their provenance is unambiguous. For
 multiple inputs, **`lt! a`** declares a lifetime parameter (with `lifetime! a`
 as the long-form alias), and `Borrow<T, lt=a>` references it via a named
