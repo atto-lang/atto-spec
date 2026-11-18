@@ -775,7 +775,7 @@
     {
       "id": "reject-before-void-helper-parameter",
       "phase": "compile",
-      "expect": "A before hook may not call a local helper whose formal parameter has void type, even if the source AST was manufactured directly.",
+      "expect": "reject",
       "backendStatus": {
         "java": "not_executed",
         "llvm": "not_executed",
@@ -784,7 +784,8 @@
         "net": "not_executed",
         "rust_cranelift": "not_executed",
         "js": "not_executed"
-      }
+      },
+      "oracle": "A before hook may not call a local helper whose formal parameter has void type, even if the source AST was manufactured directly."
     }
   ],
   "receiptRequirements": [
