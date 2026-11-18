@@ -28,6 +28,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Struct field equals initializer v1](language/struct-field-equals-v1.md): restricted `StructName(field=value)` with checked name resolution, ordinary-call rejection, and source-order safety (TARGET / NOT EXECUTED).
 
+- [Single-threaded runtime mode v1](language/runtime-threading-mode-v1.md): canonical `--single-threaded` / `--max-threads-per-space=1` and `--mode=single-threaded` request at most one guest-executing OS thread per shared memory space. **PROPOSED:** SOURCE_FREE CLI reference tests are not guest-runtime execution or backend parity evidence.
+
 ## Validation
 
 Validation should rely on checked-in tests and exact-commit CI results. When reporting parity, distinguish **passed**, **failed**, **unsupported**, and **not executed**. Avoid inferring guest-runtime support from host-only tests.
