@@ -81,6 +81,19 @@ handling explicit. An escaping ordinary `throw` must give all caller
 runs; `raise` bypasses ordinary catch/trap; `panic` and cancellation
 bypass recovery entirely.
 
+**Cleanup and recovery hardening (browser profile):** The compiler-issued
+`ErrorView` and `RecoveryCursor` binder names are reserved throughout the
+recovery handler body; local shadowing is rejected, including nested
+branches. A conservative typed, transitive call-graph analysis prohibits
+`defer`, `recover`, and `finally` bodies from calling code that may
+`throw` or `raise`, rather than merely rejecting those effects when
+written directly. The analysis may reject a call that actually catches
+its own error; full effect/handler inference is not yet established.
+A factory argument that fails before registration cannot leave a partially
+registered cleanup; earlier registered cleanup executes according to the
+normal unwind contract. Fatal/forced termination still has no absolute
+cleanup guarantee.
+
 **Current admission limitation:** the Rust browser slice restricts
 registrations to synchronous top-level function bodies and factory captures
 to scalar/string values. This section defines intended language semantics;
