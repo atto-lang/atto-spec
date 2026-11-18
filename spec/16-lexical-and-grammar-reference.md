@@ -87,26 +87,34 @@ From lowest to highest precedence, following the v0.6 grammar:
 
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
 
-## Borrowed-reference type shorthands (TARGET, not executable today)
+## Explicit borrow and pointer types (TARGET)
 
-In **type grammar only**, `&T` is a compact spelling of `Borrow<T>`,
-and `&mut T` of `BorrowMut<T>`. These do not modify expression
-precedence or the existing `borrow!` and `borrow! mut` operations.
-The lexical `&` remains independently recognized in other contexts;
-do not infer that an expression `&x` is enabled by the *type* shorthand.
+AttoLang's target grammar spells reference and pointer capabilities
+explicitly: `Borrow<T>`, `BorrowMut<T>`, `Shared<T>`, and
+`Pointer<T>`. Ordinary `T` denotes an owned value. The compiler
+infers borrow lifetimes where their provenance is unambiguous. For
+multiple inputs, `lifetime a` declares a parameter; `Borrow<T, a>`
+is equivalent to `Borrow<T, lifetime=a>` when `a` is in scope.
+No apostrophe-prefixed lifetime names are needed.
 
-An explicit lifetime parameter remains `lifetime a`. Within a
-`Borrow`/ `BorrowMut` generic argument list, `Borrow<T, a>`
-and `Borrow<T, lifetime=a>` are equivalent only if `a` is a
-declared lifetime parameter; there is no inference that `a` is a
-value type or a `static` allocation.
+**No `&T`, `&mut T`, `*T`, `&x`, `&mut x`, or
+`*p` forms are adopted for borrowing, pointer types, or
+dereference.** Use `borrow! x`, `borrow! mut x` for loan
+creation, and separately checked `rt ref` / `rt deref` /
+`rt unref` for handle operations. `Pointer<T>` is not a
+borrow or portable serializable address.
 
-The browser compiler's source lexer already tokenizes `&`, but this
-proposal does not establish reference storage or returned-loan
-semantics. Backends without a verified loan-lifetime lowering must
-reject `&T`, `&mut T`, `Borrow<T>`, and `Borrow<T, a>`
-with a feature-specific diagnostic and zero emitted guest bytes.
-Full constraint/ABI details: [chapter 27](27-inferred-lifetimes.md).
+The historical v0.6 unary-operator table above includes `&`
+and `&mut` as *legacy grammar observations*, **not** target
+AttoLang syntax. Multiplication `a * b` and boolean
+conjunction `a && b` are unaffected; `*` is not a
+dereference operator and `&` is not a loan operator.
+
+Unsupported explicit capability types must be rejected with
+`E_UNSUPPORTED_TYPE` until genuine provenance/ABI lowering
+exists. Discarded borrow/pointer sigils should be syntax errors,
+not silently treated as owned values. Details and tests are in
+[chapter 27](27-inferred-lifetimes.md).
 
 ## Function forms
 
