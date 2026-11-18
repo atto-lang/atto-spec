@@ -100,9 +100,23 @@ No apostrophe-prefixed lifetime names are needed.
 **No `&T`, `&mut T`, `*T`, `&x`, `&mut x`, or
 `*p` forms are adopted for borrowing, pointer types, or
 dereference.** Use `borrow! x`, `borrow! mut x` for loan
-creation, and separately checked `rt ref` / `rt deref` /
-`rt unref` for handle operations. `Pointer<T>` is not a
-borrow or portable serializable address.
+creation. Checked handles use the canonical prefix operations
+`ref! value`, `deref! handle`, and `unref! handle`;
+the older `rt ref`, `rt deref`, `rt unref` are retained as
+compatibility spellings. `Pointer<T>` is not a borrow or
+portable serializable address.
+
+All three bang forms require the verb directly adjacent to `!`.
+Whitespace after `!` is optional and the formatter emits one space:
+`ref! x`, `deref! h`, `unref! h`. Parenthesized and postfix
+operands follow the ordinary unary grammar (`deref!(h)`,
+`deref! h.value`), evaluated exactly once. `ref !x` is *not* the
+`ref!` operator. No `mut` qualifier is accepted on these prefixes.
+Until checked-handle typed IR/lifecycle is actually supported, both
+canonical and legacy expressions must fail closed with zero emitted
+guest code, not be interpreted as an ordinary function call or a
+borrowed/owned object. See the canonical ownership-bang design in
+PR #67 and the safety contract in [chapter 04](04-ownership-and-memory.md).
 
 The historical v0.6 unary-operator table above includes `&`
 and `&mut` as *legacy grammar observations*, **not** target
