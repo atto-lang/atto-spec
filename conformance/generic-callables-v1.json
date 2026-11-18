@@ -192,6 +192,104 @@
       "feature": "abi",
       "source": "fnc move<T>(T value): T { return value; } pub fnc main(): int { return move<int>(7); }",
       "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "nongeneric_receiver_generic_method",
+      "expectation": "accept",
+      "feature": "receiver_methods",
+      "source": "define class Utility as identity<U>(U value): U { return value; } end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_receiver_independent_method",
+      "expectation": "accept",
+      "feature": "receiver_methods",
+      "source": "define class Box<T> as identity<U>(U value): U { return value; } end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_receiver_uses_two_binders",
+      "expectation": "accept",
+      "feature": "receiver_methods",
+      "source": "define class Box<T> as replace<U>(T old_value,U new_value): U { return new_value; } end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_receiver_static_method",
+      "expectation": "accept",
+      "feature": "receiver_methods",
+      "source": "define class Box<T> as static fnc choose<U>(U value): U { return value; } end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_method_with_independent_bound",
+      "expectation": "accept",
+      "feature": "receiver_methods",
+      "source": "define class Box<T> as clone<U: Copyable>(U value): U { return copy! value; } end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "serial_actor_local_generic_helper",
+      "expectation": "accept",
+      "feature": "actor_methods",
+      "source": "define serial actor Worker as private helper<U>(U value): U { return value; } end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "method_reuses_receiver_type_name",
+      "expectation": "reject",
+      "feature": "receiver_binder",
+      "source": "define class Box<T> as identity<T>(T value): T { return value; } end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "duplicate_method_type_parameter",
+      "expectation": "reject",
+      "feature": "receiver_binder",
+      "source": "define class Box<T> as identity<U,U>(U value): U { return value; } end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "method_unbound_return_type",
+      "expectation": "reject",
+      "feature": "receiver_binder",
+      "source": "define class Box<T> as identity<U>(U value): V { return value; } end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_method_dynamic_interface_witness",
+      "expectation": "gate",
+      "feature": "interface_dispatch",
+      "source": "define interface Transformer as transform<U>(U value): U; end",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_method_open_world_interface_call",
+      "expectation": "gate",
+      "feature": "interface_dispatch",
+      "source": "define interface Transformer as transform<U>(U value): U; end fnc invoke<U>(Transformer target,U value): U { return target.transform<U>(value); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_bound_method_value",
+      "expectation": "gate",
+      "feature": "method_values",
+      "source": "define class Utility as identity<U>(U value): U { return value; } end fnc make_callable(Utility u) { return u.identity<int>; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "uninstantiated_generic_method_value",
+      "expectation": "gate",
+      "feature": "method_values",
+      "source": "define class Utility as identity<U>(U value): U { return value; } end fnc make_generic_callable(Utility u) { return u.identity; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "generic_actor_message_dispatch",
+      "expectation": "gate",
+      "feature": "actor_methods",
+      "source": "define serial actor Worker as helper<U>(U value): U { return value; } end fnc try_send<U>(ActorRef<Worker> worker,U payload) { return worker.send(payload); }",
+      "status": "NOT_EXECUTED"
     }
   ]
 }
