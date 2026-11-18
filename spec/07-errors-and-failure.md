@@ -83,12 +83,19 @@ bypass recovery entirely.
 
 **Cleanup and recovery hardening (browser profile):** The compiler-issued
 `ErrorView` and `RecoveryCursor` binder names are reserved throughout the
-recovery handler body; local shadowing is rejected, including nested
-branches. A conservative typed, transitive call-graph analysis prohibits
-`defer`, `recover`, and `finally` bodies from calling code that may
-`throw` or `raise`, rather than merely rejecting those effects when
-written directly. The analysis may reject a call that actually catches
-its own error; full effect/handler inference is not yet established.
+recovery handler body, including nested branches. The checker computes
+separate *escaping ordinary throw* and *escaping raise* effects through typed
+calls by a convergent recursive call-graph fixed point. `catch (Error e)`
+subtracts ordinary throws originating in its protected body, while effect
+analysis still includes exceptional behavior of the catch handler and
+`finally`. `trap expression` subtracts ordinary throws from its operand;
+neither ordinary catch nor trap can intercept raise or panic. Thus a helper
+that locally handles its own throw may be called from `defer`, `recover`,
+or `finally`, while a helper with an escaping throw/raise remains rejected
+there. A registered recover does not erase a function's inferred effects,
+since an outer caller's catch/trap still has precedence. Conservative
+overapproximation remains for unreachable paths; full CFG-sensitive
+effect inference and actor/async parity are not established.
 A factory argument that fails before registration cannot leave a partially
 registered cleanup; earlier registered cleanup executes according to the
 normal unwind contract. Fatal/forced termination still has no absolute
