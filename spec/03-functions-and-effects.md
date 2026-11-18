@@ -28,7 +28,7 @@ This `-> T :: ... end` style is one of the valid [function forms](16-lexical-and
 
 ## Named function, method and constructor arguments (v1 target)
 
-Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
+Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. The narrowly scoped `StructName(field=value)` aggregate-initialization shorthand is an **exception for implicit fieldwise struct initialization only**, and is not parsed as a general callable named argument (see [chapter 27](27-collection-layout-named-generics.md#struct-field-initialization-colon-braces-and-equals-parentheses)). This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
 
 ```atto
 fnc combine(int first, int second) -> int ::
