@@ -1,11 +1,13 @@
 # Deferred cleanup and recovery chains (proposed AttoLang v1)
 
 **Status: normative candidate; not an executable-backend parity claim.**
-The Rust/Wasm browser compiler currently executes a restricted ordinary
-`throw Error(message)` / caller-side `trap expr` path, but not source `try`,
-`catch`, `defer`, `recover`, or `raise`. Java has experimental host
-recovery-chain work; LLVM has a narrower synchronous normal-exit defer slice.
-Neither constitutes full guest-source conformance.
+The Rust/Wasm browser compiler executes a **restricted synchronous
+top-level free-function slice** of ordinary `throw Error(message)`, `trap`,
+`try/catch/finally`, `defer`, `recover`, and `raise` with executable Wasm
+guest traces. Actor, async/cancellation and full Error subclass parity remain
+unverified. Java has experimental host recovery-chain work; LLVM has a
+narrower synchronous normal-exit defer slice. Neither constitutes full
+guest-source conformance across backends.
 
 ## Separate control effects
 
@@ -44,6 +46,128 @@ typed continuations must remain valid despite cleanup of failed scopes.
 Fail closed for any backend that cannot prove this ownership/lifetime and
 resumption property. This cannot be implemented by installing one ordinary
 Wasm exception handler at each local `recover` site.
+
+## Accepted source syntax (canonical v1)
+
+All of the following register a deferred cleanup; **the block form is
+canonical** for an ordinary zero-argument cleanup:
+
+```atto
+defer { release_resource(); };
+defer _ -> { release_resource(); };
+defer || -> { release_resource(); };
+defer (|int captured| -> _ -> {
+  stdio.println(captured);
+})(5);
+```
+
+In these cleanup-registration contexts, `_ ->` is a nullary lambda
+shorthand, **not** an ignored one-argument lambda. A factory evaluates its
+explicit arguments exactly once in source order during registration and
+stores the captured values in compiler-owned frame slots. Cleanup does not
+run until leaving the eligible scope. A failed argument evaluation never
+registers a partially initialized cleanup.
+
+Recovery has an explicit two-parameter handler:
+
+```atto
+recover |err, cursor| -> {
+  stdio.println(err.message);
+  return 9;
+};
+
+recover |ErrorView err, RecoveryCursor cursor| -> {
+  if err.is_raise then
+    return 9;
+  fi
+  cursor.next();
+};
+
+// Compatibility/factory form remains admitted:
+recover (|int fallback| -> |err, cursor| -> {
+  return fallback;
+})(9);
+```
+
+The inferred handler parameters are compiler-issued `ErrorView` and
+`RecoveryCursor`; explicit annotations must use these respective special
+types. The formatter should prefer `defer { ... };` and
+`recover |err, cursor| -> { ... };` while retaining factory syntax when
+captures are present. A bare `recover { ... }` is intentionally not admitted
+because error/cursor handling must be explicit.
+
+`ErrorView` is a **non-escapable, read-only, scope-bound view** over the
+original failure. The initial verified browser profile exposes only
+`err.message: string` and `err.is_raise: bool` (true for an escalated
+`raise`, false for an ordinary unhandled `throw`). The handle itself
+cannot be stored, returned, moved, cloned, captured, or sent to another
+actor. Those properties do not allocate another Error or change the
+underlying Error identity. `RecoveryCursor` is also non-escaping; in the
+admitted profile its only operation is terminal `cursor.next()`.
+
+**Fail-closed hardening and inferred escaping effects:** A recovery
+handler's compiler-issued error and cursor binding names cannot be shadowed
+by nested local bindings. The browser checker computes a two-channel
+(`throws Error`, `raises Error`) *escaping* effect summary for each typed
+function by monotone call-graph fixed point, including recursive call groups
+and effectful argument evaluation. Ordinary `catch (Error e)` discharges
+`throws` from its protected body; its handler is checked separately. A
+caller-side `trap expression` discharges only ordinary `throws` of the
+expression; neither mechanism discharges `raises`. Consequently a function
+that catches its own ordinary throw, or traps that throw, can be invoked
+inside `defer`, `recover`, or `finally` without causing a false rejection.
+A cleanup body's remaining escaping throw/raise is rejected before Wasm
+emission, including indirect calls through a cycle. Callback registration
+does **not** discharge its enclosing function's effect merely because a
+`recover` exists: an outer caller's `catch` or `trap` must retain priority.
+Effects of potential unreachable statements/handlers may still be
+overapproximated until full CFG reachability and effect polymorphism are
+implemented. Panic, forced termination and host traps are not ordinary
+catchable `Error` effects and do not gain any new cleanup guarantee.
+
+Factory argument failures do not register an incomplete cleanup, but
+previously registered cleanups still unwind. Full cleanup-failure
+suppression and cross-backend effect-polymorphic admission await separate
+proof.
+
+**Explicit source upper bounds (browser compiler hardening):** A top-level
+function may declare `throws(Error)`, `raises(Error)`, or both. Once any
+explicit exceptional-effect clause is supplied, the declared ordinary
+`throws` and escalated `raises` channels are checked as a complete upper
+bound for those two effects. For example,
+`fnc f(): int throws(Error) { raise Error("x"); }` is rejected
+(`E_EFFECT`), including when the undisclosed raise comes from a callee.
+A function without any exceptional-effect clause retains inference-only
+compatibility; absence of an annotation is **not** a claim of no exceptions.
+`panics(Error)` can be parsed and retained but does **not** constitute a
+certified no-panic proof: fatal overflow/traps, cancellation and host
+termination remain outside this checker.
+
+For the admitted typed sublanguage, let `E` contain independently tracked
+`throw` and `raise` effects. The checker iterates a monotone finite
+call-graph fixed point to resolve recursive functions. Its relevant
+transfer rules are:
+
+- `E(trap e) = E(e) - {throw}`, never removing `raise`.
+- `E(try b catch h finally g) = (E(b) - {throw}) ∪ E(g) ∪
+  (if throw ∈ E(b) then E(h) else ∅)`.
+- `E(call f(args)) = E(f) ∪ ⋃ E(args)`.
+- Explicit `return`, `throw`, `raise` and other structurally proven
+  terminal exits cut off effects of *following* unreachable statements.
+- `defer`, `recover`, and `finally` callback bodies must have no
+  escaping `throw` or `raise`; factory-registration arguments are separately
+  evaluated before callback registration.
+
+These rules are intentionally conservative around conditional reachability
+and do not constitute general whole-program proof of the `panic` channel,
+suspension, resource-release liveness, or other backends.
+
+**Admission note:** The Rust browser compiler currently supports only
+top-level registrations in synchronous free-function bodies, scalar/string
+factory captures, and compiler-owned unwind frames. Nested scope,
+suspension, actor-supervisor, arbitrary Error subclasses, and transferable
+error handles still require separate implementation and conformance tests.
+Do not interpret a successful parser check as cross-backend execution parity.
 
 ## Registration, cleanup and callback contract
 
