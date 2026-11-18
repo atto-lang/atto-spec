@@ -4,6 +4,8 @@ on:
     paths:
       - 'language/pipe-observers-and-io-pipe-v1.md'
       - 'language/pipeline-failure-effects-v1.md'
+      - 'language/pipeline-handler-boundaries-v1.md'
+      - 'tests/pipeline-effect-boundaries-reference.test.mjs'
       - 'tests/pipe-observer-reference.test.mjs'
       - 'tests/pipe-lifecycle-adversarial.test.mjs'
       - 'tests/pipe-quiescence-reference.test.mjs'
@@ -14,6 +16,8 @@ on:
     paths:
       - 'language/pipe-observers-and-io-pipe-v1.md'
       - 'language/pipeline-failure-effects-v1.md'
+      - 'language/pipeline-handler-boundaries-v1.md'
+      - 'tests/pipeline-effect-boundaries-reference.test.mjs'
       - 'tests/pipe-observer-reference.test.mjs'
       - 'tests/pipe-lifecycle-adversarial.test.mjs'
       - 'tests/pipe-quiescence-reference.test.mjs'
@@ -43,5 +47,7 @@ jobs:
       - name: Execute quiescence-barrier model (host-only)
         run: node --test tests/pipe-quiescence-reference.test.mjs
 
+      - name: Check VALUE versus GRAPH exception jurisdiction (host-only)
+        run: node --test tests/pipeline-effect-boundaries-reference.test.mjs
       - name: Verify versioned cross-backend registry (host-only)
         run: node --test tests/pipe-registry-integrity.test.mjs
