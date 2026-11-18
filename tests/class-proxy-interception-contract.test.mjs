@@ -56,7 +56,8 @@ const expectedIds = [
   'preserve-proxy-program-exports',
   'reject-proxy-protected-nominal-collision',
   'reject-proxy-annotated-class-policy',
-  'reject-proxy-critical-method'
+  'reject-proxy-critical-method',
+  'reject-before-shared-helper-depth-cache-bypass'
 ];
 
 test('proxy interception candidate has stable coverage and no fictitious execution receipt', () => {
@@ -65,7 +66,7 @@ test('proxy interception candidate has stable coverage and no fictitious executi
   assert.equal(contract.status, 'candidate_not_implemented');
   assert.equal(contract.contract, 'language/class-proxy-virtual-interception-v1.md');
   assert.equal(contract.extension, '.atto');
-  assert.ok(contract.cases.length >= 57);
+  assert.ok(contract.cases.length >= 58);
   const ids = contract.cases.map(c => c.id);
   assert.equal(new Set(ids).size, ids.length, 'duplicate contract case ID');
   for (const id of expectedIds) assert.ok(ids.includes(id), 'missing: ' + id);
