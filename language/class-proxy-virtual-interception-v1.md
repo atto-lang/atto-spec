@@ -166,3 +166,15 @@ borrowed values). An AST producer can otherwise cause host stack exhaustion
 without using source-level recursion. The first-stage Java prototype uses a
 64-level/4,096-node iterative limit. This conformance check is a **planned**
 compiler rejection oracle, not an executed guest/backend receipt.
+
+### Current-main AST integration obligations
+
+The compiler must preserve explicit `Program.exports` declarations and their
+visibility when synthesizing a proxy. New protected nominal declarations
+(state containers, virtual actors, GPU actors and standalone actors) participate
+in generated-name collision detection. Unreviewed class annotations and
+`critical` methods (including interceptor/helper methods) are rejected rather
+than being copied with weakened policy or state-locking semantics. These four
+cross-backend cases are **planned**; the Java current-main integration draft
+[#3184](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3184)
+defines AST/JUnit regression tests but has no executed JDK25/GraalVM proof.
