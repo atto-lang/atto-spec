@@ -15,7 +15,8 @@
   "evidence_policy": {
     "baseline": "NOT_EXECUTED",
     "compiler_execution_required": true,
-    "host_registry_validation_is_not_guest_proof": true
+    "host_registry_validation_is_not_guest_proof": true,
+    "audit_hardening": "target-only fixture expansion; no compiler or guest outcomes may be inferred"
   },
   "cases": [
     {
@@ -111,6 +112,118 @@
       "kind": "compile_reject",
       "status": "NOT_EXECUTED",
       "source": "define class Dog as pub static int age: 5; end\ndefine class Hybrid extends Dog as use Dog.age as dog_age; end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_TARGET"
+    },
+    {
+      "id": "transitive_unique_ancestor_route",
+      "kind": "compile_and_execute",
+      "status": "NOT_EXECUTED",
+      "source": "define class Animal as pub int age: 7; end\ndefine class Dog extends Animal as end\ndefine class Hybrid extends Dog as use Animal.age as animal_age; end\npub fnc main(): int { return new Hybrid().animal_age; }\n",
+      "expected_exit": 7,
+      "expected_diagnostic_category": null
+    },
+    {
+      "id": "alias_shadows_inherited_member",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Hybrid extends Dog as use Dog.age as age; end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_DUPLICATE"
+    },
+    {
+      "id": "alias_collides_with_local_method",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Hybrid extends Dog as\n  use Dog.age as dog_age;\n  pub dog_age(): int { return 0; }\nend\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_DUPLICATE"
+    },
+    {
+      "id": "alias_from_non_ancestor_class",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Cat as pub int age: 10; end\ndefine class Hybrid extends Dog as use Cat.age as cat_age; end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_TARGET"
+    },
+    {
+      "id": "alias_without_parent",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Hybrid as use Dog.age as dog_age; end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_TARGET"
+    },
+    {
+      "id": "alias_at_module_root",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\nuse Dog.age as dog_age;\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_SYNTAX"
+    },
+    {
+      "id": "alias_in_method_body",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Hybrid extends Dog as\n  pub probe(): int { use Dog.age as dog_age; return 0; }\nend\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_SYNTAX"
+    },
+    {
+      "id": "alias_rejects_private_projection",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as private int age: 5; end\ndefine class Hybrid extends Dog as pub use Dog.age as dog_age; end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_VISIBILITY"
+    },
+    {
+      "id": "alias_rejects_final_write",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as final int age: 5; end\ndefine class Hybrid extends Dog as use Dog.age as dog_age; end\npub fnc main(): int { val h = new Hybrid(); h.dog_age = 9; return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_OWNERSHIP"
+    },
+    {
+      "id": "shared_grandparent_ambiguous_route",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Animal as pub int age: 7; end\ndefine class Dog extends Animal as end\ndefine class Cat extends Animal as end\ndefine class Hybrid extends Dog, Cat as\n  use Animal.age as common_age;\nend\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_UNSUPPORTED"
+    },
+    {
+      "id": "actor_sealed_state_not_aliased",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define actor Dog as state { let int age: 5; } end\ndefine class Hybrid extends Dog as use Dog.age as dog_age; end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_OWNERSHIP"
+    },
+    {
+      "id": "malformed_alias_missing_as",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Hybrid extends Dog as use Dog.age dog_age; end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_SYNTAX"
+    },
+    {
+      "id": "malformed_alias_missing_semicolon",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Hybrid extends Dog as use Dog.age as dog_age end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_SYNTAX"
+    },
+    {
+      "id": "alias_targets_instance_property_only",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub age(): int { return 5; } end\ndefine class Hybrid extends Dog as use Dog.age as dog_age; end\npub fnc main(): int { return 0; }\n",
       "expected_exit": null,
       "expected_diagnostic_category": "E_ALIAS_TARGET"
     }
