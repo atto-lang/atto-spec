@@ -3,6 +3,17 @@
 Status: **accepted syntax contract** (2026-11-15). Compiler support is independently
 gated. Acceptance does **not** imply executable parity across backends.
 
+## Effectful header extension (2026-11-17)
+
+The grammar below describes the **unchanged legacy callable body families**.
+When a signature contains inline `throws`/`raises`/`panics` clauses,
+the more specific
+[java-style failure signature and body rules](java-style-failure-signature-bodies-v1.md)
+apply: return-before-effects requires `{` or `begin`; a trailing
+`-> T` after effects permits a newline-separated statement/`end` body
+without `begin`. That form uses ordinary explicit-return statements,
+not the comma-tail implicit-result semantics specified below.
+
 ## Accepted declaration spellings
 
 The body rules apply to `fnc`, `routine`, class/actor methods, and
