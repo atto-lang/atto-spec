@@ -49,6 +49,15 @@ ordinary case. Explicit borrow! is still useful for disambiguation; mut requests
 an exclusive mutable loan. The compiler must prove the owner outlives each
 loan, track escaped closures/returns, and fence cancellation and suspension.
 
+A pinned owner may move its *handle* within an allocation domain that
+preserves the pointee address. However, task capture, actor mailbox admission,
+guarded-region promotion, and frozen-region publication can relocate storage
+into another allocator or actor arena. They MUST fail closed unless the
+backend provides a typed, independently authenticated stable-address handoff
+proof. The restricted canonical verifier rejects these with
+`E_PIN_BOUNDARY_TRANSFER`. Copying to independently allocated storage does not
+inherit the original pin, and the original pinned allocation stays pinned.
+
 Pinning alone cannot make a live borrow safe across await or actor retirement:
 continuation ownership and deterministic cleanup need separate proofs.
 
