@@ -5,6 +5,8 @@
 [io-direction-shorthand-v1.md](io-direction-shorthand-v1.md), and
 [typed-io-continuation-pipelines-v1.md](typed-io-continuation-pipelines-v1.md).
 For proof-oriented static obligations see [pipeline-effect-proof-v1.md](pipeline-effect-proof-v1.md).
+Java-style signature `throws(Error)` and attached `@throws(Error)` have identical
+semantic obligations; see [checked-throws-annotation-v1.md](checked-throws-annotation-v1.md).
 Align with the separate actor escalation, throwable-capability, and
 caller-side `trap` draft specifications before merging. This is not
 a claim of executable mixed-pipe error handling or backend parity.
