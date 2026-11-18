@@ -8,7 +8,7 @@ admission is not proof of complete native guest runtime implementation.
 | borrow! value | Explicit scoped shared read loan | No overlapping mutable loan |
 | borrow! mut value | Explicit exclusive mutable loan | One writer, no shared readers |
 | take! value | Transfer unique ownership | Old owner invalidated; no loans |
-| share! value | Shared read or guarded ownership | No unprotected mutable aliases |
+| share! value | Shared ownership of transitively frozen data or an explicitly guarded synchronization container | Unique writable capability consumed; no direct shared mutation |
 | copy! value | Shallow/value-copy operation | Copy or equivalent proven type trait |
 | copy!! value | Deep clone into separate object graph | Fresh nested allocations; preserve cycles/internal alias topology |
 | mut | Mutable binding/referent qualifier | Must not bypass exclusive borrows |
@@ -62,9 +62,16 @@ Until those runtime paths exist, a backend must reject resource-owning drop!
 rather than implement a successful no-op. Scalar drop! can invalidate a local
 without any heap destructor.
 
-share! and freeze! are separate operations: a temporary read-only loan does
-not automatically become globally shareable deep-immutable storage. A frozen
-owner still needs domain-specific Share/Send/Sync proof and tenant admission.
+share! and freeze! are distinct operations with complementary effects: share!
+must prove transitively frozen ordinary reachable data before publication,
+consume any original unique writable capability, and retain the same allocation
+on shared-to-shared duplication. freeze! can produce a frozen unique owner
+without creating shared ownership. Neither operation can upgrade a temporary
+read-only loan into shared ownership or bypass actor/tenant admission. Writes
+through shared handles are forbidden except through explicit, independently
+verified synchronization guards (such as trusted RwLock<T>) protecting interior
+mutable storage. A frozen owner still needs domain-specific Share/Send/Sync
+proof and tenant admission.
 
 ## Backend status and conformance gate
 
