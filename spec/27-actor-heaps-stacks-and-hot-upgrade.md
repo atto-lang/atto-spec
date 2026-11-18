@@ -167,5 +167,5 @@ creates a new incarnation (see section 4).
 | Frames charged to the actor | quota only | #1537 (open) | per serial actor | depth quota |
 | Hot upgrade drain + migrate | **yes** for host Behaviors (oreslang-source.java, `ActorHotUpgradeTest`); compiled source actors fail closed | no | no | no |
 | Restart = new incarnation + new heap | **yes** (`SupervisorStrategy`, #3174) | no | no | no |
-| Drain deadline policy (rule 12) | roll back only; cancel-at-safepoint pending | no | no | no |
+| Drain deadline policy (rule 12) | **yes**: ROLL_BACK, and CANCEL (cancels owned Futures; cleanup runs on N; rolls back after a second deadline) | no | no | no |
 | Rejected queued mail (rule 19) | handed with its sender to the plan's `onRejected` sink and counted; the typed reply is the plan's job | no | no | no |
