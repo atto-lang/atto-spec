@@ -741,6 +741,50 @@
         "rust_cranelift": "not_executed",
         "js": "not_executed"
       }
+    },
+    {
+      "id": "reject-before-deep-ast-unbounded-prepass",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "A deeply nested before hook AST must be rejected by the finite verifier depth/node budget rather than exhausting the host compiler stack during a preliminary recursive walk.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-implicit-divide-effects",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Before hook division/modulo expressions without a proved nonzero divisor and checked exceptional effects must be rejected rather than silently treated as effect-free scalar arithmetic.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-void-helper-parameter",
+      "phase": "compile",
+      "expect": "A before hook may not call a local helper whose formal parameter has void type, even if the source AST was manufactured directly.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
     }
   ],
   "receiptRequirements": [
