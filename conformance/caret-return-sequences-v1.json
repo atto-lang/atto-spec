@@ -249,7 +249,7 @@
       "id": "caret-no-nonlocal-lambda-return",
       "phase": "compile",
       "expect": "accept",
-      "source": "pub fnc main(): int { const f = |x| : int -> ^ x + 1; ^ 42; }\n",
+      "source": "pub fnc main(): int { const f = (|x| : int -> ^ x + 1;); ^ 42; }\n",
       "note": "The caret in the lambda returns from the lambda only",
       "verification": {
         "rust_wasm": "not_executed",
