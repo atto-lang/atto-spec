@@ -105,18 +105,30 @@ actor. Those properties do not allocate another Error or change the
 underlying Error identity. `RecoveryCursor` is also non-escaping; in the
 admitted profile its only operation is terminal `cursor.next()`.
 
-**Fail-closed hardening:** A recovery handler's compiler-issued error and
-cursor binding names cannot be shadowed by `val`/`let`/other nested
-bindings. The native/Wasm browser compiler rejects direct `throw`/`raise`
-in cleanup bodies and conservatively rejects *transitively* throwing or
-raising calls from `defer`, `recover`, and `finally`. Its bounded, typed
-call-graph fixed point does not use effect declarations as a substitute for
-proof. Some safe calls may be rejected (for example a throw caught within
-the callee); this false-negative admission is preferable to silently
-replacing a pending outcome. Cleanup factory argument failures are allowed:
-they do not register an incomplete cleanup, but previously registered
-cleanups still unwind. Full cleanup-failure suppression and cross-backend
-effect-polymorphic admission await separate proof.
+**Fail-closed hardening and inferred escaping effects:** A recovery
+handler's compiler-issued error and cursor binding names cannot be shadowed
+by nested local bindings. The browser checker computes a two-channel
+(`throws Error`, `raises Error`) *escaping* effect summary for each typed
+function by monotone call-graph fixed point, including recursive call groups
+and effectful argument evaluation. Ordinary `catch (Error e)` discharges
+`throws` from its protected body; its handler is checked separately. A
+caller-side `trap expression` discharges only ordinary `throws` of the
+expression; neither mechanism discharges `raises`. Consequently a function
+that catches its own ordinary throw, or traps that throw, can be invoked
+inside `defer`, `recover`, or `finally` without causing a false rejection.
+A cleanup body's remaining escaping throw/raise is rejected before Wasm
+emission, including indirect calls through a cycle. Callback registration
+does **not** discharge its enclosing function's effect merely because a
+`recover` exists: an outer caller's `catch` or `trap` must retain priority.
+Effects of potential unreachable statements/handlers may still be
+overapproximated until full CFG reachability and effect polymorphism are
+implemented. Panic, forced termination and host traps are not ordinary
+catchable `Error` effects and do not gain any new cleanup guarantee.
+
+Factory argument failures do not register an incomplete cleanup, but
+previously registered cleanups still unwind. Full cleanup-failure
+suppression and cross-backend effect-polymorphic admission await separate
+proof.
 
 **Admission note:** The Rust browser compiler currently supports only
 top-level registrations in synchronous free-function bodies, scalar/string
