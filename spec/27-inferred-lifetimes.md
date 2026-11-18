@@ -58,11 +58,24 @@ pointer or borrow type sigils, and no dereference/borrow operators based on
 A `Pointer<T>` value must never automatically confer read, write, drop,
 actor-transport, or ownership rights. Construction, pointer conversion,
 dereference and lifetime validity require separately checked runtime/FFI
-capabilities and provenance. Where applicable, existing `rt ref`,
-`rt deref` and `rt unref` forms provide explicit pointer/handle
-operations. Their specific result types and safety preconditions must be
-defined and independently verified per backend; `Pointer<T>` is **not**
-a new spelling for `Borrow<T>` and is not a portable raw wire address.
+capabilities and provenance. The canonical checked-handle operations
+are `ref! value`, `deref! handle` and `unref! handle`;
+`rt ref`, `rt deref` and `rt unref` are compatibility forms.
+These must lower identically to their legacy checked-handle operations,
+and never imply that any `Pointer<T>` is automatically borrowable
+or dereferenceable. A verified `deref!` returns only the access/view
+allowed by the handle's actual rights and original owner lifetime;
+`unref!` consumes it exactly once, not necessarily an allocation
+decrement. If a live dependent view exists, retirement is forbidden.
+An owned value may be returned from `unref!` only when its particular
+checked-handle contract proves safe ownership restoration.
+The operations must preserve exactly-once operand evaluation, domain,
+actor/arena, allocation extent, generation, alignment, bounds,
+permissions, cleanup, unwind and cancellation conditions.
+Unsupported backends reject **both** spellings before guest emission.
+Their exact result types and safety preconditions must be independently
+verified per backend; `Pointer<T>` is **not** a new spelling for
+`Borrow<T>` and is not a portable raw wire address.
 Additional pointer access qualifiers, if ever needed, must be separately
 specified; do not silently infer mutability from `Pointer<T>`.
 
@@ -119,9 +132,10 @@ independently proven equivalent contract rather than guessing.
 AttoLang's target grammar.** Do not add Rust-style apostrophe names,
 `@a` annotations or `[a]` lifetime suffixes. Expression-side loans
 remain `borrow! owner` and `borrow! mut owner`; ownership transfer and
-sharing remain `take!` and `share!`. Raw-pointer manipulation uses
-separately validated explicit operations, never implicit reference-to-pointer
-or pointer-to-owner conversion.
+sharing remain `take!` and `share!`. Checked handles use `ref!`,
+`deref!` and `unref!`, subject to their own safety contract.
+Raw-pointer manipulation uses separately validated explicit operations,
+never implicit reference-to-pointer or pointer-to-owner conversion.
 
 **Admission status:** This is a target language contract. A frontend can
 recognize `Borrow<T>`, `BorrowMut<T>`, `Shared<T>` and
