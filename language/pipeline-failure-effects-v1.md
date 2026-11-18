@@ -63,7 +63,7 @@ outcome, typically `Result<Option<T>,IoError>`. Do not treat
 
 ## `trap` preserves failures as `Result` (updated contract)
 
-The newer [trap-to-Result contract](trap-result-v1.md) (atto-spec PR #71)
+The newer [trap-to-Result contract](https://github.com/atto-lang/atto-spec/blob/feat/trap-result-contract-20261117/language/trap-result-v1.md) (atto-spec PR #71)
 **supersedes** the earlier `trap -> Option` proposal in this draft.
 The language semantics are:
 
