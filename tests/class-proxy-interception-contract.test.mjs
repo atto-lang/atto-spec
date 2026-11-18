@@ -24,7 +24,13 @@ const expectedIds = [
   'reject-reserved-receiver-shadowing',
   'reject-private-member-export',
   'reject-actor-target',
-  'reject-implicit-proxy-to-target'
+  'reject-implicit-proxy-to-target',
+  'typed-before-hook-constructor-once',
+  'typed-before-hook-order',
+  'reject-before-hook-noncopyable-argument',
+  'reject-before-hook-extra-slot',
+  'reject-before-hook-invalid-signature',
+  'reject-runtime-hook-inference'
 ];
 
 test('proxy interception candidate has stable coverage and no fictitious execution receipt', () => {
@@ -33,13 +39,13 @@ test('proxy interception candidate has stable coverage and no fictitious executi
   assert.equal(contract.status, 'candidate_not_implemented');
   assert.equal(contract.contract, 'language/class-proxy-virtual-interception-v1.md');
   assert.equal(contract.extension, '.atto');
-  assert.ok(contract.cases.length >= 25);
+  assert.ok(contract.cases.length >= 31);
   const ids = contract.cases.map(c => c.id);
   assert.equal(new Set(ids).size, ids.length, 'duplicate contract case ID');
   for (const id of expectedIds) assert.ok(ids.includes(id), 'missing: ' + id);
   for (const c of contract.cases) {
     assert.match(c.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-    assert.ok(['compile','run'].includes(c.phase), c.id);
+    assert.ok(['parse','compile','run'].includes(c.phase), c.id);
     assert.ok(['accept','reject','observe'].includes(c.expect), c.id);
     assert.ok(c.oracle && c.oracle.length > 20, c.id);
     assert.deepEqual(Object.keys(c.backendStatus).sort(), knownBackends.slice().sort());
