@@ -18,12 +18,16 @@ test('spec cases are proposals and never falsely claim guest execution',()=>{
    else assert.ok(Array.isArray(item.metadata_kinds)&&item.metadata_kinds.length>0);
  }
 });
-test('proposal explicitly covers required declaration families and removed operators',()=>{
+test('proposal covers declaration families and browser-stage-1-only operator gaps',()=>{
  const sources=cases.cases.map(x=>x.source).join('\n');
  for(const kind of ['class','actor','enum','struct','interface','trait','fnc'])
    assert.ok(sources.includes('define '+kind)||sources.includes('define pub '+kind));
- for(const op of ['%', '^', '^^'])
-   assert.ok(cases.cases.some(x=>x.expected==='REJECTS'&&x.source.includes(' '+op+' ')));
+ for(const [id,op] of [['stage1-unsupported-modulo','%'],['stage1-unsupported-bitwise-xor','^'],['stage1-unsupported-boolean-xor','^^']]) {
+   const c=cases.cases.find(x=>x.id===id);
+   assert.ok(c && c.expected==='REJECTS' && c.source.includes(' '+op+' '));
+   assert.equal(c.scope_note,'BROWSER_STAGE1_ONLY_NOT_A_LANGUAGE_WIDE_OPERATOR_BAN');
+ }
+ assert.ok(!cases.cases.some(x=>x.id.startsWith('removed-')));
  const enumCase=cases.cases.find(x=>x.id==='enum-symbols');
  assert.match(enumCase.source,/#done/);
 });

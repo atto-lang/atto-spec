@@ -117,25 +117,28 @@
       "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
     },
     {
-      "id": "removed-percent",
+      "id": "stage1-unsupported-modulo",
       "expected": "REJECTS",
       "source": "fnc main() -> int {return 7 % 2;}\n",
       "diagnostic": "E_UNSUPPORTED",
-      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT",
+      "scope_note": "BROWSER_STAGE1_ONLY_NOT_A_LANGUAGE_WIDE_OPERATOR_BAN"
     },
     {
-      "id": "removed-caret",
+      "id": "stage1-unsupported-bitwise-xor",
       "expected": "REJECTS",
       "source": "fnc main() -> int {return 7 ^ 2;}\n",
       "diagnostic": "E_UNSUPPORTED",
-      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT",
+      "scope_note": "BROWSER_STAGE1_ONLY_NOT_A_LANGUAGE_WIDE_OPERATOR_BAN"
     },
     {
-      "id": "removed-double-caret",
+      "id": "stage1-unsupported-boolean-xor",
       "expected": "REJECTS",
-      "source": "fnc main() -> int {return 7 ^^ 2;}\n",
+      "source": "fnc main() -> bool {return true ^^ false;}\n",
       "diagnostic": "E_UNSUPPORTED",
-      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT",
+      "scope_note": "BROWSER_STAGE1_ONLY_NOT_A_LANGUAGE_WIDE_OPERATOR_BAN"
     }
   ]
 }
