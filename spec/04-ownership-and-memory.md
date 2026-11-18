@@ -112,6 +112,13 @@ pinned handle, pin plus cross-suspension loan (still rejected), weak from
 unshared storage, stale/recycled-generation weak upgrades, and concurrent
 retirement/upgrade races. Backend test evidence must be tied to exact commits.
 
+### Concrete host reference model and conformance registry
+
+The canonical Rust checker additionally includes a restricted host-only runtime model using iterative graph validation, Arc/Weak upgrade, exact-region read permits, nonblocking retirement, and Pin<Box<T>>. Its source and tests are in atto-borrow-checker.rs PR #43. The shared positive/negative expectation registry is atto-platform-conformance PR #76.
+
+This proves neither source-to-IR completeness nor the correct code generation of Java, LLVM, Forge, .NET or Wasm guests. The runtime host must authenticate the original graph and caller domain; bare numeric IDs and caller-supplied boolean witnesses are not authority. Source compilers MUST continue rejecting unsupported graph freeze, weak upgrade and pin forms rather than accepting an unsound identity lowering.
+
+Cross-backend release is gated on compiled guest tests for concurrent weak upgrades against retirement, actor/tenant stop, generation reuse, physical pinned address stability, cancellation cleanup, and sanitizer-backed lifetime safety. All exact-head backend evidence remains unverified until executed.
 ## Lifetimes across suspension
 
 `await`, `select`, `nb` task creation, cancellation, and actor turn boundaries are suspension or ownership checkpoints. A loan can cross only if its owner is pinned for the full continuation, aliasing remains valid, cleanup and cancellation are generation-fenced, and no conflicting turn can access the region. A critical writer or reactor callback may not accidentally hold an actor-state loan across an unrelated suspension.
