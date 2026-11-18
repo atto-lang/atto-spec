@@ -2,7 +2,7 @@
 
 **Status: proposed normative/compiler-design contract.** This augments
 [pipeline-failure-effects-v1.md](pipeline-failure-effects-v1.md) and
-[trap-result-v1.md](trap-result-v1.md). It is **not** a claim that
+[trap-result-v1.md](https://github.com/atto-lang/atto-spec/blob/feat/trap-result-contract-20261117/language/trap-result-v1.md). It is **not** a claim that
 all of the described checks, runtime behavior, or cross-backend proof
 machinery are implemented today.
 
