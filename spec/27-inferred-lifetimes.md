@@ -79,6 +79,36 @@ verified per backend; `Pointer<T>` is **not** a new spelling for
 Additional pointer access qualifiers, if ever needed, must be separately
 specified; do not silently infer mutability from `Pointer<T>`.
 
+### Checked-handle admission and anti-erasure audit
+
+Until a backend implements a verified, typed checked-handle runtime,
+**no** `ref!`, `deref!`, `unref!` or legacy `rt ref` /
+`rt deref` / `rt unref` expression is executable. Reject them
+with a dedicated diagnostic and no emitted guest bytes.
+
+The fail-closed scan runs on the complete parsed source AST **before**
+lambda lifting, optimizer dead-code elimination, generated methods,
+CFG planning, or other rewriting that might erase a handle occurrence.
+It must account for nested expressions, match guards, condition arms,
+loops, lambda bodies, error/defer/recover cleanup, function bodies,
+class field initializers, constructors, class/actor methods,
+actor-state field initializers, and receive handlers. Parser and
+programmatic AST entry points must be covered. Unknown traversal
+effects, excessive nesting, or work-budget exhaustion are rejection
+conditions, not a reason to assume an omitted handle is safe.
+The scanner must not recursively inspect diagnostic positions before
+applying its depth bound.
+
+Canonical `ref! value` and legacy `rt ref value` spellings must
+resolve to the same checked-handle AST operation; combining them
+as `rt ref! value` (likewise deref/unref) is a syntax error.
+An attached bang marker is required for canonical spelling;
+`ref !value` is not an alias. Use a single evaluation of each
+operand and disallow an extra `mut` qualifier. Once true codegen
+exists, the lifetime and generation verifier still must prove
+exactly-once retirement and cancellation/exception safety: a
+**successful syntax test does not authorize handle execution**.
+
 ### Lifetime shorthand without new punctuation
 
 Default lifetime elision is the shortest notation: `Borrow<T>` or
