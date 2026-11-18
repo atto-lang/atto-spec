@@ -144,3 +144,10 @@ Private source mirroring for CI requires the source repository's approved
 destination and independent authorization. An alternate organization's
 available Actions minutes, a local Git-tree copy and the absence of a PAT
 do **not** waive those security controls.
+
+The first-stage typed-before compiler implementation now requires a shared
+closed-world helper-proof budget across all hooks of a given target/hook pair,
+not a fresh unbounded scan for each hook. A method table exceeding 4,096
+slots is rejected; the conformance plan tracks both the shared local helper
+execution oracle and the resource-bound rejection oracle. These remain
+proposed requirements, not executed backend results.
