@@ -1,5 +1,7 @@
 name: Inherited field aliases (source-only contract)
 on:
+  push:
+    branches: ['ci/**']
   pull_request:
     paths:
       - 'language/inherited-field-aliases-v1.md'
