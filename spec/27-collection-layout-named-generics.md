@@ -66,7 +66,7 @@ The detailed cross-repository candidate, ambiguity and regression matrix is in [
 
 ## Contextual literals, views and mutation
 
-A collection literal `[p1, p2, p3]` in an expected `Array<Particle, layout=soa>` context constructs an SoA representation while evaluating element/field expressions exactly once in source order. If no expected type can determine the collection kind, element type, and physical layout, inference must use separately documented rules or require an explicit type. It cannot choose a layout based on guessed runtime profiling.
+A collection literal `[p1, p2, p3]` in an expected `Array<Particle, layout=soa>` context constructs an SoA representation while evaluating element/field expressions exactly once in source order. Struct initialization accepts both `Particle(x=10, y=20, velocity=1)` and `Particle{x: 10, y: 20, velocity: 1}`; these are equivalent logical field bindings, **not** physical layout selectors. Duplicate, unknown, or missing required fields are diagnosed before layout-specific allocation, and both syntaxes preserve source-ordered once-only field evaluation. If no expected type can determine the collection kind, element type, and physical layout, inference must use separately documented rules or require an explicit type. It cannot choose a layout based on guessed runtime profiling.
 
 ```atto
 fnc make_particles() -> Array<Particle, layout=soa> {
