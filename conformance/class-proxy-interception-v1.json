@@ -801,6 +801,66 @@
         "rust_cranelift": "not_executed",
         "js": "not_executed"
       }
+    },
+    {
+      "id": "preserve-proxy-program-exports",
+      "phase": "compile",
+      "expect": "accept",
+      "oracle": "Compiler proxy synthesis must retain all user-authored explicit export declarations and their scopes rather than silently invoking a compatibility constructor that discards module export metadata.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-proxy-protected-nominal-collision",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "A generated proxy class may not collide with protected state containers, virtual actors, GPU actors or standalone actor nominal type names available in the current compiler AST.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-proxy-annotated-class-policy",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "A proxied target or interceptor class with unproven policy-bearing annotations must fail closed rather than silently strip or forge class annotation metadata on the synthetic type.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-proxy-critical-method",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Proxy synthesis cannot forward or intercept a method marked critical until the compiler proves its state/locking and exceptional effects are preserved on the generated virtual slot.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
     }
   ],
   "receiptRequirements": [
