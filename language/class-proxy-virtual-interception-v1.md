@@ -66,7 +66,7 @@ interceptor feature, **not newly reserved keywords or a claim that hooks exist**
    The hook body must be admitted against its checked effect envelope.
    A panic must still reach the supervisor CONTROL path; the interceptor
    cannot recover it. Cancellation, fatal faults and ownership traps are
-   not swalllowable application errors.
+   not swallowable application errors.
 5. **Ownership and identity.** The initial target is moved/owned according
    to the ordinary borrow checker; constructing a proxy is not a deep copy
    nor an unbounded `share`. No method may return the wrapped target
