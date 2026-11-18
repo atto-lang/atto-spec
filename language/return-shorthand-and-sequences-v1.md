@@ -77,6 +77,20 @@ return x, y, z;     // contextual return sequence; yield z
 || -> x, y, z       // contextual lambda sequence; yield z
 ```
 
+**Braceless lambda returns:** both `|| -> x, y, z` and
+`|| -> return x, y, z;` / `|| -> ^ x, y, z;` have contextual
+last-value semantics. `|| -> return seq x, y, z;` and
+`|| -> return ^ (x, y, z);` share the same checked sequence AST.
+A semicolon is required only for an explicitly written return statement,
+not for an expression-body `|| -> x, y, z`.
+
+Within `f(|| -> x, y, z)`, the commas belong to the lambda expression,
+not the enclosing call. To pass a second argument, use a separately
+delimited lambda such as `f((|| -> x), y)` rather than guessing at the
+comma boundary. Lambda lowering is not yet executable in the current
+scalar browser compiler; grammar/parser conformance must be reported
+separately from runtime support.
+
 In particular, `seq(x; y; z)`, `seq(x,)`, and `seq(,x)`
 are invalid. A comma is **not** a general-purpose infix sequence
 operator outside these explicitly admitted contexts. This spec
