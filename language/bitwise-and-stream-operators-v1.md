@@ -46,6 +46,22 @@ unary        = "~" unary | other_unary ;
 
 **Compatibility rule:** legacy single `|` inside an unparenthesized `if` or `while` condition remains boolean OR until separately migrated. To use integer `|` there, parenthesize the integer subexpression: `if (flags | mask) eq expected then ... fi`. `|x| -> expression` remains a lambda.
 
+### Prefix-tilde and caret disambiguation
+
+`~Type` and `is ~Type` in **type annotations and structural-pattern positions** are
+structural type/pattern syntax, not integer complements. In an **ordinary
+value-expression position**, `~value` is unary bitwise NOT and only type-checks
+when `value: int`. The parser must preserve the source syntactic context and
+type-check the resolved meaning; it must not choose a different meaning based
+on runtime data or silently reinterpret an invalid type as a value.
+
+In statement-return position, `^ expression;` remains the return shorthand
+(with the enclosing callable as its target). Infix `left ^ right` is the
+integer XOR expression. The lexer and parser must not turn a leading return
+caret into an XOR expression or vice versa. Both are separate from the boolean
+`^^` operator. These rules must be tested together with nested structural
+patterns, `~int_value`, and infix XOR in a returned expression.
+
 ### Lexer and typed-I/O compatibility
 
 The expression grammar recognizes exactly **three contiguous** `<` or `>` characters as shifts. Two contiguous characters retain their existing I/O direction forms. Type/generic parsing MUST still parse nested closing `>` delimiters, e.g. `Future<Result<Option<int>>>`, without reinterpreting them as `>>>`. Do not retokenize generic close delimiters globally as shifts.
