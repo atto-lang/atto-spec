@@ -40,6 +40,84 @@ types must not silently reinterpret those expressions as owned values.
 Compiler acceptance of `borrow!` today does not certify `Borrow<T>` types.
 
 
+## Borrow-type shorthand (target, apostrophe-free)
+
+**Preferred descriptive notation** is `Borrow<T>` and `BorrowMut<T>`.
+For concise signatures, permit the following **type-only** shorthands:
+
+| Type shorthand | Exactly equivalent descriptive form |
+| --- | --- |
+| `&T` | `Borrow<T>` (compiler-inferred lifetime) |
+| `&mut T` | `BorrowMut<T>` (compiler-inferred lifetime) |
+| `Borrow<T, a>` | `Borrow<T, lifetime=a>` |
+| `BorrowMut<T, a>` | `BorrowMut<T, lifetime=a>` |
+
+`lifetime a` remains the explicit, readable **declaration** syntax.
+An unqualified `a` in a borrow type's second generic-argument position
+resolves **only** if `a` is an in-scope lifetime parameter; it must not
+silently be resolved as a user type, value generic, or implicit `static`.
+The named spelling `lifetime=a` is useful when named arguments or
+generics need disambiguation. Positional and named forms cannot both
+name the lifetime in one instantiation.
+
+```atto
+// Target signatures; not currently executable in the browser compiler.
+fnc inspect<T>(x: &T) -> int {
+    return 1;
+}
+
+fnc get_ref<T>(x: &T) -> &T {
+    return x;
+}
+
+fnc choose_left<T, lifetime a, lifetime b>(
+    left: Borrow<T, a>,
+    right: Borrow<T, b>
+) -> Borrow<T, a> {
+    return left;
+}
+```
+
+**Disambiguation and grammar:**
+
+```ebnf
+borrow_type = "&" [ "mut" ] type_ref
+            | "Borrow" "<" type_ref [ "," lifetime_argument ] ">"
+            | "BorrowMut" "<" type_ref [ "," lifetime_argument ] ">" ;
+lifetime_argument = lifetime_ident | "lifetime" "=" lifetime_ident ;
+lifetime_parameter = "lifetime" lifetime_ident ;
+```
+
+The `&T` and `&mut T` tokens are shorthand **in type positions**
+(parameter annotations, return types, local annotations, fields and nested
+generic type arguments). In expression positions, the preferred loan
+creation operations remain `borrow! x` and `borrow! mut x`.
+Do **not** silently reinterpret `&x` as an ownership transfer,
+`share!`, or a new unverified reference-lowering operation; any
+pre-existing expression-side `&` is governed by its separate grammar
+and diagnostics. The prefix `&` binds only the following type, with
+generic/optional structure parsed using the normal type grammar.
+The `mut` qualifier binds to the loan **mode**, not to a writable
+owner or a change to the underlying `T` type.
+
+With one unique input provenance, lifetime elision applies to `&T`
+return values. With multiple borrow inputs, elision does **not** guess:
+use `Borrow<T, a>` on the relevant arguments and result, or the
+equivalent fully named form. Formatting may preserve the type shorthand;
+both forms must resolve to identical typed lifetime constraints.
+
+**No `'a` identifiers, `@a` suffix, `&T[a]` brackets, or new lifetime
+operators are introduced.** `@` is already used for annotations and `[]`
+for collection/shape syntax, so appropriating either for lifetime
+annotations would create unnecessary collisions. `&` and `&mut` are
+already described in chapter 16's legacy unary grammar; implementation
+must explicitly distinguish type context from expression context.
+
+**Admission status:** This is a specification target. Compiler parsing
+may recognize the aliases and emit `E_UNSUPPORTED_TYPE` until
+typed region constraints and backend lowering exist; mere syntactic
+recognition must never emit an unproved owned reference.
+
 ## Ownership operations versus ownership-bearing types
 
 **Target API decision.** The unary operations `take!`, `copy!`, `copy!!`,
