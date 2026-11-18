@@ -696,6 +696,21 @@
         "rust_cranelift": "not_executed",
         "js": "not_executed"
       }
+    },
+    {
+      "id": "typed-before-multiple-instances-one-class",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Two typed before-hook proxy values with the same target/interceptor types synthesize exactly one nominal AOT proxy class but independently invoke their own hook and delegated target once.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
     }
   ],
   "receiptRequirements": [
