@@ -67,7 +67,7 @@ From lowest to highest precedence, following the v0.6 grammar:
 | Logical OR | `\|\|` (and `\|` inside conditions) | Left |
 | Logical XOR | `^^` | Left |
 | Logical AND | `&&` (and `,` inside conditions) | Left |
-| Integer bitwise OR | `\\|` (outside condition-only legacy OR) | Left |
+| Integer bitwise OR | `\|` (outside condition-only legacy OR) | Left |
 | Integer bitwise XOR | `^` | Left |
 | Integer bitwise AND | `&` | Left |
 | Equality and identity | `eq` `neq` `!eq` `==` `!=` `is` | Left |
