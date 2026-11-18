@@ -57,6 +57,12 @@ val b = combine(1, second: 2)         // 12
 
 **Compatibility boundary:** A readonly record, `Map<K,V>`, tuple spread, structural product, named type metadata and actor message field are not interchangeable named-call argument packs. Static record-to-named forwarding requires an independently checked closed-field expansion with proven evaluation/ownership semantics. Formatters preserve source argument order and labels rather than sorting expressions to declaration order.
 
+## Call-argument ownership inference (target)
+
+When parameter types denote nonprimitive objects, the source-level default is a bounded immutable borrow: `fnc bar(Foo f)` may be called as `bar(foo)` without a manual `Borrow<Foo>` type or `borrow!` operator. An exclusive mutable loan uses `bar(mut foo)`; the compiler must prove and seal the callee's (possibly transitive) mutable-parameter effect, not guess from caller syntax.
+
+**Named argument binding and expression order are unchanged.** The receiver and each supplied argument are evaluated exactly once in lexical source order, with loan conflict checks spanning subsequent argument evaluation. Label permutation cannot skip, duplicate, or retire a loan. If a callable's ownership effect, place identity, lifetime or escape behavior is ambiguous, use explicit `borrow!` together with a verified provenance/effect contract; otherwise reject before guest emission. No implicit move, `share!`, deep copy or actor-crossing raw reference. See [chapter 04](04-ownership-and-memory.md#implicit-argument-borrowing-target-amendment-2026-11-18) and [canonical v1 proposal](https://github.com/atto-lang/atto-spec/blob/main/language/implicit-argument-borrow-v1.md).
+
 ## Effect types
 
 A callable can be annotated for potential `throws`, `raises`, `panics` or `suspends` effects. The compile-time effect set is an upper bound used for diagnostics and safe call admission; it is not a license to perform privileged operations. `trap` describes a non-throwing boundary for ordinary throw effects, but does not catch panics or cancellation. Precise declaration syntax and effect-polymorphic inference are still being reconciled.
