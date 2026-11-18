@@ -1,11 +1,13 @@
 # Deferred cleanup and recovery chains (proposed AttoLang v1)
 
 **Status: normative candidate; not an executable-backend parity claim.**
-The Rust/Wasm browser compiler currently executes a restricted ordinary
-`throw Error(message)` / caller-side `trap expr` path, but not source `try`,
-`catch`, `defer`, `recover`, or `raise`. Java has experimental host
-recovery-chain work; LLVM has a narrower synchronous normal-exit defer slice.
-Neither constitutes full guest-source conformance.
+The Rust/Wasm browser compiler executes a **restricted synchronous
+top-level free-function slice** of ordinary `throw Error(message)`, `trap`,
+`try/catch/finally`, `defer`, `recover`, and `raise` with executable Wasm
+guest traces. Actor, async/cancellation and full Error subclass parity remain
+unverified. Java has experimental host recovery-chain work; LLVM has a
+narrower synchronous normal-exit defer slice. Neither constitutes full
+guest-source conformance across backends.
 
 ## Separate control effects
 
@@ -102,6 +104,19 @@ cannot be stored, returned, moved, cloned, captured, or sent to another
 actor. Those properties do not allocate another Error or change the
 underlying Error identity. `RecoveryCursor` is also non-escaping; in the
 admitted profile its only operation is terminal `cursor.next()`.
+
+**Fail-closed hardening:** A recovery handler's compiler-issued error and
+cursor binding names cannot be shadowed by `val`/`let`/other nested
+bindings. The native/Wasm browser compiler rejects direct `throw`/`raise`
+in cleanup bodies and conservatively rejects *transitively* throwing or
+raising calls from `defer`, `recover`, and `finally`. Its bounded, typed
+call-graph fixed point does not use effect declarations as a substitute for
+proof. Some safe calls may be rejected (for example a throw caught within
+the callee); this false-negative admission is preferable to silently
+replacing a pending outcome. Cleanup factory argument failures are allowed:
+they do not register an incomplete cleanup, but previously registered
+cleanups still unwind. Full cleanup-failure suppression and cross-backend
+effect-polymorphic admission await separate proof.
 
 **Admission note:** The Rust browser compiler currently supports only
 top-level registrations in synchronous free-function bodies, scalar/string
