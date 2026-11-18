@@ -80,6 +80,12 @@ fi
   ends; the owning pointer/handle and its scheduler thread may still change.
 - Backends MUST prove stable allocation placement and prevent address-changing
   compaction/relocation while pinned. Pinning does not make raw FFI safe.
+- A pinned owner cannot cross a task capture, actor mailbox, guarded-region
+  promotion or frozen shared-region publication unless the backend proves
+  the actual pointee allocation retains its stable address across the handoff.
+  The conservative V0 checker rejects such transfers with
+  E_PIN_BOUNDARY_TRANSFER; ordinary same-arena moves of the owner handle are
+  still legal.
 - Pinning alone never extends the owner's lifetime, authorizes cross-actor
   borrowing, or makes a loan across `await`/cancellation valid. A separate
   continuation/cleanup and suspension proof is necessary.
