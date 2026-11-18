@@ -49,7 +49,7 @@ Browser Web Workers in a subsequent stage are execution domains, **not OS-level 
 
 ## Semantics that remain mandatory
 
-The canonical language has removed arithmetic operators `%`, `^`, `^^`. The compiler rejects them with a positioned diagnostic and no guest. In conditions, `,` and `|` evaluate **both** operands eagerly, in source order. Declaration support cannot undo this decision. Tests of generated Wasm, not just parser or host code, are required before release.
+The 2026-11-07 **browser stage-1 compiler profile** rejected `%`, `^` and `^^` with an unsupported-operator diagnostic and no guest artifact. These cases document a restricted historical implementation; **they do not remove those operators from AttoLang**. In the language design, integer `^` is bitwise XOR and typed Boolean `^^` is Boolean XOR (see the pending bitwise/Boolean spec work in #87 and #6). `%` is likewise not decided by this declaration contract. Do not treat a stage-1 `E_UNSUPPORTED` as a normative prohibition or a successful full-language type check. Legacy eager `,` / `|` conditional semantics are profile-specific and must be reconciled with the typed bitwise/Boolean designs. Tests of emitted Wasm, not only parser or host code, are required before claiming that any operator executes in a given backend.
 
 ## Evidence and gaps (exact heads)
 
