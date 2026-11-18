@@ -786,6 +786,21 @@
         "js": "not_executed"
       },
       "oracle": "A before hook may not call a local helper whose formal parameter has void type, even if the source AST was manufactured directly."
+    },
+    {
+      "id": "reject-proxy-deep-generic-signature-overflow",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Deeply nested generic parameter and return signatures must fail closed under a bounded nonrecursive proxy metadata traversal rather than overflow the host compiler stack.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
     }
   ],
   "receiptRequirements": [
