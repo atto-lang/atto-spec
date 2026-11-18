@@ -21,6 +21,13 @@ fnc load(int id): User {
 }
 ```
 
+Java-style `throws IOError, ParseError` and `raises RecoveryError` are
+the canonical signature spellings; parenthesized clause forms remain
+compatible. Capitalized `@Throws(...)` / `@Raises(...)` are canonical
+annotation aliases. See
+[java-style-failure-signature-bodies-v1.md](java-style-failure-signature-bodies-v1.md)
+for trailing return types, `T•` signatures and mandatory `begin` rules.
+
 Both spellings normalize to the same typed callable signature,
 `load(int) : User ! {throws(Error)}`. The modifier is not a runtime
 decorator and does not alter evaluation, dispatch, ABI, method overloading,
@@ -41,11 +48,14 @@ lower `raise` or `panic` to an ordinary `throw`.
 
 ```ebnf
 failure_kind       = "throws" | "raises" | "panics" ;
-failure_types      = "(", error_type, { ",", error_type }, ")" ;
-failure_annotation = "@", failure_kind, failure_types ;
-effect_clause      = failure_kind, failure_types ;
+failure_types      = error_type, { ",", error_type } ;
+parenthesized_types = "(", failure_types, ")" ;
+failure_annotation = "@", ("Throws" | "Raises" | "Panics"
+                            | failure_kind), parenthesized_types ;
+effect_clause      = failure_kind,
+                     (failure_types | parenthesized_types) ;
 callable_decl      = { failure_annotation }, callable_header,
-                     { effect_clause }, callable_body ;
+                     { effect_clause }, [ "->", type_ref ], callable_body ;
 ```
 
 The full language may resolve one or more nominal `Error` subtypes per
