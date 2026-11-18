@@ -23,6 +23,25 @@ val owned = rt take packet
 
 Borrow checking is not optional for a native backend. Aliased writes, use-after-take, escaping stack borrows, double-drops, stale actor references, and mutable aliases crossing isolation domains MUST be rejected or safely represented with explicit runtime guards, never silently trusted.
 
+## Implicit argument borrowing (target amendment, 2026-11-18)
+
+**Source-level default:** a nonprimitive reference-backed argument passed to an ordinary `fnc` or method is a temporary *loan*, not an ownership move. For a proved read-only parameter `fnc inspect(Foo f)`, `inspect(foo)` and `inspect(borrow! foo)` must produce equivalent typed ownership/loan facts. No `Borrow<Foo>` spelling is necessary for an ordinary nonescaping formal; it remains available as an explicit type.
+
+```atto
+fnc inspect(Foo f): int { return f.value; }
+fnc update(Foo f): void { f.value += 1; }
+val mut Foo foo = new Foo();
+val old = inspect(foo);  // readonly loan, foo remains owned
+update(mut foo);         // exclusive loan, requested at call site
+// update(foo);          // E_BORROW_MUT_REQUIRED
+```
+
+The compiler must compute and seal transitive parameter write effects into statically checked callable signatures **before** call admission; unresolved foreign/indirect/public bodies need an explicit effect contract (or an ambiguity rejection). `mut` never grants writable rights to frozen data, other actors' state or a conflicting borrowed owner. Calls use the same CFG/SSA provenance, drop/cleanup and lifetime validation as explicit `borrow!`, including subsequent arguments and exceptional edges. If ownership, argument place or lifetime cannot be proven, require explicit `borrow!` plus a verifiable contract; explicit spelling cannot override an unsound or unimplemented case.
+
+The default never implies `take!`, `copy!!`, `share!`, `rt share`, persistent reference-counted ownership or cross-actor transfer. A consumed parameter must be explicit at *both* contract and call boundary after a versioned migration (exact consuming-formal grammar under review). Existing implicit class-by-value move code is a breaking-change concern, **not** evidence that the new default already runs. No backend may silently retain implicit moves and advertise this rule.
+
+See [Atto canonical target contract](https://github.com/atto-lang/atto-spec/blob/main/language/implicit-argument-borrow-v1.md) (in draft review); current Rust compiler [#332](https://github.com/atto-lang/atto-source.rs/pull/332) implements only narrower explicit `Borrow<Class>` call loans. This section is **target semantics, not implementation or parity certification**.
+
 ## Lifetimes across suspension
 
 `await`, `select`, `nb` task creation, cancellation, and actor turn boundaries are suspension or ownership checkpoints. A loan can cross only if its owner is pinned for the full continuation, aliasing remains valid, cleanup and cancellation are generation-fenced, and no conflicting turn can access the region. A critical writer or reactor callback may not accidentally hold an actor-state loan across an unrelated suspension.
