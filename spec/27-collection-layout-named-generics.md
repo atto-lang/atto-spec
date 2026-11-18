@@ -56,6 +56,12 @@ let from_colons: Array<Particle, layout=soa> = [
 ];
 ```
 
+**Disambiguation and safe lowering gate:** This is a *struct-specific* syntactic candidate subject to successful **nominal type resolution**. Only a statically proven compiler-generated fieldwise initializer may accept `field=expr`: a shadowing variable, function with the same spelling, ambiguous imported type, explicit/user-defined constructor, ordinary named-call target, class, actor, structural Record/Map, or callable value MUST NOT be reinterpreted as a struct initializer. A checker must never first try an ordinary call and, on failure, fall back to a struct constructor. The syntax requires exclusively named field pairs; mixed positional elements (`Particle(x=1, 2)`) or colon/equals mixtures (`Particle(x=1, y:2)`) fail closed. `new Particle(x=1)`, `make_particle(x=1)`, `obj.set_value(x=1)` and `spawn Worker(x=1)` remain invalid equals-named calls, even when the target has named arguments written with `:`.
+
+Expression-level `=` is not silently promoted to a general assignment expression or converted to `:` by a lexer/formatter rewrite. Named generic type bindings such as `Array<T=Particle, layout=soa>` are a different compile-time grammar; equality `eq`/`==` is also unaffected. For future effectful inputs, `Particle(y=next_y(), x=next_x())` MUST evaluate `next_y` then `next_x` before placing results into declaration-order fields. Rust/Wasm main's current `shape_lower.rs` reorders only **literal scalars** through a `BTreeMap` and is not a valid lowering strategy for effectful inputs. Until a backend implements ordered typed temporaries and ownership-sensitive construction, it MUST reject unsupported expressions without emitting guest code.
+
+The detailed cross-repository candidate, ambiguity and regression matrix is in [atto-spec PR #84](https://github.com/atto-lang/atto-spec/pull/84). The existing ordinary named-call draft [atto-source.rs PR #300](https://github.com/atto-lang/atto-source.rs/pull/300) must continue to treat `label: expr` as distinct from this aggregate syntax.
+
 **Implementation status:** the Rust/Wasm browser compiler's restricted source-local scalar product lowering currently recognizes the braces/colon form. This spec does not certify the equals-parentheses shorthand or actual SoA array guest execution. Both require dedicated positive and negative guest evidence.
 
 ## Contextual literals, views and mutation
