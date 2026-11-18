@@ -1,0 +1,22 @@
+name: Inherited field aliases (source-only contract)
+on:
+  pull_request:
+    paths:
+      - 'language/inherited-field-aliases-v1.md'
+      - 'conformance/inherited-field-aliases-v1.json'
+      - 'tests/inherited-field-aliases-contract.test.mjs'
+      - '.github/workflows/inherited-field-aliases-contract.yml'
+  workflow_dispatch:
+
+jobs:
+  validate_registry:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run source-only contract tests (not compiler execution)
+        run: node --test tests/inherited-field-aliases-contract.test.mjs
