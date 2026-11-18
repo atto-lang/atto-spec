@@ -26,7 +26,7 @@ The browser/native Rust compiler supports two explicitly bounded modes:
 | Browser ABI `compile_v2(length)` | v2 | New optional export; original ABI `compile` and `abi_version() == 2` remain backward compatible |
 | `atto-format-caret --language-version=2 --check/--write` | v2 | Compiles source before/after formatting with the exact same version; refuses writes on mismatch |
 
-Both v1 and v2 accept statement blocks and explicitly marked `::` comma bodies.
+Both v1 and v2 accept semicolon-delimited statement blocks and explicitly marked `::` comma bodies.
 Without `::`, v1 infers legacy comma/tail bodies from top-level separators;
 commas nested within function calls and `(> ...)` do not select an outer comma body.
 
