@@ -69,6 +69,30 @@ accepts `Borrow<T>` or safe references returned from functions. The
 preferred `borrow!` source operator is proposed in PR #67; existing `rt`
 forms remain the chapter-04 spelling until that reconciliation is merged.
 
+## Lifetime elision for implicit object call arguments (target)
+
+Ordinary nonprimitive `fnc inspect(Foo foo)` and method `inspect(Foo foo)`
+formals borrow rather than consume in the updated target language model.
+`inspect(foo)` and `inspect(borrow! foo)` must produce identical immutable
+loan facts; `inspect(mut foo)` requires both a proven transitive callee write
+effect and an exclusive writable loan. Primitive scalars remain by-value.
+Inferred formal lifetime variables refer to the caller's root place and are
+bounded by last use, not the lexical block alone. Neither spelling grants
+permission to escape, transfer, drop or retain the object.
+
+A returned non-owning view is marked `Borrow<Child>`; it may elide a
+lifetime **only** when its input owner (or `self`) is unambiguous. Multiple
+possible input owners require explicit `lt! a` declarations with
+`Borrow<T, lt=a>` relationships, not guessed lifetimes. Explicit annotations
+cannot manufacture ownership or extend the actual owner's lifetime.
+See [chapter 27](27-inferred-lifetimes.md#implicit-parameter-lifetime-elision-2026-11-18-reconciliation).
+
+**Migration caution:** historical compilers may consume class-valued `Foo`
+formals; this draft rule cannot be enabled without explicit owned-formal
+migration and backend-specific executed proof. The active companion
+[implicit argument proposal](https://github.com/atto-lang/atto-spec/pull/89)
+documents those hazards.
+
 ## Lifetimes across suspension
 
 `await`, `select`, `nb` task creation, cancellation, and actor turn boundaries are suspension or ownership checkpoints. A loan can cross only if its owner is pinned for the full continuation, aliasing remains valid, cleanup and cancellation are generation-fenced, and no conflicting turn can access the region. A critical writer or reactor callback may not accidentally hold an actor-state loan across an unrelated suspension.
