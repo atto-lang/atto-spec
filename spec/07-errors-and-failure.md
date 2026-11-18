@@ -101,6 +101,24 @@ registered cleanup; earlier registered cleanup executes according to the
 normal unwind contract. Fatal/forced termination still has no absolute
 cleanup guarantee.
 
+**Declared effects are checked upper bounds in the browser profile:**
+if a function signature supplies one or more `throws(Error)`,
+`raises(Error)` or `panics(Error)` clauses, its omitted *throw/raise*
+channels must not escape its typed body, including indirectly through
+function calls. Thus a declared `throws(Error)` without `raises(Error)`
+does not authorize an unhandled raise. Unannotated functions retain
+inferred-effect compatibility. The compiler also excludes error paths
+after proven terminal exits and excludes catch-handler effects when its
+protected region provably cannot throw. The ordinary throw/raise analysis
+uses a monotone call-graph fixed point and rejects mismatched contracts
+with a positioned `E_EFFECT` diagnostic before guest emission.
+
+`panics(Error)` is accepted as syntax and retained as metadata but is
+**not yet a machine-checked guarantee**: fatal traps, overflow, allocation
+failures, cancellation and supervisor failures must be handled by the
+separate runtime/actor proof. A successful static throw/raise check is
+never evidence that a function cannot panic.
+
 **Current admission limitation:** the Rust browser slice restricts
 registrations to synchronous top-level function bodies and factory captures
 to scalar/string values. This section defines intended language semantics;
