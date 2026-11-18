@@ -174,3 +174,11 @@ Observers cannot consume DATA or CONTROL, suppress a get_done() failure,
 or replace mandatory checked setup and completion results. A late #error
 subscription must replay the terminal outcome exactly once; an inline
 observer is installed before activation.
+
+## Functional-stage handler boundaries
+
+For exact call-order, `try/catch` versus `recover` jurisdiction,
+`throw`/`raise`/`panic` escalation, Result-as-DATA, and independent
+supervisor CONTROL even after graph cancellation, see the additional
+[Pipeline exception and effect boundaries contract](pipeline-handler-boundaries-v1.md).
+This is a *candidate contract*, not a claim of executable graph transport.
