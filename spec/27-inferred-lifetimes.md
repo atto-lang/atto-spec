@@ -39,6 +39,67 @@ operators once ownership-bang aliases are ratified. The old `rt borrow` and
 types must not silently reinterpret those expressions as owned values.
 Compiler acceptance of `borrow!` today does not certify `Borrow<T>` types.
 
+
+## Ownership operations versus ownership-bearing types
+
+**Target API decision.** The unary operations `take!`, `copy!`, `copy!!`,
+`borrow!`, `borrow! mut` and `share!` are not generic type constructors.
+Do **not** introduce `Take<T>`, `Copy<T>` or `Share<T>` as parallel
+type wrappers. Those spellings would confuse an operation/trait with the
+lifetime and authority of the resulting value.
+
+| Source form | Target static result | Semantics |
+| --- | --- | --- |
+| `T` (ordinary owned binding) | `T` | Exclusive owned value; consuming calls move when `T` is move-only |
+| `take! owner` | `T` | Move the existing ownership and invalidate the old place |
+| `copy! value` | `T` | Duplicate only a type proven eligible for the ordinary `Copy` contract |
+| `copy!! owner` | `T` | Explicit independent deep graph clone, with checked allocation, cycles and alias preservation as required |
+| `borrow! owner` | `Borrow<T>` | Scoped immutable non-owning loan, tracked by provenance and NLL |
+| `borrow! mut owner` | `BorrowMut<T>` | Scoped exclusive mutable loan |
+| `share! owner` | `Shared<T>` | Consume/promote a move-only owner to an authorized shared/frozen domain |
+
+`Copy` is an eligibility trait/contract, not `Copy<Person>` wrapping
+an object. `Owned<T>` may be considered as an explicit API type qualifier
+only where annotation aids readability; `T` already denotes ownership
+in normal consuming positions. Type aliases, names and qualifiers must not
+silently turn a borrowed handle into ownership.
+
+`Shared<T>` is the only proposed shared-ownership capability type here;
+it is *not* `Borrow<T>`. For move-only objects, `share! owner` consumes the
+exclusive owner **only if** the object graph is proven share-safe and the
+runtime can promote/transfer it atomically to the appropriate shared
+domain. It must reject while conflicting loans are live; old owner aliases
+must become invalid. Publication is read-only/frozen by default. Any
+interior mutation requires separate synchronized, capability-checked
+authority and must obey actor/tenant isolation and generation fencing.
+A default class is **not automatically shareable**. A `Shared<T>`
+reference cannot be fabricated from a raw pointer, actor-local offset or
+an ordinary `Borrow<T>`. Until this admission path exists, backends
+reject object `share!` rather than returning an unsafe generic `T`.
+
+The current browser compiler supports a restricted scalar `share!` profile
+that behaves like a copied scalar; this is a compatibility baseline,
+**not** evidence that `Shared<Person>` is already implemented.
+
+### Illustrative target (not executable compiler conformance)
+
+```atto
+val source = new Person("Atto");
+val independent = copy!! source;   // separate owned object graph
+val reader = borrow! source;       // Borrow<Person>
+// reader loan must end before promotion:
+val published = share! source;     // Shared<Person>, source consumed
+// using source after promotion is a compile error
+```
+
+The compiler must preserve **two separate facts** for each borrowed binding:
+(1) permanent provenance/borrowed-identity until its binding ends and
+(2) its currently live loan interval. Non-lexical lifetime expiration
+only ends (2), and **never** turns the borrowed binding back into an owned
+`T`. Both facts must reach typed MIR and cleanup/drop lowering. This is
+mandatory before class-loan NLL can be treated as general memory-safe
+lowering.
+
 ## Lifetime elision and inference
 
 1. Every loan carries a unique issuance identity, original place identity,
