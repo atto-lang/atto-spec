@@ -2,6 +2,7 @@
 
 Status: **Normative design with a partially verified Rust/browser subset** (2026-11-14).
 This specification extends [local-binding-mutability-v1.md](local-binding-mutability-v1.md).
+File/module declarations and their explicit environment boundary are specified separately in [file-module-const-v1.md](file-module-const-v1.md).
 
 ## Distinct concepts
 
