@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "contract_id": "atto-inherited-field-aliases-v1",
+  "status": "DRAFT_TARGET_NOT_VERIFIED",
+  "canonical_member_qualifier": ".",
+  "forbidden_member_qualifier": "::",
+  "scope": "class body inherited instance field aliases, no method/static-member aliasing",
+  "required_backends": [
+    "java",
+    "llvm",
+    "wasm",
+    "forge",
+    "dotnet"
+  ],
+  "evidence_policy": {
+    "baseline": "NOT_EXECUTED",
+    "compiler_execution_required": true,
+    "host_registry_validation_is_not_guest_proof": true
+  },
+  "cases": [
+    {
+      "id": "two_independent_field_slots",
+      "kind": "compile_and_execute",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Cat as pub int age: 10; end\ndefine class Hybrid extends Dog, Cat as\n  use Dog.age as dog_age;\n  use Cat.age as cat_age;\nend\npub fnc main(): int {\n  val hybrid = new Hybrid();\n  return hybrid.dog_age + hybrid.cat_age;\n}\n",
+      "expected_exit": 15,
+      "expected_diagnostic_category": null
+    },
+    {
+      "id": "one_inherited_field_alias",
+      "kind": "compile_and_execute",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Hybrid extends Dog as\n  use Dog.age as dog_age;\nend\npub fnc main(): int { return new Hybrid().dog_age; }\n",
+      "expected_exit": 5,
+      "expected_diagnostic_category": null
+    },
+    {
+      "id": "unqualified_ambiguity",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Cat as pub int age: 10; end\ndefine class Hybrid extends Dog, Cat as\n  use Dog.age as dog_age;\n  use Cat.age as cat_age;\nend\npub fnc main(): int { return new Hybrid().age; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_AMBIGUOUS_MEMBER"
+    },
+    {
+      "id": "cpp_scope_separator_rejected",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Cat as pub int age: 10; end\ndefine class Hybrid extends Dog, Cat as\n  use Dog::age as dog_age;\n  use Cat.age as cat_age;\nend\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_SYNTAX"
+    },
+    {
+      "id": "unknown_ancestor",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Cat as pub int age: 10; end\ndefine class Hybrid extends Dog as\n  use Cat.age as cat_age;\nend\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_TARGET"
+    },
+    {
+      "id": "unknown_field",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Cat as pub int age: 10; end\ndefine class Hybrid extends Dog as\n  use Dog.missing as dog_missing;\nend\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_TARGET"
+    },
+    {
+      "id": "private_inherited_field",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as private int age: 5; end\ndefine class Hybrid extends Dog as use Dog.age as dog_age; end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_VISIBILITY"
+    },
+    {
+      "id": "duplicate_alias",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Cat as pub int age: 10; end\ndefine class Hybrid extends Dog, Cat as\n  use Dog.age as same_age;\n  use Cat.age as same_age;\nend\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_DUPLICATE"
+    },
+    {
+      "id": "local_field_collision",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Cat as pub int age: 10; end\ndefine class Hybrid extends Dog as\n  use Dog.age as dog_age;\n  int dog_age: 11;\nend\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_DUPLICATE"
+    },
+    {
+      "id": "method_target_not_field",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub speak(): int { return 1; } end\ndefine class Hybrid extends Dog as use Dog.speak as dog_speak; end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_TARGET"
+    },
+    {
+      "id": "unresolved_field_collision",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub int age: 5; end\ndefine class Cat as pub int age: 10; end\ndefine class Hybrid extends Dog, Cat as end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_AMBIGUOUS_MEMBER"
+    },
+    {
+      "id": "static_target_not_instance_field",
+      "kind": "compile_reject",
+      "status": "NOT_EXECUTED",
+      "source": "define class Dog as pub static int age: 5; end\ndefine class Hybrid extends Dog as use Dog.age as dog_age; end\npub fnc main(): int { return 0; }\n",
+      "expected_exit": null,
+      "expected_diagnostic_category": "E_ALIAS_TARGET"
+    }
+  ]
+}
