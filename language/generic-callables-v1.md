@@ -149,3 +149,114 @@ As of the initial audit, `atto-source.rs` deliberately rejects top-level
 runtime ADTs are limited to specifically admitted concrete instantiations.
 `atto-format` and full backends are independently gated; this document
 does not claim cross-backend parity.
+
+## Generic methods must not inherit Go's original restriction
+
+A generic method is a valid declaration **independently of** whether the
+receiver is generic, an interface mentions the method, or a backend currently
+implements generic interface dispatch. Do not globally prohibit method-local
+type parameters as a workaround for a harder dispatch problem.
+
+```atto
+define class Box<T> as
+    // T is bound by Box; U is bound only by this method.
+    identity<U>(U value): U { return value; }
+    replace<U>(T old_value, U new_value): U { return new_value; }
+    static fnc choose<U>(U value): U { return value; }
+end
+
+define class Utility as
+    identity<T>(T value): T { return value; }
+end
+```
+
+The same declaration-level grammar and bound/default/inference checks
+apply to free functions, instance methods, static methods, and actor-local
+helper methods. Instance methods have an implicit, typed receiver; static
+methods do not. A receiver's generic bindings are visible in methods, but
+**method-local parameters are separate lexical binders** with stable
+declaration identities, never a reinterpretation of the receiver's type
+arguments. A method-local parameter may not reuse an enclosing receiver
+type-parameter name: reject `Box<T>.identity<T>` rather than silently
+capturing or shadowing `T`. Generic method declaration does not require
+an implementing interface, interface conformance, or dynamic dispatch.
+
+Method resolution honors existing member visibility, arity-first overload
+rules, receiver mutability, generics, and effects. Two overloads must not
+become distinguishable **only** by return-type inference or differing
+names of generic parameters. Check inherited methods and overrides under
+alpha-equivalence of type binders, substituted bounds, effects, ownership,
+visibility, and variance; an implementation valid only for one concrete
+`U` does **not** implement a method universally quantified over `U`.
+Method specialization cannot weaken access control or forge a receiver.
+
+### Generic interfaces: a separate dispatch problem
+
+The **language target** allows generic methods in interface/trait
+requirements; it must not delete generic methods from concrete types'
+method sets just because an AOT backend cannot yet dispatch them. Interface
+checking quantifies over every admissible method type argument; verifying
+one `transform<int>` specialization is insufficient evidence for a
+generic `transform<U>` requirement.
+
+There are separate implementation capabilities:
+
+1. **Static receiver / direct concrete method call:** specialize using
+   the concrete receiver type arguments and independently inferred or
+   explicit method type arguments; no virtual dispatch is required.
+2. **Interface/trait generic method call:** resolve a valid conformance
+   witness plus the method's concrete type arguments; emit an exact
+   type/effect/ownership-preserving dispatch path. A finite closed-world
+   dispatch table or a proven uniform dictionary ABI can be used.
+3. **Open-world or runtime-type-derived invocation:** only legal when
+   the backend proves a complete stable generic calling convention
+   across that boundary. Otherwise issue a specific
+   `E_GENERIC_DISPATCH_OPEN`/unsupported-profile diagnostic **before
+   emitting any artifact**, not an accidental interface-only language ban.
+
+Interface witnesses and any generated vtables are keyed by **declared method
+identity and generic signature**, not by a handful of observed
+specializations. Exhaustive AOT instantiation closure must include every
+reachable indirect call and all implementing receiver alternatives.
+Runtime dynamic loading/hot-reload must respect the same versioned
+ABI closure; new type specializations cannot silently require JIT or
+unverified code.
+
+### Method values and actor boundaries
+
+A **concretely instantiated** bound method value (such as
+`box.identity<int>`) retains receiver ownership/lifetime and its exact
+callable type. An **uninstantiated** generic method value
+(`box.identity` without a unique type instantiation) is higher-rank
+polymorphism, a separate capability: require a proven polymorphic callable
+ABI or reject explicitly. Never erase it to `Any` or invent an implicit
+instantiation.
+
+Actor-local helper methods may be generic, including within
+`define serial actor`; their method type arguments do not authorize direct
+access to sealed actor state or bypass critical read/write restrictions.
+Cross-actor sends are a **separate typed message protocol**, not arbitrary
+dynamic invocation of a generic actor method. Every permitted message
+instantiation must satisfy the mailbox's Sendable/Serializable and
+ownership/transfer requirements and have a finite, proven dispatch and
+wire-format identity. Unsupported message instantiations must fail closed.
+The declaration of a generic actor-local helper itself must remain legal.
+
+### Compiler identity and cross-backend evidence
+
+Specialization keys include a stable receiver declaration identity, its
+concrete type arguments (when any), a stable method declaration identity,
+method-local type arguments, and the required calling-convention/ABI
+version. Never key solely by method name, textual `T`/`U`, or inferred
+return type. Explicit and inferred calls resolving to the same
+instantiation must agree on type, effects, ownership, and executable
+behavior. The same proof obligations apply in Rust/Wasm, Java/Graal,
+LLVM, .NET Native AOT and Forge; no backend may report parity based on
+another backend's host-only parsing or formatting fixtures.
+
+The companion registry contains receiver/method-generic positive cases,
+invalid binder cases, and distinct explicit **gates** for indirect generic
+interface dispatch, uninstantiated method values, and cross-actor generic
+message ABI. A gate is not an accepted executable feature and may only
+be promoted after exact-head target execution and negative compile
+evidence.
