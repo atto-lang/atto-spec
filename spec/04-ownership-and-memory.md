@@ -119,6 +119,52 @@ The canonical Rust checker additionally includes a restricted host-only runtime 
 This proves neither source-to-IR completeness nor the correct code generation of Java, LLVM, Forge, .NET or Wasm guests. The runtime host must authenticate the original graph and caller domain; bare numeric IDs and caller-supplied boolean witnesses are not authority. Source compilers MUST continue rejecting unsupported graph freeze, weak upgrade and pin forms rather than accepting an unsound identity lowering.
 
 Cross-backend release is gated on compiled guest tests for concurrent weak upgrades against retirement, actor/tenant stop, generation reuse, physical pinned address stability, cancellation cleanup, and sanitizer-backed lifetime safety. All exact-head backend evidence remains unverified until executed.
+## Complete ownership vocabulary: copy!!, lt!, mut and drop!
+
+This amendment completes the proposed user-visible set: borrow!, take!,
+share!, copy!, copy!!, mut, lt!, freeze!, weak!, pin! and drop!.
+All spellings and safety obligations are defined in atto-spec PR #92;
+production backend support must be verified separately.
+
+### copy!! — truly independent graph cloning
+
+copy!! requires a full transitive clone into independent mutable storage,
+preserving graph cycles and repeated references *within* the clone without
+sharing nested mutable allocations with the original. A simple root pointer
+copy, repeated copy!, or automatic Arc clone is NOT deep copy. The compiler
+must verify all reachable types/edges, reject external mutable aliases and
+unproven foreign handles, bound work, and cleanly roll back partial clone
+failures without consuming the original. Scalar immutable values may use
+ordinary value copy. The browser compiler currently rejects heap graph
+copy!! until its allocation/clone ABI exists.
+
+### lt! a and lifetime! a — compile-time region binders
+
+A lifetime binder is a type-level declaration, not an ordinary expression:
+lt! a is canonical; lifetime! a is the long-form alias. The name a is an
+identifier without a Rust-style apostrophe, referenced by a named generic
+parameter such as Borrow<T, lt=a>. Nonprimitive parameters borrow by default;
+a caller need not use borrow! unless explicitly disambiguating. Explicit
+mut requests exclusive access. Outlives, cancellation, scope exit and
+suspension checking apply equally to implicit and explicit loans.
+
+### drop! — consuming ownership release
+
+drop! must be a standalone statement on a named owned value. It invalidates
+the owner, rejects if any loan is live, and prevents repeated release. Real
+resource-owning values require deterministic destructor/allocator integration
+on normal exit and on verified exceptional/cancellation cleanup. A compiler
+may accept drop! for resource-free scalars as logical ownership termination,
+but must not pretend a class or external resource was reclaimed without a
+working Drop ABI.
+
+The canonical checker models copy!! via a distinct DeepCopy event rather
+than the Copy trait and has a bounded host graph clone; it models drop via
+Drop and named lifetimes via a separate conservative lt! verifier. These
+are reference models, not compiler-generated guest ABI proofs. The shared
+test registry (atto-platform-conformance PR #76) marks all native backends
+NOT VERIFIED until exact source-to-guest tests run.
+
 ## Lifetimes across suspension
 
 `await`, `select`, `nb` task creation, cancellation, and actor turn boundaries are suspension or ownership checkpoints. A loan can cross only if its owner is pinned for the full continuation, aliasing remains valid, cleanup and cancellation are generation-fenced, and no conflicting turn can access the region. A critical writer or reactor callback may not accidentally hold an actor-state loan across an unrelated suspension.
