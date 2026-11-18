@@ -45,6 +45,71 @@ Fail closed for any backend that cannot prove this ownership/lifetime and
 resumption property. This cannot be implemented by installing one ordinary
 Wasm exception handler at each local `recover` site.
 
+## Accepted source syntax (canonical v1)
+
+All of the following register a deferred cleanup; **the block form is
+canonical** for an ordinary zero-argument cleanup:
+
+```atto
+defer { release_resource(); };
+defer _ -> { release_resource(); };
+defer || -> { release_resource(); };
+defer (|int captured| -> _ -> {
+  stdio.println(captured);
+})(5);
+```
+
+In these cleanup-registration contexts, `_ ->` is a nullary lambda
+shorthand, **not** an ignored one-argument lambda. A factory evaluates its
+explicit arguments exactly once in source order during registration and
+stores the captured values in compiler-owned frame slots. Cleanup does not
+run until leaving the eligible scope. A failed argument evaluation never
+registers a partially initialized cleanup.
+
+Recovery has an explicit two-parameter handler:
+
+```atto
+recover |err, cursor| -> {
+  stdio.println(err.message);
+  return 9;
+};
+
+recover |ErrorView err, RecoveryCursor cursor| -> {
+  if err.is_raise then
+    return 9;
+  fi
+  cursor.next();
+};
+
+// Compatibility/factory form remains admitted:
+recover (|int fallback| -> |err, cursor| -> {
+  return fallback;
+})(9);
+```
+
+The inferred handler parameters are compiler-issued `ErrorView` and
+`RecoveryCursor`; explicit annotations must use these respective special
+types. The formatter should prefer `defer { ... };` and
+`recover |err, cursor| -> { ... };` while retaining factory syntax when
+captures are present. A bare `recover { ... }` is intentionally not admitted
+because error/cursor handling must be explicit.
+
+`ErrorView` is a **non-escapable, read-only, scope-bound view** over the
+original failure. The initial verified browser profile exposes only
+`err.message: string` and `err.is_raise: bool` (true for an escalated
+`raise`, false for an ordinary unhandled `throw`). The handle itself
+cannot be stored, returned, moved, cloned, captured, or sent to another
+actor. Those properties do not allocate another Error or change the
+underlying Error identity. `RecoveryCursor` is also non-escaping; in the
+admitted profile its only operation is terminal `cursor.next()`.
+
+**Admission note:** The Rust browser compiler currently supports only
+top-level registrations in synchronous free-function bodies, scalar/string
+factory captures, and compiler-owned unwind frames. Nested scope,
+suspension, actor-supervisor, arbitrary Error subclasses, and transferable
+error handles still require separate implementation and conformance tests.
+Do not interpret a successful parser check as cross-backend execution parity.
+
 ## Registration, cleanup and callback contract
 
 The source-level candidate follows the Java recovery-chain draft:
