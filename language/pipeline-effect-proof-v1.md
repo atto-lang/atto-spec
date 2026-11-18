@@ -214,6 +214,13 @@ and **no guest artifact for negative tests**:
 
 ## Stronger optional formal verification
 
+The inductive theorem, explicit assumptions, linear incident ownership,
+separation of safety from eventual supervisor progress, and a model-test
+admission ledger are specified in
+[error-accountability-proof-v0.md](error-accountability-proof-v0.md).
+
+
+
 A type/effect checker proves **accounting**, not business correctness.
 For critical checker invariants (lossless `Err` preservation, linear
 handle settlement, no double delivery, and total case exhaustiveness),
