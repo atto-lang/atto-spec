@@ -93,9 +93,11 @@ AttoLang's target grammar spells reference and pointer capabilities
 explicitly: `Borrow<T>`, `BorrowMut<T>`, `Shared<T>`, and
 `Pointer<T>`. Ordinary `T` denotes an owned value. The compiler
 infers borrow lifetimes where their provenance is unambiguous. For
-multiple inputs, `lifetime a` declares a parameter; `Borrow<T, a>`
-is equivalent to `Borrow<T, lifetime=a>` when `a` is in scope.
-No apostrophe-prefixed lifetime names are needed.
+multiple inputs, **`lt! a`** declares a lifetime parameter (with `lifetime! a`
+as the long-form alias), and `Borrow<T, lt=a>` references it via a named
+generic argument. The `!` is attached to its keyword; the formatter chooses
+`lt! a`. Positional `Borrow<T, a>` and apostrophe-prefixed lifetime names
+are not part of the target grammar.
 
 **No `&T`, `&mut T`, `*T`, `&x`, `&mut x`, or
 `*p` forms are adopted for borrowing, pointer types, or
