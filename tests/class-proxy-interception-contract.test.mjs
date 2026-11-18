@@ -30,7 +30,22 @@ const expectedIds = [
   'reject-before-hook-noncopyable-argument',
   'reject-before-hook-extra-slot',
   'reject-before-hook-invalid-signature',
-  'reject-runtime-hook-inference'
+  'reject-runtime-hook-inference',
+  'typed-before-local-helper-chain',
+  'reject-before-recursive-helper',
+  'reject-before-indirect-dispatch',
+  'reject-before-hidden-suspension',
+  'reject-before-shadowed-builtin-stdio',
+  'affine-proceed-state-consumption',
+  'affine-short-circuit-zero-proceed',
+  'affine-reentrant-proceed-rejection',
+  'affine-cross-invocation-token-rejection',
+  'affine-proceed-capture-rejection',
+  'affine-proceed-suspend-rejection',
+  'affine-proceed-generation-fence',
+  'affine-proceed-concurrent-once',
+  'affine-nested-proxy-order',
+  'affine-proceed-failure-control'
 ];
 
 test('proxy interception candidate has stable coverage and no fictitious execution receipt', () => {
@@ -39,7 +54,7 @@ test('proxy interception candidate has stable coverage and no fictitious executi
   assert.equal(contract.status, 'candidate_not_implemented');
   assert.equal(contract.contract, 'language/class-proxy-virtual-interception-v1.md');
   assert.equal(contract.extension, '.atto');
-  assert.ok(contract.cases.length >= 31);
+  assert.ok(contract.cases.length >= 46);
   const ids = contract.cases.map(c => c.id);
   assert.equal(new Set(ids).size, ids.length, 'duplicate contract case ID');
   for (const id of expectedIds) assert.ok(ids.includes(id), 'missing: ' + id);
@@ -62,4 +77,18 @@ test('proxy contract includes success, negative, and runtime observability cases
   }
   assert.ok(contract.cases.some(c => c.phase === 'compile'));
   assert.ok(contract.cases.some(c => c.phase === 'run'));
+});
+
+test('affine-proceed protocol has explicit one-shot states but no guest implementation claim', () => {
+  const description = readFileSync(
+    new URL('../language/class-proxy-affine-proceed-v1.md', import.meta.url), 'utf8'
+  );
+  for (const state of ['AVAILABLE', 'CLAIMED', 'CONSUMED', 'CLOSED']) {
+    assert.ok(description.includes(state), 'missing proceed state: ' + state);
+  }
+  assert.ok(description.includes('not') || description.includes('NOT'));
+  assert.ok(contract.receiptRequirements.includes('affine_proceed_state_trace'));
+  assert.ok(contract.cases.filter(c => c.id.startsWith('affine-')).every(
+    c => Object.values(c.backendStatus).every(s => s === 'not_executed')
+  ), 'no affine proceed case may claim backend execution');
 });
