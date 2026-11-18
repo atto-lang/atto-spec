@@ -44,7 +44,11 @@ pure by default: require a trusted signature or reject the program.
 Function values and lambda signatures must carry effect information,
 not just named functions. An unannotated lambda may infer effects
 locally; a public or declared effect bound is checked as an upper
-bound. Higher-order composition uses polymorphic effect variables
+bound. Java-style `throws(Error)` after a signature and `@throws(Error)`
+before a callable are the **same semantic upper bound**; neither
+constitutes proof that a caller handled the error. See
+[checked-throws-annotation-v1.md](checked-throws-annotation-v1.md)
+for callable, method, routine, actor receive and duplicate-policy rules. Higher-order composition uses polymorphic effect variables
 rather than silently assuming callbacks cannot fail.
 
 ## Transfer rules
@@ -194,7 +198,7 @@ and **no guest artifact for negative tests**:
 9. Setup error emits no partially active graph/escaped binding.
 10. Asynchronous stage failure produces typed `get_done()` failure,
     not construction-time trap success.
-11. Dropping/ignoring a `Result`, `PipeHandle`, or completion Result
+11. Unhandled ordinary exceptions from a checked `throws` signature, including the `@throws` annotation spelling, must be caught, trapped into a must-use Result, or propagated through the caller's checked failure contract. Dropping/ignoring a `Result`, `PipeHandle`, or completion Result
     fails under the must-handle policy.
 12. EOF, `Option.None` payload, `Result.Err`, cancellation and
     panic are pairwise distinct terminal/data categories.
