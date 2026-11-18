@@ -5,7 +5,7 @@
   "contract": "language/class-proxy-virtual-interception-v1.md",
   "extension": ".atto",
   "status": "candidate_not_implemented",
-  "note": "Declarative planned oracles only. This JSON is not a compiler implementation or guest execution record; hook surface syntax is not fixed.",
+  "note": "Declarative planned oracles only. This JSON is not a compiler implementation or guest execution record; hook surface syntax is not fixed. An experimental Java draft additionally proposes new Proxy(new Target(), new Hooks()) and strict typed before_ methods; spelling is not yet normative or guest-verified.",
   "cases": [
     {
       "id": "construct-once",
@@ -372,6 +372,96 @@
       "phase": "run",
       "expect": "observe",
       "oracle": "Deferred cleanup executes according to ordinary throw/raise/panic/cancel rules.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "typed-before-hook-constructor-once",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Experimental two-constructor-operand proxy evaluates target and hook constructors exactly once in left-to-right order.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "typed-before-hook-order",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Experimental before_method hook runs once before the delegated target method and both use ordinary typed dispatch.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-hook-noncopyable-argument",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Experimental before hook cannot consume and then reuse a nominal move-only/borrowed argument without an ownership proof.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-hook-extra-slot",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Experimental hook class exposing a before_ method absent from the target must be rejected.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-hook-invalid-signature",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Experimental before_ hook must be public, synchronous, void, and exactly match original parameter shapes.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-runtime-hook-inference",
+      "phase": "parse",
+      "expect": "reject",
+      "oracle": "Experimental proxy hook must be a statically known new LocalHooks() expression; existing variables cannot substitute.",
       "backendStatus": {
         "java": "not_executed",
         "llvm": "not_executed",
