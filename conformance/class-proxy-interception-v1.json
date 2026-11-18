@@ -5,7 +5,7 @@
   "contract": "language/class-proxy-virtual-interception-v1.md",
   "extension": ".atto",
   "status": "candidate_not_implemented",
-  "note": "Declarative planned oracles only. This JSON is not a compiler implementation or guest execution record; hook surface syntax is not fixed. An experimental Java draft additionally proposes new Proxy(new Target(), new Hooks()) and strict typed before_ methods; spelling is not yet normative or guest-verified.",
+  "note": "Declarative planned oracles only. This JSON is not a compiler implementation or guest execution record; hook surface syntax is not fixed. An experimental Java draft additionally proposes new Proxy(new Target(), new Hooks()) and strict typed before_ methods; spelling is not yet normative or guest-verified. The companion affine-proceed state-machine document is design-only and none of the 15 newly added cases are executable backend receipts.",
   "cases": [
     {
       "id": "construct-once",
@@ -471,6 +471,231 @@
         "rust_cranelift": "not_executed",
         "js": "not_executed"
       }
+    },
+    {
+      "id": "typed-before-local-helper-chain",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Before hook reaches permitted synchronous local helper calls by statically linked instance method slots, without dynamically discovering methods.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-recursive-helper",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Recursive local helper graph under before hook is rejected rather than assumed synchronous or used for unbounded call-graph walking.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-indirect-dispatch",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Indirect or unresolved helper invocation under before hook fails closed until a checked call target and effects are established.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-hidden-suspension",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Await or other suspension reachable through a statically named before-hook helper is rejected before execution.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-shadowed-builtin-stdio",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Builtin synchronous IO namespace cannot be shadowed by interceptor fields, parameters or conflicting local declarations.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-state-consumption",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "One around invocation transitions its unique continuation AVAILABLE to CLAIMED before performing downstream dispatch, then CONSUMED on completion.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-short-circuit-zero-proceed",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Around hook returns a correctly typed value without consuming proceed, closes its frame, and never invokes downstream target.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-reentrant-proceed-rejection",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "A hook cannot invoke the same proceed capability recursively or from a second dynamic path after consuming it.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-cross-invocation-token-rejection",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Proceed token cannot be used with a different receiver, method slot, actor domain or invocation identity.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-capture-rejection",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Proceed token cannot be captured in closure, stored in aggregate/field, sent as actor message, returned, or passed outside the invocation.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-suspend-rejection",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Proceed token cannot survive await or suspension until a pinned activation-frame proof is implemented.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-generation-fence",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Continuation pinned to one hot-loading code generation rejects stale generation use without replaying the target.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-concurrent-once",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Concurrent attempts to consume the same continuation cannot cause more than one downstream invocation.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-nested-proxy-order",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Nested proxy around hooks each own separate continuation and preserve deterministic outer-to-inner delegation with at most one target call.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-failure-control",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Throw, raise, panic and cancellation propagate through claimed proceed with original failure precedence and panic supervisor CONTROL delivery.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
     }
   ],
   "receiptRequirements": [
@@ -482,6 +707,9 @@
     "toolchain",
     "test_steps_executed_nonzero",
     "guest_output_or_compiler_diagnostic",
-    "per_backend_per_case_status"
+    "per_backend_per_case_status",
+    "affine_proceed_state_trace",
+    "exact_invocation_and_slot_identity",
+    "direct_and_transitive_hook_effect_proof"
   ]
 }
