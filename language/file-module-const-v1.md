@@ -1,51 +1,60 @@
-# File and module compile-time constants v1
+# File/module `define const` v1: constexpr and runtime-once environment bindings
 
-Status: **Normative design proposal; no backend implementation or executable parity is claimed.** 
-Extends [compile-time-constants-v1.md](compile-time-constants-v1.md) without weakening its typed, deterministic evaluator.
+Status: **Accepted user-directed syntax/semantic target; implementation and backend tests pending.** This proposal supersedes the earlier compile-time-only interpretation of file/module `define const` (including the earlier rejection of `os.read_env`). Existing *local* `const` rules in [compile-time-constants-v1.md](compile-time-constants-v1.md) remain compile-time-only until separately changed.
 
-## Grammar and scope
+## Canonical syntax and two initialization classes
 
 ```ebnf
-top_const_decl = "define", ["pub"], "const", type_ref, IDENT, ("=" | "as"), const_expr, ";" ;
+top_const_decl = "define", ["pub"], "const", type_ref, IDENT, ("=" | "as"), const_initializer, ";" ;
+const_initializer = typed_constexpr | static_env_read ;
+static_env_read = "os", ".", "read_env", "(", constant_nonempty_string_key, ")" ;
 ```
 
-A `top_const_decl` is permitted as an **unconditional direct member of a source file or module**, not inside a function, actor handler, loop, conditional, callback, or runtime-created block. `define pub const` exports a constant through ordinary module visibility; the default is private. Keep `pub define` compatibility handling separate from the accepted canonical `define pub` spelling.
-
-Both initializer separators mean exactly the same thing. A formatter may canonicalize `as` to `=` at this specific declaration position; `as` in class/module bodies and casts has no implication for constant evaluation.
+Both `=` and `as` are **exactly equivalent declaration-initializer separators**. A formatter may canonicalize them, but must not change semantics. `define const` is valid as an unconditional direct member of a source file or `define module` block. `define pub const` applies existing visibility rules; default visibility is private. It is not valid inside `if`, a loop, a handler, a function, or an actor's dynamically created scope.
 
 ```atto
-define const int foo = 5;
-define const int bar as 5;
-define const int total = foo + bar;
-define pub const string language_name as "AttoLang";
+define const int five = 5;                             // compile-time constant
+define const int ten as five * 2;                      // folded at compile time
+define const string host = os.read_env("APP_HOST");     // runtime-once static constant
+define const string port_text as os.read_env("APP_PORT"); // same semantics
+
+define module Settings as
+  define const string api_key as os.read_env("API_KEY");
+  // Methods in this module can use api_key, subject to visibility.
+end
 ```
 
-A compiler must reject duplicate declarations or collisions with other symbols in the same namespace, resolve imported/exported references with module visibility, and diagnose missing or cyclic constant dependencies. Constant references must resolve by binding identity, not by textual name replacement; local shadowing cannot change what a top-level initializer means. Allow forward references only after successfully resolving the dependency graph and detecting cycles; otherwise reject instead of substituting zero, null, or an uninitialized value.
+The **binding is static, single-assignment and immutable in both cases**. The distinction is *when its immutable value becomes available*. Ordinary pure, typed constexpr initializers are evaluated and folded at compile time. The admitted `os.read_env` initializer is evaluated **exactly once for the runtime program instance**, during deterministic startup/module initialization, not during compilation. It is not a periodically refreshed/dynamic binding, not a lazy re-read per function call, and not a mutable process-wide configuration slot.
 
-## Compile-time/static semantics
+The initial v1 runtime-initialized exception is deliberately narrow: **direct `os.read_env` with one compile-time-known, nonempty string key**, and type `string`. This allows the two exact user-requested spellings without enabling arbitrary top-level side effects. Any later expansion (e.g. direct parsing helpers, static initializer functions, interpolation, conditional env fallbacks) requires an explicit, separately verified effect/initialization contract. If the requested key is not a literal in source, it may be a proven compile-time string constant; it must never depend on a runtime variable.
 
-1. Type-check every initializer against its declared type **before** accepting the constant. No implicit string-to-int conversions, implicit narrowing, or runtime coercion.
-2. Evaluate with the typed, bounded compile-time evaluator described in the existing constants contract. Fold into a compiler constant pool or immediate value. A source declaration does **not** allocate a mutable process global, run a module constructor, or initialize per actor/request.
-3. Permit literals, references to already proven compile-time constants, and supported deterministic constexpr operators. Operators obey AttoLang checked arithmetic, overflow, equality and string semantics; value and type errors reject compilation.
-4. No function calls unless a separately specified and verified `comptime`-safe function capability exists. Runtime APIs, clock, randomness, I/O, network, filesystem, environment, actors, dynamic allocation, unsafe/foreign calls, mutable borrows, and runtime-only `val`/`let` references are **not** constexpr.
-5. A top-level constant cannot be conditionally declared or assigned. A *pure, statically decidable conditional expression* may be folded only if all branches type-check, none contains disallowed effects, and the existing typed const contract permits the operator. Runtime-dependent conditions are forbidden.
-6. The name and value are non-rebindable, and a top-level `const` cannot be a loophole for shared mutable state. Mutable object graphs need a separately proven deep-frozen constant representation; otherwise reject them.
-7. Compile-time errors are fail-closed: unknown syntax/evaluation support yields a diagnostic and **no executable artifact**, not a runtime fallback. Suggested stable errors include `E_CONST` for non-static/effectful values, `E_CONST_TYPE`, `E_CONST_CYCLE`, `E_DUPLICATE`, and the existing `E_CONST_OVERFLOW`.
+## Runtime and type contract
 
-## Environment-variable boundary
+1. `os.read_env("KEY")` in this declaration context returns a **required string**. The exact `string` annotation is valid; no `Option<string>` annotation is required here. If `KEY` is absent, inaccessible, invalid, or cannot be represented as a valid AttoLang string, startup fails with a typed environment-initialization error (e.g. `EnvMissingError`, `EnvPermissionError`, `EnvEncodingError`); no implicit empty string or default. A literal empty key `""` is invalid (`E_ENV_KEY`). Optional/defaulting API is a separate addition.
+2. This initializer is an explicit **effectful static initialization exception**. It is not constexpr, even when the compiler's own process has the named environment variable. AOT builds **must never bake the build machine's environment value into the artifact** or expose the value during compilation.
+3. Before the first user `main` or actor is scheduled, the runtime captures the allowed environment inputs into a consistent per-program-instance snapshot and initializes all reachable imported module constants exactly once, in deterministic dependency order. The same source key returns the same snapshot value across modules and actors. Program instances may have different values. Modules are not reinitialized on repeated imports or actor spawns. Initialization cannot be observed in a partially complete state; failure aborts startup without invoking user code.
+4. Static `const` values are read-only and safe against rebinding. For strings, expose an immutable owned/frozen string value or an isolation-safe read-only representation. Cross-actor references must respect ownership/isolation; no writable aliasing or mutable global handles.
+5. Module/file constant name resolution, duplicate definitions, import/export visibility, dependency cycles, unknown references, and declaration shadowing are checked statically. Reject cycles with `E_CONST_CYCLE`. A runtime initializer may depend on a prior constant key for its environment-name argument only if that key is proved compile-time; runtime env values must never feed new env key names in v1.
+6. Compile-time numeric/boolean/string constants keep deterministic typed evaluation and existing compile-time arithmetic/overflow checks (`E_CONST_OVERFLOW`). A top-level runtime-only ordinary call, allocation, filesystem/network request, clock/random read, actor operation, mutable borrow, or runtime conditional initialization remains a compiler error (`E_CONST` or a more precise diagnostic). No silent fallback for unsupported initializers.
+7. Environment access is subject to Deno-like runtime permissions on every platform. Denied access errors before user code begins. Host capability injection on browser/wasm must be explicit: **no implicit browser `process.env`** and no insecure fallback. A native AOT executable reads its *launch-time* environment or approved snapshot, never its build environment. New permissions cannot be obtained by importing another module.
+8. Secrets from `os.read_env` must not be logged, embedded in compiler outputs or exposed by default introspection. Debugging, crash diagnostics and module exports must not print values automatically. Users decide which values are subsequently passed to actors/services.
+9. Conformance requires genuine guest startup, not only parsing: execution with two different provided environments must produce two different immutable results from **the same compiled artifact**; test missing and denied env cases, duplicate keys/snapshots, one-time read, module imports, and no post-startup environment re-read.
+
+## Examples and failures
 
 ```atto
-define const int foo as os.read_env("foo_bar"); // ERROR: not compile-time evaluable
+define const string x as os.read_env("MY_VAR");   // valid, startup snapshot
+define const string y = os.read_env("OTHER_VAR");  // valid, identical semantics
+
+define const int number as os.read_env("PORT");    // E_CONST_TYPE: no implicit string to int
+define const string empty_key = os.read_env("");  // E_ENV_KEY: key must be nonempty
+define const string dynamic = dynamic_call();     // E_CONST: unsupported side effect
 ```
 
-`os.read_env` observes the **running process** environment. Reading it at run time is not compile-time evaluation even if the resulting binding is immutable afterward. An environment lookup also yields text or an absent/error result; it cannot implicitly satisfy `int`.
+The error for a missing or denied runtime key occurs **at startup**, not compilation. A portable runtime may later provide explicit `os.read_env_optional`, `os.read_env_or`, or typed parsing APIs without changing this direct required-string contract.
 
-Runtime-once module configuration could be expressed through a distinct, future **module-scope immutable runtime binding** (e.g. `define val Option<string> raw_foo = os.read_env("foo_bar");`) after module initialization order, effects, permissions, actor isolation and error handling are specified. **That syntax/API is not made executable by this proposal.** For portable programs, an explicit startup function/actor may read and parse configuration and pass an immutable configuration value to dependents.
+## Cross-backend evidence requirement
 
-A future **explicit build-time input** facility (e.g. `build.env_int("FOO_BAR")`) may produce a real compile-time value only with opt-in build permissions, declared and validated inputs, reproducibility/provenance records, and safeguards against embedding secrets in compiled artifacts. Ordinary `os.read_env` must never silently become such a build-time capability.
+The companion `atto-lang/atto-platform-conformance` registry is the source of portable positive/negative and runtime-startup fixtures. Separate statuses for Rust/browser, Java/GraalVM AOT, LLVM/native AOT, .NET, independent Wasm, Forge and other backends. A parser-only acceptance or spec update is **not** guest execution. Each backend must pin its compiler SHA/tree, artifact, runtime/toolchain, startup environment/capability map, actual result, missing/denied error and permission evidence. Until then mark NOT_EXECUTED, not PASS.
 
-## Cross-backend acceptance
-
-Required positive fixtures: both `=` and `as`; typed integer/string/bool constants; cross-reference; private and exported module constants; deterministic compile-time arithmetic; no runtime global/initializer. Required negative fixtures: `os.read_env`; runtime function call; runtime condition; type mismatch; duplicate symbol; unknown symbol; cycle; checked overflow; invalid conditional/nested declaration; forbidden mutable aggregate; shadowing/cross-module visibility violations.
-
-Each backend must report its **own** source SHA, compiler/host toolchain, compiled guest artifact or compiler diagnostic, and executed guest results. Host-only parser tests or previous local-`const` evidence do **not** establish file/module constant support or native-AOT/backends parity. The initial cross-backend registry lives in `atto-lang/atto-platform-conformance`; unsupported backend cases remain NOT_EXECUTED/NOT_VERIFIED until tested.
+The earlier compile-time-only version of this proposal and its environment-read negative fixture are obsolete and must not be used as conformance criteria.
