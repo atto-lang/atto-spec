@@ -37,6 +37,7 @@ This repository is the **language-level specification**, not the proof that a pa
 | [23 — Keyword roles and highlighting](spec/23-keyword-taxonomy-and-highlighting.md) | Linguistic word classes, parser semantics, reserved/contextual distinctions and editor token guidance |
 | [24 — AOT, zero-GC and controlled dynamism](spec/24-aot-zero-gc-controlled-dynamism.md) | Strict profiles, static proxies/reflection, ownership and backend evidence |
 | [26 — Bytes and async TCP v1](spec/26-bytes-and-async-tcp.md) | Move-only immutable Bytes, Bytes-keyed Map, nonblocking listener/connection API and affine connection transfer |
+| [27 — Actor heaps, stacks and hot upgrade](spec/27-actor-heaps-stacks-and-hot-upgrade.md) | One private 32-bit arena heap per actor incarnation, per-invocation stacks bound to their code generation, drain-then-migrate hot upgrade, restart semantics |
 
 ## Specification interpretation
 
