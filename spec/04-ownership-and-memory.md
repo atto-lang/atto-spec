@@ -52,9 +52,10 @@ Borrow checking is not optional for a native backend. Aliased writes, use-after-
 
 AttoLang's target reference types are `Borrow<T>` and `BorrowMut<T>`,
 with lifetime inference by default and optional named generic lifetime
-parameters (`fnc f<lifetime a>(x: Borrow<T, lifetime=a>)`). The
-shorter `Borrow<T, a>` is allowed when `a` is an in-scope lifetime
-parameter. `Shared<T>` denotes explicitly authorized shared ownership
+parameters (`fnc f<lt! a>(x: Borrow<T, lt=a>)`). The long-form
+`lifetime! a` is accepted and formatted as `lt! a`; only named `lt=a`
+references an in-scope lifetime. Positional `Borrow<T, a>` is not a lifetime
+alias. `Shared<T>` denotes explicitly authorized shared ownership
 and `Pointer<T>` denotes a separately checked pointer/handle, never
 an implied borrow or independently owned object. The target does
 **not** use Rust's `'a` lifetime spellings, `&T` / `&mut T`
