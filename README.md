@@ -20,6 +20,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
+- [Shared ownership and explicit guards v1](language/shared-ownership-and-guards-v1.md): TARGET semantics for `share!`/`rt share` (frozen sharing) and separately synchronized `RwLock<T>` mutation; **not compiler certified**.
 
 - [Implicit argument borrowing v1](language/implicit-argument-borrow-v1.md): target non-owning default for nonprimitive call arguments, checked mutable loans, explicit ambiguous cases and breaking ownership migration (not yet compiler-certified).
 
