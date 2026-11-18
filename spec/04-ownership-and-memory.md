@@ -23,6 +23,21 @@ val owned = rt take packet
 
 Borrow checking is not optional for a native backend. Aliased writes, use-after-take, escaping stack borrows, double-drops, stale actor references, and mutable aliases crossing isolation domains MUST be rejected or safely represented with explicit runtime guards, never silently trusted.
 
+## Inferred lifetime syntax (target, not executable today)
+
+AttoLang's target reference types are `Borrow<T>` and `BorrowMut<T>`, with
+lifetime inference by default and optional named generic lifetime parameters
+(`fnc f<lifetime a>(x: Borrow<T, lifetime=a>)`). No Rust apostrophe syntax
+(`'a`) is required or adopted. Returned borrows must carry input/receiver
+provenance, never new owned-handle authority. The full syntax, NLL, CFG,
+reborrow, async and actor lifetime proof obligations are recorded in
+[chapter 27](27-inferred-lifetimes.md).
+
+This is a **TARGET** contract, not an assertion that any backend currently
+accepts `Borrow<T>` or safe references returned from functions. The
+preferred `borrow!` source operator is proposed in PR #67; existing `rt`
+forms remain the chapter-04 spelling until that reconciliation is merged.
+
 ## Lifetimes across suspension
 
 `await`, `select`, `nb` task creation, cancellation, and actor turn boundaries are suspension or ownership checkpoints. A loan can cross only if its owner is pinned for the full continuation, aliasing remains valid, cleanup and cancellation are generation-fenced, and no conflicting turn can access the region. A critical writer or reactor callback may not accidentally hold an actor-state loan across an unrelated suspension.
