@@ -67,11 +67,15 @@ From lowest to highest precedence, following the v0.6 grammar:
 | Logical OR | `\|\|` (and `\|` inside conditions) | Left |
 | Logical XOR | `^^` | Left |
 | Logical AND | `&&` (and `,` inside conditions) | Left |
+| Integer bitwise OR | `\\|` (outside condition-only legacy OR) | Left |
+| Integer bitwise XOR | `^` | Left |
+| Integer bitwise AND | `&` | Left |
 | Equality and identity | `eq` `neq` `!eq` `==` `!=` `is` | Left |
 | Comparison and type tests | `<` `<=` `>` `>=` `is type` `matches` `as` `as?` | Left |
+| Integer shifts | `<<<` `>>>` `ashr` | Left |
 | Additive | `+` `-` | Left |
 | Multiplicative | `*` `/` `%` | Left |
-| Unary | `!` `-` `+` `await` `&` `&mut` `readch` `writech` | Prefix |
+| Unary | `!` `~` `-` `+` `await` `&` `&mut` `readch` `writech` | Prefix |
 | Postfix | call, `.member`, `[index]` | Left |
 
 - `eq` and `neq` are the canonical comparisons. `==` and `!=` are accepted aliases.
@@ -79,7 +83,8 @@ From lowest to highest precedence, following the v0.6 grammar:
 - Inside an `if` or `while` condition, `,` means AND and `|` means OR, and comma binds tighter.
 - **TARGET (decided, 2026-11-14):** `&&` is short-circuit boolean AND, `^^` is boolean XOR, and `||` is short-circuit boolean OR. `^^` is eager: it evaluates both operands exactly once, left to right. Precedence is `&&` above `^^` above `||`. Every operand must have static type `bool`, and there is no truthiness conversion. The built-in `And`, `Or` and `Xor` functions stay valid.
 - Backend status on 2026-11-14: Java main and LLVM main accept `&&` and `||`. .NET main accepts only the `and`/`or`/`xor` words. All three mains still reject `^^` as reserved. The fixes are oreslang-source.java#3009, oreslang-source.llvm#1728 / #1739 and oreslang-source.net#521, which adds `&&`, `^^` and `||` to the structured frontend.
-- Single `^` and the bitwise and shift operators are not in the grammar. Integer bit operations use named functions such as `Integer.bitXor(a, b)`.
+- **PROPOSED TARGET (2026-11-17):** `&`, `|`, `^`, `~`, `<<<`, `>>>`, and `ashr` are integer-only bit operations on signed 64-bit `int`. `&= |= ^= <<<= >>>= ashr=` are compound assignments. These change the previously absent bitwise syntax; `^^` remains distinct boolean XOR. The [normative proposal](https://github.com/atto-lang/atto-spec/pull/87) defines shift-count masking, signed bit patterns, precedence and regression cases. Browser compiler [draft #334](https://github.com/atto-lang/atto-source.rs/pull/334) is not verified backend parity.
+- Exactly three adjacent brackets form `<<<` or `>>>` in expression context; exactly two `<<`/`>>` remain typed stream/channel direction syntax. The parser MUST preserve nested generic `>` closers, the `|>` pipeline and `|x| -> expr` lambda. Legacy `|` inside conditions stays boolean OR; parenthesize integer bitwise OR inside a condition.
 - Open: whether the condition-only `,` and `|` spellings stay. oreslang-source.java#3009 proposes removing them in favor of `&&` and `||`.
 - Assignment is an expression, but `if x = y then` is rejected.
 - `name = value` in a call is never a named argument. Named value arguments use `name: value` ([chapter 03](03-functions-and-effects.md)).
