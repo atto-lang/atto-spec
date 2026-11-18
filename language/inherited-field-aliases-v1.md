@@ -60,7 +60,7 @@ Diagnostics must be positioned at the offending alias or member access and must 
 
 This is a **source-language target**. The current `atto-lang/atto-source.rs` source-local nominal lowerer explicitly rejects inherited fields and constructors with `E_UNSUPPORTED`; its successful method-diamond preview tests are **not** evidence for this feature. No full-Java, LLVM, .NET, Forge, native AOT, or Wasm guest parity claim is made.
 
-The companion `conformance/inherited-field-aliases-v1.json` enumerates positive and negative source cases, all `NOT_EXECUTED`. A source-free registry check can verify that those authored cases are internally consistent, but only real pinned compiler/guest executions can advance their evidence status.
+The companion `conformance/inherited-field-aliases-v1.json` enumerates positive and negative source cases (currently **26**, all `NOT_EXECUTED`). A source-free registry check can verify that those authored cases are internally consistent, but only real pinned compiler/guest executions can advance their evidence status.
 
 ### Admission milestones
 
@@ -68,3 +68,15 @@ The companion `conformance/inherited-field-aliases-v1.json` enumerates positive 
 2. Nominal member origin, protected visibility, generic substitution, duplicate aliases, and diamond path tracking at static check time.
 3. Verified base-object layout, initialization/destruction, ownership/moves, and callable method-override consistency.
 4. Execute two-independent-slot guest fixture and rejected-case matrix on exact source heads for each advertised backend, including an AOT run when AOT is claimed.
+
+## Security audit additions (v1)
+
+- **Lexical placement**: an inherited `use` declaration is allowed only in a class member declaration, never at module scope, in an ordinary callable body, or as an actor-state escape. A method named `use` is distinct from this grammar production.
+- **Name integrity**: `use Ancestor.member as alias;` must contain exactly one dot and the `as` binding; a missing semicolon, C++ `::`, constructor invocation, computed property, or arbitrary expression is not an alias. Reject lookalike token sequences before lowering.
+- **Route integrity**: the compiler must authenticate a reachable nominal ancestor **and unique physical field route**. A grandparent reached twice is not automatically shared, and spelling, import alias or generic reification alone cannot prove that both paths denote one slot.
+- **Namespace integrity**: the alias cannot redeclare an inherited public name, local field, method or property, even with a compatible type. Renaming never silently selects a field for the original ambiguous member name.
+- **Authority integrity**: private/protected access, mutability, `final`, ownership, move/borrow state and sealed actor state must be checked both at alias declaration **and each later use**. It must not be possible to produce a public alias for an otherwise inaccessible slot.
+- **Layout integrity**: an alias is a symbolic route to an existing slot. It MUST NOT invoke an initializer, constructor, destructor, copy hook, retain/release or graph-clone step. The physical slot graph—not alias count—is the only source for AOT layout and copy plans.
+- **Evidence integrity**: failing an unsupported implementation with `E_UNSUPPORTED` is correct fail-closed behavior, **not** a passing positive fixture. A source-only contract registry pass does not promote any `NOT_EXECUTED` case.
+
+The expanded conformance matrix deliberately contains target fixtures whose **specified diagnostic categories are not yet implemented**. Those expected outcomes are portable design goals, not assertions about the current Rust compiler's error codes. Until checked inherited-state ABI support ships, the compiler MUST reject such constructs without emitting guest Wasm.
