@@ -32,6 +32,61 @@ val maybe_value = trap parse_or_throw(text) // Option<T> target
 
 A separate requested design treats `trap worker.send(msg)` as a `Result<T,E>`-returning admission form. That conflicts with existing Option-returning trap contracts: **do not silently promise both types**. Until settled, use the explicit `Result` produced by the send API (or an explicit conversion) and see [open questions](12-open-questions.md).
 
+## Canonical deferred cleanup and recovery syntax
+
+Ordinary cleanup canonically uses `defer { ... };`; `defer _ -> { ... };`
+and the existing `defer || -> { ... };` are admitted equivalent
+zero-argument forms. An explicit capture factory is also accepted:
+
+```atto
+defer (|int v| -> _ -> {
+    stdio.println(v);
+})(5);
+```
+
+The factory evaluates its arguments exactly once at registration. The
+deferred body executes later during supported scope exit/unwind paths.
+`_ ->` is nullary **only in this cleanup context** and is not a wildcard
+single-argument handler.
+
+A recovery handler has **two explicitly bound capabilities**:
+
+```atto
+recover |err, cursor| -> {
+    stdio.println(err.message);
+    return 42;
+};
+
+// Equivalent explicit annotation:
+recover |ErrorView err, RecoveryCursor cursor| -> {
+    cursor.next();
+};
+```
+
+`err: ErrorView` is a read-only, non-escaping compiler-issued view over the
+pending original Error; initially `err.message: string` and
+`err.is_raise: bool` are readable. It is not a first-class object, and
+cannot be cloned, sent, returned, captured or kept beyond the handler.
+`cursor: RecoveryCursor` is a non-escaping one-shot, terminal delegation
+capability: `cursor.next()` passes the identical pending failure to the
+next eligible registered recovery callback. Recovery callbacks must either
+return a result compatible with the enclosing callable or delegate; they
+cannot resume the failed statement.
+
+An existing explicit-capture recovery factory remains accepted:
+`recover (|int fallback| -> |err, cursor| -> { return fallback; })(5);`.
+A bare `recover { ... }` is intentionally rejected to keep exceptional
+handling explicit. An escaping ordinary `throw` must give all caller
+`catch` and `trap` boundaries precedence before any recovery callback
+runs; `raise` bypasses ordinary catch/trap; `panic` and cancellation
+bypass recovery entirely.
+
+**Current admission limitation:** the Rust browser slice restricts
+registrations to synchronous top-level function bodies and factory captures
+to scalar/string values. This section defines intended language semantics;
+it does not assert actor/async/Java/LLVM parity. See the normative candidate
+in `atto-spec/language/defer-recover-unwind-v1.md`.
+
 ## Cleanup and effect precedence
 
 `defer` runs in last-in-first-out order exactly once on admitted normal and exceptional unwind paths. `finally` runs once after a try/catch outcome. Cleanup failure must not demote a stronger panic/raise/cancellation to success; suppressed diagnostics preserve secondary failures. A cleanup callback cannot bypass an actor's CONTROL escalation policy.
