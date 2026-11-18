@@ -151,3 +151,11 @@ not a fresh unbounded scan for each hook. A method table exceeding 4,096
 slots is rejected; the conformance plan tracks both the shared local helper
 execution oracle and the resource-bound rejection oracle. These remain
 proposed requirements, not executed backend results.
+
+A before-only implementation must never traverse untrusted AST syntax with
+an unbounded recursive prepass before its bounded call-graph verifier. The
+budget is enforced on both valid and malformed sources. Primitive integer
+`/` and `%` operations in a hook are conservatively rejected pending
+checked exceptional-effect inference (including zero divisors); a `void`
+helper formal parameter is also invalid. These are planned cross-backend
+contracts, **not** evidence of executed backend tests.
