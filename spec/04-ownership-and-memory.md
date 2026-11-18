@@ -28,12 +28,16 @@ Borrow checking is not optional for a native backend. Aliased writes, use-after-
 **Source-level default:** a nonprimitive reference-backed argument passed to an ordinary `fnc` or method is a temporary *loan*, not an ownership move. For a proved read-only parameter `fnc inspect(Foo f)`, `inspect(foo)` and `inspect(borrow! foo)` must produce equivalent typed ownership/loan facts. No `Borrow<Foo>` spelling is necessary for an ordinary nonescaping formal; it remains available as an explicit type.
 
 ```atto
+define class Foo as pub let int value = 1; end
 fnc inspect(Foo f): int { return f.value; }
 fnc update(Foo f): void { f.value += 1; }
-val mut Foo foo = new Foo();
-val old = inspect(foo);  // readonly loan, foo remains owned
-update(mut foo);         // exclusive loan, requested at call site
-// update(foo);          // E_BORROW_MUT_REQUIRED
+pub fnc main(): int {
+  val mut Foo foo = new Foo();
+  val old = inspect(foo); // readonly loan, foo remains owned
+  update(mut foo);        // exclusive loan, requested at call site
+  // update(foo);         // E_BORROW_MUT_REQUIRED
+  return old;
+}
 ```
 
 Parameter mutability inference is an explicit callable-formal rule, not permission to mutate an ordinary unqualified local `val Foo` in violation of [local binding mutability](https://github.com/atto-lang/atto-spec/blob/main/language/local-binding-mutability-v1.md). The compiler must compute and seal transitive parameter write effects into statically checked callable signatures **before** call admission; unresolved foreign/indirect/public bodies need an explicit effect contract (or an ambiguity rejection). `mut` never grants writable rights to frozen data, other actors' state or a conflicting borrowed owner. Calls use the same CFG/SSA provenance, drop/cleanup and lifetime validation as explicit `borrow!`, including subsequent arguments and exceptional edges. If ownership, argument place or lifetime cannot be proven, require explicit `borrow!` plus a verifiable contract; explicit spelling cannot override an unsound or unimplemented case.
