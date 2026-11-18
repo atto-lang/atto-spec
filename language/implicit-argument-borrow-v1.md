@@ -13,9 +13,12 @@ define class Foo as
 end
 
 fnc inspect(Foo f): int { return f.value; }
-val foo = new Foo();
-val n = inspect(foo);         // implicit shared loan, owner remains valid
-val m = inspect(borrow! foo); // explicit spelling, same rights and lifetime
+pub fnc main(): int {
+  val foo = new Foo();
+  val n = inspect(foo);         // implicit shared loan, owner remains valid
+  val m = inspect(borrow! foo); // explicit spelling, same rights and lifetime
+  return n + m;
+}
 ```
 
 By default, an ordinary nonprimitive formal `Foo f` is a *non-owning* parameter. It is **not** an implicit move, clone, `share!`, `rt share`, deep copy or cross-actor transport permit. For primitive/value-copy scalars (e.g. `int`, `bool`, `float`), preserve value passing. Nonprimitive collections, aggregates, generics and opaque types follow the same target intent only after their representation and provenance are proven; unsupported targets reject instead of falling back to an owned handle.
@@ -26,9 +29,12 @@ An explicit `Borrow<Foo>` formal remains legal as a readonly, lifetime-constrain
 
 ```atto
 fnc adjust(Foo f): void { f.value += 1; }
-val mut Foo foo = new Foo();
-adjust(mut foo); // exclusive temporary loan
-adjust(foo);     // E_BORROW_MUT_REQUIRED, no emitted guest
+pub fnc main(): int {
+  val mut Foo foo = new Foo();
+  adjust(mut foo); // exclusive temporary loan
+  // adjust(foo);   // E_BORROW_MUT_REQUIRED, no emitted guest
+  return foo.value;
+}
 ```
 
 The compiler must analyze the callee body and the **transitive**, statically resolved method/call effects to determine whether `Foo f` needs an exclusive mutable loan. This effect is sealed into typed signature metadata *before* call lowering, cross-module linking and AOT; neither overload resolution nor runtime observation may guess the effect. A public/external/interface/abstract/indirect callable with no verifiable body requires an explicit reviewed parameter effect contract (proposed spelling `mut Foo f`), or is rejected as ambiguous. A method with apparently read-only outer operations but unproven mutating callbacks is **not** readonly by default.
