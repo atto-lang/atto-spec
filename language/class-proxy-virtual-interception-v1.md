@@ -159,3 +159,10 @@ budget is enforced on both valid and malformed sources. Primitive integer
 checked exceptional-effect inference (including zero divisors); a `void`
 helper formal parameter is also invalid. These are planned cross-backend
 contracts, **not** evidence of executed backend tests.
+
+Proxy metadata admission must also bound nested generic signature traversal
+for both return and parameter types (including nested identity-erased and
+borrowed values). An AST producer can otherwise cause host stack exhaustion
+without using source-level recursion. The first-stage Java prototype uses a
+64-level/4,096-node iterative limit. This conformance check is a **planned**
+compiler rejection oracle, not an executed guest/backend receipt.
