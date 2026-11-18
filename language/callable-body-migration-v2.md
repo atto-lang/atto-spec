@@ -25,10 +25,18 @@ The browser/native Rust compiler supports two explicitly bounded modes:
 | `attoc --language-version 2 file.atto` | v2 | Explicit opt-in on a single native compile |
 | Browser ABI `compile_v2(length)` | v2 | New optional export; original ABI `compile` and `abi_version() == 2` remain backward compatible |
 | `atto-format-caret --language-version=2 --check/--write` | v2 | Compiles source before/after formatting with the exact same version; refuses writes on mismatch |
+| `atto-format-callable --language-version=2 --check/--write` | v2 | Receiver-header formatting has the same explicit version requirement, both compiler checks and fail-closed writes |
 
 Both v1 and v2 accept semicolon-delimited statement blocks and explicitly marked `::` comma bodies.
 Without `::`, v1 infers legacy comma/tail bodies from top-level separators;
 commas nested within function calls and `(> ...)` do not select an outer comma body.
+
+Both the production parser and target-only `mtd` preflight must receive the
+same selected version. A comma inside `return x, y, z;`, `^ x, y, z;`,
+a prefix `seq` expression, a nested conditional, or a parenthesized call
+is **not** an outer callable-body separator and must not trigger edition
+migration. Existing v1 class and actor bodies remain on the v1 parsing
+path when compiling with default `compile`.
 
 Compiler diagnostic `E_BODY_VERSION` identifies an unmarked top-level comma
 in v2 and suggests both explicit migrations: `-> T :: ..., tail end` or
