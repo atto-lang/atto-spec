@@ -87,6 +87,27 @@ From lowest to highest precedence, following the v0.6 grammar:
 
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
 
+## Borrowed-reference type shorthands (TARGET, not executable today)
+
+In **type grammar only**, `&T` is a compact spelling of `Borrow<T>`,
+and `&mut T` of `BorrowMut<T>`. These do not modify expression
+precedence or the existing `borrow!` and `borrow! mut` operations.
+The lexical `&` remains independently recognized in other contexts;
+do not infer that an expression `&x` is enabled by the *type* shorthand.
+
+An explicit lifetime parameter remains `lifetime a`. Within a
+`Borrow`/ `BorrowMut` generic argument list, `Borrow<T, a>`
+and `Borrow<T, lifetime=a>` are equivalent only if `a` is a
+declared lifetime parameter; there is no inference that `a` is a
+value type or a `static` allocation.
+
+The browser compiler's source lexer already tokenizes `&`, but this
+proposal does not establish reference storage or returned-loan
+semantics. Backends without a verified loan-lifetime lowering must
+reject `&T`, `&mut T`, `Borrow<T>`, and `Borrow<T, a>`
+with a feature-specific diagnostic and zero emitted guest bytes.
+Full constraint/ABI details: [chapter 27](27-inferred-lifetimes.md).
+
 ## Function forms
 
 **TARGET (decided):** `: T` and `-> T` are both valid return spellings, and `::` may be included or omitted. No one form is the only correct one.
