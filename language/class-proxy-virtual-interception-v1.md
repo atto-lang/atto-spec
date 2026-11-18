@@ -121,6 +121,11 @@ specifies the one-shot continuation state machine, identity fencing and
 failure precedence. It is **not** source syntax, guest implementation or
 completed backend conformance.
 
+The conformance plan also requires multiple typed-before proxy values with
+the same target/hook pair to share a single generated AOT class while
+remaining independent instances; duplicate request occurrences must not
+cause either a compilation error or duplicate synthetic class definitions.
+
 The manifest is a design review and executable
 test plan only after backend-specific harnesses implement each case.
 Each backend must report `passed`, `failed`, `unsupported`, or
