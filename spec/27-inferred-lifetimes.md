@@ -49,7 +49,7 @@ pointer or borrow type sigils, and no dereference/borrow operators based on
 
 | Type | Semantic capability |
 | --- | --- |
-| `T` | Ordinary owned value |
+| `T` | Context-dependent: ordinary nonprimitive function/method **formal** is a loan by default; an owning local or result can still be owned |
 | `Borrow<T>` | Shared immutable loan, lifetime inferred by default |
 | `BorrowMut<T>` | Exclusive mutable loan, lifetime inferred by default |
 | `Shared<T>` | Explicitly authorized shared/frozen ownership |
@@ -238,7 +238,7 @@ lifetime and authority of the resulting value.
 
 | Source form | Target static result | Semantics |
 | --- | --- | --- |
-| `T` (ordinary owned binding) | `T` | Exclusive owned value; consuming calls move when `T` is move-only |
+| `T` (ordinary local or owned result) | `T` | The value may be uniquely owned; ownership is determined by binding and return semantics, **not** an ordinary nonprimitive argument |
 | `take! owner` | `T` | Move the existing ownership and invalidate the old place |
 | `copy! value` | `T` | Duplicate only a type proven eligible for the ordinary `Copy` contract |
 | `copy!! owner` | `T` | Explicit independent deep graph clone, with checked allocation, cycles and alias preservation as required |
@@ -248,8 +248,13 @@ lifetime and authority of the resulting value.
 
 `Copy` is an eligibility trait/contract, not `Copy<Person>` wrapping
 an object. `Owned<T>` may be considered as an explicit API type qualifier
-only where annotation aids readability; `T` already denotes ownership
-in normal consuming positions. Type aliases, names and qualifiers must not
+only where annotation aids readability. In the new target call model, a bare
+nonprimitive parameter `T x` denotes an **implicit non-owning loan**, not an
+implicit consuming/owned formal; explicit transfer requires `take!` at the call
+site **and** an explicit consuming formal contract (grammar pending). Existing
+compiler code that moves objects into bare `T` formals is legacy behavior and
+must migrate under a versioned compatibility profile. Type aliases, names and
+qualifiers must not
 silently turn a borrowed handle into ownership.
 
 `Shared<T>` is the only proposed shared-ownership capability type here;
@@ -287,6 +292,49 @@ only ends (2), and **never** turns the borrowed binding back into an owned
 `T`. Both facts must reach typed MIR and cleanup/drop lowering. This is
 mandatory before class-loan NLL can be treated as general memory-safe
 lowering.
+
+## Implicit parameter lifetime elision (2026-11-18 reconciliation)
+
+This is a **normative target amendment**, reconciling this pre-existing lifetime proposal with the new [implicit argument borrowing contract](https://github.com/atto-lang/atto-spec/pull/89) and [language amendment #80](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/pull/80).
+
+**A parameter's surface type is not an ownership grant.** A nonprimitive `fnc inspect(Foo foo)` or ordinary method `inspect(Foo foo)` is equivalent, for nonescaping call access, to an explicit read-only `Borrow<Foo>` formal with its lifetime inferred. `inspect(foo)` and `inspect(borrow! foo)` must issue **identical, checked** source-provenance loan facts. `inspect(mut foo)` creates an exclusive borrow only when an exported, proven callee parameter effect requires mutable access. Unverified transitive effects must fail closed. The ordinary spelling must neither move the object nor silently `share!`, copy, or retain it.
+
+### Three lifetime cases
+
+```atto
+// (A) No escaping alias: nothing to annotate, call loan expires at last use.
+fnc inspect(Foo foo): int { return foo.value; }
+
+// (B) Borrowed return from exactly one input: infer return lifetime from foo.
+// Borrow<Child> distinguishes a borrowed result from an independently owned Child.
+fnc get_child(Parent p): Borrow<Child> { return p.child; }
+
+// (C) Multiple source owners: give the returned loan an explicit relationship.
+fnc choose_left<lt! a, lt! b>(
+    Borrow<Foo, lt=a> left,
+    Borrow<Foo, lt=b> right
+): Borrow<Foo, lt=a> { return left; }
+```
+
+These examples describe target semantics; none of the above new generic/returned-loan signatures is asserted to compile in the current Rust browser subset.
+
+**One-input return rule:** for an ordinary `fnc get_child(Parent p): Borrow<Child>`, the compiler may elide the lifetime if every possible return path has exactly one proven input owner, the returned reference is a view into that owner, and no conflicting transient borrow or shorter-lived local contaminates the result. A method's `self` can serve as the sole origin. The caller's borrow must stay live for every use of the returned alias, but **the returned alias never owns or drops the parent**.
+
+**Multiple-input rule:** whenever more than one borrowed root could produce the returned alias, the exported signature must have an explicit or independently equivalent verified provenance relation. `lt! a` declares the lifetime and `lt=a` ties borrowed input/output positions together. `Borrow<T>` remains available for explicit parameters in these cases. Bare `T<lt=a>` on a formal is **not** specified as accepted syntax; do not invent it in a backend.
+
+**Do not infer a return loan from the result type alone.** `fnc make(): Child` returns an owned `Child` if admitted; `fnc view(Parent p): Borrow<Child>` returns a borrowed `Child` bounded by the input. A bare `Child` return must not silently become `Borrow<Child>`, or a returned view could be mistaken for a newly owned object.
+
+### Proof obligations and ambiguity
+
+- Create typed, compiler-owned loan IDs for implicit and explicit arguments with the same place/owner provenance, borrowing mode, region, actor generation and NLL constraints. Last-use expiry ends the *active* loan interval but never turns the borrowed formal or alias into a movable/droppable owner.
+- At a call, immutable ordinary loans are checked against every subsequent argument in lexical evaluation order and held for the complete synchronous invocation; mutation/transfer through a later argument while the loan is live rejects. The callee cannot retain or return the loan without a proven result-lifetime contract.
+- Field projections, reborrows, closures, interprocedural result aliases, trait/interface/virtual calls, exceptions, cleanup, recursion and dynamic calls must retain verified provenance. If the compiler cannot resolve the root or effect summary, `borrow!` makes the intent explicit **but cannot invent a missing lifetime proof**.
+- `lt! a` and `lt=a` affect compile-time constraints only; they cannot lengthen an owner, coerce a read-only loan to mutable, authorize actor/isolate transport or make a local reference `lt=static`.
+- Borrowed results crossing `await` or actor/critical boundaries require proven pinning, quiescence and generation/authority fences. Until these exist, reject and emit no artifact.
+- A public signature must export a stable, independently checked lifetime/effect contract so separate compilation and AOT can check a call without inspecting the callee implementation. If the source body changes, metadata is revalidated.
+- The migration from implicit owned `Foo` formal to default borrowed `Foo` formal is a **source-breaking target change**. Until an explicit consuming formal grammar and feature/version migration are approved, compilers must not silently switch legacy code without diagnostics.
+
+**Implementation boundary:** [Rust compiler #336](https://github.com/atto-lang/atto-source.rs/pull/336) supports only checked `Borrow<Class>` synchronous call loans with named local owners, not bare `Foo` default, result lifetime inference or method/actor/async parity. See [conformance #74](https://github.com/atto-lang/atto-platform-conformance/pull/74) for the target matrix. Keep this proposal draft until verified guests and the canonical typed checker agree.
 
 ## Lifetime elision and inference
 
