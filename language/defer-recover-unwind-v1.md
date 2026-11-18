@@ -130,6 +130,38 @@ previously registered cleanups still unwind. Full cleanup-failure
 suppression and cross-backend effect-polymorphic admission await separate
 proof.
 
+**Explicit source upper bounds (browser compiler hardening):** A top-level
+function may declare `throws(Error)`, `raises(Error)`, or both. Once any
+explicit exceptional-effect clause is supplied, the declared ordinary
+`throws` and escalated `raises` channels are checked as a complete upper
+bound for those two effects. For example,
+`fnc f(): int throws(Error) { raise Error("x"); }` is rejected
+(`E_EFFECT`), including when the undisclosed raise comes from a callee.
+A function without any exceptional-effect clause retains inference-only
+compatibility; absence of an annotation is **not** a claim of no exceptions.
+`panics(Error)` can be parsed and retained but does **not** constitute a
+certified no-panic proof: fatal overflow/traps, cancellation and host
+termination remain outside this checker.
+
+For the admitted typed sublanguage, let `E` contain independently tracked
+`throw` and `raise` effects. The checker iterates a monotone finite
+call-graph fixed point to resolve recursive functions. Its relevant
+transfer rules are:
+
+- `E(trap e) = E(e) - {throw}`, never removing `raise`.
+- `E(try b catch h finally g) = (E(b) - {throw}) ∪ E(g) ∪
+  (if throw ∈ E(b) then E(h) else ∅)`.
+- `E(call f(args)) = E(f) ∪ ⋃ E(args)`.
+- Explicit `return`, `throw`, `raise` and other structurally proven
+  terminal exits cut off effects of *following* unreachable statements.
+- `defer`, `recover`, and `finally` callback bodies must have no
+  escaping `throw` or `raise`; factory-registration arguments are separately
+  evaluated before callback registration.
+
+These rules are intentionally conservative around conditional reachability
+and do not constitute general whole-program proof of the `panic` channel,
+suspension, resource-release liveness, or other backends.
+
 **Admission note:** The Rust browser compiler currently supports only
 top-level registrations in synchronous free-function bodies, scalar/string
 factory captures, and compiler-owned unwind frames. Nested scope,
