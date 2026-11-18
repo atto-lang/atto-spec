@@ -861,6 +861,21 @@
         "rust_cranelift": "not_executed",
         "js": "not_executed"
       }
+    },
+    {
+      "id": "reject-before-shared-helper-depth-cache-bypass",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "When a shared helper's AST is valid at shallow entry depth but exceeds the fixed verifier depth when reached through a longer second hook call path, the compiler must revalidate that helper at the greater depth and reject rather than reuse the earlier shallow proof.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
     }
   ],
   "receiptRequirements": [
