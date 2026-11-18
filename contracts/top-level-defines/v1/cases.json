@@ -1,0 +1,141 @@
+{
+  "schema": "atto.top_level_defines.contract.v1",
+  "status": "PROPOSED",
+  "scope": "browser-stage-1",
+  "cases": [
+    {
+      "id": "class-fields",
+      "expected": "COMPILES",
+      "source": "define class Counter as\n  final int initial: 5\n  bool ready: true\nend\nfnc main() -> int {return 42;}\n",
+      "metadata_kinds": [
+        "class"
+      ],
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "actor-metadata",
+      "expected": "COMPILES",
+      "source": "define actor Worker as\n  final int id: 9\nend\nfnc main() -> int {return 42;}\n",
+      "metadata_kinds": [
+        "actor"
+      ],
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "enum-symbols",
+      "expected": "COMPILES",
+      "source": "define enum Status as\n #ready,\n #done\nend\nfnc main() -> int {return 42;}\n",
+      "metadata_kinds": [
+        "enum"
+      ],
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "enum-plain",
+      "expected": "COMPILES",
+      "source": "define enum Color as Red, Green, Blue end\nfnc main() -> int {return 42;}\n",
+      "metadata_kinds": [
+        "enum"
+      ],
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "struct-brace",
+      "expected": "COMPILES",
+      "source": "define pub struct Point {int x: 3\n int y: 4}\n",
+      "metadata_kinds": [
+        "struct"
+      ],
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "interface-trait-empty",
+      "expected": "COMPILES",
+      "source": "define interface Shape as end\ndefine trait Renderable as end\n",
+      "metadata_kinds": [
+        "interface",
+        "trait"
+      ],
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "define-functions",
+      "expected": "COMPILES",
+      "source": "define pub fnc main() -> int {return 42;}\n",
+      "metadata_kinds": [
+        "function"
+      ],
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "duplicate-types",
+      "expected": "REJECTS",
+      "source": "define actor Box as end\ndefine class Box as end\n",
+      "diagnostic": "E_DUPLICATE",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "duplicate-enum-case",
+      "expected": "REJECTS",
+      "source": "define enum Status as Ready, Ready end\n",
+      "diagnostic": "E_DUPLICATE",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "invalid-field-type",
+      "expected": "REJECTS",
+      "source": "define class Bad as int value: true\nend\n",
+      "diagnostic": "E_TYPE",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "unclosed-declaration",
+      "expected": "REJECTS",
+      "source": "define class Bad as int value: 1\n",
+      "diagnostic": "E_EOF",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "unsupported-actor-method",
+      "expected": "REJECTS",
+      "source": "define actor Worker as receive(msg: int) {return;} end\n",
+      "diagnostic": "E_UNSUPPORTED",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "unsupported-instantiation",
+      "expected": "REJECTS",
+      "source": "define class Thing as end\nfnc main() -> int {let value = new Thing();return 0;}\n",
+      "diagnostic": "E_UNSUPPORTED",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "unsupported-spawn",
+      "expected": "REJECTS",
+      "source": "define actor Worker as end\nfnc main() -> int {spawn Worker();return 0;}\n",
+      "diagnostic": "E_UNSUPPORTED",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "removed-percent",
+      "expected": "REJECTS",
+      "source": "fnc main() -> int {return 7 % 2;}\n",
+      "diagnostic": "E_UNSUPPORTED",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "removed-caret",
+      "expected": "REJECTS",
+      "source": "fnc main() -> int {return 7 ^ 2;}\n",
+      "diagnostic": "E_UNSUPPORTED",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "removed-double-caret",
+      "expected": "REJECTS",
+      "source": "fnc main() -> int {return 7 ^^ 2;}\n",
+      "diagnostic": "E_UNSUPPORTED",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    }
+  ]
+}
