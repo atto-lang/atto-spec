@@ -22,6 +22,12 @@ AttoLang has **no `null` value** and **no truthiness**. Absence is `Option<T>`, 
 
 Boolean logic uses the operators `&&` (short-circuit AND), `^^` (eager XOR) and `||` (short-circuit OR), whose operands must all be `bool`. The built-in `And`, `Or` and `Xor` functions, such as `And(true, true)`, remain available. See [chapter 16](16-lexical-and-grammar-reference.md#operators) for precedence and backend status. Inside conditions, `,` and `|` are still accepted as AND and OR.
 
+## Bitwise integers (proposed target)
+
+The `int` bitwise operators `& | ^ ~ <<< >>> ashr` operate on 64-bit two's-complement patterns, not checked arithmetic. `<<<` discards high bits and fills zero low bits; `>>>` fills zero high bits; `ashr` extends the sign bit. Proposed shift counts use the low six bits of the count, pending cross-backend approval. Examples: `12 & 10` is `8`, `-1 >>> 1` is `9223372036854775807`, and `-8 ashr 1` is `-4`. Boolean `^^` and stream `<<`/`>>` have separate meanings.
+
+These rules are not yet verified across the backends. See [chapter 16](16-lexical-and-grammar-reference.md#operators) and [the v1 bitwise contract](https://github.com/atto-lang/atto-spec/pull/87).
+
 ## Integer rules
 
 The chapter 02 rule is that no backend may rely on unchecked host overflow when the source specifies checked arithmetic. The backends do not agree on what happens today:
