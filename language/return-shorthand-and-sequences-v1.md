@@ -27,6 +27,62 @@ fnc calculate(int n): int {
 }
 ```
 
+### Comma-only `seq` expression syntax (2026-11-17 refinement)
+
+The **separator inside every sequence is a comma**. Semicolons remain
+statement terminators; they do not separate sequence steps.
+
+```atto
+fnc calculate(int value): int { return value; }
+pub fnc main(): int {
+    let int z = 10;
+    const int x = 5;
+
+    const int result = calculate(
+        seq
+            z += x,
+            z * 2
+    );                         // calculate(30)
+
+    const int a = seq(1, 2, 42);     // 42
+    const int b = (> 1, 2, 42);      // 42
+    return result, a, b;             // 42, not a tuple
+}
+```
+
+**Delimited expression:** `seq(x, y, z)` is equivalent in result and
+ordered effects to `(> x, y, z)`. Both can be used in any expression
+position and produce the last value, with a fresh lexical scope for
+sequence-local bindings.
+
+**Bare function argument:** `f(seq x, y, z)` is a **single argument**,
+not three. A bare `seq` in a call consumes commas through that call's
+matching `)` and therefore must be its syntactic final argument.
+For multiple arguments, use `f(seq(x, y), z)`,
+`f((> x, y), z)`, or `f(z, seq x, y)`.
+Nested calls and tuple parentheses retain their own delimiters.
+
+**Assignments within sequences:** `seq(z += x, z)` and
+`f(seq z += x, z)` first perform the checked mutable-local assignment,
+then yield the updated `z`. Assignments are valid **prefix steps** only,
+not the required final value-producing expression. No special mutation
+or borrowing exemptions arise from `seq`.
+
+```atto
+(x, y, z)           // tuple construction, not sequencing
+seq(x, y, z)        // evaluates x, y, yields z
+(> x, y, z)         // shorthand, same sequence semantics
+return x, y, z;     // contextual return sequence; yield z
+^ x, y, z;          // contextual return sequence; yield z
+|| -> x, y, z       // contextual lambda sequence; yield z
+```
+
+In particular, `seq(x; y; z)`, `seq(x,)`, and `seq(,x)`
+are invalid. A comma is **not** a general-purpose infix sequence
+operator outside these explicitly admitted contexts. This spec
+describes the target grammar; tuple code generation and general
+lambda return sequencing require their own compiler receipts.
+
 `(> ... )` is the **delimited sequence expression**, analogous to the longer `begin ... end` spelling. It is valid anywhere an expression of its final value's type is valid, including initializers, nested expressions, call arguments, match arm values and lambda expression bodies. Its opening marker is the contiguous two-character sequence `(>`, not a `>` comparison applied to an ordinary parenthesized expression.
 
 ```atto
@@ -80,9 +136,12 @@ return_operand     = expression | return_sequence ;
 return_sequence    = "seq", sequence_items ; (* same terminating ';' as return *)
 sequence_stmt      = "seq", sequence_items, statement_terminator ;
 paren_sequence     = "(>", sequence_items, ")" ;
+seq_expression     = "seq", "(", sequence_items, ")" ;
+bare_argument_seq  = "seq", sequence_items ; (* last call argument only; ends at matching ')' *)
 begin_sequence     = "begin", sequence_items, "end" ;
 sequence_items     = sequence_step, {",", sequence_step} ;
 sequence_step      = local_binding_without_terminator
+                   | checked_assignment_without_terminator
                    | admitted_statement_without_terminator
                    | expression ;
 ```
