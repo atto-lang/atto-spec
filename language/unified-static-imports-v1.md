@@ -55,15 +55,29 @@ aliasing, and ordinary uses of the English verb "use" are not import directives.
 ## File-level namespace placement
 
 Each `.atto` source file has **zero or one** namespace declaration. If present,
-`use namespace <identifier>;` must be the first top-level declaration, before
-**every** import and before any callable, class, module, actor or other declaration.
+the namespace header must be the first top-level declaration, before **every**
+import and before any callable, class, module, actor or other declaration.
 Whitespace and comments may precede it. The namespace is file-scoped; a file
 must not declare multiple namespaces, even if the names are identical.
 
 ```ebnf
 source_unit     = [ namespace_decl ], { import_decl }, { top_level_decl } ;
-namespace_decl  = "use", "namespace", identifier, ";" ;
+namespace_decl  = "use", "namespace", identifier, { ".", identifier }, ";"
+                | "use", "default", "namespace", [ "(", positive_integer, ")" ], ";" ;
 ```
+
+The explicit header uses a fixed, potentially dotted namespace, e.g.
+`use namespace commerce.storefront;`. The derived header takes source-path
+components: `use default namespace;` is the containing folder and
+`use default namespace(2);` is `parent.folder`. Depth must be an integer
+from 1 to 32. Resolution is compile-time, requires a **logical package-relative
+source path** ending in `.atto`, and must never include an absolute host path,
+parent-traversal component or symlink-resolved machine path. Reject insufficient
+depth and invalid/reserved folder identifiers; never sanitize them silently.
+The host source-only API (including browser snippets without a virtual file path)
+must diagnose missing context instead of guessing. The resulting namespace has
+the same static identity as its explicit spelling; it is not a runtime global.
+The file position rule applies equally to explicit and derived headers.
 
 Valid:
 
@@ -75,6 +89,19 @@ import sleep from pkg "std.time";
 
 pub fnc main(): int { return 0; }
 ```
+
+For `src/commerce/storefront/main.atto` under the source root, the following
+headers resolve to `storefront`, `commerce.storefront`, and
+`src.commerce.storefront`, respectively:
+
+```atto
+use default namespace;
+use default namespace(2);
+use default namespace(3);
+```
+
+These are alternative headers in **separate** files, not declarations that
+can appear together in one source file.
 
 A source file without a namespace is also valid. An import before the namespace,
 a repeated namespace, or a namespace after any declaration is a compile-time
@@ -117,8 +144,10 @@ any of these forms.
 
 ## Conformance requirements
 
-- Parse zero or one namespace header before imports and declarations; reject
-  duplicates and declarations appearing after an import or other declaration.
+- Parse zero or one explicit or folder-derived namespace header before imports
+  and declarations; reject duplicates and declarations appearing after an import
+  or other declaration. Derivation is deterministic from a package-relative
+  logical path; reject missing path, reserved components, invalid/deep depths.
 - Parse namespace and named imports with and without `pkg`.
 - Parse comma-separated single and multiple names, aliases, and dotted
   static export paths such as `telemetry.span as span`.
