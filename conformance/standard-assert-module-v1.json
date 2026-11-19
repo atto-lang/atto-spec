@@ -1,0 +1,159 @@
+{
+  "schema_version": "1",
+  "contract": "std.assert.namespaced-api-v1",
+  "language": "AttoLang",
+  "scope": "contract-only, no compiled guest evidence",
+  "module": "std.assert",
+  "canonical_import": "import * as assert from pkg \"std.assert\";",
+  "canonical_members": [
+    "true",
+    "false",
+    "equal",
+    "not_equal"
+  ],
+  "assertion_failure": "AssertionError extends Error",
+  "compiled_backends": [
+    "rs",
+    "java",
+    "llvm",
+    "wasm",
+    "net",
+    "forge"
+  ],
+  "backend_statuses": {
+    "rs": "not_executed",
+    "java": "not_executed",
+    "llvm": "not_executed",
+    "wasm": "not_executed",
+    "net": "not_executed",
+    "forge": "not_executed"
+  },
+  "cases": [
+    {
+      "id": "namespace_import",
+      "snippet": "import * as assert from pkg \"std.assert\";",
+      "phase": "compile_link",
+      "expected": "accept",
+      "status": "not_executed"
+    },
+    {
+      "id": "true_predicate",
+      "snippet": "assert.true(true);",
+      "phase": "runtime",
+      "expected": "pass",
+      "status": "not_executed"
+    },
+    {
+      "id": "false_predicate",
+      "snippet": "assert.false(false);",
+      "phase": "runtime",
+      "expected": "pass",
+      "status": "not_executed"
+    },
+    {
+      "id": "equal_i64",
+      "snippet": "assert.equal(42, 42);",
+      "phase": "runtime",
+      "expected": "pass",
+      "status": "not_executed"
+    },
+    {
+      "id": "not_equal_i64",
+      "snippet": "assert.not_equal(42, 43);",
+      "phase": "runtime",
+      "expected": "pass",
+      "status": "not_executed"
+    },
+    {
+      "id": "true_fail",
+      "snippet": "assert.true(false);",
+      "phase": "runtime",
+      "expected": "AssertionError",
+      "status": "not_executed"
+    },
+    {
+      "id": "false_fail",
+      "snippet": "assert.false(true);",
+      "phase": "runtime",
+      "expected": "AssertionError",
+      "status": "not_executed"
+    },
+    {
+      "id": "equal_fail",
+      "snippet": "assert.equal(42, 43);",
+      "phase": "runtime",
+      "expected": "AssertionError",
+      "status": "not_executed"
+    },
+    {
+      "id": "not_equal_fail",
+      "snippet": "assert.not_equal(42, 42);",
+      "phase": "runtime",
+      "expected": "AssertionError",
+      "status": "not_executed"
+    },
+    {
+      "id": "predicate_requires_bool",
+      "snippet": "assert.true(1);",
+      "phase": "typecheck",
+      "expected": "reject",
+      "status": "not_executed"
+    },
+    {
+      "id": "expected_actual_same_type",
+      "snippet": "assert.equal(1, \"1\");",
+      "phase": "typecheck",
+      "expected": "reject",
+      "status": "not_executed"
+    },
+    {
+      "id": "bare_call_not_stdlib",
+      "snippet": "assert(true);",
+      "phase": "name_resolution",
+      "expected": "reject_if_no_user_binding",
+      "status": "not_executed"
+    },
+    {
+      "id": "reserved_true_bare_decl",
+      "snippet": "fnc true(): void {}",
+      "phase": "parse",
+      "expected": "reject",
+      "status": "not_executed"
+    },
+    {
+      "id": "unrelated_keyword_member",
+      "snippet": "assert.if(true);",
+      "phase": "parse",
+      "expected": "reject",
+      "status": "not_executed"
+    },
+    {
+      "id": "no_implicit_preload",
+      "snippet": "assert.true(true);",
+      "phase": "name_resolution",
+      "expected": "reject_if_no_import",
+      "status": "not_executed"
+    },
+    {
+      "id": "side_effect_once",
+      "snippet": "assert.equal(next_expected(), next_actual());",
+      "phase": "runtime",
+      "expected": "evaluate_expected_then_actual_once",
+      "status": "not_executed"
+    },
+    {
+      "id": "optimized_failure",
+      "snippet": "assert.equal(1, 2);",
+      "phase": "release_execution",
+      "expected": "AssertionError",
+      "status": "not_executed"
+    },
+    {
+      "id": "tenant_failure_containment",
+      "snippet": "assert.true(false);",
+      "phase": "hostile_guest_execution",
+      "expected": "tenant_failure_no_neighbor_termination",
+      "status": "not_executed"
+    }
+  ]
+}
