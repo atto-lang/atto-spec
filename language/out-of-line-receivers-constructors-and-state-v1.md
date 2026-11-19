@@ -39,6 +39,18 @@ pub constructor (Counter)(int initial): self {
 val counter = new Counter(7);
 ```
 
+### Lexically equivalent constructor headers
+
+All of the following are **identical constructor declarations** once completed with the same `: self` and body:
+
+```atto
+constructor (Counter)(int initial): self { }
+constructor (Counter) (int initial): self { }
+constructor(Counter) (int initial): self { }
+```
+
+The grammar uses the token sequence `constructor ( type_name ) ( parameter_list ) : self body`. Spaces, tabs, and newlines **between tokens** are insignificant, including after the `constructor` keyword and between the two adjacent parenthesis groups. No extra argument, currying, overload, different nominal owner, or altered effects arise from spacing. The formatter SHOULD canonicalize these forms to `constructor (Counter)(int initial): self` (one space after `constructor`, no space between the two parenthesized groups). Comments between tokens remain semantically inert but MUST be preserved, never deleted to enforce canonical spacing. Whitespace within identifiers or keyword spellings is **not** permitted. The standalone header without a `: self` marker and valid body is an incomplete declaration, not an executable constructor.
+
 The **first** `(Counter)` identifies the owning nominal type and supplies no value parameter; the **second** parenthesis list contains explicit constructor arguments. `: self` is the construction-result marker, not the type of a caller-supplied receiver, and no explicit `return self` is required. The constructor has a compiler-owned under-construction `self` capability; it is never callable as `counter.constructor(...)`, and returning a partially constructed self, publishing it, taking/sharing it, or allowing it to escape is an error. Class allocation and field/state initialization happen exactly once, before publication. Every control-flow exit must prove required initialization; any throw/raise/panic must unwind only the initialized subobjects exactly once. As with ordinary methods, named constructor **call** arguments use `name: expression` where admitted, never `name=expression`.
 
 Classes have identity and may allocate. Their ordinary fields remain as supported by `define class`; `define state on class` is a distinct guarded member domain, not a source rewrite into ordinary public fields. Ordinary mutable class field writes require a checked `mut` receiver / exclusive loan; guard-protected state uses the separate checked guard authority described below.
