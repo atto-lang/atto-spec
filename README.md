@@ -28,11 +28,13 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
 - [Shared ownership and explicit guards v1](language/shared-ownership-and-guards-v1.md): TARGET semantics for `share!`/`rt share` (frozen sharing) and separately synchronized `RwLock<T>` mutation; **not compiler certified**.
 
+- [Class field binding defaults v1](language/class-field-binding-defaults-v1.md): unqualified type-first ordinary class fields mean `let` for every type; `val` forbids rebinding, `mut` independently requests referent writes, `final` is single-assignment, and class `const` requires constexpr (accepted design; backend parity unverified).
+
 - [Implicit argument borrowing v1](language/implicit-argument-borrow-v1.md): target non-owning default for nonprimitive call arguments, checked mutable loans, explicit ambiguous cases and breaking ownership migration (not yet compiler-certified).
 
 - [Struct field equals initializer v1](language/struct-field-equals-v1.md): restricted `StructName(field=value)` with checked name resolution, ordinary-call rejection, and source-order safety (TARGET / NOT EXECUTED).
 
-- [Class-field visibility v1](language/class-field-visibility-v1.md): canonical `pub[pkg]`, explicit `private`, private-by-default, and independent field mutability; package-boundary linker and multi-backend guest validation remain pending.
+- [Class-field visibility v1](language/class-field-visibility-v1.md): canonical `pub[pkg]`, explicit and implicit `private`, and immutable-by-default class fields; cross-package linker tests and multi-backend guest validation remain pending.
 
 ## Validation
 
