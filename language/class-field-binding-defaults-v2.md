@@ -1,8 +1,8 @@
 # Class-field binding defaults v2 — implicit `val`
 
-**Status: proposed supersession (2026-11-18), pending review and executed guest conformance.** This amendment reconciles the user-approved [class-field visibility v1](class-field-visibility-v1.md) with the older [class-field binding defaults v1](class-field-binding-defaults-v1.md). V1 chose implicit `let`; the current class-visibility contract and associated implementation work require implicit `val`. Do not silently claim v1 and v2 describe identical behavior.
+**Status: accepted semantic replacement of v1 (2026-11-18); Rust/browser subset verified on an exact-source mirror. Other backends and cross-package linking remain unverified.** This amendment reconciles the user-approved [class-field visibility v1](class-field-visibility-v1.md) with the older [class-field binding defaults v1](class-field-binding-defaults-v1.md). V1 chose implicit `let`; the current class-visibility contract and associated implementation work require implicit `val`. Do not silently claim v1 and v2 describe identical behavior.
 
-## Normative v2 proposal
+## Normative v2 rule
 
 An **ordinary class field** with an omitted binding modifier is **`val`**, irrespective of its type. An explicit `let` is required for rebinding, and `mut` controls referent mutation separately. Neither visibility nor the chosen initializer separator (`=` or a legacy supported `:` spelling) changes this default.
 
@@ -50,3 +50,7 @@ The existing Rust browser compiler's `FieldMode::Final` is a coarse storage rule
 - Cross-package cases must be run only in an authenticated multi-package compiler; unsupported cases fail closed. Require exact tree/blob SHAs, source commit, test step execution, and guest result/diagnostic receipts.
 
 **Migration gate:** Do not merge the compiler switch solely on parser tests; run the complete Rust test suite, audit existing constructor fixtures, and exercise the compiled guest Wasm harness. Mark CI runs with zero executed steps as NOT EXECUTED.
+
+## Initial Rust verification receipt
+
+The exact-source Rust/browser subset in [atto-source.rs PR #358](https://github.com/atto-lang/atto-source.rs/pull/358) passed **422 Rust tests, 0 failures** on all 659 SHA-verified source/test blobs (source commit `5a0c0a7f9da42bcfae2b39a413a5b3a6ef678409`) in [private CI run 44440471287](https://github.com/gha-indie-worker/gha-indie-worker-docs/actions/runs/44440471287). A separate [focused compiled Wasm run 44440471318](https://github.com/gha-indie-worker/gha-indie-worker-docs/actions/runs/44440471318) returned 42 and enforced `E_IMMUTABLE`, `E_PRIVATE`, and `E_CONST` with no output artifacts on invalid code. Cross-package linker enforcement and independent Java/LLVM/.NET/Forge backends remain **NOT VERIFIED**. The repository's baseline strict Rustfmt/Clippy checks are not green; this receipt certifies functional tests, not lint or whole-ecosystem parity.
