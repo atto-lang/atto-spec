@@ -30,17 +30,17 @@ fnc calculate_other() -> infer { return 42; }
 ## Grammar and lexical rules
 
 ~~~ebnf
-named_header     = ["fnc" | "routine"], identifier, "(", parameters, ")", post_return
-                 | ["fnc" | "routine"], return_type, "<-", identifier, "(", parameters, ")" ;
+name_first       = ("fnc" | "routine"), identifier, "(", parameters, ")", post_return ;
+return_first     = ["fnc" | "routine"], return_type, "<-", identifier, "(", parameters, ")" ;
 post_return      = (":" | "->"), return_type ;
 return_type      = type_ref | "infer" ;
-callable_body    = "{" , { statement }, "}"
-                 | "begin", { statement }, "end"
-                 | { statement }, "end"
-                 | existing_legacy_comma_end_body ;
+brace_body       = "{", { statement }, "}" ;
+explicit_body    = "begin", { statement }, "end" ;
+bare_end_body    = { statement }, "end" ; (* return-first only *)
+callable_body    = brace_body | explicit_body | bare_end_body | legacy_comma_end_body ;
 ~~~
 
-The bare return-first version without fnc/routine is a **named callable declaration only in declaration scope** (file/module/class/actor, where allowed), not an expression or variable binding. The exact contiguous token `<-` is a **left-pointing return-type separator**, not assignment, a stream-read operator, or two independent operators. Whitespace within it (`< -`) is invalid; it is not confused with `<=`, `<T>` or `->`. The return type appears exactly once: combining `int <- name() -> int` is invalid.
+Within a class or actor, the normal name-first method shorthand may also omit fnc. At file/module top level, only a **return-first** declaration may omit fnc/routine. The bare return-first version without fnc/routine is a **named callable declaration only in declaration scope** (file/module/class/actor, where allowed), not an expression or variable binding. The exact contiguous token `<-` is a **left-pointing return-type separator**, not assignment, a stream-read operator, or two independent operators. Whitespace within it (`< -`) is invalid; it is not confused with `<=`, `<T>` or `->`. The return type appears exactly once: combining `int <- name() -> int` is invalid.
 
 For return-first headers, `begin`/`end` and an explicit semicolon-terminated statement sequence followed by `end` are both admitted. They have **ordinary statement semantics**: no implicit return from their final expression. An empty body is valid for declared void or infer (resolved to void), including a comment-only body. For a nonvoid result, every reachable path must return a value (or terminate via an admitted exceptional flow), otherwise compile error. For the existing arrow type + Erlang-like comma/end family, preserve its separate tail-expression implicit-return contract; do not reinterpret it as semicolon/end or silently flatten it.
 
