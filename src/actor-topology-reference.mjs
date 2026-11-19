@@ -102,7 +102,7 @@ export class TopologyModel {
       a.parent===owner.id && a.type===type && a.purpose===purpose);
     if (previousChildren.some(a=>!slots.includes(a.id))) throw new Error('COUNT_CONFLICT');
     const missing=slots.filter((_,i)=>!prior[i]);
-    if (this.#actors.size + missing.length > this.maxActors) throw new Error('QUOTA');
+    if (this.#actors.size + this.#reservations.size + missing.length > this.maxActors) throw new Error('QUOTA');
     missing.forEach(s=>this.#reservations.add(s));
     const staged=[];
     try {
@@ -169,8 +169,17 @@ export class TopologyModel {
   }
   retire(ref) {
     if(!this.#alive(ref)) return false;
-    this.#actors.delete(ref.id);
-    for(const [id,e] of this.#edges) if(e.from===ref || e.to===ref) this.#edges.delete(id);
+    const removed=new Set([ref.id]);
+    let changed=true;
+    while(changed) {
+      changed=false;
+      for(const a of this.#actors.values()) if(a.parent && removed.has(a.parent) && !removed.has(a.id)) {
+        removed.add(a.id); changed=true;
+      }
+    }
+    for(const id of removed) this.#actors.delete(id);
+    for(const [id,e] of this.#edges)
+      if(removed.has(e.from.id) || removed.has(e.to.id)) this.#edges.delete(id);
     this.#revision++;
     return true;
   }
