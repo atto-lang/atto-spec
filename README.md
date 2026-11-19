@@ -28,14 +28,16 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
 - [Shared ownership and explicit guards v1](language/shared-ownership-and-guards-v1.md): TARGET semantics for `share!`/`rt share` (frozen sharing) and separately synchronized `RwLock<T>` mutation; **not compiler certified**.
 
-- [Class field binding defaults v2 proposal](language/class-field-binding-defaults-v2.md): reconcile visibility v1's immutable-by-default choice; unqualified class fields are proposed to mean `val`. Breaking migration and executed guest checks required before adoption.
-- [Class field binding defaults v1 (historical)](language/class-field-binding-defaults-v1.md): accepted earlier `let` default. Retained for compatibility and explicit supersession tracking; conflicts with proposed v2.
+- [Class field binding defaults v2 proposal](language/class-field-binding-defaults-v2.md): resolve the conflict between visibility v1's implicit `val` target and the prior binding-default v1's implicit `let`. Breaking migration and executed guest checks required before adoption.
+- [Class field binding defaults v1 (historical)](language/class-field-binding-defaults-v1.md): previously adopted `let` default, retained for migration and explicit supersession tracking.
 
 - [Implicit argument borrowing v1](language/implicit-argument-borrow-v1.md): target non-owning default for nonprimitive call arguments, checked mutable loans, explicit ambiguous cases and breaking ownership migration (not yet compiler-certified).
 
 - [Struct field equals initializer v1](language/struct-field-equals-v1.md): restricted `StructName(field=value)` with checked name resolution, ordinary-call rejection, and source-order safety (TARGET / NOT EXECUTED).
 
 - [Class-field visibility v1](language/class-field-visibility-v1.md): canonical `pub[pkg]`, explicit and implicit `private`, and immutable-by-default class fields; cross-package linker tests and multi-backend guest validation remain pending.
+
+- [Explicit callable return types v1](language/explicit-callable-return-types-v1.md): every named callable declares a concrete result (including `void`) or explicitly opts into `infer`; omissions are errors. Target contract; backend parity unverified.
 
 ## Validation
 
