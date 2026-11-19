@@ -6,7 +6,7 @@ const keyOf = (tenant, graph, type, purpose, key) =>
 export class TopologyModel {
   #actors = new Map();
   #reservations = new Set();
-  #grants = new WeakSet();
+  #grants = new WeakMap();
   #edges = new Map();
   #revision = 0;
   #next = 1;
@@ -33,11 +33,9 @@ export class TopologyModel {
   }
   grant(actor, {actions, types, purposes}={}) {
     if (!this.#alive(actor)) throw new Error('stale owner');
-    const cap = Object.freeze({
-      actor, actions:new Set(actions || []), types:new Set(types || []),
-      purposes:new Set(purposes || []), issuedRevision:this.#revision
-    });
-    this.#grants.add(cap);
+    const cap = Object.freeze({});
+    this.#grants.set(cap, {actor, actions:new Set(actions || []),
+      types:new Set(types || []), purposes:new Set(purposes || [])});
     return cap;
   }
   revoke(cap) { this.#grants.delete(cap); }
@@ -45,31 +43,64 @@ export class TopologyModel {
     return !!ref && this.#actors.get(ref.id) === ref;
   }
   #check(cap, action, type, purpose) {
-    if (!cap || !this.#grants.has(cap) || !this.#alive(cap.actor) ||
-        !cap.actions.has(action) ||
-        (type !== undefined && !cap.types.has(type)) ||
-        (purpose !== undefined && !cap.purposes.has(purpose)))
-      throw new Error('DENIED');
+    const g = cap && this.#grants.get(cap);
+    if (!g || !this.#alive(g.actor) || !g.actions.has(action) ||
+        (type !== undefined && !g.types.has(type)) ||
+        (purpose !== undefined && !g.purposes.has(purpose))) throw new Error('DENIED');
+    return g.actor;
   }
   find(cap, {type, purpose, key}) {
-    this.#check(cap, 'find', type, purpose);
-    const id=keyOf(cap.actor.tenant,cap.actor.graph,type,purpose,key);
+    const actor=this.#check(cap, 'find', type, purpose);
+    const id=keyOf(actor.tenant,actor.graph,type,purpose,key);
     return this.#actors.get(id) ?? null;
   }
+
+  async findOrCreateNeighbor(cap,{type,purpose,key},factory) {
+    const owner=this.#check(cap,'create',type,purpose);
+    const id=keyOf(owner.tenant,owner.graph,type,purpose,key);
+    const existing=this.#actors.get(id);
+    if (existing) return existing;
+    if (this.#reservations.has(id)) throw new Error('BUSY');
+    if (this.#actors.size + this.#reservations.size >= this.maxActors)
+      throw new Error('QUOTA');
+    this.#reservations.add(id);
+    let prepared=null;
+    try {
+      prepared=await factory(id);
+      if (!prepared || typeof prepared.stop !== 'function')
+        throw new Error('FACTORY');
+      this.#check(cap,'create',type,purpose);
+      if (this.#actors.has(id)) throw new Error('CONFLICT');
+      const created=Object.freeze({id,tenant:owner.tenant,graph:owner.graph,
+        type,purpose,key,generation:1,parent:null,input:null,output:null,
+        address:this.#next++});
+      this.#actors.set(id,created);
+      this.#revision++;
+      return created;
+    } catch(error) {
+      if (prepared && typeof prepared.stop === 'function') await prepared.stop();
+      throw error;
+    } finally {
+      this.#reservations.delete(id);
+    }
+  }
   children(cap,{type,purpose}) {
-    this.#check(cap,'find',type,purpose);
-    return [...this.#actors.values()].filter(a=>a.parent === cap.actor.id &&
+    const actor=this.#check(cap,'find',type,purpose);
+    return [...this.#actors.values()].filter(a=>a.parent === actor.id &&
       a.type === type && a.purpose === purpose);
   }
   async ensureChildren(cap,{type,purpose,count}, factory) {
-    this.#check(cap, 'create', type, purpose);
+    const owner=this.#check(cap, 'create', type, purpose);
     if (!Number.isSafeInteger(count) || count < 1 || count > this.maxChildren)
       throw new Error('QUOTA');
     const slots=Array.from({length:count},(_,i)=>keyOf(
-      cap.actor.tenant,cap.actor.graph,type,purpose,cap.actor.id + '/slot/' + i));
+      owner.tenant,owner.graph,type,purpose,owner.id + '/gen/' + owner.generation + '/slot/' + i));
     if (slots.some(s=>this.#reservations.has(s))) throw new Error('BUSY');
     const prior=slots.map(s=>this.#actors.get(s) ?? null);
-    if (prior.some(a=>a !== null && a.parent !== cap.actor.id)) throw new Error('OWNER');
+    if (prior.some(a=>a !== null && a.parent !== owner.id)) throw new Error('OWNER');
+    const previousChildren=[...this.#actors.values()].filter(a=>
+      a.parent===owner.id && a.type===type && a.purpose===purpose);
+    if (previousChildren.some(a=>!slots.includes(a.id))) throw new Error('COUNT_CONFLICT');
     const missing=slots.filter((_,i)=>!prior[i]);
     if (this.#actors.size + missing.length > this.maxActors) throw new Error('QUOTA');
     missing.forEach(s=>this.#reservations.add(s));
@@ -87,9 +118,9 @@ export class TopologyModel {
         throw new Error('CONFLICT');
       for (const {id} of staged) {
         const actor=Object.freeze({
-          id, tenant:cap.actor.tenant, graph:cap.actor.graph,
+          id, tenant:owner.tenant, graph:owner.graph,
           type, purpose, key:id, generation:1,
-          parent:cap.actor.id, input:null, output:null, address:this.#next++
+          parent:owner.id, input:null, output:null, address:this.#next++
         });
         this.#actors.set(id,actor);
       }
@@ -104,11 +135,12 @@ export class TopologyModel {
     }
   }
   connect(cap,from,to,{payload,expectedRevision}) {
-    this.#check(cap,'connect');
+    const owner=this.#check(cap,'connect');
+    if(from !== owner) throw new Error('DENIED');
     if (expectedRevision !== this.#revision) throw new Error('STALE_GRAPH');
     if (!this.#alive(from) || !this.#alive(to)) throw new Error('STALE_ACTOR');
-    if (from.tenant !== cap.actor.tenant || to.tenant !== cap.actor.tenant ||
-        from.graph !== cap.actor.graph || to.graph !== cap.actor.graph) throw new Error('DENIED');
+    if (from.tenant !== owner.tenant || to.tenant !== owner.tenant ||
+        from.graph !== owner.graph || to.graph !== owner.graph) throw new Error('DENIED');
     if (from.output !== payload || to.input !== payload) throw new Error('TYPE');
     const edge=JSON.stringify([from.id,from.generation,to.id,to.generation]);
     if (this.#edges.has(edge)) throw new Error('DUPLICATE');
@@ -130,9 +162,9 @@ export class TopologyModel {
     return false;
   }
   upstream(cap,ref) {
-    this.#check(cap,'find');
-    if (!this.#alive(ref) || ref.tenant !== cap.actor.tenant ||
-        ref.graph !== cap.actor.graph) throw new Error('DENIED');
+    const owner=this.#check(cap,'find');
+    if (!this.#alive(ref) || ref.tenant !== owner.tenant ||
+        ref.graph !== owner.graph) throw new Error('DENIED');
     return [...this.#edges.values()].filter(e=>e.to===ref).map(e=>e.from);
   }
   retire(ref) {
@@ -143,9 +175,9 @@ export class TopologyModel {
     return true;
   }
   observe(cap,{capacity=4}={}) {
-    this.#check(cap,'observe');
+    const owner=this.#check(cap,'observe');
     if (!Number.isSafeInteger(capacity) || capacity<1 || capacity>64) throw new Error('QUOTA');
-    const s={tenant:cap.actor.tenant,graph:cap.actor.graph,events:[],loss:0,capacity};
+    const s={tenant:owner.tenant,graph:owner.graph,events:[],loss:0,capacity};
     this.#observations.set(s,s);
     return Object.freeze({read:()=>s.events.shift()??null,loss:()=>s.loss,
       close:()=>this.#observations.delete(s)});
