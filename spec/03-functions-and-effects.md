@@ -2,7 +2,19 @@
 
 **Status: DRAFT.**
 
-A free function is declared with `fnc`; class and actor instance methods use an implicit `self` and canonically omit `fnc`. Callables have explicit or inferred return types where grammar permits. Each invocation returns **one value**; tuples/records are themselves one value.
+A free function is declared with `fnc`; class and actor instance methods use an implicit `self` and canonically omit `fnc`. Every named callable must explicitly declare its return type, including `void`; explicit `-> infer` (or `: infer`) is allowed, but a concrete result type is preferred. Omitted return annotations are invalid. Each invocation returns **one value**; tuples/records are themselves one value.
+
+## Mandatory named-callable return annotations
+
+The accepted AttoLang v1 rule is that **every named function, routine, class/actor instance or static method, out-of-line method, and actor receive handler must explicitly annotate its return**. Accepted syntax: `-> T` or `: T`, where `T` can be concrete `void` or the explicitly requested inference placeholder `infer`. Inference is permitted but less desirable for public APIs and cross-module signatures; the compiler resolves it statically or reports an error, never silently choosing void. For example:
+
+~~~atto
+fnc calculate(int x) -> int { return x + 1; }
+fnc shutdown() -> void { }
+fnc choose() -> infer { return 42; }
+~~~
+
+A constructor has no return annotation, since construction is not an ordinary return-valued callable; lambdas retain separately specified contextual inference. See the [normative return-type contract](https://github.com/atto-lang/atto-spec/blob/main/language/explicit-callable-return-types-v1.md). This is an accepted target; backend execution and formatter parity remain separately gated.
 
 ## Signatures and visibility
 
