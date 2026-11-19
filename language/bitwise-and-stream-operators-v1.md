@@ -1,6 +1,6 @@
 # Bitwise operators and directional stream syntax — v1
 
-**Status:** proposed normative contract, pending executable parity. **Language:** AttoLang / AttoPL (formerly Oreslang).
+**Status:** proposed normative contract, pending executable parity. **Language:** AttoLang (also called AttoPL).
 
 ## Surface grammar
 
