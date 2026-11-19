@@ -46,11 +46,42 @@ relative path such as `"./a.atto"`. Dotted selectors traverse statically exporte
 No braces are required or accepted in the canonical grammar. The named-import
 list has no trailing comma.
 
-The declaration `use namespace name;` is a distinct, legacy **source
-namespace header**, not a dependency import, and must not be blindly rewritten
-to `import namespace name;`. It needs a separate namespace-declaration
-migration. Likewise, `using`, `with`, trait/inherited-member aliasing, and
-ordinary uses of the English verb "use" are not import directives.
+The declaration `use namespace name;` is a distinct **source namespace
+header**, not a dependency import, and must not be rewritten to
+`import namespace name;`. The `use namespace` spelling remains canonical
+for source identity. Likewise, `using`, `with`, trait/inherited-member
+aliasing, and ordinary uses of the English verb "use" are not import directives.
+
+## File-level namespace placement
+
+Each `.atto` source file has **zero or one** namespace declaration. If present,
+`use namespace <identifier>;` must be the first top-level declaration, before
+**every** import and before any callable, class, module, actor or other declaration.
+Whitespace and comments may precede it. The namespace is file-scoped; a file
+must not declare multiple namespaces, even if the names are identical.
+
+```ebnf
+source_unit     = [ namespace_decl ], { import_decl }, { top_level_decl } ;
+namespace_decl  = "use", "namespace", identifier, ";" ;
+```
+
+Valid:
+
+```atto
+// Optional license header
+use namespace storefront;
+import module math from "./math.atto";
+import sleep from pkg "std.time";
+
+pub fnc main(): int { return 0; }
+```
+
+A source file without a namespace is also valid. An import before the namespace,
+a repeated namespace, or a namespace after any declaration is a compile-time
+error. The formatter must preserve valid header ordering and must not silently
+repair invalid source by moving or deleting namespace declarations. This is a
+syntax contract only; acceptance of a header does not prove a linked module
+or an executable package import.
 
 ## Static binding and visibility
 
@@ -86,6 +117,8 @@ any of these forms.
 
 ## Conformance requirements
 
+- Parse zero or one namespace header before imports and declarations; reject
+  duplicates and declarations appearing after an import or other declaration.
 - Parse namespace and named imports with and without `pkg`.
 - Parse comma-separated single and multiple names, aliases, and dotted
   static export paths such as `telemetry.span as span`.
