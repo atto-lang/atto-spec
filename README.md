@@ -33,6 +33,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 - [Implicit argument borrowing v1](language/implicit-argument-borrow-v1.md): target non-owning default for nonprimitive call arguments, checked mutable loans, explicit ambiguous cases and breaking ownership migration (not yet compiler-certified).
 
 - [Struct field equals initializer v1](language/struct-field-equals-v1.md): restricted `StructName(field=value)` with checked name resolution, ordinary-call rejection, and source-order safety (TARGET / NOT EXECUTED).
+- [Out-of-line receivers, constructors and protected class state v1](language/out-of-line-receivers-constructors-and-state-v1.md): TARGET declaration/linkage semantics for class and struct receiver methods, typed constructors, and guarded per-instance class state. Accompanying source-only cases are **not compiler/guest execution evidence**.
 
 - [Class-field visibility v1](language/class-field-visibility-v1.md): canonical `pub[pkg]`, explicit and implicit `private`, and immutable-by-default class fields; cross-package linker tests and multi-backend guest validation remain pending.
 
