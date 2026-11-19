@@ -95,8 +95,10 @@ As a grammar rule (**TARGET (decided)**), this reads:
 
 ```ebnf
 callable_body = return_spec [ "::" ] ( block | { statement } "end" ) ;
-return_spec   = ":" type_ref | "->" type_ref ;
+return_spec   = (":" | "->") (type_ref | "infer") ;
 ```
+
+A named callable **must** include this return specification, even for `void`. `infer` is explicitly allowed but not preferred; omitting the annotation is an error and never means `void` by default. This applies to functions, routines, instance/static methods, actor handlers and out-of-line methods. Constructors and contextual lambda inference follow their separate grammar contracts.
 
 So these all declare the same function:
 
