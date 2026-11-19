@@ -82,6 +82,44 @@ verified synchronization guards (such as trusted RwLock<T>) protecting interior
 mutable storage. A frozen owner still needs domain-specific Share/Send/Sync
 proof and tenant admission.
 
+## Call-site ownership decision table (target semantics)
+
+The **default for a nonprimitive class argument** is a scoped, readonly
+`borrow!` loan. The caller writes `inspect(owner)`, not
+`inspect(borrow! owner)`; both mean the same read loan when the callee
+declares `fnc inspect(Packet p)`. This is not an implicit clone, move, share,
+or pin, and it does not extend the owner's lifetime. A compiler may retain an
+explicit *versioned migration profile* until that behavior is verified across
+methods and backends.
+
+| Intent | Canonical spelling | Admission condition |
+| --- | --- | --- |
+| Ordinary readonly call | `inspect(owner)` | Implicit `borrow!` for a named live nonprimitive owner, valid for the call only |
+| Disambiguated readonly loan | `inspect(borrow! owner)` | Identical rights and lifetime to the implicit loan, never an escape hatch |
+| Exclusive mutable call | `update(mut owner)` | Unique write authority, no overlapping shared or mutable loans; `borrow! mut owner` is an equivalent explicit spelling |
+| Consuming call | `consume(take! owner)` | Formal explicitly declares `take! T`; old owner is invalid and no live loan survives |
+| Frozen sharing | `share! frozen_owner` | Transitive readonly proof or an explicitly verified synchronization guard; no implied mutable sharing |
+| Shallow copy | `copy! owner` | Independent root with no unproved mutable child alias; otherwise reject |
+| Deep graph copy | `copy!! owner` | Independent mutable reachable graph with cycle/identity preservation and rollback on failure |
+| Pinned storage | `pin! take! owner` | Consuming pin of stable pointee storage; a cross-domain handoff needs a separate backend proof |
+| Explicit release | `drop! owner;` | Standalone consuming statement; no live loans, double release, or missing destructor path |
+| Immutable conversion | `freeze! take! owner` | Consuming deep freeze; no surviving writable aliases |
+| Non-owning weak handle | `weak! shared_owner` | Proven shared source, region/generation authentication on later upgrade |
+
+The presence of `borrow!` in user source must **not** authorize a borrow of
+an unowned temporary, an expired or moved value, a borrowed value returned as
+owned, or a live loan across `await`, actor admission, or cancellation without
+independent lifetime proof. `pin!` proves a storage-address property, not
+those missing borrow or actor-domain rights. Conversely, an implicit borrow
+must never silently stand in for `take!`, `share!`, `copy!`, `copy!!`,
+`pin!`, or `drop!` when the operation changes ownership or storage.
+
+**Executable evidence boundary:** this table is a language contract, not a
+claim that every spelling works in every compiler profile. In particular,
+the initial Rust compiler profile covers top-level synchronous class calls;
+method/constructor/actor and async boundaries require separate admission
+and exact-head guest tests. Until then, unsupported cases fail closed.
+
 ## Backend status and conformance gate
 
 The Rust browser compiler (atto-source.rs PR #344) accepts primitive ownership
