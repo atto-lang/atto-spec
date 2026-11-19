@@ -13,35 +13,38 @@ scoped resources and cleanup.
 
 ```atto
 import * as telemetry from pkg "core.telemetry";
-import { span, tracer as create_tracer } from pkg "core.telemetry";
-import { foo, bar as baz } from pkg "+/pkg";
+import span, tracer as create_tracer from pkg "core.telemetry";
+import foo, bar as baz from pkg "+/pkg";
 import * as p from pkg "+/pkg";
 import * as local from "./relative-file.atto";
-import { calculate, Config } from "./relative-file.atto";
-import { telemetry: { span, tracer as make_tracer } } from pkg "core";
+import calculate, Config from "./relative-file.atto";
+import telemetry.span as span, telemetry.tracer as make_tracer from pkg "core";
+import sleep from pkg "std.time";
 ```
 
 A full namespace import is **not** a request to eagerly link every export.
 Only reachable symbols should enter the final output when side-effect analysis
-allows it. Named and nested imports are statically bound *public exports*,
-never dynamic object-property destructuring.
+allows it. Named or dotted imports select statically declared *public exports*;
+they never destructure a runtime object's properties. The local binding for a
+dotted selector is its final component unless `as` explicitly renames it.
 
 ## Grammar
 
 ```ebnf
 import_decl     = "import", import_clause, "from", [ "pkg" ], string, ";" ;
 import_clause   = "*", "as", identifier
-                | "{", import_spec, { ",", import_spec }, [ "," ], "}" ;
-import_spec     = identifier, [ "as", identifier ]
-                | identifier, ":", "{", import_spec, { ",", import_spec },
-                  [ "," ], "}" ;
+                | import_spec, { ",", import_spec } ;
+import_spec     = export_path, [ "as", identifier ] ;
+export_path     = identifier, { ".", identifier } ;
 ```
 
 The right-hand string denotes a source file without `pkg` and a package
 identity/rooted package reference with `pkg`. A project-rooted `+/...`
 selector is permitted with `pkg`. A file import normally uses a quoted
-relative path such as `"./a.atto"`. Nested selectors traverse exported
+relative path such as `"./a.atto"`. Dotted selectors traverse statically exported
 **module/namespace declarations**, not values or fields of a runtime object.
+No braces are required or accepted in the canonical grammar. The named-import
+list has no trailing comma.
 
 The declaration `use namespace name;` is a distinct, legacy **source
 namespace header**, not a dependency import, and must not be blindly rewritten
@@ -57,10 +60,10 @@ ordinary uses of the English verb "use" are not import directives.
    a missing export or inaccessible `pub[pkg]` binding is a compile error.
 3. Renaming with `as` affects the local binding, not the exported identity.
 4. All local import bindings must be unique and must not silently shadow
-   declarations. Duplicate nested leaves are errors even if reached by
-   different export paths.
+   declarations. Duplicate local names are errors even if reached by
+   different dotted export paths.
 5. Imported symbols are not implicitly re-exported.
-6. Namespace member lookup and nested selective binding must remain statically
+6. Namespace member lookup and dotted selective binding must remain statically
    typed, without dynamic reflection or import-time object property reads.
 7. Cyclic imports, module initialization, package identity, root resolution,
    and path traversal must be accounted for by the module resolver. Parsing
@@ -84,9 +87,11 @@ any of these forms.
 ## Conformance requirements
 
 - Parse namespace and named imports with and without `pkg`.
-- Parse statically nested export selections and renames.
-- Reject empty selections, missing `from`, unquoted selectors, malformed
-  braces, invalid aliases, duplicate bindings and unbounded nesting.
+- Parse comma-separated single and multiple names, aliases, and dotted
+  static export paths such as `telemetry.span as span`.
+- Reject empty selections, leading/trailing commas, missing `from`, unquoted
+  selectors, brace-destructuring, invalid aliases, duplicate local names and
+  unbounded dotted paths.
 - Reject attempts to import private/package-scoped exports across boundaries,
   or to select instance/runtime object fields statically.
 - Reject unresolved module files and package paths without executing them.
