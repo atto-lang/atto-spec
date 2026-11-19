@@ -13,6 +13,33 @@
 
 These are copying operations, **not** ordinary passing/binding: passing a class as a parameter never silently copies it.
 
+## Default call borrowing is not copying
+
+For nonprimitive call arguments, `inspect(owner)` is the canonical implicit
+scoped read loan; `inspect(borrow! owner)` makes the same loan explicit.
+Neither spelling invokes `copy()`, `copy_deep()`, `share!` or an implicit
+ownership move. A consuming callee must declare `take! T` and be invoked
+with `take! owner`. An exclusive mutation request uses `mut owner` (or
+`borrow! mut owner`) and must prove no overlapping readers or writers.
+
+```atto
+fnc inspect(Document doc): int { return doc.version; }
+fnc consume(take! Document doc): int { return doc.version; }
+// Target call-site contract, not necessarily supported on every compiler head.
+val version = inspect(doc);           // implicit readonly borrow!
+val again = inspect(borrow! doc);     // same loan rights
+val separate_root = copy! doc;        // shallow, conditional on Copyable
+val separate_graph = copy!! doc;      // deep, conditional on DeepCopyable
+val consumed = consume(take! doc);    // invalidates caller's owner
+```
+
+A shallow copy cannot be auto-upgraded to a deep copy merely because its
+mutable children are unsafe to alias. Conversely a deep clone does not
+inherit the source allocation's `pin!` stability claim. Copying a value while
+it has an outstanding conflicting loan, or copying untrusted external resource
+handles, must fail closed. These are separate static and backend obligations;
+reference tests alone do not establish implementation.
+
 ## Core object model and capabilities
 
 Illustrative source syntax (the root-class declaration form and the capability requirement clause are **semantic sketches**, not claims of parser support):
