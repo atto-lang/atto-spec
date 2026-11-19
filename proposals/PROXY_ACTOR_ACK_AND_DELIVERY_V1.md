@@ -2,6 +2,8 @@
 
 **Status: PROPOSED / NOT EXECUTED as compiled Atto guest code.** This is an extension of [typed actor replies](TYPED_ACTOR_REPLY_PROTOCOL_V1.md), [unary reply sugar](UNARY_ACTOR_RETURN_AND_REPLY_SUGAR_V1.md), and the existing ActorRef/mailbox-admission contract. It does **not** claim that Atto proxy actors, remote actors, virtual activation, or any backend currently implement these operations. Compiler-generated class interception proxies in atto-spec#83 are a **different feature** and must not be conflated with routing proxy actors.
 
+**Cross-process routing/transport:** [Cross-process proxy actors, IPC and async I/O v1](CROSS_PROCESS_PROXY_ACTOR_IPC_V1.md) specifies how a proxy in one OS process connects to a real actor in another OS process, without making an intermediary ACK authoritative.
+
 ## Intent and exact guarantees
 
 A proxy actor is a typed, authorized routing endpoint for a destination actor (local, virtual, remote or behind an ActorGroup). Its own ingress and forwarding queue are **not** the destination's mailbox. A proxy may return a positive destination-admission acknowledgment only upon a runtime-verified destination admission receipt; it may never forge receipt, execution, commit or durable outcome merely because its own forward operation succeeded.
