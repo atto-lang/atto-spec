@@ -40,7 +40,7 @@ This repository is the **language-level specification**, not the proof that a pa
 | [16 — Lexical and grammar reference](spec/16-lexical-and-grammar-reference.md) | Keywords, literals, operators and the spellings compilers accept today |
 | [17 — Primitives and core types](spec/17-primitives-and-core-types.md) | Scalars, integer rules, aggregates, Option/Result and concurrency primitives |
 | [18 — Runtime guarantees](spec/18-runtime-guarantees.md) | Failure domains, stacks, actor restart, pipeline failure, and what is and is not guaranteed |
-| [25 — Receive-invocation stacks](spec/25-receive-invocation-stacks.md) | Per-receive logical stacks, independent task stacks, quotas, suspension and ownership |
+| [25 — Receive-invocation stacks](spec/25-receive-invocation-stacks.md) | Per-receive logical stacks, independent task stacks, quotas, suspension and ownership; unwinding of throw/raise/panic/stack exhaustion; execution contexts versus continuations; carrier affinity |
 | [19 — Observed status, 2026-11-03](spec/19-observed-status-2026-11-03.md) | Dated local test results for Java and LLVM. Not conformance evidence |
 | [21 — Semantic floor and parity](spec/21-semantic-floor-and-parity.md) | Independently required semantics and cross-backend evidence |
 | [22 — Concurrency and shared ownership](spec/22-concurrency-and-shared-ownership.md) | Concurrent-default actors, serial opt-in, ref32 arenas, protected pipes, singletons and symbols |
