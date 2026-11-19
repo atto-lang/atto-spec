@@ -95,10 +95,10 @@
       "verification": "TARGET_NOT_EXECUTED"
     },
     {
-      "id": "class-incomplete-constructor",
+      "id": "class-constructor-writes-final",
       "expected": "reject",
-      "source": "declare class C; define class C as int n: 0; end pub constructor (C)(): self { return; }",
-      "reason": "ordinary field initializer rule is independent; constructor contract must prove initialized fields",
+      "source": "declare class C; define class C as final int n = 0; end pub constructor (C)(): self { self.n = 2; }",
+      "reason": "constructor cannot reassign an already initialized final field",
       "verification": "TARGET_NOT_EXECUTED"
     },
     {
