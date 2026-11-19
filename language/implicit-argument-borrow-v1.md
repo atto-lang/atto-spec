@@ -63,7 +63,56 @@ The compiler must analyze the callee body and the **transitive**, statically res
 | `retain(share! handle)` | explicit shared-owner handle duplication, not borrowed-object promotion |
 | `rt share foo` | explicit unique-to-readonly-shared conversion within verified domain, not ordinary call lowering |
 
-The compiler MUST NOT quietly interpret `take!`/ `copy!!` / `share!` as an implicit borrow to suppress a type error. Conversely, passing `foo` to an ordinary `Foo` formal MUST NOT consume it. Explicit owned-formal syntax and migration strategy (candidate `take! Foo f`) need grammar review in a separate patch; no backend may invent an ABI convention or continue silently moving class values under this v1 mode.
+The compiler MUST NOT quietly interpret `take!`/ `copy!!` / `share!` as an implicit borrow to suppress a type error. Conversely, passing `foo` to an ordinary `Foo` formal MUST NOT consume it. Explicit owned-formal syntax and migration strategy use the separate grammar
+review in this patch: `take! Foo f` (type-first) and `f: take! Foo`
+(name-first) indicate a consuming parameter. A backend must never invent an
+implicit transfer ABI or continue silently moving plain class parameters.
+
+## Explicit consuming class formals (versioned phase 1)
+
+```atto
+define class Foo as
+  pub let int value = 42;
+end
+
+fnc identity(take! Foo owned): Foo { return owned; }
+fnc read_once(owned: take! Foo): int { return owned.value; }
+
+pub fnc main(): int {
+  let foo = new Foo();
+  let moved = identity(take! foo); // explicit transfer on both sides
+  // identity(foo);               // E_OWNERSHIP
+  // foo.value;                   // E_MOVED
+  return read_once(take! moved);
+}
+```
+
+A formal marked `take!` is **owned**, and it may consume, return, or otherwise
+transfer the class handle according to normal ownership/move rules. In contrast,
+an unmarked `Foo f` is a read-only loan in the versioned borrow-default profile.
+The marker must have an attached `!`; `take ! Foo`, scalar `take! int`,
+mutable `take! Foo mut`, `take! Borrow<Foo>`, and unproven
+class/actor/method/constructor transport are not valid phase-1 consuming
+contracts. No consuming contract can be reconstructed from runtime behavior.
+
+A caller targeting a consuming formal **must** supply `take! live_owner`,
+where the expression is a named live owning class place. Bare `foo`,
+`borrow! foo`, `take! make()`, and a borrowed alias are invalid. The
+typechecker must propagate the effect through the resolved signature,
+type-check every argument in order, retain an earlier shared loan while later
+arguments are checked, forbid transfer under a live loan, and enforce
+use-after-move. Reversing a mixed `borrow/take` argument order must reject
+the already-moved owner as well. Only the callee receiving the transferred
+handle may assume ownership.
+
+These syntax rules are currently implemented in the **opt-in Rust/browser
+`borrow-v1` class-function profile only**; this specification does not assert
+general Java/LLVM/.NET/Forge parity or full lifetime inference. Legacy
+unversioned compilers must reject newly annotated consuming formals, rather
+than silently interpreting them as legacy moves, until an explicit
+source/module compatibility migration is approved.
+
+
 
 ## Lifetime inference and borrowed results
 
