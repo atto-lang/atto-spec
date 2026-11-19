@@ -28,7 +28,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
 - [Shared ownership and explicit guards v1](language/shared-ownership-and-guards-v1.md): TARGET semantics for `share!`/`rt share` (frozen sharing) and separately synchronized `RwLock<T>` mutation; **not compiler certified**.
 
-- [Class field binding defaults v1](language/class-field-binding-defaults-v1.md): unqualified type-first ordinary class fields mean `let` for every type; `val` forbids rebinding, `mut` independently requests referent writes, `final` is single-assignment, and class `const` requires constexpr (accepted design; backend parity unverified).
+- [Class field binding defaults v2 proposal](language/class-field-binding-defaults-v2.md): reconcile visibility v1's immutable-by-default choice; unqualified class fields are proposed to mean `val`. Breaking migration and executed guest checks required before adoption.
+- [Class field binding defaults v1 (historical)](language/class-field-binding-defaults-v1.md): accepted earlier `let` default. Retained for compatibility and explicit supersession tracking; conflicts with proposed v2.
 
 - [Implicit argument borrowing v1](language/implicit-argument-borrow-v1.md): target non-owning default for nonprimitive call arguments, checked mutable loans, explicit ambiguous cases and breaking ownership migration (not yet compiler-certified).
 
