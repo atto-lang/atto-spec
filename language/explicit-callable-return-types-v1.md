@@ -36,6 +36,8 @@ The token infer is reserved for this annotation context (and separately specifie
 
 ## Migration and tooling
 
+The return-first declaration `fnc T <- name(params)` (or bare `T <- name(params)` in a declaration scope) satisfies the mandatory return-type rule because `T` is explicit *before* the callable name. `T` may be `void` or `infer`. See [return-first callable syntax v1](return-first-and-begin-callables-v1.md). A missing return both before and after the callable name is still invalid.
+
 This is source-breaking for older declarations that omit the return spec. Migrate by checking each callable's actual return paths and then adding a concrete annotation; do not blindly append void. Use infer only when the author intentionally requests inference.
 
 Use **E_RETURN_ANNOTATION** (or a stable equivalent) for a missing annotation, indicating options of concrete T, void, or infer. Use **E_RETURN_INFER** for inconsistent or unprovable inference. A formatter should prefer arrow-plus-concrete-type, retain infer when explicitly authored, preserve the C-brace/Erlang-comma body family, and never silently fill missing annotations. A linter may warn (not error) for infer in public exported signatures.
