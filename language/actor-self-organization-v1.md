@@ -2,8 +2,8 @@
 
 **Status: normative design candidate; NOT compiler-admitted or end-to-end implemented.**
 This contract extends [keyed actor registration](actor-registry-v1.md). It does not
-make the host \`ActorRegistry\`, supervisor CONTROL lane, or arbitrary
-\`ActorGroup\` controls guest-accessible. AttoLang backends MUST fail closed
+make the host `ActorRegistry`, supervisor CONTROL lane, or arbitrary
+`ActorGroup` controls guest-accessible. AttoLang backends MUST fail closed
 rather than interpret the examples as supported syntax without guest evidence.
 
 ## Goal and boundaries
@@ -16,13 +16,13 @@ self-grant permission to spawn arbitrary actor types, inspect sealed
 state, choose another tenant's actor, or seize another supervisor's child.
 
 The runtime/supervisor owns a **TopologyAuthority**. A guest holds a
-narrow, immutable \`TopologyCapability\` issued by its supervisor, bound to
+narrow, immutable `TopologyCapability` issued by its supervisor, bound to
 (tenant, graph ID, caller actor ID and generation, supervising identity,
 allowed operations, allowed actor types/purposes, limits, expiry/revocation
 epoch). A purpose or logical name is a selector, **never a credential**.
 
 All control-plane operations are async/suspending and return typed
-\`Result<..., TopologyError>\`. They run on a dedicated bounded
+`Result<..., TopologyError>`. They run on a dedicated bounded
 management lane, not inline inside an actor critical section, on a
 scheduler/control carrier, or under a registry/global topology lock.
 These are *application orchestration requests*, never supervisor
@@ -30,7 +30,7 @@ panic/STOP/RESTART CONTROL messages.
 
 ## Candidate actor-facing API (illustrative .atto, not currently executable)
 
-\`\`\`atto
+```atto
 // topology is a supervisor-granted typed capability, not a global singleton.
 pub suspends fnc configure(
     Topology<Readings> topology
@@ -59,11 +59,11 @@ pub suspends fnc configure(
 
     return Ok();
 }
-\`\`\`
+```
 
 The specific method spelling and overload resolution are proposed, not reserved
-parser keywords. Existing \`spawn A() pipe spawn B()\`, typed \`ActorRef<T>\`,
-\`PipeSource\`/\`PipeSink\`, and \`ActorGroup\` remain distinct surfaces.
+parser keywords. Existing `spawn A() pipe spawn B()`, typed `ActorRef<T>`,
+`PipeSource`/`PipeSink`, and `ActorGroup` remain distinct surfaces.
 Avoid silently promoting an ordinary actor to a pipe stage.
 
 ## Identities, selection, and authorization
@@ -73,7 +73,7 @@ Avoid silently promoting an ordinary actor to a pipe stage.
   unambiguous; a lookup does not create anything. A physical handle includes
   its runtime and nonreused incarnation. No name or numeric ID alone grants
   send, read, graph-edit, spawn, or lifecycle authority.
-- \`find_upstream\`/\`find_downstream\` filter only *published, live, authorized*
+- `find_upstream`/`find_downstream` filter only *published, live, authorized*
   edges in the caller's current graph generation. Absence and more-than-one
   candidate are explicit outcomes; selection MUST be deterministic or demand
   an explicit selector. No cross-tenant fallback or unspecified first match.
@@ -91,11 +91,11 @@ Avoid silently promoting an ordinary actor to a pipe stage.
 
 ## Atomic acquisition and graph transactions
 
-\`find_or_create_neighbor\` is single-flight for one logical key, including
+`find_or_create_neighbor` is single-flight for one logical key, including
 concurrent callers and restarts, consistent with actor-registry-v1.
-\`ensure_children(purpose, count)\` is a *reconcile-to-exact-count* operation,
-not \`spawn count more\` every time. Child slot keys are stable
-\`(parent logical identity, parent incarnation, purpose, slot index)\`.
+`ensure_children(purpose, count)` is a *reconcile-to-exact-count* operation,
+not `spawn count more` every time. Child slot keys are stable
+`(parent logical identity, parent incarnation, purpose, slot index)`.
 The supervisor never re-parents an already owned actor without an explicit
 supported transfer protocol.
 
@@ -142,10 +142,10 @@ actor, actor family, graph, ActorGroup, or tenant. Policy determines whether
 one sidecar is shared or one is provisioned per actor/graph.
 
 Runtime probes emit optional events such as:
-\`actor.started\`, \`actor.terminated\`, \`mailbox.admitted\`,
-\`mailbox.backpressure\`, \`graph.edge_committed\`,
-\`graph.edge_retired\`, \`span.started\`, \`span.ended\`, and
-\`supervisor.failure_notice\`. CONTROL remains the exclusive path for
+`actor.started`, `actor.terminated`, `mailbox.admitted`,
+`mailbox.backpressure`, `graph.edge_committed`,
+`graph.edge_retired`, `span.started`, `span.ended`, and
+`supervisor.failure_notice`. CONTROL remains the exclusive path for
 supervision, not a general telemetry export queue. Event receipts carry
 authenticated (tenant, actor ID + incarnation, graph revision, sequence,
 trace/span context, monotonic timestamp) metadata, without actor-owned
@@ -176,7 +176,7 @@ not only host models or compiler parsing:
 
 1. N same-key callers → one incarnation; different keys make progress; factory
    failure, recursion, timeout and cancellation release or quarantine slots.
-2. Two concurrent \`ensure_children(2)\` requests → exactly two published
+2. Two concurrent `ensure_children(2)` requests → exactly two published
    children, not four; partial factory failure publishes zero new children.
 3. Revocation during creation; owner stop; parent restart; stale graph
    revision; stale ActorRef and ABA reuse; physical teardown delays.
@@ -193,9 +193,9 @@ not only host models or compiler parsing:
    true worker/process fault isolation where applicable.
 
 **Currently verified prerequisite, not end-to-end proof:** the legacy Java
-host \`ActorRegistry\` supports keyed host get-or-create but deliberately
-rejects guest actor calls; legacy \`ActorPipelineContract\` validates
-static nominal roles; legacy \`ScopedTelemetryProbe\` is a local scope
+host `ActorRegistry` supports keyed host get-or-create but deliberately
+rejects guest actor calls; legacy `ActorPipelineContract` validates
+static nominal roles; legacy `ScopedTelemetryProbe` is a local scope
 primitive with no exporter. Existing stacked Java guest graph PRs and
 AttoLang typed sends/pipe PRs must be reconciled before source lowering.
 Do not merge by treating this design or a host-only model as parity evidence.
