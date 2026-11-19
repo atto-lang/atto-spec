@@ -3,7 +3,7 @@
 **Status: TARGET / DESIGN CONTRACT — NOT COMPILER OR RUNTIME CERTIFIED (2026-11-18).**
 Scope: canonical AttoLang `.atto` source and every backend. This document ratifies the intended distinction between ownership aliases, temporary loans, and guarded access. Syntax for library `Shared<T>`, `RwLock<T>`, and callback methods below is **proposed**, not an assertion of executable support.
 
-Related work: [ownership bang aliases](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/pull/67), [implicit argument borrowing](https://github.com/atto-lang/atto-spec/pull/89), [conformance registry](https://github.com/atto-lang/atto-platform-conformance), [chapter 04](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/blob/main/spec/04-ownership-and-memory.md), [chapter 22](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/blob/main/spec/22-concurrency-and-shared-ownership.md).
+Related work: [ownership vocabulary](ownership-vocabulary-v1.md), [implicit argument borrowing](implicit-argument-borrow-v1.md), [conformance registry](https://github.com/atto-lang/atto-platform-conformance), and [target-specific capabilities](https://github.com/atto-lang/atto-target-profiles).
 
 ## Rule
 
