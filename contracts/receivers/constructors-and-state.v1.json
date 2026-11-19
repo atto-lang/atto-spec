@@ -212,6 +212,34 @@
       "source": "declare actor A; pub mtd (A self) run(): void {} pub fnc main(): int { val a = spawn A(); a.run(); return 0; }",
       "reason": "ActorRef cannot invoke synchronously",
       "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-space-owner",
+      "expected": "accept",
+      "source": "define class Counter as pub let int value = 0; end pub constructor (Counter)(int initial): self { self.value = initial; } pub fnc main(): int { val c = new Counter(5); return c.value; }",
+      "reason": "space after constructor, adjacent owner and parameter groups",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-space-two-groups",
+      "expected": "accept",
+      "source": "define class Counter as pub let int value = 0; end pub constructor (Counter) (int initial): self { self.value = initial; } pub fnc main(): int { val c = new Counter(5); return c.value; }",
+      "reason": "space between the nominal owner and parameter groups",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-compact-owner",
+      "expected": "accept",
+      "source": "define class Counter as pub let int value = 0; end pub constructor(Counter) (int initial): self { self.value = initial; } pub fnc main(): int { val c = new Counter(5); return c.value; }",
+      "reason": "adjacent constructor keyword and owner group, spaced parameter group",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-duplicate-spacing",
+      "expected": "reject",
+      "source": "define class Counter as end constructor (Counter)(): self {} constructor(Counter) (): self {}",
+      "reason": "whitespace variants must not introduce distinct constructor overloads",
+      "verification": "TARGET_NOT_EXECUTED"
     }
   ]
 }
