@@ -45,6 +45,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Return-first and begin/end callable syntax v1](language/return-first-and-begin-callables-v1.md): accept `fnc int <- name(args)` and bare `int <- name(args)` plus brace, `begin`/`end`, and statement/`end` bodies (target; backend parity pending).
 
+- [Actor self-organization and telemetry sidecars v1](language/actor-self-organization-v1.md): proposed capability-scoped discovery, atomic child reconciliation, graph transactions and isolated observability sidecars. Bounded Node model tests are **HOST_ONLY**; compiler and runtime guest support remains unverified.
+
 ## Validation
 
 Validation should rely on checked-in tests and exact-commit CI results. When reporting parity, distinguish **passed**, **failed**, **unsupported**, and **not executed**. Avoid inferring guest-runtime support from host-only tests.
