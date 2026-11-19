@@ -105,12 +105,9 @@ use-after-move. Reversing a mixed `borrow/take` argument order must reject
 the already-moved owner as well. Only the callee receiving the transferred
 handle may assume ownership.
 
-These syntax rules are currently implemented in the **opt-in Rust/browser
-`borrow-v1` class-function profile only**; this specification does not assert
-general Java/LLVM/.NET/Forge parity or full lifetime inference. Legacy
-unversioned compilers must reject newly annotated consuming formals, rather
-than silently interpreting them as legacy moves, until an explicit
-source/module compatibility migration is approved.
+**Implementation status (19 November 2026 UTC):** The **type-first** `take! Foo owned` formal is implemented and covered by exact-head Rust/native-Wasm compiler tests in draft `atto-source.rs#346`. The **name-first** `owned: take! Foo` spelling above remains a **normative grammar target**, *not* an executable compiler claim: the current compiler parameter parser consumes `take!` before entering its `name: type` branch. Until a passing guest fixture and native/wasm32 compiler differential are recorded for that spelling, mark it `TARGET_ONLY` in all executable evidence. The lexical rejection requirement for separated `take ! Foo` also needs an explicit adjacency check/test before it is reported as implemented.
+
+This specification does not assert general Java/LLVM/.NET/Forge parity or full lifetime inference. Compatibility requires the explicit versioned opt-in profile; source marker, CLI/package selection precedence, formatter policy and cross-module exported ownership metadata are not fully ratified. Legacy unversioned compilers must reject newly annotated consuming formals rather than silently interpreting them as legacy moves, until a reviewed source/module compatibility migration is approved.
 
 
 
