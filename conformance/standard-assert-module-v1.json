@@ -4,7 +4,7 @@
   "language": "AttoLang",
   "scope": "contract-only, no compiled guest evidence",
   "module": "std.assert",
-  "canonical_import": "import * as assert from pkg \"std.assert\";",
+  "canonical_import": "import module assert from pkg \"std.assert\";",
   "canonical_members": [
     "true",
     "false",
@@ -31,7 +31,7 @@
   "cases": [
     {
       "id": "namespace_import",
-      "snippet": "import * as assert from pkg \"std.assert\";",
+      "snippet": "import module assert from pkg \"std.assert\";",
       "phase": "compile_link",
       "expected": "accept",
       "status": "not_executed"
@@ -153,6 +153,27 @@
       "snippet": "assert.true(false);",
       "phase": "hostile_guest_execution",
       "expected": "tenant_failure_no_neighbor_termination",
+      "status": "not_executed"
+    },
+    {
+      "id": "explicit_module_import",
+      "snippet": "import module assert from pkg \"std.assert\";",
+      "phase": "parse_and_link",
+      "expected": "typed_static_module_binding",
+      "status": "not_executed"
+    },
+    {
+      "id": "star_module_import_equivalence",
+      "snippet": "import * as assert from pkg \"std.assert\";",
+      "phase": "parse_and_link",
+      "expected": "same_static_module_identity",
+      "status": "not_executed"
+    },
+    {
+      "id": "nonmodule_rebinding_collision",
+      "snippet": "import module assert from pkg \"std.assert\"; let int assert = 4;",
+      "phase": "name_resolution",
+      "expected": "reject",
       "status": "not_executed"
     }
   ]
