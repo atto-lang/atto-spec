@@ -4,12 +4,12 @@
 
 ## Existing contracts and provenance
 
-- [AttoLang chapter 03](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/blob/main/spec/03-functions-and-effects.md) reserves `label: expression` for named callable arguments; `T=Type` belongs to declared named type generics.
+- [canonical AttoLang language specification](https://github.com/atto-lang/atto-spec) reserves `label: expression` for named callable arguments; `T=Type` belongs to declared named type generics.
 - Rust/Wasm `atto-source.rs` main currently supports a restricted nominal `StructName{field: literal}` form via `src/shape_lower.rs`, lowered to a checked class constructor; its parser's `parse_args` does not accept equals-labeled calls. These facts **do not** imply generalized struct literal or array support.
 - [atto-source.rs PR #300](https://github.com/atto-lang/atto-source.rs/pull/300) proposes ordinary named calls using `label: value` with a restricted scalar-literal reorder until explicit source-order temporaries are implemented.
 - [atto-source.rs PR #281](https://github.com/atto-lang/atto-source.rs/pull/281) changes nominal inference. Equal field sets do not justify guessing a declaration or bypassing scope resolution.
 - [atto-spec PR #69](https://github.com/atto-lang/atto-spec/pull/69) separates inline `{field: expr}` structural records from maps and nominal structs. This proposal must preserve that distinction.
-- [layout specification PR #77](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/pull/77) connects these values to AoS/SoA/AoSoA collections without changing element syntax.
+- [AttoLang target profiles](https://github.com/atto-lang/atto-target-profiles) connects these values to AoS/SoA/AoSoA collections without changing element syntax.
 
 ## Grammar and name-resolution gate
 
@@ -25,7 +25,7 @@ val q = Particle(x=10, y=20);    // proposed explicit struct field shorthand
 
 The tokens `IDENT (` alone must **never** authorize aggregate construction. The compiler first resolves the identifier in the exact expression scope to an eligible **nominal struct type declaration with compiler-generated field initializer** (including module-qualified types when supported). It must prove no shadowing local/parameter/function/constructor/callable, imported alias ambiguity, competing overload, user-defined constructor, or visibility conflict changes the meaning. A local value named `Particle` must not silently fall back to the struct after an invalid call. A class, actor, record, enum, `Map`, `Tuple`, static function, FFI binding, callable value or dynamic target is not eligible.
 
-**Compatibility with existing Java/Oreslang forms:** `infer struct{...}` and `struct{field: Type}{field: value}` already have separate semantics in the Java language/grammar. This shorthand MUST NOT rewrite either to `StructName(...)`, infer a nominal struct from field-name coincidence, or accept a compiler-generated *lexical inferred-type alias* as a globally callable constructor. Transparent type aliases do not introduce new constructors. Module qualification and alias traversal are allowed only after the resolved declaration graph proves the same eligible nominal initializer and visibility; an unresolved import is never an implicit constructor.
+**Compatibility with existing Java frontend forms:** `infer struct{...}` and `struct{field: Type}{field: value}` already have separate semantics in the Java language/grammar. This shorthand MUST NOT rewrite either to `StructName(...)`, infer a nominal struct from field-name coincidence, or accept a compiler-generated *lexical inferred-type alias* as a globally callable constructor. Transparent type aliases do not introduce new constructors. Module qualification and alias traversal are allowed only after the resolved declaration graph proves the same eligible nominal initializer and visibility; an unresolved import is never an implicit constructor.
 
 For a proven field-initializer, accept only comma-delimited `name = expression` pairs, with at least one named pair for nonempty struct (zero-field `Particle()` is a separate, existing-constructor question). Do not mix positional operands, `name:` entries, spreads, calls or destructuring as field selectors inside this spelling. Field names are statically declared identifiers, never runtime strings or arbitrary expressions. No syntactic fallback to assignment expressions (`x = 10`), record field labels, `=>` map entries, equality `eq`/`==`, or named generic arguments.
 
