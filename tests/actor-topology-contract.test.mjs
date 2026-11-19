@@ -117,11 +117,12 @@ test('find_or_create neighbor uses stable key, enforces permission and retries a
   assert.equal(first,next);
   assert.equal(made,1);
   assert.equal(m.find(c,arg),first);
-  let stopped=0;
-  await assert.rejects(()=>m.findOrCreateNeighbor(c,{...arg,key:'fail'},async()=>({
-    stop:async()=>{stopped++}
-  })).then(()=>{throw new Error('not expected')}),/not expected/);
-  assert.equal(stopped,0); // Once published, a later consumer failure is not registry rollback.
+  await assert.rejects(()=>m.findOrCreateNeighbor(c,{...arg,key:'retry'},async()=>{
+    throw new Error('factory failed');
+  }),/factory failed/);
+  assert.equal(m.count,2);
+  const retried=await m.findOrCreateNeighbor(c,{...arg,key:'retry'},factory);
+  assert.equal(m.find(c,{...arg,key:'retry'}),retried);
   assert.equal(m.count,3);
 });
 
