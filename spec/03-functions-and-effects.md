@@ -6,7 +6,7 @@ A free function is declared with `fnc`; class and actor instance methods use an 
 
 ## Mandatory named-callable return annotations
 
-The accepted AttoLang v1 rule is that **every named function, routine, class/actor instance or static method, out-of-line method, and actor receive handler must explicitly annotate its return**. Accepted syntax: `-> T` or `: T`, where `T` can be concrete `void` or the explicitly requested inference placeholder `infer`. Inference is permitted but less desirable for public APIs and cross-module signatures; the compiler resolves it statically or reports an error, never silently choosing void. For example:
+The accepted AttoLang v1 rule is that **every named function, routine, class/actor instance or static method, out-of-line method, and actor receive handler must explicitly annotate its return**. Accepted syntax includes name-first `name(params) -> T` or `name(params): T` and return-first `[fnc] T <- name(params)`, where `T` can be a concrete type, `void`, or the explicitly requested inference placeholder `infer`. The return-first form also allows braces, `begin`/`end`, and an explicit statement/`end` body; its `<-` token is not an assignment operator. Inference is permitted but less desirable for public APIs and cross-module signatures; the compiler resolves it statically or reports an error, never silently choosing void. For example:
 
 ~~~atto
 fnc calculate(int x) -> int { return x + 1; }
