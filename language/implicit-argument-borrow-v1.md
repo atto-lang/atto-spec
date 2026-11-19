@@ -1,6 +1,6 @@
 # Implicit argument borrowing v1 — ownership-safe call sugar
 
-Status: **TARGET / DESIGN PR, not implemented or certified** (2026-11-18).
+Status: **Design target with bounded Rust/browser compiler evidence, not general language certification** (2026-11-19).
 Scope: AttoLang `.atto` function, class-method and actor-method *argument* ownership semantics. This proposal is source-breaking for existing implicitly consuming class formals; do not enable globally before a compatibility audit and executable compiler conformance.
 
 ## Motivation and default
@@ -63,7 +63,55 @@ The compiler must analyze the callee body and the **transitive**, statically res
 | `retain(share! handle)` | explicit shared-owner handle duplication, not borrowed-object promotion |
 | `rt share foo` | explicit unique-to-readonly-shared conversion within verified domain, not ordinary call lowering |
 
-The compiler MUST NOT quietly interpret `take!`/ `copy!!` / `share!` as an implicit borrow to suppress a type error. Conversely, passing `foo` to an ordinary `Foo` formal MUST NOT consume it. Explicit owned-formal syntax and migration strategy (candidate `take! Foo f`) need grammar review in a separate patch; no backend may invent an ABI convention or continue silently moving class values under this v1 mode.
+The compiler MUST NOT quietly interpret `take!`/ `copy!!` / `share!` as an implicit borrow to suppress a type error. Conversely, passing `foo` to an ordinary `Foo` formal MUST NOT consume it. Explicit owned-formal syntax and migration strategy use the separate grammar
+review in this patch: `take! Foo f` (type-first) and `f: take! Foo`
+(name-first) indicate a consuming parameter. A backend must never invent an
+implicit transfer ABI or continue silently moving plain class parameters.
+
+## Explicit consuming class formals (versioned phase 1)
+
+```atto
+define class Foo as
+  pub let int value = 42;
+end
+
+fnc identity(take! Foo owned): Foo { return owned; }
+fnc read_once(owned: take! Foo): int { return owned.value; }
+
+pub fnc main(): int {
+  let foo = new Foo();
+  let moved = identity(take! foo); // explicit transfer on both sides
+  // identity(foo);               // E_OWNERSHIP
+  // foo.value;                   // E_MOVED
+  return read_once(take! moved);
+}
+```
+
+A formal marked `take!` is **owned**, and it may consume, return, or otherwise
+transfer the class handle according to normal ownership/move rules. In contrast,
+an unmarked `Foo f` is a read-only loan in the versioned borrow-default profile.
+The marker must have an attached `!`; `take ! Foo`, scalar `take! int`,
+mutable `take! Foo mut`, `take! Borrow<Foo>`, and unproven
+class/actor/method/constructor transport are not valid phase-1 consuming
+contracts. No consuming contract can be reconstructed from runtime behavior.
+
+A caller targeting a consuming formal **must** supply `take! live_owner`,
+where the expression is a named live owning class place. Bare `foo`,
+`borrow! foo`, `take! make()`, and a borrowed alias are invalid. The
+typechecker must propagate the effect through the resolved signature,
+type-check every argument in order, retain an earlier shared loan while later
+arguments are checked, forbid transfer under a live loan, and enforce
+use-after-move. Reversing a mixed `borrow/take` argument order must reject
+the already-moved owner as well. Only the callee receiving the transferred
+handle may assume ownership.
+
+**Implementation status (19 November 2026 UTC):** Both type-first `take! Foo owned` and name-first `owned: take! Foo` consuming **class** formals are implemented in the *bounded opt-in, synchronous top-level Rust/browser compiler* draft `atto-source.rs#346`, now at head `113c67300da901dd3654eb3da651ab90cb7df094`, full source tree `14ff215da67fa52db6a7c244a0693fc19d1b1462`. [Successful source-exact CI #44468194359](https://github.com/gha-indie-worker/atto-ci/actions/runs/44468194359) verifies that tree, pinned Rust tests, native and wasm32 compiler builds, **570 compiled guest assertions** and **522 native/wasm32 compiler-host comparisons**, zero failures (Java skipped). The suite includes name-first consuming-positive compiled guest, missing-transfer and duplicate-mode typed negatives, and five new whitespace/comment adjacency negative cases. The stacked mutable-loan compiler `atto-source.rs#347` at head `104c0bcd76163c127c06f93986708d28a3af70d3`, exact tree `0e79c4a974ca1c738c3bcf1367c2b4ca1de71d9c`, **also passed** [source-exact private CI #44468335941](https://github.com/gha-indie-worker/atto-ci/actions/runs/44468335941): **586 guest conformance assertions**, **538 native/wasm32 compiler comparisons**, zero failures, plus all four targeted BCV1 dual-compiler positive/negative checks. Independent review remains required for both compiler drafts.
+
+**Lexical adjacency proof (bounded Rust/browser compiler):** The compiler now checks recorded lexical token line/column and emits `E_SYNTAX` before consuming a separated `take !` marker. Executed exact-head #346 native/Wasm tests reject spaces in both formal spellings and call arguments, newline-separated arguments, and comment-separated formals; these compile-fail fixtures emit no guest artifact. The grammar restriction is proven for this compiler subset, **not** for Java/LLVM/.NET/Forge or every syntax surface.
+
+This specification does not assert general Java/LLVM/.NET/Forge parity or full lifetime inference. Compatibility requires the explicit versioned opt-in profile; source marker, CLI/package selection precedence, formatter policy and cross-module exported ownership metadata are not fully ratified. Legacy unversioned compilers must reject newly annotated consuming formals rather than silently interpreting them as legacy moves, until a reviewed source/module compatibility migration is approved.
+
+
 
 ## Lifetime inference and borrowed results
 
@@ -102,4 +150,4 @@ Implementation order:
 - Preserve `Borrow<T>` surface for explicit read loans while fixing typed IR so argument and formal provenance cannot become an owned class handle; verify slots, drop glue and signatures.
 - Prove methods, constructors, lambdas, generics, named arguments, suspend/actor boundaries and separate Java, LLVM, .NET NativeAOT, Forge and Wasm backends before calling this feature general.
 
-**No compiler, backend, runtime or CI success is asserted by this contract.** Conformance targets and receipts belong in `atto-platform-conformance`, with exact source/tree SHA, executed positive and negative guests, no-artifact checks and separate backend states.
+**No general cross-backend, actor/async, package ABI or formatter certification is asserted here.** The bounded Rust/browser native-versus-wasm compiler evidence is linked above; language-wide conformance targets and execution receipts belong in `atto-platform-conformance`, with exact source/tree SHAs, executed positive/negative guests, no-artifact checks, and separate backend states.
