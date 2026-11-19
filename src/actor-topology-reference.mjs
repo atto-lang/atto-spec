@@ -7,6 +7,8 @@ export class TopologyModel {
   #actors = new Map();
   #reservations = new Set();
   #grants = new WeakMap();
+  #lastGeneration = new Map();
+  #pendingNeighbors = new Map();
   #edges = new Map();
   #revision = 0;
   #next = 1;
@@ -23,12 +25,15 @@ export class TopologyModel {
   // The host creates a trusted root. A caller cannot create one by supplying an ID.
   seed({tenant, graph, type, purpose, key, generation=1, parent=null, input=null, output=null}) {
     const id = keyOf(tenant, graph, type, purpose, key);
-    if (this.#actors.has(id) || generation < 1) throw new Error('duplicate or invalid actor');
+    if (this.#actors.has(id) || generation < 1 ||
+        generation <= (this.#lastGeneration.get(id) || 0))
+      throw new Error('duplicate, stale or invalid actor');
     const actor = Object.freeze({
       id, tenant, graph, type, purpose, key, generation, parent,
       input, output, address: this.#next++
     });
     this.#actors.set(id, actor);
+    this.#lastGeneration.set(id,generation);
     return actor;
   }
   grant(actor, {actions, types, purposes}={}) {
@@ -60,10 +65,17 @@ export class TopologyModel {
     const id=keyOf(owner.tenant,owner.graph,type,purpose,key);
     const existing=this.#actors.get(id);
     if (existing) return existing;
+    const pending=this.#pendingNeighbors.get(id);
+    if(pending) {
+      const winner=await pending;
+      this.#check(cap,'create',type,purpose);
+      return winner;
+    }
     if (this.#reservations.has(id)) throw new Error('BUSY');
     if (this.#actors.size + this.#reservations.size >= this.maxActors)
       throw new Error('QUOTA');
     this.#reservations.add(id);
+    const creation=(async()=>{
     let prepared=null;
     try {
       prepared=await factory(id);
@@ -72,9 +84,10 @@ export class TopologyModel {
       this.#check(cap,'create',type,purpose);
       if (this.#actors.has(id)) throw new Error('CONFLICT');
       const created=Object.freeze({id,tenant:owner.tenant,graph:owner.graph,
-        type,purpose,key,generation:1,parent:null,input:null,output:null,
-        address:this.#next++});
+        type,purpose,key,generation:(this.#lastGeneration.get(id)||0)+1,
+        parent:null,input:null,output:null,address:this.#next++});
       this.#actors.set(id,created);
+      this.#lastGeneration.set(id,created.generation);
       this.#revision++;
       return created;
     } catch(error) {
@@ -83,6 +96,10 @@ export class TopologyModel {
     } finally {
       this.#reservations.delete(id);
     }
+    })();
+    this.#pendingNeighbors.set(id,creation);
+    try {return await creation;}
+    finally {this.#pendingNeighbors.delete(id);}
   }
   children(cap,{type,purpose}) {
     const actor=this.#check(cap,'find',type,purpose);
@@ -119,10 +136,12 @@ export class TopologyModel {
       for (const {id} of staged) {
         const actor=Object.freeze({
           id, tenant:owner.tenant, graph:owner.graph,
-          type, purpose, key:id, generation:1,
+          type, purpose, key:id,
+          generation:(this.#lastGeneration.get(id)||0)+1,
           parent:owner.id, input:null, output:null, address:this.#next++
         });
         this.#actors.set(id,actor);
+        this.#lastGeneration.set(id,actor.generation);
       }
       if (staged.length) this.#revision++;
       return slots.map(s=>this.#actors.get(s));
