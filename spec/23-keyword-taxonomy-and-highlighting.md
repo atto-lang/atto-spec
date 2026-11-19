@@ -33,6 +33,38 @@ An entry appearing in two rows is intentional: this is a set of *explanatory* fa
 
 `blocking` in an API name such as `read_blocking` is **not** thereby a standalone keyword. `suspends` is the documented effect modifier; do not silently substitute a hypothetical `suspend` keyword. Likewise, `pipe` is a target/contextual actor connection word in chapter 01, not a documented reserved Java keyword; `|>` remains a separate operator. An ordinary hyphenated word is not an identifier: only grammar-enumerated compound spellings may include ASCII `-`.
 
+## New contextual ownership operators (TARGET)
+
+`freeze!`, `weak!`, and `pin!` are prefix **operator forms**,
+distinct from the ordinary identifiers `freeze`, `weak` and `pin`.
+The lexer may emit an identifier followed by `!`; the parser must recognize
+the pair only in a valid expression position. Tooling SHOULD highlight the
+whole parsed operator as an ownership operation. Do **not** add the three
+bare words to the historical Java reserved-keyword inventory or infer that
+every backend has implemented these capabilities.
+
+`freeze!` is consuming deep immutability, `weak!` constructs non-owning
+generation-fenced handles, and `pin!` pins pointee storage rather than OS
+threads. Their semantic and runtime admission requirements are in
+[chapter 04](04-ownership-and-memory.md). Simple lexical highlighting does
+not prove any ownership invariant.
+
+### Full ownership prefix classification
+
+The canonical ownership vocabulary includes borrow!, take!, share!, copy!,
+copy!!, freeze!, weak!, pin!, drop!, plus the mut qualifier and the
+type-level lt! binder (lifetime! is a long-form spelling). A formatter MUST
+keep copy!! (two contiguous bangs) distinct from copy! !value (one copy
+operation followed by a separate logical negation). An editor should
+highlight parsed ownership operators, not indiscriminately reserve their
+bare identifier words; in particular lt! is not a runtime expression.
+
+The conservative atto-format ownership lexical pass and its verified wrapper
+are in atto-lang/atto-format PR #13. The browser parser and canonical borrow
+checker use different admission layers (atto-source.rs PR #344 and
+atto-borrow-checker.rs PR #43). Formatting and lexing tests never establish
+guest runtime memory-safety or native backend parity.
+
 ## Semantic categories for editors
 
 These are **proposed descriptive scopes**, not mandatory colors and not a replacement for standard LSP token types. A TextMate implementation may use scopes like the right-hand column; an LSP server SHOULD expose standard semantic token types (especially `keyword`, `type`, `class`, `interface`, `enum`, `function`, `method`, `variable`, `parameter` and `namespace`) plus supported standard modifiers when appropriate. Custom categories may be advertised as extensions with a fallback to standard token types.
