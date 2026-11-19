@@ -32,6 +32,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Struct field equals initializer v1](language/struct-field-equals-v1.md): restricted `StructName(field=value)` with checked name resolution, ordinary-call rejection, and source-order safety (TARGET / NOT EXECUTED).
 
+- [Out-of-line receivers, constructors and protected class state v1](language/out-of-line-receivers-constructors-and-state-v1.md): TARGET declaration/linkage semantics for class and struct receiver methods, typed constructors, and guarded per-instance class state. Accompanying source-only cases are **not compiler/guest execution evidence**.
+
 ## Validation
 
 Validation should rely on checked-in tests and exact-commit CI results. When reporting parity, distinguish **passed**, **failed**, **unsupported**, and **not executed**. Avoid inferring guest-runtime support from host-only tests.
