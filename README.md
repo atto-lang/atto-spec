@@ -70,3 +70,12 @@ This README records the intended role of this repository; it is not a claim of f
 This repository is the normative AttoLang (`.atto`) specification; migration-era syntax is not automatically part of current supported semantics.
 
 Changes asserting compiler/runtime support must identify the exact source head, target, toolchain, executed positive and negative guest tests, and failure/unsupported status; an empty CI step list is **not executed**. Documentation records responsibility, **not** a claim of feature completion.
+
+## Rule registry and cross-toolchain conformance
+
+- [Specification framework](language/specification-framework-v1.md): rule identity, edition/profile authority, governance and formatter safety laws (proposed protocol; NOT a backend proof).
+- [Machine-readable rule index](contracts/specification-rules-v1.json): stable rule IDs and formatter target vectors linking existing language clauses to conformance; **not yet executable guest certification**.
+- [Formal refinement obligations](formal/specification-refinement-obligations-v1.md): parse, type/ownership, actor, formatter and compilation proof targets.
+- [Host-only registry tests](tests/specification-framework-v1.test.mjs): checks traceability and negative vectors; does not execute compilers or formatters.
+
+`atto-format` and historical `oreslang-format` are independent consumers of this specification and must separately report parser/semantic round-trip evidence. Runtime/guest results belong in `atto-platform-conformance`, with exact SHA provenance. Do not infer parity from file presence or source-only CI.

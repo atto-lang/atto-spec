@@ -1,0 +1,35 @@
+name: Specification rule registry (host-only integrity)
+on:
+  pull_request:
+    paths:
+      - 'language/specification-framework-v1.md'
+      - 'contracts/specification-rules-v1.json'
+      - 'formal/specification-refinement-obligations-v1.md'
+      - 'tests/specification-framework-v1.test.mjs'
+      - '.github/workflows/specification-framework-v1.yml'
+      - 'README.md'
+  push:
+    paths:
+      - 'language/specification-framework-v1.md'
+      - 'contracts/specification-rules-v1.json'
+      - 'formal/specification-refinement-obligations-v1.md'
+      - 'tests/specification-framework-v1.test.mjs'
+      - '.github/workflows/specification-framework-v1.yml'
+      - 'README.md'
+permissions:
+  contents: read
+jobs:
+  registry-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate registry, references and negative-case coverage (HOST_ONLY)
+        run: |
+          node --version
+          node --test tests/specification-framework-v1.test.mjs
+      - name: Evidence boundary
+        run: |
+          echo 'Registry integrity != formatter/parser conformance, formal proof or compiled Atto guest.'
