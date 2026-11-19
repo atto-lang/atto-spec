@@ -92,7 +92,7 @@ behavior. Require exact-head source-to-typed-IR-to-machine/Wasm differential
 tests, actor and tenant isolation, cancellation cleanup, sanitizer/equivalent
 evidence, and honest unsupported gates.
 
-See also attolang-language-spec.md PR #81 and atto-platform-conformance PR #76.
+See the [current AttoLang language specification](https://github.com/atto-lang/atto-spec), [shared ownership and explicit guards](shared-ownership-and-guards-v1.md), and [platform conformance PR #76](https://github.com/atto-lang/atto-platform-conformance/pull/76).
 
 ## Minimum negative regressions
 

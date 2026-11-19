@@ -267,8 +267,4 @@ Each row is an **expected future guest trace**, not a passed test.
    promotion may the public playground move these source-only previews
    into its runnable picker.
 
-Cross-reference: `oreslang-source.java/docs/RECOVERY_CHAIN_DATA_LAYOUT_V1.md`,
-`oreslang-source.java/docs/TASK_CANCEL_DEFER_RECOVER_LOCKS_V1.md` and
-`oreslang-source.llvm/docs/EXCEPTION_SUPERVISION_SEMANTICS.md`. The
-older LLVM document contains an outdated proposal permitting local
-panic recovery; this document explicitly rejects that possibility.
+Cross-reference: the active [Java/GraalVM backend](https://github.com/atto-lang/atto-source.java), [LLVM backend](https://github.com/atto-lang/atto-source.llvm), and [platform conformance](https://github.com/atto-lang/atto-platform-conformance). Earlier design snapshots included an obsolete proposal permitting local panic recovery; **this document explicitly rejects local interception of panic**. The earlier snapshot paths are not published in these canonical repositories, so do not treat them as live documentation or execution evidence.

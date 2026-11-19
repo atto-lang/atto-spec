@@ -90,7 +90,7 @@ fnc choose_left<lt! a, lt! b>(
 ): Borrow<Foo, lt=a> { return left; }
 ```
 
-The grammar **does not** introduce `Foo<lt=a>` for ordinary formals. `Borrow<Foo, lt=a>` is the accepted target for explicit lifetime-bearing parameter types. Neither target signature above is claimed to compile yet. See [lifetime proposal #78](https://github.com/ores-truffle-oreslang/attolang-language-spec.md/pull/78) and the separate [fifteen-case conformance registry #74](https://github.com/atto-lang/atto-platform-conformance/pull/74).
+The grammar **does not** introduce `Foo<lt=a>` for ordinary formals. `Borrow<Foo, lt=a>` is the accepted target for explicit lifetime-bearing parameter types. Neither target signature above is claimed to compile yet. Consult [current AttoLang specification and lifetime contracts](https://github.com/atto-lang/atto-spec) and the separate [fifteen-case conformance registry #74](https://github.com/atto-lang/atto-platform-conformance/pull/74).
 
 ## Scope, compatibility and staged implementation
 
