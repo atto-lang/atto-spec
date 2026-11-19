@@ -171,3 +171,35 @@ test('telemetry sidecar queue is bounded and lossy, scoped by tenant', () => {
   m.emitObservation({tenant:'tenant-a',graph:'g1',kind:'more',actorGeneration:1});
   assert.equal(sub.read(),null);
 });
+
+
+test('concurrent named neighbor lookups coalesce to one factory and one ref', async () => {
+  const m=new TopologyModel(), c=grant(m,seed(m,'owner'));
+  let started, release, creates=0;
+  const entered=new Promise(r=>{started=r});
+  const gate=new Promise(r=>{release=r});
+  const args={type:'Sink',purpose:'sink',key:'shared'};
+  const first=m.findOrCreateNeighbor(c,args,async()=>{
+    creates++;started();await gate;return {stop:async()=>{}};
+  });
+  await entered;
+  const second=m.findOrCreateNeighbor(c,args,async()=>{throw new Error('second factory ran')});
+  release();
+  const [a,b]=await Promise.all([first,second]);
+  assert.equal(a,b);
+  assert.equal(creates,1);
+  assert.equal(m.count,2);
+});
+
+test('retired logical key gets new physical incarnation; stale ref cannot be linked', async () => {
+  const m=new TopologyModel(), source=seed(m,'source',{input:'int',output:'int'});
+  const c=grant(m,source);
+  const args={type:'Sink',purpose:'sink',key:'incarnation'};
+  const old=await m.findOrCreateNeighbor(c,args,factory);
+  assert.equal(m.retire(old),true);
+  const current=await m.findOrCreateNeighbor(c,args,factory);
+  assert.ok(current.generation>old.generation);
+  assert.notEqual(old,current);
+  assert.throws(()=>m.connect(c,source,old,{payload:'int',expectedRevision:m.revision}),/STALE_ACTOR/);
+  assert.throws(()=>m.seed({tenant:'tenant-a',graph:'g1',...args,generation:1}),/stale/);
+});
