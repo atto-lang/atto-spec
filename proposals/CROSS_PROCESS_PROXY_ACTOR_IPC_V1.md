@@ -37,6 +37,33 @@ References (primary upstream documentation):
 - https://vertx.io/docs/vertx-tcp-eventbus-bridge/java/
 - https://vertx.io/docs/vertx-service-proxy/java/
 
+## Legacy migration and canonical source syntax
+
+**Do not invent a second proxy-actor grammar or an incompatible wire protocol.** The legacy Java repository already has a source-level candidate in [oreslang-source.java#543](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/543), with native grammar, contract checking, fail-closed spawn, service leases, session and stream handles, independent forward/reverse credit accounting and Rust model tests. Its grammar is the migration starting point, not proof Atto has an executing remote proxy:
+
+~~~atto
+// Proposed Atto migration of the existing Oreslang declaration, NOT compiled in Atto.
+define proxy actor TransformProxy
+    conforms to Transformer
+    discover "workers.transform.v1"
+    transport ipc
+as
+end
+
+const proxy = spawn TransformProxy();
+// await proxy.ready means authenticated discovery + association,
+// NOT that a remote request was processed.
+~~~
+
+The existing grammar includes `transport auto|ipc|tcp|http2` (subject to compatible Atto frontend/formatter validation), with `discover` a bounded service key, not an arbitrary URL. `transport auto` must still select only explicitly authorized secure transports. A local proxy is a genuine locally scheduled/supervised actor, distinct from the remotely executing actor and from its connection. Local proxy `get_done()` and remote actor lifecycle observation are separate. `ActorRegistry.connect_async<A>(endpoint,capability)` is an optional **library path**, not a competing mandatory syntax or a substitution for the first-class proxy declaration. Do not silently turn `spawn Proxy()` into remote source execution; legacy #543 rightly rejects it while the actual remote bridge is absent.
+
+Other legacy IPC foundations to audit and migrate *semantically*, never by blind copy:
+- [Java #1350/#1352/#1354/#1356/#1366](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1366): actor IPC boundary/admission, physically separate DATA/CONTROL lanes, session HKDF/HMAC, strict replay/sequence/tag/contract-hash rejection; importantly, no real socket/process in the earlier protocol model.
+- [Java #1581](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1581): real `ActorRuntime` -> host I/O -> authenticated socket -> terminal completion -> actor mailbox handoff, actor-carrier blocking guard and physical connection lifetime ownership. Its older exact-tree executed receipts do not certify its current head.
+- [Common-source IPC delivery issue #79](https://github.com/ores-truffle-oreslang/oreslang-common-source/issues/79) and Atto [source.rs#254](https://github.com/atto-lang/atto-source.rs/pull/254): distinguish remote accepted vs handler committed, preserve terminal reply/CONTROL separation, and avoid a second correlation ledger.
+
+Atto production wire format must be **one deliberately versioned, independently verified contract** coordinated with these foundations. The 58-byte scalar Rust frame in `proxy_actor_ipc_two_process_v1.rs` is a **test-only host envelope** and MUST NOT become the production ABI by accidental adoption. Do not assume the legacy Java `ORES` v3 framing or HMAC keying is compatible with Atto without schema review, threat-model review and cross-runtime serialization fixtures.
+
 ## Transport profiles, including other processes
 
 | Profile | Real endpoint | Trust / deployment rule |
