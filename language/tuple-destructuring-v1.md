@@ -30,7 +30,7 @@ root_alias       = "as", IDENT ;
 
 A modifier omitted on an element inherits the outer binding kind. `mut` alone inherits the outer kind, e.g. `let (mut j)` means `let mut j`, while `val (mut j)` means `val mut j`. An explicit element modifier overrides *only* the inherited binding kind. `mut` is an independent request for referent-write authority. `(let a, val r, let mut j) = e` is legal without an outer kind; `(a, r, mut j) = e` is not a declaration. A binder may have a `name: Type` annotation; the syntax does not implicitly create a type-first shorthand in tuple patterns.
 
-Use `(x,)` for a one-element tuple and `()` for zero elements. For v1, tuple binding patterns are flat: nested patterns, rest spread and pattern-matching guards require separate proposals. `_` discards exactly one element. `as foo` follows the closing parenthesis and precedes `=`; `let (...) = e as foo` has **no** tuple alias meaning.
+Use `(x,)` for a one-element tuple and `()` for zero elements. A single binding written as `let (x) = e` or `(let x) = e` is invalid: a singleton tuple pattern requires the trailing comma, exactly like a singleton tuple expression. For v1, tuple binding patterns are flat: nested patterns, rest spread and pattern-matching guards require separate proposals. `_` discards exactly one element. `as foo` follows the closing parenthesis and precedes `=`; `let (...) = e as foo` has **no** tuple alias meaning.
 
 ## Binding semantics
 
