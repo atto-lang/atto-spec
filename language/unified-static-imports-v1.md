@@ -12,7 +12,8 @@ another keyword such as `use`. `using` is unchanged and continues to manage
 scoped resources and cleanup.
 
 ```atto
-import * as telemetry from pkg "core.telemetry";
+import module telemetry from pkg "core.telemetry";
+import * as telemetry_compat from pkg "core.telemetry";
 import span, tracer as create_tracer from pkg "core.telemetry";
 import foo, bar as baz from pkg "+/pkg";
 import * as p from pkg "+/pkg";
@@ -28,10 +29,14 @@ allows it. Named or dotted imports select statically declared *public exports*;
 they never destructure a runtime object's properties. The local binding for a
 dotted selector is its final component unless `as` explicitly renames it.
 
+## Explicit module namespace binding
+
+`import module assert from pkg "std.assert";` is the **canonical named-module import** for static namespace imports. It binds the module identity as `assert`; it does **not** instantiate a class, grant dynamic member access, or load an arbitrary runtime object. `import * as assert from pkg "std.assert";` remains an allowed namespace-import equivalent for compatibility and source code using that spelling. Named callable imports retain comma syntax. A module binding must resolve to a module export table at compile/link time; unresolved packages fail closed, and an imported module alias cannot be redefined as a local class, value, or second import.
+
 ## Grammar
 
 ```ebnf
-import_decl     = "import", import_clause, "from", [ "pkg" ], string, ";" ;
+import_decl     = "import", ( "module", identifier | import_clause ), "from", [ "pkg" ], string, ";" ;
 import_clause   = "*", "as", identifier
                 | import_spec, { ",", import_spec } ;
 import_spec     = export_path, [ "as", identifier ] ;
