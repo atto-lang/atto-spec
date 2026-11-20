@@ -5,12 +5,12 @@
 ## Grammar
 
 ```ebnf
-adt_arm            = "on", [ "is" ], adt_pattern, [ "when", expression ], "->", arm_body ;
-adt_pattern        = "None" | "Ok"                           (* only when success payload is void *)
-                   | adt_payload_pattern ;
-adt_payload_pattern = adt_ctor, "(", pattern_binder, ")"      (* existing spelling *)
-                    | "is"?, adt_ctor, "<", pattern_binder, ">" ;
-adt_ctor           = "Ok" | "Err" | "Some" ;
+adt_arm             = "on", ( old_adt_pattern | new_adt_pattern ),
+                      [ "when", expression ], "->", arm_body ;
+old_adt_pattern     = "None" | "Ok" | adt_ctor, "(", pattern_binder, ")" ;
+new_adt_pattern     = "is", ( "None" | "Ok" |
+                       adt_ctor, "<", pattern_binder, ">" ) ;
+adt_ctor            = "Ok" | "Err" | "Some" ;
 pattern_binder     = source_binding_name | "_" ;
 ```
 
