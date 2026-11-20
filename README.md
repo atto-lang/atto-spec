@@ -22,6 +22,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^ ~`, `<<< >>> ashr`, compound updates, and typed-I/O `<< >>`, with context-sensitive caret/structural-tilde parsing; target semantics, not backend parity.
 
+- [Checked int.parse Result v1](language/int-parse-result-v1.md): signed-i64 parsing to Result<int,Error> with deterministic bounded UTF-8 admission; target-only until compiled-guest evidence.
+
 - [Trap-to-Result v1](language/trap-result-v1.md): caller-side `trap` preserves returned `Result`/`Option` layers and catches ordinary `throw` as `Err(original Error)`; unverified backends must fail closed rather than emit legacy Option results.
 
 - [File/module `define const` v1](language/file-module-const-v1.md): unconditional static immutable bindings using `=` or `as`; constexpr folds at compile time, direct `os.read_env("KEY")` is evaluated exactly once at runtime initialization. **Proposal; backend guest execution not yet verified.**
