@@ -8,8 +8,8 @@ const manifest = JSON.parse(await readFile(new URL('cases.json', root), 'utf8'))
 
 test('functional pipeline manifest is explicit and nonvacuous', async () => {
   assert.equal(manifest.schema, 'atto.functional-pipelines.v1');
-  assert.deepEqual(manifest.positive.map(c=>c.expected_exit), [83,83,42]);
-  assert.deepEqual(manifest.negative.map(c=>c.kind), ['type','syntax','syntax']);
+  assert.deepEqual(manifest.positive.map(c=>c.expected_exit), [83,83,42,42]);
+  assert.deepEqual(manifest.negative.map(c=>c.kind), ['type','syntax','syntax','syntax']);
   assert.deepEqual(manifest.reporting.states, ['passed','failed','unsupported','not_executed']);
   const names = [...manifest.positive, ...manifest.negative].map(c=>c.file);
   assert.equal(new Set(names).size, names.length);
