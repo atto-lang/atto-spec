@@ -87,3 +87,16 @@ The expression grammar recognizes exactly **three contiguous** `<` or `>` charac
 Required negatives: `1.0 & 2`, `true ^ false`, `1 >>> 1.0`, `~true`, immutable `val x; x |= 1`, `1 << 2` and `8 >> 2` as would-be integer shifts, malformed or whitespace-separated triple shifts, and incorrect stream classification of `x <<< 3`. Verify source `stdio.out << 1`, nested generics, boolean logic, and lambdas unchanged.
 
 **Evidence status:** A draft browser compiler implementation exists in [atto-source.rs #334](https://github.com/atto-lang/atto-source.rs/pull/334). Its source changes are not executable evidence. Rust tests, native-generated Wasm guest execution, actual browser compiler execution, alternate-runner exact-SHA tree proof, and independent Java/LLVM/.NET/Wasm/Forge parity must be reported separately as PASS / FAIL / UNSUPPORTED / NOT EXECUTED.
+
+### Backend status (2026-11-20)
+
+Reported as PASS / FAIL / UNSUPPORTED / NOT EXECUTED, locally on the exact pushed heads; hosted CI is billing-blocked.
+
+| Item | Java (atto-source.java 12ded133d8) | LLVM (atto-source.llvm 79827f2a4) | .NET (atto-source.net) |
+| --- | --- | --- | --- |
+| `<<<`, `>>>`, infix `ashr` | PASS: Graal guest tests incl. BW-005/006/007/009/010/011 | PASS: native guest `tests/native_odb1_bitshift_source_execution.sh` (13 executed assertions, 4 compile rejections, 4 runtime traps) | UNSUPPORTED (no shift operators) |
+| `<<`/`>>` rejected as integer shifts | PASS | PASS (fail closed: native channel I/O is not lowered) | PASS by absence (not tokenized as operators) |
+| Shift count `n & 63` (BW-008) | FAIL: distances outside 0..63 are rejected at runtime | FAIL: distances outside 0..63 trap | UNSUPPORTED |
+| Compound `<<<=`, `>>>=`, `ashr=` | UNSUPPORTED (no compound assignment) | UNSUPPORTED | UNSUPPORTED |
+
+Java also implements the io-direction shorthand (atto-spec #32 draft) for `Channel<T>` statements: `sink << value;`, `source >> val|let name [: T];` and `val|let name [: T] << source;`, desugared to exactly `writech`/`readch`. `select` arms and non-channel streams are NOT EXECUTED.
