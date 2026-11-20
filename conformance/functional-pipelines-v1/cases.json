@@ -32,6 +32,17 @@
         "reverse-right-associativity",
         "inline-arrow-expression-body"
       ]
+    },
+    {
+      "file": "mixed-parenthesized.atto",
+      "expected_exit": 42,
+      "expected_stdout": "",
+      "requires": [
+        "pipe-forward",
+        "pipe-reverse",
+        "grouped-mixed-direction",
+        "inline-arrow-expression-body"
+      ]
     }
   ],
   "negative": [
@@ -45,6 +56,10 @@
     },
     {
       "file": "reject-ambiguous-mixed-direction.atto",
+      "kind": "syntax"
+    },
+    {
+      "file": "reject-reverse-mixed-unparenthesized.atto",
       "kind": "syntax"
     }
   ],
