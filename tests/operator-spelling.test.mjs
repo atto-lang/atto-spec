@@ -23,6 +23,9 @@ test('single caret only returns; double caret only bitwise XOR',()=>{
   assert.equal(byId['caret-return'].source,'^ 5;');
   assert.equal(byId['caret-return'].meaning,'RETURN');
   assert.equal(byId['explicit-return'].meaning,'RETURN');
+  assert.equal(byId['full-function-explicit-return'].source,'pub fnc foo(): int {\n  return 5;\n}');
+  assert.equal(byId['full-function-caret-return'].source,'pub fnc foo(): int {\n  ^ 5;\n}');
+  assert.equal(byId['full-function-caret-return'].meaning,byId['full-function-explicit-return'].meaning);
   assert.equal(byId['bitwise-xor'].source,'12 ^^ 10');
   assert.equal(byId['bitwise-xor'].reference_result,'6');
   assert.equal(byId['invalid-infix-caret'].expected,'REJECT');
