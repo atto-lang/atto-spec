@@ -11,6 +11,7 @@ out-of-line `mtd` receivers; existing modifier and receiver checks still apply.
 ```atto
 fnc foo() : int { return 5; }
 fnc foo() : int -> { return 5; }
+fnc foo() : int -> 5;
 fnc foo() -> int { return 5; }
 
 fnc foo() -> int
@@ -99,6 +100,40 @@ into the other.
 
 **Return-first extension:** the accepted `fnc T <- name(params)` / `T <- name(params)` spellings and their `{}`, `begin`/`end`, and return-first statement/`end` bodies are specified in [return-first callable syntax v1](return-first-and-begin-callables-v1.md). That extension is in addition to the name-first body forms below, not permission to omit a return annotation or to reinterpret legacy comma/end tail returns.
 
+## Inline single-expression arrow body (accepted target contract)
+
+The one-expression form `fnc name(args): T -> expression;` is an alternative to a
+braced body. It evaluates the expression exactly once and implicitly returns its
+value, subject to the same declared return type, call arity, ownership, borrow,
+effect, overflow, and evaluation-order checks as `{ return expression; }`.
+The trailing semicolon **is mandatory**; it is a callable-body delimiter, not
+a separator that permits a second expression. A braced `: T -> { ... }` body
+still requires an explicit return for non-`void` callables. The form applies
+to supported named `fnc`, `routine`, and method declarations; backends must
+independently prove each category before claiming executable support.
+
+```atto
+pub fnc double(int x): int -> x * 2;
+pub fnc increment(int x): int -> x + 1;
+pub fnc main(): int {
+    val a = 20 |> double |> increment;
+    val b = double <| 21;
+    return a + b; // 83
+}
+```
+
+This spelling is distinct from the established `fnc f() -> T` trailing
+return-type header and Erlang-style `end` body. No implicit `end`, newline
+termination, or implicit return from a brace block is introduced.
+Reject missing semicolons, empty expressions, mismatched result types, and
+`: T -> expression end`. Mixed `|>` and `<|` application chains require
+parentheses rather than an implementation-defined grouping.
+
+Functional application rules: `x |> f |> g` = `g(f(x))`, and
+`f <| g <| x` = `f(g(x))`; `<|` is right-associative. A standalone
+`f <| x` is `f(x)`. Both use ordinary checked function calls and never
+denote continuous actor/channel routing (`pipe`/`rpipe`).
+
 ## Body boundary and disambiguation
 
 ```ebnf
@@ -106,6 +141,7 @@ callable          = callable_head, return_spec, callable_body ;
 return_spec       = (":", type_ref) | ("->", type_ref) ;
 callable_body     = "{", c_statements, "}"
                   | "->", "{", c_statements, "}"  (* only after : Type *)
+                  | "->", expression, ";"    (* only after : Type *)
                   | ["::"], erlang_sequence, "end" (* only after -> Type *) ;
 erlang_sequence   = erlang_item, {",", erlang_item} ;
 erlang_item       = statement_without_terminator | expression ;
@@ -115,7 +151,8 @@ A `-> Type` header followed by `{` unambiguously selects C-style.
 The optional `::` after `-> Type` selects Erlang-style explicitly;
 otherwise the absence of `{` selects Erlang-style. A `: Type` header
 does **not** implicitly select Erlang-style. A body-opening `->` following
-`: Type` requires `{`. Neither `::` nor a second `->` may be used
+`: Type` requires either `{` for a statement block or exactly one expression
+terminated with `;`. Neither `::` nor a second `->` may be used
 as an expression operator. The parser must not fall back to another
 interpretation after encountering malformed delimiters.
 
@@ -147,12 +184,14 @@ interpretation after encountering malformed delimiters.
 
 All backends and the formatter should test the following:
 
-1. Each of the five examples above returns 5.
+1. Each of the six examples above returns 5; the inline `: int -> 5;`
+   form returns 5 with checked implicit-return typing.
 2. `fnc f() : int { 5; }` does not gain implicit return.
 3. `fnc f() -> int :: 3, 2 + 3 end` returns 5.
 4. Reject a missing `end`, a trailing comma, adjacent items without
    comma, a top-level semicolon in Erlang-style, and `: int ::`.
-5. Reject `fnc f() : int -> 5 end`: the `->` body marker requires braces.
+5. Reject `fnc f() : int -> 5 end`: an unbraced `: int ->` body requires
+   a single expression followed by a semicolon.
 6. Reject a non-`void` Erlang body that can fall through without a
    result, and enforce return-type and ownership checks for its tail.
 7. Keep argument commas (e.g., `sum(2, 3)`) distinct from sequence
