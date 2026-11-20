@@ -17,7 +17,7 @@ suspends fnc increment(Mutex<int> counter): int {
 }
 
 pub suspends fnc main(): int {
-  val counter = Mutex<int>(0);
+  val counter = new Mutex<int>(0);
   stdio.println(await increment(counter));
   return 0;
 }
@@ -44,7 +44,30 @@ The unadorned `using counter.lock_async()` syntax is **contextual syntax sugar**
 4. An ordinary `increment(counter)` without `await` returns the task and does not perform the increment; it must never implicitly return an `int` or run on a carrier. The caller cannot erase `susp` from a callable type; a non-suspending context cannot drive or await that task.
 5. A nonprimitive `Mutex<T>` argument is an ordinary checked **non-owning handle loan** unless explicitly transferred by a separate legal ownership operation. Suspending while it is borrowed requires a proven pinned/stable handle, sufficient owner lifetime, and unchanged TenantVM/actor execution domain. If those proofs are absent, reject before emitting a guest. `await` does not implicitly `share!` or move an owner.
 
-`Mutex<T>(value)` is the proposed canonical factory. It evaluates `value` once, establishes an actor/task-domain-confined protected object, and does not expose its data through the ordinary shared-reference ABI. The constructor/factory is not evidence of existing stdlib availability.
+### Resource class construction versus value-struct construction
+
+**Normative decision:** `Mutex<T>` is an **opaque sealed nominal resource class**, not a value struct. Its identity, owner domain, wait queue, lease epoch, and protected state are not value-copyable and may never be derived from a user-supplied struct with equivalent fields. `MutexLease<T>` is an affine scoped resource; it cannot be cloned, serialized, copied, transferred across actor/TenantVM boundaries, or stored for later access.
+
+The **canonical and required** constructor is `new Mutex<T>(value)`, e.g., `val counter = new Mutex<int>(0);`. The `new` keyword specifies nominal class construction, **not a mandatory OS heap allocation**; backend representation may use a private arena, stack-allocated owner object, or another provably stable allocation consistent with ownership/lifetimes. Initialization evaluates `value` exactly once, establishes a fresh class identity in the current actor/task domain, and grants no ambient sharing. The legacy bare call `Mutex<int>(0)` is invalid: diagnostic **`E_NEW_REQUIRED`**, and no executable artifact. It must not be silently treated as a struct constructor, a `static fnc` factory, or a class-construction alias.
+
+**Ordinary `struct` types** may use their specified value-constructor spelling without `new`, e.g. `Point(x=1, y=2)` if that struct defines positional/named construction. That policy must not determine how an identity-bearing resource such as `Mutex<T>` is created. Copying a struct containing a `Mutex<T>` owner is ill-formed unless the program explicitly moves its unique owner; a shared alias requires a distinct capability-checked `SharedMutex<T>` contract, not copying the mutex's bytes.
+
+`new Mutex<T>` is subject to the Deno-like host permission and resource quotas where relevant; it does not authorize OS sockets, guest/native interop, cross-tenant transfers, or import new ambient host capabilities. A local mutex handle passed to `increment(Mutex<T> counter)` is a verified borrow, with owner lifetime and pinning checks across potential suspension. Generic `new` typing and runtime admission must be consistent across parsers, formatters, typed IR, guest code generation and every backend.
+
+
+
+### Constructor conformance matrix
+
+| Source form | Required result |
+|---|---|
+| `new Mutex<int>(0)` | Valid construction if the backend has implemented and verified `Mutex<int>`; otherwise a typed unsupported-feature diagnostic |
+| `Mutex<int>(0)` | `E_NEW_REQUIRED`, no emitted guest |
+| `val a = new Mutex<int>(0); val b = a;` | No implicit copy of the owned class resource; only an explicitly checked borrow/move may be admitted |
+| `struct Mutex<T>` user declaration | Cannot redefine or spoof the reserved runtime `Mutex<T>` identity/capability |
+| `new Mutex<int>(0)` from an unauthorized guest domain | Deny without creating an object or leaking a handle |
+| `Point(x=1, y=2)` for a declared value struct | Follows ordinary struct constructor rules, no mandatory `new` |
+
+The formatter must **preserve `new`**, never rewrite `Mutex<T>(...)` to `new Mutex<T>(...)` without a parser/typechecker decision, and never canonicalize the two constructor forms as equivalent. Compiler/frontend errors must be evaluated before any guest executable emission.
 
 ## Await readiness, scheduler fairness and versioned ABI migration
 
