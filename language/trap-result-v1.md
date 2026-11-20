@@ -2,6 +2,10 @@
 
 **Status:** normative language contract; executable compiler/backend support must be proven separately. Supersedes any earlier `trap`-to-`Option` description. The Rust/Wasm draft compiler now executes a **bounded** Result/Error subset (int, Option<int>, void and existing Result<...,Error>) with exact-tree guest validation on PR #275; generic error joins, Error subclasses, actors, remaining backends and publication are **not** thereby certified.
 
+## Source spelling and migration
+
+New canonical AttoLang source is proposed to use `trap! expression` and `throw! Error(...)`; `raise!` and `panic!` receive the same contiguous exceptional-keyword suffix. This is a **lexical spelling change**, not a change to the types, error identity, cleanup or capture rules below. The historical bare `trap`/`throw`/`raise`/`panic` forms and the examples below remain temporarily migration-compatible. The full target, lexer boundaries and per-backend proof gates are in [exception-control bang spellings v1](exception-control-bang-spellings-v1.md). Preserve earlier SHA-pinned fixtures unchanged; newer bang fixtures need independent pins.
+
 ## Meaning
 
 `trap expression` evaluates its operand exactly once and catches **only ordinary source `throw`** at that expression's dynamic caller-side trap boundary. It converts that caught Error (preserving its type, payload and identity) into `Err(error)`. It never invents `None`, discards an `Err`, or catches a source `raise`, `panic`, authenticated cancellation, host failure, OOM, or fatal WebAssembly trap. Existing ordinary catch-vs-recover precedence across the full call chain remains in force.
