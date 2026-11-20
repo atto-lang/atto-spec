@@ -28,7 +28,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Tuple destructuring, mutability and aliasing v1](language/tuple-destructuring-v1.md): accepted target syntax for mixed per-element `let`/`val`/`const`/`mut` bindings, explicit binder lists and `as foo` root aliases; compiler/guest support not yet verified.
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
-- [Actor creation effect `spawns` v1](language/actor-spawns-effect-v1.md): explicit spawn-capable callable effects, nested actor parentage, tenant-scoped authorization, quotas, lifecycle fencing and 19 proposed conformance cases. **Target proposal; no compiler or guest parity certified.**
+- [Actor creation effect `spawns` v1](language/actor-spawns-effect-v1.md): explicit spawn-capable callable effects, nested actor parentage, tenant-scoped authorization, quotas, lifecycle fencing and 26 proposed conformance cases (19 source / 7 runtime). **Target proposal; no compiler or guest parity certified.**
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
 - [Shared ownership and explicit guards v1](language/shared-ownership-and-guards-v1.md): TARGET semantics for `share!`/`rt share` (frozen sharing) and separately synchronized `RwLock<T>` mutation; **not compiler certified**.
 
