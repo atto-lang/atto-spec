@@ -90,6 +90,29 @@ A quoted key in a record is a **literal field name**, not a runtime expression; 
 - A missing map key is different from a missing record field: map lookup must expose explicit absence (the safe `get` family uses `Option`), rather than manufacturing a default or returning an unchecked value. The exact `map[key]` indexing return/throw behavior is reserved for the map API contract and is **not** fixed by this record-bracket-access proposal.
 - Map key equality uses `eq`/hash-compatible value semantics, not object-identity `==`. Equal keys must hash identically, `hash`/equality must remain stable while inserted, and a replacement for a duplicate runtime key must not create a second live slot. Compile-time duplicate constants are errors, including positive/negative zero when equal by key semantics.
 
+### Static Record bracket mutation (candidate; requires separate guest proof)
+
+**Decision:** A closed, owned, writable `Record` may update an **existing** statically known field with `record["field-name"] = value;`. This is a checked *Record field assignment*, **not** a Map insert/upsert or a runtime-key hash-table operation. If the decoded quoted field name is a valid identifier, `r["foo"]` and `r.foo` select the **same field slot** for both reads and writes. Quoted non-identifier field names (including hyphens, spaces, empty strings, Unicode) are accepted with literal brackets but have no fabricated dot spelling. Distinct decoded UTF-8 byte sequences (including NFC/NFD) must not be conflated.
+
+```atto
+pub fnc main(): int {
+    let mut Record r = { foo: 1, "content-type": 2 };
+    r["foo"] = 3;          // same existing field as r.foo
+    r["content-type"] = 4; // quoted field with punctuation
+    return r["foo"] + r["content-type"]; // expected: 7
+}
+```
+
+- A mutation requires mutable write authority over the **owned referent**: `val mut Record r` and `let mut Record r` may update where ownership/loans permit; `val Record` and `let Record` must reject writes (`E_IMMUTABLE`). `let` by itself permits rebinding, not a field write. Active shared loans, moved owners, sealed actor state and final/readonly fields remain protected.
+- Only a compile-time **quoted string literal** `r["foo"]` is admitted for indexed Record assignment in this version. `r[key]`, interpolated/computed strings and numeric indexes are **not** treated as static field access (`E_UNSUPPORTED`). The compiler must resolve `r` to a proven closed structural Record after lexical scope and type checking, never by variable name alone. A bare open `Record` lacking a proven narrowed shape is not eligible for offset writes (`E_FIELD_PRESENCE` or a precise unsupported diagnostic).
+- A missing field in a **closed** shape is `E_NO_FIELD` for both reads and writes. `r["new_field"] = 1` does not extend or retype the Record. An RHS with an incompatible static type rejects `E_TYPE`; no implicit field replacement that changes the structural type. Use the separate immutable `r with {"new_field": value}` operation to produce a *new* Record shape, if independently implemented.
+- `r["foo"] = expr` evaluates the receiver once and the RHS once, in left-to-right order. The compile-time field lookup uses the shape's established slot/layout; the guest write is checked against that exact slot, preserves the original shape and other fields, and never invokes Map hashing. If evaluating `expr` fails, the previous field value is preserved. Replacing an owned value requires validated move/borrow/drop ownership before commit, with safe cleanup on failure.
+- A nominal **`Struct` is deliberately NOT bracket-indexable**: `s["foo"]` and `s["foo"] = v` are invalid (`E_UNSUPPORTED` or the target's dedicated index diagnostic), even for an existing declared `foo`. `s.foo` and admissible `s.foo = v` remain the nominal field API. External JSON aliases do not become extra member names.
+- The compiler must preserve the `Index`/indexed-lvalue AST until type resolution distinguishes `Map`, `Record`, `Struct` and unsupported classes; no lexically guessed `index -> member` rewrite. Index writes are nonescaping assignments and require the same actor/borrow checks as dot field writes.
+- This extension does **not** assert that static Record guest writes, generic nested mutable Records or arbitrary Struct guest code are already implemented. Existing limited closed-Record **reads** are not sufficient evidence.
+
+Required cases: positive identifier/quoted-nonidentifier/empty/Unicode same-field updates; negative immutability, missing field, mismatched value type, computed index, open shape, shadowing, moved/borrowed alias, attempted Struct bracket read/write, and record-vs-map distinctions. Positive **compiled guest** programs, no-artifact negative checks, formatter parse–format–parse and exact source-SHA evidence are required separately per backend.
+
 ### Serialization and layout boundaries
 
 - Record JSON property names preserve their decoded UTF-8 field names, including quoted non-identifier names. String-map JSON property names preserve the actual string keys. JSON objects cannot faithfully encode an arbitrary non-string-key `Map<K,V>` without an explicitly selected key codec or entry-array representation; no implicit lossy stringification.
