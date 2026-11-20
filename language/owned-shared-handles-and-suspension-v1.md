@@ -9,6 +9,10 @@ Status: **PROPOSED / NOT ACCEPTED / NOT IMPLEMENTED** (2026-11-15). This documen
 - Keep `val`, `val mut`, `let`, `let mut`, `const`, and `const mut` distinct. Binding rebinding is different from referent mutation. A `mut` name cannot override a final field, a loan, an actor critical boundary, or an ownership transfer.
 - A compiler may return `E_UNSUPPORTED` instead of lowering any not-yet-verified profile. Parsing a type name or accepting a host representation is **not** evidence of guest support. Callable type declarations continue to use `=>`; runnable/lambda bodies use `->`.
 
+## Actor isolation type witnesses and TenantVM boundaries
+
+The companion [actor-isolation-types-v1.md](actor-isolation-types-v1.md) now defines the proposed compiler-controlled, nonforgeable `Sendable<T>` and `Shareable<T>` witnesses, independent format-specific `Serializable<T,Format>`, nested/generic graph closure, same-TenantVM actor moves versus explicitly brokered cross-TenantVM copy, and generation-fenced `ActorRef<A>` delegation. This **narrows** the earlier open Sendable trait question without introducing a second actor hierarchy or making a user-defined marker trait authoritative. The compatibility and failed-send rollback API questions below remain open. All cases are **PROPOSED / NOT COMPILED-GUEST VERIFIED**.
+
 ## Proposed ownership invariants
 
 1. **Unique owner**: `Box<T>` holds one transferable owned handle. `take!` transfers exactly once and invalidates the former owner across all reachable control-flow successors. No implicit copy, clone, or cross-actor forwarding. Borrowed views never become owned handles.
