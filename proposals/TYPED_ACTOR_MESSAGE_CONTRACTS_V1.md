@@ -106,9 +106,44 @@ A polymorphic actor or helper may send `T` to `ActorRef<T>` if both the handle t
 
 Implement parser/formatter acceptance, typed HIR/MIR, flow-sensitive effect checking, actor reference capability typing, mailbox admission, and supervisor CONTROL separation independently in the Java, LLVM, .NET, Wasm and Forge backends (plus other supported compilers). Maintain shared positive/negative `.atto` fixtures; retain `.ores` compatibility checks where supported. Use Rust-based test infrastructure where tests are newly introduced; do not use Python. A backend can be marked supported only with exact HEAD/commit provenance, observed compiler execution, positive/negative guest fixtures, and runtime tests for CONTROL isolation. Untested and unsupported are **not** passed.
 
+## Bounded v1 header semantics and diagnostic alignment
+
+For all conforming compiler frontends, `sends never` denotes an empty
+application-DATA send effect: the actor may not perform any application
+`target.send(value)` operation, including via statically reachable helper
+calls. It **does not** suppress authenticated runtime supervisor CONTROL.
+`sends void` is invalid: `void` is a return type, **not** the spelling of
+an empty message effect. An absent `sends` clause remains inferred; it does
+not implicitly grant the `Any` effect.
+
+The following diagnostic codes are canonical for the **bounded actor-header
+subset**, including legacy `ActorMail<T>` handler compatibility:
+
+| Code | Invalid program |
+| --- | --- |
+| `E_ACTOR_RECEIVES` | Declared `receives T` disagrees with the attached `receive(ActorMail<U>)` payload, or that required handler is missing |
+| `E_ACTOR_SEND_CONTRACT` | Invalid `sends void` or an application-send effect outside the declared `sends` bound |
+| `E_ACTOR_CONTRACT` | Duplicate or out-of-order `receives` / `sends` header clause |
+
+Implementations MUST preserve their existing strict unsupported-feature
+diagnostics for constructs they do not lower; an unsupported string wire
+error is not proof that a compiler implements string actor messaging.
+`receives never` and actor lifecycle-only support remain separately gated
+by the authenticated CONTROL contract.
+
+One shared source target is
+[`actor-bool-never-parity-v1.atto`](https://github.com/atto-lang/atto-platform-conformance/blob/feat/typed-actor-receives-sends-v1/fixtures/typed-actor-bool-v1/actor-bool-never-parity-v1.atto)
+(Git blob `a103999dd9b047e24ae79fedd88398374bc10590`).
+This target uses `receives bool sends never`, an actual
+`receive(ActorMail<bool>)` handler, and a no-outbound actor body. Backends
+must compile it without treating `sends` as a count. The JavaScript
+bounded backend has an executable generated-JS test; native LLVM and
+Rust/Wasm independent compiler acceptance remain conditional on executed
+exact-head build/test receipts.
+
 ## Open implementation details
 
 - Exact grammar for sum types and whether an explicitly declared `sends` effect can be parameterized.
 - Whether an explicit `receives never` actor is allowed for timer-only/CONTROL-only actors (recommended: yes).
-- Precise error names and diagnostics, plus the canonical `send` return type.
+- Non-header error taxonomy and the canonical `send` return/admission type.
 - Whether inferred effects become part of public actor interface metadata (recommended: yes, with deterministic generation IDs).
