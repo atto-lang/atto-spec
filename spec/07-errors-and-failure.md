@@ -24,7 +24,7 @@ For non-actor `main`, an unhandled throw/raise/panic terminates the root guest i
 
 ## trap
 
-**Decided 2026-11-17 (owner): `trap` yields `Result`, and never wraps a `Result` twice.** This replaces the earlier `Option`-returning contract and settles the conflict this section used to record.
+**Decided 2026-11-17 (owner): `trap` yields `Result`, and never wraps a `Result` twice.** This replaces the earlier `Option`-returning contract and settles the conflict this section used to record. The historical `caller-trap-parity/v1` Option manifest is legacy evidence, **not the canonical oracle**. The canonical trap expression may call a declared throwing function, catches its ordinary escaping throw and yields `Result`; it never catches `raise`, `panic` or cancellation.
 
 `trap expression` evaluates `expression` exactly once and catches only **ordinary escaping throws**:
 

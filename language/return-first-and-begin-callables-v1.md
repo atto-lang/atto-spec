@@ -12,6 +12,8 @@ fnc calculate(int x): int { return x * 2; }
 fnc calculate(int x): int -> { return x * 2; }
 fnc int <- calculate(int x) { return x * 2; }
 int <- calculate(int x) { return x * 2; }
+fnc int • calculate(int x) { return x * 2; }
+int • calculate(int x) { return x * 2; }
 int <- calculate(int x) return x * 2; end
 int <- calculate(int x) begin return x * 2; end
 ~~~
@@ -31,7 +33,7 @@ fnc calculate_other() -> infer { return 42; }
 
 ~~~ebnf
 name_first       = ("fnc" | "routine"), identifier, "(", parameters, ")", post_return ;
-return_first     = ["fnc" | "routine"], return_type, "<-", identifier, "(", parameters, ")" ;
+return_first     = ["fnc" | "routine"], return_type, ("<-" | "•"), identifier, "(", parameters, ")" ;
 post_return      = (":" | "->"), return_type ;
 return_type      = type_ref | "infer" ;
 brace_body       = "{", { statement }, "}" ;
@@ -40,7 +42,7 @@ bare_end_body    = { statement }, "end" ; (* return-first only *)
 callable_body    = brace_body | explicit_body | bare_end_body | legacy_comma_end_body ;
 ~~~
 
-Within a class or actor, the normal name-first method shorthand may also omit fnc. At file/module top level, only a **return-first** declaration may omit fnc/routine. The bare return-first version without fnc/routine is a **named callable declaration only in declaration scope** (file/module/class/actor, where allowed), not an expression or variable binding. The exact contiguous token `<-` is a **left-pointing return-type separator**, not assignment, a stream-read operator, or two independent operators. Whitespace within it (`< -`) is invalid; it is not confused with `<=`, `<T>` or `->`. The return type appears exactly once: combining `int <- name() -> int` is invalid.
+Within a class or actor, the normal name-first method shorthand may also omit fnc. At file/module top level, only a **return-first** declaration may omit fnc/routine. The bare return-first version without fnc/routine is a **named callable declaration only in declaration scope** (file/module/class/actor, where allowed), not an expression or variable binding. Both the exact contiguous token `<-` and exact Unicode U+2022 BULLET `•` are return-type separators with identical callable signatures and semantics. Neither is assignment, stream-read, or a binary operator. Whitespace within `<-` (`< -`) is invalid; whitespace around the single bullet is permitted. Middle dot `·` (U+00B7), bullet operator `∙` (U+2219), and other lookalikes are invalid. Do not confuse `<-` with `<=`, `<T>` or `->`. The return type appears exactly once: combining `int <- name() -> int` is invalid.
 
 For return-first headers, `begin`/`end` and an explicit semicolon-terminated statement sequence followed by `end` are both admitted. They have **ordinary statement semantics**: no implicit return from their final expression. An empty body is valid for declared void or infer (resolved to void), including a comment-only body. For a nonvoid result, every reachable path must return a value (or terminate via an admitted exceptional flow), otherwise compile error. For the existing arrow type + Erlang-like comma/end family, preserve its separate tail-expression implicit-return contract; do not reinterpret it as semicolon/end or silently flatten it.
 
@@ -50,6 +52,6 @@ Constructors remain an exception with their own syntax; lambdas retain contextua
 
 ## Formatting and safety
 
-Prefer the existing conventional form `fnc name(parameters) -> ConcreteType { ... }` in authored examples and tooling, **without rejecting any accepted alternate spelling**. Formatters may not reorder callables, change return/ownership/effect types, or rewrite brace vs begin/end vs legacy Erlang comma/end bodies unless explicitly requested and proven semantically equivalent. Preserve return-first syntax by default, including the optional fnc prefix and exact `<-` separator. `infer` remains explicit, not preferred, and must resolve to a concrete type before codegen.
+Prefer the existing conventional form `fnc name(parameters) -> ConcreteType { ... }` in authored examples and tooling, **without rejecting any accepted alternate spelling**. Formatters may not reorder callables, change return/ownership/effect types, or rewrite brace vs begin/end vs legacy Erlang comma/end bodies unless explicitly requested and proven semantically equivalent. Preserve return-first syntax by default, including the optional fnc prefix and the exact source separator (`<-` or `•`). Rewriting one to the other requires an explicit formatting policy and parse-equivalence proof. `infer` remains explicit, not preferred, and must resolve to a concrete type before codegen.
 
-Negative tests require missing return-type diagnostics, double result annotation, misplaced or split `<-`, unmatched/duplicate `begin`/`end`, duplicate callable declarations despite alternate spelling, and nonvoid no-return failures. Conformance requires executed compiled guests and compiler no-artifact evidence pinned to exact SHAs. This is a source syntax specification, not a claim that every backend implements it already.
+Negative tests require missing return-type diagnostics, double result annotation, misplaced or split `<-`, lookalike/non-U+2022 bullet separators, unmatched/duplicate `begin`/`end`, duplicate callable declarations despite alternate spelling, and nonvoid no-return failures. Conformance requires executed compiled guests and compiler no-artifact evidence pinned to exact SHAs. This is a source syntax specification, not a claim that every backend implements it already.

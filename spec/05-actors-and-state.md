@@ -31,7 +31,7 @@ This is the intended **sealed-state target**, not proof that the displayed `stat
 
 ## State confinement
 
-At most one effective persistent guest state schema belongs to one actor. Direct reads/writes of actor state outside compiler-validated scoped callbacks (`handle_state(critical-read|write ...)` or equivalent admitted lexically scoped `using`) MUST fail compilation. The intrinsic is sealed; code cannot override it or forge an actor-state pointer.
+At most one effective persistent guest state schema belongs to one actor. Direct reads/writes of actor state outside compiler-validated scoped callbacks (`handle_state(critical-read|write ...)` or equivalent admitted lexically scoped `using`) MUST fail compilation. The intrinsic is sealed; code cannot override it or forge an actor-state pointer. The restriction applies **even inside `receive`, `on_start` and actor methods**: direct `self.count = ...` is not a substitute for `self.handle_state(critical-write |s| -> ...)`. Separately checked construction-time initialization remains permitted. Historical direct-field positive fixtures are migration-only, not sealed-state parity.
 
 - **critical-read:** immutable ephemeral loan; concurrent readers may be admitted if the actor/profile supports them.
 - **critical-write:** exclusive mutation; any writer excludes conflicting readers/writers.

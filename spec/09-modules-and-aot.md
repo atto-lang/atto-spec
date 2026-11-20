@@ -13,10 +13,10 @@ define pub module math as
   end
 end
 
-import module math from "+lib/math"
+import * as math from "+/lib/math";
 ```
 
-This documents intended spelling; the exact source ordering, grammar and executable support require backend-specific fixtures.
+This is canonical unified static-import syntax. The old `import module math from "+lib/math"` is migration-only. Exact source ordering, safe resolution and executable linking still require backend-specific fixtures.
 
 ## Project root and resolver safety
 

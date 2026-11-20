@@ -44,7 +44,7 @@ The samples use one of several valid function forms: `: T` and `-> T` are both r
 
 ## Bindings and fields
 
-`val` declares an immutable binding, `let` a mutable binding, and `const` requires a compile-time constant. A `final` class field is single-assignment; a compile-time constant final initializer can be canonicalized from `final const` to `final` when proven constant. Instance field declarations default to immutable value slots unless explicit mutation is declared; the exact implicit-`val` grammar is a migration target.
+`val` declares an immutable binding, `let` a mutable binding, and `const` requires a compile-time constant. A `final` class field is single-assignment; a compile-time constant final initializer can be canonicalized from `final const` to `final` when proven constant. Unqualified ordinary class fields default to **`val`** (immutable binding) for primitive, nominal and generic types. Use explicit `let` to permit rebinding; `mut` controls referent-write authority independently. The historical implicit-`let` default is migration-only, not canonical. This agrees with chapter 02 and class-field-binding-defaults-v2 conformance.
 
 ```atto
 val answer = 42
@@ -52,7 +52,7 @@ let counter = 0
 const max_retries = 3
 
 define class Session as
-  int id: 7             // implicit immutable field (target)
+  int id: 7             // implicit val: fixed binding
   let int attempts: 0   // explicitly mutable field
   final int epoch: 1    // assigned exactly once
 end

@@ -20,11 +20,11 @@
 
 AttoLang has **no `null` value** and **no truthiness**. Absence is `Option<T>`, and conditions must have type `bool`.
 
-Boolean logic uses the operators `&&` (short-circuit AND), `^^` (eager XOR) and `||` (short-circuit OR), whose operands must all be `bool`. The built-in `And`, `Or` and `Xor` functions, such as `And(true, true)`, remain available. See [chapter 16](16-lexical-and-grammar-reference.md#operators) for precedence and backend status. Inside conditions, `,` and `|` are still accepted as AND and OR.
+Boolean logic uses `&&` (short-circuit AND), `||` (short-circuit OR) and the named `Xor(bool, bool)` intrinsic. `^^` is eager integer bitwise XOR, not Boolean XOR; statement-leading `^ expression;` is a return shorthand. The built-in `And`, `Or` and `Xor` functions remain available. See [chapter 16](16-lexical-and-grammar-reference.md#operators) for precedence and backend status. Inside conditions, `,` and `|` are still accepted as AND and OR.
 
 ## Integer rules
 
-The chapter 02 rule is that no backend may rely on unchecked host overflow when the source specifies checked arithmetic. The backends do not agree on what happens today:
+The chapter 02 rule is that no backend may rely on unchecked host overflow when the source specifies checked arithmetic. The historical observed backends below do not necessarily implement the canonical language rules:
 
 | Program | Java | LLVM |
 | --- | --- | --- |
@@ -51,7 +51,7 @@ Java needs real changes to meet this, and LLVM's trap needs to become an actor-l
 
 Outside an actor, an overflow panic ends the root invocation as described in [chapter 07](07-errors-and-failure.md).
 
-Whether `int / int` gives a `float` or an integer is a separate decision (S-25). Java's current behavior surprises anyone coming from C, Rust or Java itself.
+**DECIDED (2026-11-20):** source `int / int` produces a floating-point result. Explicit checked truncating integer division is a distinct named operation such as `Integer.div_trunc(a,b)` (final standard-library spelling and failure taxonomy pending a versioned API contract). The checked-i64 oracle's abstract `div_trunc` operation does not prove that source `/` truncates.
 
 ## Equality and identity
 
