@@ -94,6 +94,75 @@ both forms, and compiled negative rejection with no output artifact.
 This candidate extends the separately staged `Pointer.alloc` capability
 work; it is **not** a claim that any present compiler supports these programs.
 
+### Two distinct `Pointer<T>` authority states — security-critical
+
+`Pointer<T>` has an invariant element type **and a compiler-proven authority
+state**. The surface spelling alone does not grant ownership or writability.
+For the narrow local-reference profile, the state is a non-owning read lease
+over a live local place; the separate `Pointer.alloc<T>(N)` profile produces
+an owning region capability, with different permitted operations. Typed
+HIR/MIR must preserve the distinction even when both print as
+`Pointer<int>`; a backend that erases this distinction must reject the
+program instead of allowing a privilege escalation.
+
+| Origin | Required typed-IR authority | Permitted operations |
+| --- | --- | --- |
+| `rt ref value` or `ref! value` | `BorrowedLocal<T, scope, place, generation, read>` | `rt deref` / `deref!` with a live lease; `rt unref` / `unref!` exactly once per *handle* |
+| `Pointer.alloc<T>(count)` | `OwnedRegion<T, generation, bounds, rights>` | Bounds-checked `read_at` / `write_at` and owning `close`, according to the independently admitted allocation profile |
+| `CheckedRef<Class>` from the class checked-handle proposal | `MovedOwnedClass<Class, identity, generation>` | Class-owner restore on `unref!`, not `void` borrowed-local release |
+
+**Never** permit `p.close()` or `p.write_at(...)` on a borrowed-local
+readonly `Pointer<T>`, nor `unref!` on an allocated owning region in
+place of its drop/close obligations. Neither `copy!` nor `share!` can
+duplicate or publish a live local pointer capability. Conversion to a
+raw integer, forging via `as Pointer<T>`, and capability serialization
+are forbidden. Users may write `ref! value` for a `Pointer<T>` local
+only when type-directed resolution proves this family; ambiguous inferred
+handles and unimplemented combinations fail closed.
+
+Every `rt ref` of an addressable place must establish a proven stable
+referent region and a distinct *linear handle identity*. Multiple
+independently minted **read-only** handles to the same place are allowed
+while they all remain live, subject to the usual writer exclusion and
+lifetime restriction. Copying one handle into a second binding is
+**not equivalent** to independently minting another. Each minted handle
+must have its own exactly-once `unref`; there is no implicit release
+of the other handles.
+
+A dereference copies primitive `int` and does not extend the handle's
+lifetime through the copied result. The original local survives
+`unref`, may be written after **all** overlapping read handles have
+been released, and can be referenced again through a newly minted
+handle. The original referent may not be mutated, rebound, moved,
+dropped, returned from its lifetime scope, or retired while incompatible
+live read handles remain. An uninitialized local cannot be read through
+any handle.
+
+The initial v1 profile requires explicit release on **every reachable
+CFG exit**. A release after a `return` does not discharge that exit;
+a release in only one conditional arm does not discharge the other.
+Analysis includes early returns, branches, loops, exceptional effects,
+`await`, cancellation and actor lifetime boundaries. Until formally
+proven cleanup edges exist, live handles crossing exceptional or
+suspending paths must be rejected before producing executable IR. The
+compiler should diagnose the actual lifetime/authority violation; if
+the entire feature is unsupported, it must fail closed with a distinct
+unsupported-feature diagnostic rather than produce a success artifact.
+
+### Versioned conformance and release-gate taxonomy
+
+The target-only fixture registry
+[`pointer-ref-local-v1`](https://github.com/atto-lang/atto-platform-conformance/blob/audit/pointer-aot-safety-20261115/contracts/pointer-ref-local-v1.json)
+currently covers **36** source programs: **10 expected executions** with
+exit value 42 and **26 expected compiler rejections**, including
+lifetime, syntax, provenance, type and authority failures. The
+`E_POINTER_*` labels in that target registry describe required error
+*categories*, not verified error codes already emitted by every compiler.
+AttoLang host source checks and reference models do not qualify a
+backend as implemented. Each backend must certify actual typed source
+compilation, compiled guest execution, invalid-program no-artifact
+rejection, and identity-stamped evidence on the exact source head.
+
 ## Logical representation and integrity
 
 Every pointer capability identifies a T layout, its owning actor incarnation and tenant/memory domain, a live region plus **generation**, a byte length and initialized-element range, a checked offset, its access rights (read, exclusive write, own/drop, frozen share), and revocation epoch. The compiler can choose inline metadata or bounded region-table entries, but **never** omit the semantic checks.
