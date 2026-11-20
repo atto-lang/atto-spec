@@ -172,6 +172,10 @@ test('infix, exact typed repetition and value-vs-type distinction',()=>{
   assert.equal(match_sequence(parse_fragment('is int','Any'),[3]).matched,true);
   assert.equal(match_sequence(parse_fragment('is int','Any'),['3']).matched,false);
   assert.deepEqual(parse_fragment('"hello"','string'),[{kind:'lit',value:'hello'}]);
+  assert.deepEqual(parse_fragment('1, 2, 3','int'),[
+    {kind:'lit',value:1},{kind:'lit',value:2},{kind:'lit',value:3}
+  ]);
+  assert.equal(match_sequence(parse_fragment('1, 2, 3','int'),[1,2,3]).matched,true);
 });
 test('source strings cannot introduce binders, arbitrary code or runtime evaluation',()=>{
   for(const source of ['is int as val x','call_user_function()','await read()',
