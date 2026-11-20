@@ -82,7 +82,7 @@ The **target** early-exit spelling is `guard condition { terminal_failure_path }
 
 An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.
 
-`match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. An expression-form `return match ...` must infer its enclosing return type where admitted. Typed variants such as `match<int>` and `select<int>` constrain arm results. Duplicate and unreachable arms should be compile errors; exhaustive/disjoint-vs-priority matching is still subject to [open questions](12-open-questions.md).
+`match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. Every arm in both `match ... over` forms requires contextual `on`, including `on Ok(ack)`, `on Err(err)` and wildcard `on _`; bare `Ok(ack) ->`, `else`, `default` and `on default` are invalid match arms. `default` belongs to `switch`. An expression-form `return match ...` must infer its enclosing return type where admitted. Typed variants such as `match<int>` and `select<int>` constrain arm results. Duplicate and unreachable arms should be compile errors; exhaustive/disjoint-vs-priority matching is still subject to [open questions](12-open-questions.md).
 
 ## Call syntax and operators
 

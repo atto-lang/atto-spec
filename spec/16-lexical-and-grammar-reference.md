@@ -90,6 +90,19 @@ From lowest to highest precedence, following the v0.6 grammar:
 
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
 
+## Canonical match-arm introducer (2026-11-20)
+
+After `over`, every `match` arm MUST begin with contextual `on` in `match value over`, `do match value over`, typed variants, ADT payload patterns, guarded arms and wildcard fallback. Use `on _` for the wildcard. The arrow is `->` (not `=>`). `on` is contextual rather than a blanket reserved word.
+
+```atto
+match outcome over
+  on Ok(ack) -> { mark_admitted(ack); }
+  on Err(err) -> { handle_send_error(err); }
+end
+```
+
+Bare `Ok(ack) ->`, bare `Err(err) ->`, `else`, `default` and `on default` must be rejected in an `over` match. `case` and `default` are for `switch`. Formatters must preserve `on` and `on _`, not rewrite invalid bare arms into valid source. A historical non-`over` legacy mode must be explicitly selected to be considered separately. Browser syntax-only support is not proof of actual native LLVM or `Result<Ack,SendError>` guest execution.
+
 ## Return-first named callables and explicit `begin`/`end` (target)
 
 The mandatory return-type rule accepts conventional `fnc name(args) -> T` / `fnc name(args): T` and **both equivalent return-first separators**: `fnc T <- name(args)`, `T <- name(args)`, `fnc T • name(args)`, and `T • name(args)` (U+2022 BULLET only). `T` may be `void`, `infer`, or a concrete return type. The contiguous `<-` is a declaration delimiter, not assignment. Return-first spelling is also valid for class/actor methods in declaration context; existing visibility, ownership and actor isolation rules do not change.

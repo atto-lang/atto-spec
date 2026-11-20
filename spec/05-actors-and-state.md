@@ -43,7 +43,21 @@ At most one effective persistent guest state schema belongs to one actor. Direct
 
 An actor has a bounded DATA inbox. Sending has a **linearization point**: either an owned message is admitted exactly once (with quota/ownership obligations transferred) or the send fails without partial publication. Admission checks type, identity, incarnation, authority, closure state and queue count/byte limits.
 
-`send(message)` should return an explicit typed admission outcome such as `Result<Ack, SendError>` (or a Future thereof where admission is asynchronous); never mistake mailbox admission for recipient processing or completion. Existing backend APIs may expose different aliases, and must be reconciled before finalizing the signature. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
+**Canonical target:** synchronous mailbox admission `send(message)` returns `Result<Ack, SendError>`. An explicitly asynchronous admission API may instead return `Future<Result<Ack, SendError>>`. `Ack` proves admission to a bounded mailbox at the linearization point, **not processing, durability or completion**; `void` and `Result<void, SendError>` are transitional backend profiles, not portable typed-send parity. `SendError` reports refused admission (full, closed, stale generation, unauthorized) without implicit panic. Actual guest execution and compiler evidence are required before claiming backend parity.
+
+```atto
+val result = worker.send(42);
+match result over
+  on Ok(ack) -> {
+    // Message admitted; not necessarily processed.
+  }
+  on Err(err) -> {
+    // Handle rejected admission.
+  }
+end
+```
+
+Every `match ... over` arm must begin with contextual `on`, including `on _` wildcard; bare `Ok` / `Err`, `else`, `default`, `on default` are invalid. The example is a language target, not an executed-backend claim. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
 
 A receiver is serialized with other conflicting turns. Messages may be rejected due to full/closed inbox, stale actor generation, invalid payload, cancelled sender or missing authority. No backend may silently drop a message while returning success.
 
