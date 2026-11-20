@@ -36,6 +36,11 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
           git diff --exit-code HEAD --
           test -z "$(git ls-files --others --exclude-standard)"
+          test -z "$(git ls-files --others --ignored --exclude-standard)"
+          for path in contracts/operator-spelling/v1/cases.json contracts/top-level-defines/v1/cases.json tests/operator-spelling.test.mjs tests/top-level-defines.test.mjs .github/workflows/operator-spelling-contract.yml; do
+            mode="$(git ls-files -s -- "$path" | cut -d' ' -f1)"
+            test "$mode" = "100644" || { echo "Untrusted file mode or symlink: $path" >&2; exit 1; }
+          done
           printf "head=%s\ntree=%s\n" "$EXPECTED_HEAD" "$(git rev-parse 'HEAD^{tree}')"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
