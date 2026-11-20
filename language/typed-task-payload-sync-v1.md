@@ -59,6 +59,40 @@ invalid: both tasks executing through one mutable parent stack frame
 invalid: popping parent frame while a borrowed child still runs
 ```
 
+## Mandatory cancellation semantics (target v1)
+
+**Every admitted Atto task is cancellable**, including tasks whose `Future<T>` handle is discarded by `do task`. Cancellation is a structured, tenant-bounded control operation, **not** a `Future<T>` payload, a Go-style detached goroutine, a forced OS-thread kill, or permission to reclaim live frame storage early. Unimplemented backends MUST reject guest admission rather than silently ignoring cancellation.
+
+### Surface API and outcome
+
+* An owned `Future<T>` exposes `cancel(): void`. This nonblocking, idempotent operation **requests** cancellation of its task and descendants, without consuming the single-use Future result. Calling it on a previously requested or already terminal task is harmless; it does **not** imply the child has stopped. There is no implicit `await`, return of `T`, or privilege elevation.
+* `await future` joins the task and yields its `T` **only on success**. A cancelled task instead delivers the distinct built-in `TaskCancelled` terminal control outcome. It never fabricates a `T`, silently converts cancellation into `Ok(T)`, or calls an unhandled cancellation an actor `panic`. An awaiter may explicitly handle cancellation; otherwise the cancellation propagates as a cancellation outcome through its task's scope, not as a successful return. `sync task<T>` and `await task<T>` use the same rules. Task failure remains distinct from cancellation.
+* `TaskCancelled` is an `Error`-compatible typed cancellation outcome for explicit handling, but **its propagation is not equivalent to an arbitrary user `throw`/unhandled `raise` escalating to actor panic**. The runtime preserves the separate terminal cause. A cancelled parent cannot clear its own cancellation merely by catching or trapping an awaited child outcome. Explicit cancellation shielding/reparenting is **not** in this v1 contract.
+* A `Future<T>` is **not** a detached execution permit. Dropping it or saying `do task` does not remove its child from TaskScope, stop error supervision, or disable scope cancellation. Only an authorized owner of the Future or owning TaskScope may request cancellation; a guest cannot forge handles or cancel another tenant's task.
+* `cancel()` may be called from a non-`susp` context because it never joins or parks a carrier. Waiting for retirement via `await` requires a suspension-capable context. Calling `cancel()` is **not** evidence of successful cleanup.
+
+```atto
+pub susp fnc main(): int {
+  val Future<int> worker = task<int> { return 42; };
+  worker.cancel();        // nonblocking request, does not consume worker
+  // await worker: either int 42 if completion won, or TaskCancelled if cancel won
+  return 0;               // scope must still retire the child safely
+}
+```
+
+### State machine, race ordering and physical retirement
+
+1. Task admission is fenced against parent-scope cancellation. A child admitted before cancellation is registered exactly once in TaskScope; otherwise admission fails and owned captures are rolled back without executing the child. No child may be admitted after that scope enters cancelling.
+2. The logical states include `pending`, `running`, `cancel_requested`, `cancelling`, and **terminal** `succeeded` / `failed` / `cancelled`. The first atomic terminal claim wins. An already committed successful result remains successful even if `cancel()` arrives later; a cancellation accepted before terminal commitment must prevent any later user-level successful commit once its cancellation safe-point/control handoff has won. Repeated cancellation requests do not duplicate completion, callbacks or cleanup.
+3. Cancellation is **transitive and downward** across nested TaskScopes, including `do task` children. Cancelling a child does not automatically cancel healthy siblings or the parent; failure/supervisor policy is separately specified. A parent may not report physical retirement until its descendants and their registered cleanup/notifications have physically retired.
+4. Compiler/runtime cancellation safe points MUST cover task start, every suspension (`await`, `sync task`, channel/select/timer and cancellable I/O), cooperative loop/backedge budgets and bounded blocking host operations. Pending timers, I/O and channel waits must have a wake/revoke path that cannot strand a cancelled task indefinitely; callback/admission races need generation or one-shot fencing. Runtime must check cancellation before committing an admitted operation if required by its protocol.
+5. Once cancellation is observed, the task unwinds through `defer`, `using`, lock/lease releases and other cleanup **exactly once**, under a bounded, non-privilege-escalating cleanup policy. Cancellation must not cause cleanup to be skipped or permit a synchronous critical lease to straddle suspension. A cleanup failure is recorded and can withhold safe-retirement certification; cancellation must not masquerade as successful cleanup.
+6. **Request, logical completion and physical quiescence are distinct.** A scheduler must not recycle a child continuation, scoped loan, shared physical stack storage, actor lease, host handle or tenant memory until no executing code/callback/registered finalizer can still access it, with terminal publication correctly ordered after the applicable retirement barrier. A timeout or unresponsive task is **not** successful cancellation; keep ownership fenced/retained, escalate through supervisor/tenant quarantine or terminate a genuinely isolated execution domain. Never unsafely kill a native OS thread or free shared memory used by a running task.
+7. Untrusted guest code needs compiler-inserted cooperation/fuel checks, bounded loop admission, watchdogs and quotas. A backend unable to enforce reliable cancellation of untrusted loops or host operations in its advertised profile MUST reject that profile or isolate it in a genuinely revocable domain; it cannot claim guaranteed bounded cancellation merely because a boolean flag exists. Runtime cancellation cannot confer ambient I/O or cross-tenant access.
+8. Cancellation, success and failure must be distinguishable in typed MIR, runtime ABI, tracing/receipts and conformance checks. `TaskSpawn`, `TaskCancelRequest`, `TaskJoin`, `TaskScopeCancel` and `TaskPhysicalRetire` need verified ownership and state transitions; `cancel()` cannot be optimized away or turned into unconditional success.
+
+A useful interoperability invariant is **cancel request != cancelled terminal outcome != proof of physical retirement**. This remains true when two tasks are coallocated in a shared physical stack segment.
+
 ## Ownership, borrows and scoped lifetime
 
 Every spelling maps to one canonical typed TaskSpawn + optional TaskJoin/TaskDiscard MIR path with identical borrow facts:
@@ -92,6 +126,12 @@ The formatter MAY normalize `do sync task<T> { B }` to `do task<T> { B }` only w
 | `val sync = 1;` | E_RESERVED |
 | child moves borrowed parent owner or holds ordinary loan across await | E_BORROW_CONFLICT / E_TASK_BORROW_ESCAPE / E_SUSPEND_WITH_LIVE_LOAN |
 | child crosses tenant boundary without an authorized channel/capability | E_TENANT_BOUNDARY |
+| `pending.cancel(); await pending;` | cancel request then success **or** `TaskCancelled` according to terminal race; never speculative `T` |
+| `pending.cancel(); pending.cancel();` | idempotent; one cancellation request state, no double cleanup |
+| cancellation before child admission | no child execution; capture rollback and no escaped loan |
+| cancellation of parent with live `do task` and nested task | transitive cancellation and physical descendant quiescence before scope retirement |
+| plain `Future<T>.cancel()` on an unsupported backend | E_UNSUPPORTED / no guest artifact; never a silent no-op |
+
 
 Verification: check tokens, parser AST equivalence, effects, typed MIR, ownership path, formatter round-trip and negative no-artifact diagnostics. Then run actual .atto guest fixtures on each backend, with exact source SHA/tree, toolchain and meaningful successful steps. Host-only Rust/Node model tests do not certify a compiler. Status for every backend begins NOT_EXECUTED until independent evidence proves otherwise.
 
