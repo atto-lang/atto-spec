@@ -86,7 +86,7 @@ An `if expression as const/let name` binding tests **presence**, not truthiness.
 
 ## Call syntax and operators
 
-Arithmetic, checked comparison, assignment, function call, lambdas and generic arguments have distinct grammar slots. `|>` is the *value/function* pipeline operator. The keyword `pipe` is reserved for actor pipeline connections; neither is a synonym for bitwise `|`. `?` has context-dependent uses (optional type, parameter omission, postfix propagation, and ternary form) and must not be parsed with a global text replacement.
+Arithmetic, checked comparison, assignment, function call, lambdas and generic arguments have distinct grammar slots. `|>` is the *value/function* pipeline operator. The keyword `pipe` is reserved for actor pipeline connections; neither is a synonym for bitwise `|`. The staged [bang-suffixed alias contract](../language/bang-pipeline-and-stop-aliases-v1.md) defines `pipe!`/`rpipe!`/`stop!` as context-checked semantic aliases of `pipe`/`rpipe`/`stop`, without changing direction, lifecycle effects or stop capabilities; `rpipe` itself is pending the directional pipeline proposal. `?` has context-dependent uses (optional type, parameter omission, postfix propagation, and ternary form) and must not be parsed with a global text replacement.
 
 ## Rejection requirements
 
