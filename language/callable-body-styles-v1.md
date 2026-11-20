@@ -173,6 +173,22 @@ These additional cases live in
 the eight pinned primary fixtures, rather than rewriting the primary
 acceptance set or granting any backend a pass without compiled-guest evidence.
 
+## Pure scalar compilation cannot reclassify concurrency control
+
+The pure signed-int64 pipeline subset is not permitted to interpret
+`sync`, `task`, or `yield` as ordinary callable, parameter-binding, or
+local-binding identifiers. Those spellings are reserved by the
+concurrency/task/generator language family and must never gain
+ordinary scalar-function authority simply because they appear next
+to `|>` or `<|`.
+
+Until a production compiler implements the corresponding typed,
+ownership-checked, effect-aware constructs, a scalar-only frontend
+must reject all nine combinations (three words × three binding
+positions) **before emitting executable output**. This is an
+admission-boundary requirement, not proof of task, scheduler,
+generator, or TenantVM runtime support.
+
 ## Body boundary and disambiguation
 
 ```ebnf
