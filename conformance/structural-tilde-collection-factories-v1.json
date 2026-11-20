@@ -186,6 +186,144 @@
       "expected": "ACCEPT",
       "phase": "type",
       "source": "match v over on is ~ Point as val p -> { use(p); } on _ -> { } end"
+    },
+    {
+      "id": "factory-smoke-return-21",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "pub fnc main(): int { val pair = Tuple.of(10,20); val values = Array.of(1,2,3); val names = List.of(\"Atto\",\"Lima\"); val scores = Map.of(\"a\",10,\"b\",20); val item = Record.of(name=\"Atto\",count=3); return values[0] + pair[1]; }",
+      "expected_exit": 21
+    },
+    {
+      "id": "record-of-named-infer",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val item = Record.of(name=\"Atto\", count=3);"
+    },
+    {
+      "id": "record-of-static-quoted",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val headers = Record.of(\"content-type\": \"text/plain\", status=200);"
+    },
+    {
+      "id": "record-of-empty",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val empty = Record.of();"
+    },
+    {
+      "id": "record-of-explicit-shape",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val Record<{name: string, count: int}> item = Record.of(name=\"Atto\", count=3);"
+    },
+    {
+      "id": "record-of-type-parameter",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "fnc wrap<T>(T x): Record<{value: T}> { return Record.of(value=x); }"
+    },
+    {
+      "id": "record-generic-open-row",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "fnc read_name<R: Record<{name: string, ...}>>(R r): string { return r.name; }"
+    },
+    {
+      "id": "map-of-flat-pairs",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val scores = Map.of(\"a\", 10, \"b\", 20);"
+    },
+    {
+      "id": "map-of-explicit-empty",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val Map<string,int> m = Map.of();"
+    },
+    {
+      "id": "array-of-explicit-empty",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val Array<int> x = Array.of();"
+    },
+    {
+      "id": "tuple-of-zero",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val x = Tuple.of();"
+    },
+    {
+      "id": "record-of-duplicate-fields",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val r = Record.of(name=1, \"name\": 2);",
+      "code": "E_DUPLICATE"
+    },
+    {
+      "id": "record-of-computed-key",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val key = \"name\"; val r = Record.of(key => 1);",
+      "code": "E_UNSUPPORTED"
+    },
+    {
+      "id": "record-of-shape-mismatch",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val Record<{name: string}> r = Record.of(name=3);",
+      "code": "E_TYPE"
+    },
+    {
+      "id": "record-of-missing-generic-field",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "fnc f<R: Record<{name: string, ...}>>(R r): int { return r.age; }",
+      "code": "E_NO_FIELD"
+    },
+    {
+      "id": "map-of-odd-positional-arity",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val m = Map.of(\"a\", 1, \"b\");",
+      "code": "E_FACTORY_ARITY"
+    },
+    {
+      "id": "map-of-mixed-entry-and-flat",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val m = Map.of(\"a\" => 1, \"b\", 2);",
+      "code": "E_FACTORY_ARITY"
+    },
+    {
+      "id": "map-of-duplicate-constant-keys",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val m = Map.of(\"a\", 1, \"a\", 2);",
+      "code": "E_DUPLICATE"
+    },
+    {
+      "id": "list-of-uninferred-empty",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val values = List.of();",
+      "code": "E_TYPE_INFERENCE"
+    },
+    {
+      "id": "array-of-nonunifiable-items",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val xs = Array.of(1, \"two\");",
+      "code": "E_TYPE_INFERENCE"
+    },
+    {
+      "id": "record-of-untyped-spread",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val props = Map.of(\"a\",1); val r = Record.of(...props);",
+      "code": "E_UNSUPPORTED"
     }
-  ]
+  ],
+  "notes": "SOURCE EXPECTATIONS ONLY. New Record.of field=... and type-level Record<{...}> syntax are target-only, not current compiler passes. All backends require independently verified exact-head compiled guest tests."
 }
