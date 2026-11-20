@@ -14,7 +14,7 @@ test('functional pipeline manifest is explicit and nonvacuous', async () => {
   const names = [...manifest.positive, ...manifest.negative].map(c=>c.file);
   assert.equal(new Set(names).size, names.length);
   for (const item of [...manifest.positive,...manifest.negative]) {
-    assert.match(item.file, /^[a-z-]+\\.atto$/);
+    assert.match(item.file, /^[a-z-]+\.atto$/);
     const source = await readFile(new URL(item.file,root),'utf8');
     assert.ok(source.startsWith('// expect-'));
     assert.ok(source.includes('pub fnc main(): int'));
@@ -30,11 +30,11 @@ test('both user program shapes are independently locked', async () => {
   const block = await readFile(new URL('block-body.atto',root),'utf8');
   const arrow = await readFile(new URL('inline-arrow-body.atto',root),'utf8');
   for (const code of [block,arrow]) {
-    assert.match(code,/20 \\|> double \\|> increment;/);
-    assert.match(code,/double <\\| 21;/);
-    assert.match(code,/return a \\+ b;/);
+    assert.match(code,/20 \|> double \|> increment;/);
+    assert.match(code,/double <\| 21;/);
+    assert.match(code,/return a \+ b;/);
   }
-  assert.match(block,/int \\{ return x \\* 2; \\}/);
-  assert.match(arrow,/int -> x \\* 2;/);
-  assert.match(arrow,/int -> x \\+ 1;/);
+  assert.match(block,/int \{ return x \* 2; \}/);
+  assert.match(arrow,/int -> x \* 2;/);
+  assert.match(arrow,/int -> x \+ 1;/);
 });
