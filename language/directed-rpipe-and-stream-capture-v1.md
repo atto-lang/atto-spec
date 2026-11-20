@@ -143,6 +143,17 @@ roles, nominal type agreement, ownership, effects, and cross-domain
 `Sendable` constraints. An interior transform has a matching sink
 input and source output, potentially with distinct `In` and `Out` types.
 The graph is unicast unless an explicit tee/broadcast adapter is present.
+In the default unicast profile, **both** an output port and an input port
+have at most one owning DATA connection across all live pipeline expressions.
+Two different producers connected to the same sink are implicit fan-in and
+must fail with an occupied-input admission error, just as one producer
+connected to two sinks is implicit fan-out and must fail with an
+occupied-output error. Repeating a directed pair, including its `rpipe`
+spelling, must fail as a duplicate edge. An explicit typed merge/join
+adapter may be used for fan-in; a tee/broadcast adapter may be used for
+fan-out. A compiler's static proof cannot replace atomic, generation-checked
+runtime reservation and rollback for either port.
+
 
 For `A rpipe B`, the **right** expression `B` must provide a source;
 the **left** expression `A` must provide the corresponding sink.
