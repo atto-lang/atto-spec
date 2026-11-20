@@ -2,6 +2,8 @@
 
 This contract refines the candidate `Entry<K,V>` semantics in `inline-collection-literals-v1.md` and the quoted Map/Record correction in `quoted-map-vs-record-literals-v1.md`. It does not claim a compiler already executes Symbol-keyed Maps.
 
+> **Expression-key clarification (2026-11-20):** [Entry expression keys, collection keys and Record syntax](entry-expression-and-record-literals-v1.md) defines `foo => 5` as a computed-value key, `[foo] => 5` as a **List/Array-valued key**, `#foo => 5` as a Symbol-valued key, and `["foo" => 5]` as a List whose element is an Entry. Brackets never act as a computed-key marker. A growable List key is not automatically a hashable Map key. The two Record literal forms remain `{foo:5}` and `(foo=5)`; `bar :: 5` is not a RecordEntry operator.
+
 ## Standalone Entries
 
 ```atto
