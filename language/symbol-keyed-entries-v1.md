@@ -2,7 +2,7 @@
 
 This contract refines the candidate `Entry<K,V>` semantics in `inline-collection-literals-v1.md` and the quoted Map/Record correction in `quoted-map-vs-record-literals-v1.md`. It does not claim a compiler already executes Symbol-keyed Maps.
 
-> **Computed key clarification:** [Computed Map keys and Record construction](computed-map-keys-and-record-construction-v1.md) adds an explicit `[expression] => value` spelling for runtime-evaluated keys, without changing `#foo` literal Symbol identity or `foo => value` compatibility. `[foo]` without `=>` remains an ordinary Array/List expression.
+> **Map/List key clarification:** [Map key expressions and Record construction](computed-map-keys-and-record-construction-v1.md) keeps `foo => 5` as the computed **value** key, and preserves `[foo] => 5` as a List key, never a scalar-unwrapping marker. Immutable List Hash/Eq must be proven before List keys are admitted; `#foo` remains a literal Symbol key.
 
 ## Standalone Entries
 
