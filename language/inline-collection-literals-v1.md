@@ -124,3 +124,56 @@ All frontends must agree on parse tree shape, contextual type inference, diagnos
 6. \`(x)\` versus \`(x,)\` versus \`()\`, formatter idempotence, and upper/lower type alias equivalence.
 
 **Evidence matrix:** record the source tree SHA, target/toolchain, exact positive and negative **guest** cases, and statuses PASSED / FAILED / UNSUPPORTED / NOT_EXECUTED for Java/GraalVM, LLVM, .NET AOT, Rust/Wasm and other Atto backends separately. Parse-only or host-only tests cannot be reported as guest parity.
+
+## Nominal Entry literal and mutable Map operations (candidate extension, 2026-11-19)
+
+The binary `=>` token has two **context-dependent** uses:
+
+1. In an expression (outside a brace-map entry), `key_expression => value_expression` constructs one **nominal, immutable** `Entry<K,V>`. It is sugar for `Entry.of(key_expression, value_expression)`, retaining the same type, lifetime, ownership, and actor-boundary validation; it is **not** a two-element Tuple, anonymous Record, or user-overloadable operator.
+2. Inside a `{ key_expression => value_expression }` Map literal, the arrow separates a Map **initializer item**. The brace expression remains a `Map<K,V>`, not a `List<Entry<K,V>>`. The parser stops the key expression before the top-level map-entry arrow. Parenthesized Entry expressions are allowed as values or keys only when their static types permit them.
+
+```ebnf
+entry_expression = value_expression_without_unparenthesized_fat_arrow, "=>",
+                   value_expression_without_unparenthesized_fat_arrow ;
+entry_type       = "Entry", "<", type, ",", type, ">" ;
+```
+
+The arrow is lower precedence than arithmetic, comparison, and ordinary calls. It is non-associative (`a => b => c` is rejected unless explicitly grouped). Lambda-head `=>` uses its established lambda grammar, never silently constructs an Entry. Both operands are evaluated **left to right, exactly once**. Contextual `Entry<K,V>` typing must reject incompatible or ambiguous types; otherwise K and V are inferred from the operands. The canonical type spelling is `Entry`; no structural impostor is assignable, and `new Entry<K,V>(...)` remains prohibited. Entry value projections are read-only.
+
+```atto
+let Entry<string, int> entry = "foo" => 5;
+
+pub fnc main(): int {
+    let mut Map<string, int> x = {
+        "foo" => 5
+    };
+
+    x.set("foo", 6);
+    x["foo"] = 3;
+    x.add(entry);
+    return x.get("foo").unwrap(); // 5
+}
+```
+
+For this example, **module-scope `let`** is a per-module, per-tenant/isolated-runtime binding, not a mutable process-wide singleton. Evaluation/initialization must occur once per isolation domain, before a permitted module consumer reads it; actor state and other tenant modules must not alias its writable storage. This extends the local-binding rule without overriding `define const` semantics. Any backend without proven module initialization and isolation must reject the global binding explicitly rather than silently reinterpreting `let` as `const`.
+
+**Portable Map API target (v1):**
+
+| Operation | Contract |
+|---|---|
+| `map.set(K key, V value)` | Insert or replace; requires exclusive mutable Map authority |
+| `map[key] = value` | Same checked insert-or-replace operation as `set`; key is evaluated once before value |
+| `map.add(Entry<K,V> entry)` | Insert or replace using Entry's immutable key/value, identical collision/replacement semantics to `set` |
+| `map.try_add(Entry<K,V> entry): bool` | Insert only; returns `false` without replacing when key exists |
+| `map.get(K key): Option<V>` | Explicit absence; `unwrap()` returns the present V or raises the standard missing-value error |
+| `map.has(K key): bool` | Presence test using the same key equality/hash rules |
+
+`set`, `add`, and indexed assignment are **upserts**; the example returns `5` (initial 5, then 6, then 3, then the entry's 5). `try_add` is distinct and cannot silently overwrite. This is a proposed API contract, not a claim of existing `set`/`add` guest implementation. These operations must use the *same* typed key codec, hash/equality, replacement cleanup, quota checks, and transactional admission; a failed allocation/type/ownership/capability check leaves the map unchanged. Do not expose host Java/JS Map objects to bypass these checks. Required mutation is valid only for `let mut` / `val mut` (or an authorized exclusive mutable borrow), never an immutable-view `let Map`, ordinary `val`, shared frozen Map, or sealed actor state outside `critical-write`.
+
+Entry argument ownership follows existing default borrowing: a Copy-safe scalar Entry may be read and snapshotted by `add(entry)`, preserving `entry`; move-only/non-Copy payloads require explicit, statically checked ownership transfer (for example `take! entry`) and must not silently escape a loan. An immutable Entry does not make its recursively contained mutable resources safe for sharing between actors or tenants.
+
+**Required positive conformance:** standalone `Entry<string,int>` literal and `Entry.of` semantic equivalence; expression precedence/grouping; mutable typed Map literal; chained `set`, bracket assignment and `add(entry)` yielding 5; `get` returning `Some(5)`; `try_add` duplicate false; distinct `Entry` vs Record/Tuple; per-tenant isolated module initializer. Check compiler-generated guest execution and both successful and failing branches at exact backend SHAs.
+
+**Required negative conformance:** bare `a => b => c`; invalid `Entry<int>` generic arity; mismatched `Entry<string,int> = 1 => "x"`; assignment to `entry.key` or `entry.value`; insert wrong K or V; mutation through non-`mut` Map view; unhashable/unstable key; use-after-`take!`; borrowed mutable values escaping in an Entry; quotas/collision rollback; unguarded cross-tenant mutable alias; missing-key `unwrap()` failure; literal duplicate constant map keys. A parser accepting the token is **not** evidence of executable guest Map mutation.
+
+**Migration and interoperability:** the legacy Java Entry model recognized only `Entry.of(key,value)` and older Map APIs used `put`/required-read indexing. This addition makes a deliberate new-source sugar and upsert API choice. Implementations should retain explicitly supported legacy aliases without confusing required-read indexing `map[key]` with write-place `map[key] = value`; they require different checking and diagnostics. The formatter preserves `=>` and Map brace context and proves parse-equivalent, idempotent round trips. Track this staged contract alongside atto-source.rs#274 and atto-platform-conformance; do not claim backend parity before executable tests.
