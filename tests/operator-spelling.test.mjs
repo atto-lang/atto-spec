@@ -36,6 +36,10 @@ test('power API, shifts and stream/channel/trait operations are distinct',()=>{
   assert.equal(byId['typed-pow-api'].source,'Math.pow(2, 3)');
   assert.equal(byId['left-triple-shift'].source,'8 <<< 2');
   assert.equal(byId['right-triple-shift'].source,'-1 >>> 1');
+  for(const id of ['invalid-shift-distance-64','invalid-shift-distance-negative']) {
+    assert.equal(byId[id].expected,'REJECT');
+    assert.equal(byId[id].meaning,'INVALID_SHIFT_DISTANCE');
+  }
   for(const id of ['channel-write','stream-read','trait-write','trait-read'])
     assert.equal(byId[id].expected,'ACCEPT');
   assert.equal(byId['invalid-double-left-shift'].expected,'REJECT');

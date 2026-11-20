@@ -7,7 +7,8 @@
     "Infix ^^ on int is bitwise XOR; bit-shift operators are <<< and >>>",
     "Math.pow is a typed API call; overload, precision, and rounding are defined separately",
     "Double-angle << and >> operate on statically verified read/write capabilities or traits, not bit shifts",
-    "Java/LLVM/Wasm/Forge/.NET/browser guest parity is not certified by this contract"
+    "Java/LLVM/Wasm/Forge/.NET/browser guest parity is not certified by this contract",
+    "Shift distances are checked in [0,63]; never mask count with n & 63. This is an expected language failure, not a numeric modulo-64 result."
   ],
   "cases": [
     {
@@ -148,6 +149,24 @@
       "context": "int_expression",
       "expected": "REJECT",
       "meaning": "DOUBLE_ANGLE_IS_IO_NOT_SHIFT",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "invalid-shift-distance-64",
+      "source": "1 <<< 64",
+      "context": "int_expression",
+      "expected": "REJECT",
+      "meaning": "INVALID_SHIFT_DISTANCE",
+      "diagnostic_stage": "compile-time when constant; checked language error at runtime when dynamic",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "invalid-shift-distance-negative",
+      "source": "1 >>> -1",
+      "context": "int_expression",
+      "expected": "REJECT",
+      "meaning": "INVALID_SHIFT_DISTANCE",
+      "diagnostic_stage": "compile-time when constant; checked language error at runtime when dynamic",
       "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
     }
   ]

@@ -24,7 +24,7 @@ Bitwise operands MUST both have type `int` (signed, 64-bit). No implicit `bool`,
 
 ### Shift semantics
 
-- The effective shift count is the low six bits of the right operand: `n & 63`. This includes negative `int` counts. The modulo-64 policy is provisional pending portability review, not permission for backend-specific undefined behavior.
+- Shift counts MUST be within `0..63` inclusive. Negative distances and values 64 or greater fail with a checked, language-level error; masking with `n & 63` is invalid and must never be used to hide an invalid count. The exact error/actor CONTROL mapping requires its own backend contract.
 - `<<<` discards shifted-out high bits and introduces zero low bits; it does **not** trigger checked arithmetic-overflow errors.
 - `>>>` introduces zero high bits; the resulting 64-bit pattern is returned as a signed `int`. Example: `-1 >>> 1` is `9223372036854775807`.
 - `ashr` propagates the sign bit. Example: `-8 ashr 1` is `-4`.
@@ -84,7 +84,7 @@ The expression grammar recognizes exactly **three contiguous** `<` or `>` charac
 | BW-005 | `8 <<< 2` | 32 |
 | BW-006 | `-1 >>> 1` | 9223372036854775807 |
 | BW-007 | `-8 ashr 1` | -4 |
-| BW-008 | `1 <<< 64` | 1 |
+| BW-008 | `1 <<< 64` | checked failure (invalid shift distance) |
 | BW-009 | `1 + 2 <<< 3` | 24 |
 | BW-010 | `(1 <<< 63) >>> 63` | 1 |
 | BW-011 | `(1 <<< 63) ashr 63` | -1 |
