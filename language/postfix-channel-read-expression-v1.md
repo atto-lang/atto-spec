@@ -45,6 +45,36 @@ These are positive *language contracts*. `val int answer = (c >>);` and `val int
 
 The read can suspend: the surrounding callable must be `susp`/`suspends` and have required capabilities. Preserve nonparking cooperative scheduling; evaluate receiver once; perform/read exactly once; check loans and actor-critical sections across suspension; preserve resource cleanup and pending Future ownership. A write `c << 42` must separately follow the existing typed send admission/backpressure and error contract; it must not silently become an infallible `try_send`. `new Channel<int>(2)` constructor support and general send support are independent implementation gates.
 
+## Checked bounded channel construction (implementation pilot)
+
+`new Channel<int>(capacity)` and `Channel<int>.bounded(capacity)` are
+**equivalent fallible constructor spellings** in the restricted Rust/Wasm
+`Channel<int>` guest pilot. Both resolve to the single typed channel-open
+operation with result `Result<Channel<int>,IoError>`; neither can be
+assigned to a bare `Channel<int>` without explicit `Ok` / `Err`
+handling. This extension is being staged in atto-source.rs #257 and is
+not an assertion of executable support in the other backends.
+
+```atto
+pub susp fnc checked_receive(): Result<Option<int>,IoError> {
+    match new Channel<int>(2) over
+        on Ok(c) -> {
+            // A separate, checked send must be successfully admitted.
+            return (c >>);
+        }
+        on Err(error) -> { return Err(error); }
+    end
+}
+```
+
+Capacity is an `int`; negative, unrepresentable or quota-exceeding
+capacities must return an explicit `Err(IoError)` rather than trap or
+wrap to a smaller capacity. Only `int` payload channels are admitted in
+this browser-pilot subset. Other generic instantiations fail closed.
+Successful channel creation does **not** authorize silently replacing
+`c << value` with nonparking `c.try_send(value)`; the former remains a
+distinct suspending, checked backpressure contract.
+
 ## Required conformance
 
 | Case | Expected |
