@@ -27,6 +27,22 @@
       "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
     },
     {
+      "id": "full-function-explicit-return",
+      "source": "pub fnc foo(): int {\n  return 5;\n}",
+      "context": "complete_function",
+      "expected": "ACCEPT",
+      "meaning": "RETURN",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "full-function-caret-return",
+      "source": "pub fnc foo(): int {\n  ^ 5;\n}",
+      "context": "complete_function",
+      "expected": "ACCEPT",
+      "meaning": "RETURN",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
       "id": "caret-return-of-xor",
       "source": "^ (12 ^^ 10);",
       "context": "statement",
