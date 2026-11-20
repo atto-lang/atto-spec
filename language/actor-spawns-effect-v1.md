@@ -75,9 +75,34 @@ The shape above is the **target syntax**, not a currently executable certified f
 - A failed authorized attempt yields a typed, catchable `SpawnError` (or an explicit checked `Result` API once standardized), **never** a fabricated live reference, silent success, process termination, or an uncatchable actor `panic`. `trap spawn Child()` should follow the independent `trap`-to-`Result` contract; the precise emitted error ABI remains a parity gate. Distinguish `PermissionDenied`, `QuotaExceeded`, `ParentRetired`, `Cancelled` and `Unsupported` in the error domain without leaking other-tenant existence.
 - A successful child ref does not grant sealed-state access, arbitrary socket access, permission delegation, or an implicit cross-process route. `ActorRef` generation and mailbox admission continue to be checked on every send.
 
+## Readiness and effect calculus (v1 clarification)
+
+- `spawn A(...)` is an **admission and registration attempt**, not a promise that `on_start` or `receive` has run. The type-level operation requires `spawns`; it does not by itself require `susp`. An admitted `ActorRef<A>` is not proof of readiness or processing. Failed admission must produce a typed failure with no published live handle.
+- `await spawn A(...)` requests the same spawn **and waits for the child READY outcome**. The enclosing callable requires **both** `susp` and `spawns`; `await` never turns a function into an implicit spawn-permitted context. A child that fails initialization before READY returns a typed failure and must not leak a ready reference.
+- The spawn initiator's **dynamic execution scope** determines parent/supervisor, TenantVM and capability context. A shared library function's lexical origin or import package cannot substitute authority. A child receives no stronger capability than the parent's explicit delegations, and any delegated capabilities remain generation-scoped.
+- A child inherits a lightweight scoped lifecycle by default: its parent/supervisor tracks the child, parent termination cancels or drains it and reports non-quiescence rather than silently detaching it. **No automatic restart** is inferred from a successful spawn; restart and lifetime transfer require separate explicit, authorized policy.
+- Effect sets are upper bounds on potential actions. For type compatibility, an ordinary non-spawning callable may fill a `spawns fnc` slot, but a `spawns fnc` may **not** fill an ordinary `fnc` slot (or a `pure fnc` slot). Invocation is checked against the **declared callable type** even when the compiler happens to know that a particular body currently does not spawn. Separate suspension and failure effects remain intact.
+- A resolved call to a `spawns` function requires `spawns` in its immediate caller, regardless of whether its current implementation actually spawns. This includes virtual/interface method dispatch, constructors/factories that activate actors, imported modules, generic instantiations and callback invocation. Dependency interfaces and compiled metadata must preserve this effect; no unsound downgrade at FFI, JIT, AOT or hot-loading boundaries.
+- A dynamic or external call with an **unknown effect bound** is not assumed non-spawning; reject with `E_SPAWNS_EFFECT_UNKNOWN` until a trustworthy signature/capability envelope is available. Merely declaring the calling function `spawns` does not make unknown code safe. A verified `spawns` upper bound can be called from a `spawns` function; an explicitly trusted non-spawning bound can be called without it.
+- A `critical-read` or `critical-write` callback cannot directly spawn **or invoke any callable whose declared effect upper bound includes `spawns`**, even via a helper/closure/virtual call. Reject with `E_SPAWN_IN_CRITICAL` before lowering; this applies even when the helper's current body is spawn-free. Run the spawn after the state lease has been released. Unknown effect call targets fail closed here too.
+- When `await spawn` is used without `susp`, issue `E_SUSP_REQUIRED`; when used without `spawns`, issue `E_SPAWNS_REQUIRED`. Both diagnostics may apply if both annotations are absent. A callback assignment that erases `spawns` produces `E_SPAWNS_EFFECT_MISMATCH` rather than silently changing the type.
+- A parent retiring during in-flight spawn must fence the old generation at **publication and READY**: reserve and register atomically, recheck the parent generation before exposing the handle, cancel/stop on failure, and release reservations exactly once. A late READY notice cannot revive the child or attach it to a successor incarnation. If cleanup fails, retain observable unconfirmed state; never falsely claim quiescence.
+
+### Effect boundaries (informative)
+
+```text
+spawn A()             : {spawns}
+await spawn A()       : {susp, spawns}
+call declared spawns  : {spawns} plus any other declared effects
+send(ref, message)    : mailbox-admission effects, NOT ref.receive's effects
+handle_state(critical): forbids any nested call with possible {spawns}
+```
+
+This contract does not settle an unrelated question of whether `spawn` failures are expressed through `throw SpawnError`, `Result<ActorRef<A>, SpawnError>`, or another checked error ABI. Whichever form is selected must be portable, catchable, quota-safe and covered by compiled negative/positive guest tests.
+
 ## Required conformance and migration
 
-The accompanying source-expected-case registry is `contracts/actor-spawns-effect-v1.json`; it records **target** acceptance/diagnostics only. Test parser/formatter normalization, AST+typed MIR effect sets, direct and indirect calls, suspending vs non-suspending code, actor `receive`, callable values/generics, duplicate/pure annotations, critical-section rejection, guest runtime spawn/rollback, quotas, parent retirement races, tenant isolation and actual child receive execution on **each** backend.
+The accompanying 19 source and 7 runtime target-case registry is `contracts/actor-spawns-effect-v1.json`; it records **target** acceptance/diagnostics only. Test parser/formatter normalization, AST+typed MIR effect sets, direct and indirect calls, suspending vs non-suspending code, actor `receive`, callable values/generics, duplicate/pure annotations, critical-section rejection, guest runtime spawn/rollback, quotas, parent retirement races, tenant isolation and actual child receive execution on **each** backend.
 
 This is a breaking requirement for previously accepted `spawn` callables without `spawns` (including current sample fixture `atto-source.rs/tests/fixtures/pass/67-actor-two-instances.atto` and other backends). Stage a fixture/compiler migration with exact-head positive **and negative** diagnostics; do not label legacy accepted code as a conforming v1 program. Record backend status as `NOT_EXECUTED` until actual compiled .atto guest verification. Do not equate a host-side simulation, source-free schema test, compiler parse success, or an Actions job with zero steps to execution.
 
