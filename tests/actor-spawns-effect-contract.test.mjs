@@ -17,8 +17,7 @@ function check_effect_graph(nodes) {
   // bound. A missing target is NEVER interpreted as a pure callable.
   const unknown_edge = c => c.kind === 'call' &&
     !(c.target && has_target(c.target)) &&
-    c.effect_bound !== 'none' && c.effect_bound !== 'spawns' &&
-    typeof c.may_spawn !== 'boolean';
+    c.effect_bound !== 'none' && c.effect_bound !== 'spawns';
   const edge_may_spawn = c => {
     if (c.kind !== 'call') return false; // mailbox delivery is asynchronous
     if (c.target && has_target(c.target)) {
@@ -26,7 +25,6 @@ function check_effect_graph(nodes) {
     }
     if (c.effect_bound === 'none') return false;
     if (c.effect_bound === 'spawns') return true;
-    if (typeof c.may_spawn === 'boolean') return c.may_spawn;
     return true; // unresolved: conservative until typed diagnosis
   };
   // Least fixed point includes recursive and mutually recursive helpers.
@@ -106,7 +104,7 @@ test('direct, indirect, mutually recursive, and opaque callback effects', () => 
     cycle_a: {declares_spawns: false, calls: [{kind:'call',target:'cycle_b'}]},
     cycle_b: {declares_spawns: true, direct_spawn:true,
       calls: [{kind:'call',target:'cycle_a'}]},
-    callback: {declares_spawns: false, calls: [{kind:'call',may_spawn:true}]}
+    callback: {declares_spawns: false, calls: [{kind:'call',effect_bound:'spawns'}]}
   });
   assert.equal(r.effects.creator, true);
   assert.equal(r.effects.entry, true);
@@ -169,11 +167,13 @@ test('unresolved dynamic calls are NOT silently assumed effect-free', () => {
     caller: {calls:[{kind:'call',target:'missing_import'}]},
     marked_caller: {declares_spawns:true,calls:[{kind:'call'}]},
     known_safe: {calls:[{kind:'call',effect_bound:'none'}]},
+    spoofed_boolean: {calls:[{kind:'call',may_spawn:false}]},
     known_spawning: {declares_spawns:true,calls:[{kind:'call',effect_bound:'spawns'}]}
   });
   assert.deepEqual(r.failures, {
     caller:['E_SPAWNS_REQUIRED','E_SPAWNS_EFFECT_UNKNOWN'],
-    marked_caller:['E_SPAWNS_EFFECT_UNKNOWN']
+    marked_caller:['E_SPAWNS_EFFECT_UNKNOWN'],
+    spoofed_boolean:['E_SPAWNS_REQUIRED','E_SPAWNS_EFFECT_UNKNOWN']
   });
   assert.equal(r.effects.known_safe,false);
   assert.equal(r.effects.known_spawning,true);
