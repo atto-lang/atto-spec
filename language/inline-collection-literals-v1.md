@@ -143,6 +143,8 @@ All frontends must agree on parse tree shape, contextual type inference, diagnos
 
 **Evidence matrix:** record the source tree SHA, target/toolchain, exact positive and negative **guest** cases, and statuses PASSED / FAILED / UNSUPPORTED / NOT_EXECUTED for Java/GraalVM, LLVM, .NET AOT, Rust/Wasm and other Atto backends separately. Parse-only or host-only tests cannot be reported as guest parity.
 
+> **Symbol-keyed Entry clarification:** [Symbol-keyed Entries v1](symbol-keyed-entries-v1.md) specifies `#foo => 5` as a candidate `Entry<Symbol,int>`, `{#foo => 5}` as a `Map<Symbol,int>`, and deliberately does NOT define standalone `bar :: 5` Record-entry syntax. `::` remains reserved by the existing callable-body grammar. This is a normative target, not evidence of executable Symbol support.
+
 ## Nominal Entry literal and mutable Map operations (candidate extension, 2026-11-19)
 
 The binary `=>` token has two **context-dependent** uses:
