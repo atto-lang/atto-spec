@@ -28,10 +28,62 @@ allows it. Named or dotted imports select statically declared *public exports*;
 they never destructure a runtime object's properties. The local binding for a
 dotted selector is its final component unless `as` explicitly renames it.
 
+## Package namespace shorthand
+
+`import pkg 'z';` is a **canonical first-class static package-namespace
+import**, equivalent in binding and public-export lookup to
+`import * as z from pkg 'z';`. It does not create a source-file
+`use namespace` declaration, re-export package members, or flatten exports
+into the importing scope.
+
+```atto
+import pkg 'z';                   // local namespace z
+import pkg 'z' as zed;            // local namespace zed
+import pkg 'core.telemetry';      // local namespace telemetry
+import pkg '@scope/math' as math; // explicit alias required
+import module math from pkg 'utils';
+import * as helpers from './helpers.atto';
+
+pub fnc main(): int {
+  z.http.create_server();
+  zed.logging.info("ready");
+  return 0;
+}
+```
+
+The implicit binding is the final dot-delimited component of the *resolved
+package identifier* when that component is already a valid, non-reserved Atto
+identifier. An invalid component (for example `my-lib`, a scoped `@scope/lib`
+identifier, a rooted `+/lib` selector, an empty segment, or a keyword)
+requires an explicit `as identifier` alias. Never sanitize, truncate,
+case-fold, or mangle package names to manufacture a local identifier.
+The explicit alias must itself be valid and non-reserved.
+
+Package identity and version are chosen by the governed project manifest,
+lockfile and static resolver, not the implicit alias. The resolver must load
+the **declared public package export table**: it may not walk the filesystem
+and make every sibling file importable, expose `pub[pkg]` or private exports,
+execute foreign source as a package discovery hook, or give a package additional
+guest capabilities. The same package may be imported with two different
+local aliases without changing its dependency identity. Collisions between
+imports and other local top-level bindings are compile errors, even when the
+identities happen to match; explicit renaming is the remedy.
+
+A package namespace import denotes a static namespace, not a first-class
+runtime object; `z.math.square(7)` is resolved through public export
+metadata. Importing does not itself request eager compilation of every
+package member. Reachability and the source language's specified
+initialization/side-effect semantics still govern linking. A compiler that
+does not implement package namespace linking MUST fail closed with an explicit
+unsupported-feature diagnostic, rather than pretending that parsing or
+formatting proves executable linking.
+
 ## Grammar
 
 ```ebnf
-import_decl     = "import", import_clause, "from", [ "pkg" ], string, ";" ;
+import_decl     = package_namespace_import | selective_import ;
+package_namespace_import = "import", "pkg", string, [ "as", identifier ], ";" ;
+selective_import = "import", import_clause, "from", [ "pkg" ], string, ";" ;
 import_clause   = "*", "as", identifier
                 | import_spec, { ",", import_spec } ;
 import_spec     = export_path, [ "as", identifier ] ;
@@ -133,7 +185,8 @@ or an executable package import.
 ## Migration and compatibility
 
 The former package-import spelling `use core.telemetry;` should be
-canonicalized to `import * as telemetry from pkg "core.telemetry";`.
+canonicalized to `import pkg "core.telemetry";` when its implicit binding is
+valid, or to `import pkg "core.telemetry" as telemetry;` otherwise.
 The former `import pkg p from "+/pkg1";` may remain a temporary compatibility
 spelling; format it as `import * as p from pkg "+/pkg1";`.
 
@@ -149,6 +202,10 @@ any of these forms.
   or other declaration. Derivation is deterministic from a package-relative
   logical path; reject missing path, reserved components, invalid/deep depths.
 - Parse namespace and named imports with and without `pkg`.
+- Admit `import pkg 'z';` and `import pkg 'z' as alias;` as canonical forms;
+  enforce deterministic implicit basenames, reserved-name/invalid-name
+  rejection, aliasing and duplicate-binding errors. Check package-root public
+  export lookup, private-export denial and imported namespace isolation.
 - Parse comma-separated single and multiple names, aliases, and dotted
   static export paths such as `telemetry.span as span`.
 - Reject empty selections, leading/trailing commas, missing `from`, unquoted
