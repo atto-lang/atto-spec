@@ -83,6 +83,7 @@ function witness(required, actual) {
     // This deliberately does not guess between several incompatible overloads.
     const results = exposed.map(v => compare_method(wanted,v));
     if (!results.some(v => v.ok)) return results[0];
+    if (results.filter(v => v.ok).length !== 1) return fail("E_METHOD_AMBIGUOUS");
   }
   return OK;
 }
@@ -91,7 +92,7 @@ test("source-free schema is explicit about lack of backend execution", () => {
   assert.equal(fixture.schema, "atto.structural-member-witness.v1");
   assert.equal(fixture.status, "HOST_REFERENCE_ONLY_NOT_GUEST_EXECUTED");
   assert.deepEqual(fixture.alias, ["~Type","structural Type"]);
-  assert.equal(fixture.cases.length,42);
+  assert.equal(fixture.cases.length,43);
   assert.equal(new Set(fixture.cases.map(v=>v.id)).size,fixture.cases.length);
   assert.deepEqual([...new Set(fixture.cases.map(v=>v.required.kind))].sort(),
     ["class","interface","map","record","struct","trait","tuple"]);
