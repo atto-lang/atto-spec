@@ -134,6 +134,45 @@ Functional application rules: `x |> f |> g` = `g(f(x))`, and
 `f <| x` is `f(x)`. Both use ordinary checked function calls and never
 denote continuous actor/channel routing (`pipe`/`rpipe`).
 
+## Multi-argument functional application and signed-i64 edges
+
+Functional `|>` and `<|` **insert the piped value as argument 0** of the
+named callable. Any explicitly written arguments occupy subsequent positions,
+in their original order. For the expression patterns below, the same ordinary
+function-call arity, type, ownership and effect checks apply as to an explicit
+call. No implicit currying or callable value is created.
+
+```atto
+fnc subtract(int value, int adjustment): int -> value - adjustment;
+val a = 42 |> subtract(2);    // subtract(42, 2) => 40
+val b = subtract(1) <| 22;    // subtract(22, 1) => 21
+```
+
+Likewise `f(a) <| (x |> g)` lowers to `f(g(x), a)`. The explicit
+parentheses resolve otherwise mixed functional directions; mixing bare
+`|>` and `<|` without grouping must fail. The left-hand `f(a)` in this
+reverse-pipe context is a *syntactic call target with pre-applied arguments*,
+not an eagerly invoked partial function or a dynamically allocated closure.
+Piped values and subsequent explicit arguments are evaluated exactly once in
+the resulting argument order before entering the callable. Checked
+arithmetic/control effects cannot silently disappear, reorder or wrap.
+Continuous actor `pipe`/`rpipe` remains a distinct operator family.
+
+For signed 64-bit `int`, `-9223372036854775808` is a valid negative
+literal, even though its positive magnitude does not itself inhabit
+`int64`. A compiler must not reject the negative minimum merely because
+its host literal parser cannot represent `+9223372036854775808`.
+Both `+9223372036854775808` and `-9223372036854775809` are out of
+range and must fail source admission with no runnable artifact. Arithmetic
+overflow of two valid operands (for example `INT64_MAX + 1`) is a
+**runtime checked failure**, not modulo wraparound and not silently treated
+as source-literal overflow; its exact transport depends on the target ABI.
+
+These additional cases live in
+`conformance/functional-pipelines-v1/edge/cases.json`. They extend
+the eight pinned primary fixtures, rather than rewriting the primary
+acceptance set or granting any backend a pass without compiled-guest evidence.
+
 ## Body boundary and disambiguation
 
 ```ebnf
