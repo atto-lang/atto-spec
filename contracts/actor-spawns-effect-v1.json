@@ -108,6 +108,44 @@
       "source": "define actor A as receive(ActorMail<int> m): void {} end define actor B as spawns receive(ActorMail<int> m): void { self.handle_state(critical-write |s| -> { val a = spawn A(); }); } end",
       "rationale": "no actor activation under sealed-state lock",
       "code": "E_SPAWN_IN_CRITICAL"
+    },
+    {
+      "id": "accept-await-spawn",
+      "phase": "compiler_source_target",
+      "expected": "ACCEPT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end susp spawns fnc create(): ActorRef<A> { return await spawn A(); }",
+      "rationale": "await spawn requires both effects and awaits child readiness, not completion"
+    },
+    {
+      "id": "accept-effect-typed-callback",
+      "phase": "compiler_source_target",
+      "expected": "ACCEPT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end spawns fnc make(): ActorRef<A> { return spawn A(); } spawns fnc use(): ActorRef<A> { val callback: spawns fnc() -> ActorRef<A> = make; return callback(); }",
+      "rationale": "effect-aware function values preserve spawn effect"
+    },
+    {
+      "id": "reject-await-spawn-without-susp",
+      "phase": "compiler_source_target",
+      "expected": "REJECT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end spawns fnc create(): ActorRef<A> { return await spawn A(); }",
+      "rationale": "awaiting child readiness introduces suspension independently of spawns",
+      "code": "E_SUSP_REQUIRED"
+    },
+    {
+      "id": "reject-await-spawn-without-spawns",
+      "phase": "compiler_source_target",
+      "expected": "REJECT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end susp fnc create(): ActorRef<A> { return await spawn A(); }",
+      "rationale": "susp alone is not sufficient to authorize direct spawn effect",
+      "code": "E_SPAWNS_REQUIRED"
+    },
+    {
+      "id": "reject-indirect-spawn-in-critical",
+      "phase": "compiler_source_target",
+      "expected": "REJECT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end spawns fnc make(): ActorRef<A> { return spawn A(); } define actor B as spawns receive(ActorMail<int> m): void { self.handle_state(critical-write |s| -> { val c = make(); }); } end",
+      "rationale": "calling an effectful helper while holding sealed actor state lock is rejected",
+      "code": "E_SPAWN_IN_CRITICAL"
     }
   ],
   "runtime_cases": [
@@ -156,6 +194,28 @@
       "expected": "NO_COMPLETION_CLAIM",
       "assert": [
         "admission distinct from guest execution"
+      ]
+    },
+    {
+      "id": "await-ready-failure",
+      "trigger": "constructor/on_start fails after admission but before READY",
+      "expected": "TYPED_SPAWN_FAILURE_AND_ROLLBACK",
+      "assert": [
+        "await spawn rejects with typed failure",
+        "no live or leaked ActorRef published as ready",
+        "all reserved actor and tenant resources reconciled",
+        "supervisor receives generation-fenced lifecycle notice"
+      ]
+    },
+    {
+      "id": "cancel-before-ready",
+      "trigger": "creator scope cancelled after spawn admission but before child READY",
+      "expected": "CANCEL_AND_FENCE_READY",
+      "assert": [
+        "child cannot become reachable after parent cancellation",
+        "no readiness callback for obsolete parent generation",
+        "shutdown reports quiescence only after child completion or explicit retained failure state",
+        "no leaked reservation on terminal cancellation"
       ]
     }
   ],
