@@ -18,6 +18,23 @@ Do not count an unexecuted case as a pass.
 9. Preserve the v1/v2 callable-body selector. Never silently migrate unmarked v1 comma bodies to strict v2, and never change `::`, commas, semicolons or `return` spelling when formatting.
 10. Enforce bounded item count, delimiter nesting, AST depth, input bytes and compiled guest resources, with stable diagnostic classes. Rejected guest input must not produce an artifact.
 
+## Edition-sensitive delimiter boundary
+
+The closing `) ` token ends an explicit \`seq(...)\` expression. A subsequent comma is owned by the **enclosing callable body**, whereas a bare \`seq ...;\` statement owns its commas through its own semicolon. Conflating these contexts can conceal the required version diagnostic.
+
+\`\`\`atto
+// v1 accepted, strict v2 rejects with E_BODY_VERSION
+fnc f() -> int seq(1, 2), 42 end
+
+// v1 and v2 accepted
+fnc f() -> int :: seq(1, 2), 42 end
+
+// v1 and v2 accepted; no implicit return from the seq statement
+fnc f() -> int seq 1, 2; return 42; end
+\`\`\`
+
+The checker must not retry the v1 grammar silently in v2 or reinterpret the outer comma as belonging to the already-closed delimited sequence.
+
 ## Mandatory coverage matrix
 
 | Domain | Positive cases | Negative/boundary cases |
