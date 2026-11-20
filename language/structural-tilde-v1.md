@@ -10,7 +10,7 @@ The alias is contextual, **not** a lexer-wide replacement of `~` with an identif
 
 ## Cross-kind member compatibility (candidate refinement)
 
-The explicit [structural member-witness contract](structural-member-witness-v1.md) defines the **all-member** satisfaction rules for interfaces (methods), traits and classes (exported state/properties plus methods), structs, Records, Tuples and Maps. A structural witness checks **every required accessible member**; extra actual members may be admitted for read-only projection. Tuple arity is exact, and a generic Map key type never proves a named key exists. These remain **normative targets**, not full compiler or guest parity. A backend without a checked method/field ABI must reject the affected source without generating guest code. The [42-case host-only matrix](../conformance/structural-member-witness-v1.json) does not certify a compiler.
+The explicit [structural member-witness contract](structural-member-witness-v1.md) defines the **all-member** satisfaction rules for interfaces (methods), traits and classes (exported state/properties plus methods), structs, Records, Tuples and Maps. A structural witness checks **every required accessible member**; extra actual members may be admitted for read-only projection. Tuple arity is exact, and a generic Map key type never proves a named key exists. These remain **normative targets**, not full compiler or guest parity. A backend without a checked method/field ABI must reject the affected source without generating guest code. The [43-case host-only matrix](../conformance/structural-member-witness-v1.json) does not certify a compiler.
 
 ## Target examples
 
