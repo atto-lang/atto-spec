@@ -202,3 +202,50 @@ A structural proof model and a Wasm-only pass do **not** certify native AOT. Rep
 **Adversarial runtime guests:** zero-length read, u32::MAX sizes and overflow, one-past-end, stale generation and ABA reuse, alignment faults, repeated close, unexpected cancellation/panic, hostile cross-domain token replay and transfer races. Require ASan/UBSan where native and deterministic contained faults for Wasm.
 
 Track each backend as PASS, FAIL, UNSUPPORTED or NOT_EXECUTED with exact-head executable evidence. This document itself does not mark any backend pointer-ready. Related: atto-target-profiles/docs/CLOSED_WORLD_AOT_PROOF_V1.md and atto-platform-conformance/contracts/pony-reference-capabilities-atto-v1.json.
+
+## Cross-backend Pointer type, traits and source-operator boundary (v1 compatibility)
+
+This section specifies the **single source-language contract** for all eleven `atto-source.*` implementations. It is a design/verification requirement, **not** a claim of compiled guest support. Backend host languages may use native C, Rust, Java or .NET pointer/reference operators internally, but must never expose them as Atto pointer syntax.
+
+### Parser and formatter obligations
+
+| Atto expression | Meaning | Required treatment |
+| --- | --- | --- |
+| `ref! value`, `rt ref value` | mint an authenticated typed local-place handle | identical typed ownership event when the `Pointer<T>` context is proven |
+| `deref! ptr`, `rt deref ptr` | checked typed load/readonly loan | identical typed effect; no raw-address load |
+| `unref! ptr`, `rt unref ptr` | consume local handle and end lease | identical typed effect, `void` for local `Pointer<T>` |
+| `&value` | **not** an Atto address-of expression | reject with `E_POINTER_SYNTAX` without output artifact |
+| `*ptr` | **not** an Atto dereference expression | reject with `E_POINTER_SYNTAX` without output artifact |
+| `6 * 7` | ordinary arithmetic multiplication | preserve, compile normally |
+| `12 & 10` | integer bitwise AND | preserve per `bitwise-and-stream-operators-v1.md`; not an address-of |
+| `left && right` | logical conjunction | preserve; not pointer syntax |
+| `yield* stream` | generator delegation where specified | preserve; not pointer syntax |
+
+**Context-sensitive distinction:** only unary address-of `&` and unary dereference `*` are forbidden pointer constructs; do not globally blacklist the `&` or `*` tokens, rewrite binary operators, or inadvertently accept a raw pointer in a bitwise expression. `Pointer<T>` never adds overloaded `&`/`*` operators. `->` remains the existing language arrow, not C pointer-member access. A bad pointer form must fail *before* an executable module/native object is emitted. A formatter must reject invalid expressions rather than silently rewrite `&p` to `ref! p` or `*p` to `deref! p`.
+
+### Nominal type and trait-effect matrix
+
+The public `Pointer<T>` spelling is a **built-in, invariant, non-forgeable nominal class**. Typed IR must distinguish *borrowed local lease* from *owned allocated region*; these are not interchangeable simply because the surface type spells `Pointer<T>`. A separate `CheckedRef<Class>` checked-owner handle is a distinct type with distinct `unref!` semantics. The latter must never be implicitly converted into `Pointer<Class>`. `T` cannot be deduced from a raw numeric address.
+
+| Trait or operation | Borrowed-local `Pointer<T>` | Owning-region `Pointer<T>` |
+| --- | --- | --- |
+| Ordinary assignment / `take!` | move the unique handle subject to lexical lease analysis; do not duplicate | move unique owner with provenance, generation and drop obligation |
+| `Copy` / `copy!` | **not implemented**; copying `T` from a checked read is different from copying the handle | **not implemented** for the capability; a separate allocation/copy of data is distinct |
+| `Clone` or implicit duplicate | **not permitted** | **not permitted** without a separately specified safe capability duplication contract |
+| `Sendable` / actor send | no for local stack/place lease | not automatic from `T: Sendable`; only an explicit, proven same-domain authority transfer protocol could admit it |
+| `Serializable` / network | no pointer capability serialization | no pointer capability serialization; broker may serialize/copy values |
+| `share!` / frozen share | not permitted for a live local pointer | only if a *separately proven* frozen, same-domain, revocable shared-capability profile is explicitly implemented |
+| `borrow!` / `borrow! mut` | cannot elevate readonly source lease to mutable/owning capability | scoped loans only with existing read/write exclusion and lifetime checks |
+| `deref!` / `rt deref` | valid while live, initialized and in scope; copied result only if `T` is `Copy` | **not a generic substitute** for bounded `read_at`; reject unless explicitly typed/implemented |
+| `unref!` / `rt unref` | consume the handle exactly once, return `void`, leave original local alive | cannot substitute for owning `close`/drop |
+| `close()` / owning drop | forbidden for a non-owning lease | required exactly-once cleanup, never from a borrowed view |
+| `read_at` / `write_at` | no promotion to owning or write rights | only with authorized bounds, initialization, alignment and loan checks |
+| `==`, `eq`, hashing, ordering | no automatic address-based identity or content comparison | no automatic address-based identity or content comparison |
+
+A `T: Copy`, `T: Sendable`, `T: Serializable` or `T: Shareable` bound must **never automatically grant** the same property to `Pointer<T>`. Runtime-native raw pointers, Rust `&T`/`*const T`, Java references and .NET managed references may be valid *implementation details only*. In all runtimes, `Pointer<T>` guest operations are constrained by the same checked typed authority and revocation protocol. The compiler must reject any trait implementation, method overload, generic specialization or implicit conversion that would invent missing pointer rights.
+
+### Required evidence for every source backend
+
+Each backend must declare **SUPPORTED**, **UNSUPPORTED**, or **NOT_EXECUTED** separately for: (1) lexical unary `&`/`*` rejection, (2) preserved binary `&`/`*` behavior, (3) the borrowed-local `Pointer<T>` profile, (4) owning-region `Pointer<T>`, (5) handle non-`Copy`/non-`Serializable`/non-`Sendable` gates, and (6) any explicitly authorized same-domain transfer. **Unsupported syntax must fail closed without an output artifact**, not silently compile as native pointers. A host library helper, static spec fixture or zero-step CI run is not implementation evidence. Require current-head guest/compiler tests and exact artifact receipts; leave existing drafts unmerged until those tests and independent review pass.
+
+Target-only cross-backend inventory: [atto-platform-conformance #30](https://github.com/atto-lang/atto-platform-conformance/pull/30). Preserve any stricter tenant security restrictions.
