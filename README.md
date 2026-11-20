@@ -20,6 +20,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Checked signed-i64 arithmetic and migration v1](language/checked-i64-arithmetic-v1.md): proposed checked-by-default canonical `.atto` integer semantics, explicit legacy `.ores` boundary, transitive link safety, and executable parity gates; **not yet backend-certified**.
+
 - [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^ ~`, `<<< >>> ashr`, compound updates, and typed-I/O `<< >>`, with context-sensitive caret/structural-tilde parsing; target semantics, not backend parity.
 
 - [Trap-to-Result v1](language/trap-result-v1.md): caller-side `trap` preserves returned `Result`/`Option` layers and catches ordinary `throw` as `Err(original Error)`; unverified backends must fail closed rather than emit legacy Option results.
