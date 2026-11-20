@@ -11,14 +11,14 @@ pub fnc main(): int {
     };
     x.set("foo", 6);      // upsert existing key
     x["foo"] = 3;         // exactly the same update as set
-    x.add("foo" => 7);   // insert-if-absent; returns false, leaves 3 intact
-    x.add("bar", 7);      // inserted, returns true
+    x.try_add("foo" => 7); // insert-only; false, leaves 3 intact
+    x.try_add("bar" => 7); // insert-only; true
     return x.get("foo").unwrap_or(0);
 }
 // expected exit: 3
 ```
 
-The `=>` token inside a brace Map literal denotes a map pair. In ordinary expression position, `key => value` constructs a first-class, immutable `Entry<K,V>` value, with `K` and `V` inferred when unambiguous or selected by an expected type. `x.add(key => value)` therefore uses the checked `add(Entry<K,V>)` overload (equivalent in effect to `x.add(key,value)`). Resolve the nominal Map/Entry symbols and method overloads first; never rewrite an unrelated user-defined `=>` form, a lambda or a shadowed `add` method. The same key/value/receiver single-evaluation and source-order rules apply.
+The `=>` token inside a brace Map literal denotes a map pair. In ordinary expression position, `key => value` constructs a first-class, immutable `Entry<K,V>` value, with `K` and `V` inferred when unambiguous or selected by an expected type. `x.add(key => value)` therefore uses the checked `add(Entry<K,V>)` overload (equivalent in effect to `x.set(key,value)`). Resolve the nominal Map/Entry symbols and method overloads first; never rewrite an unrelated user-defined `=>` form, a lambda or a shadowed `add` method. The same key/value/receiver single-evaluation and source-order rules apply.
 
 ## First-class `Entry<K,V>` values and explicit type ascription
 
@@ -31,14 +31,14 @@ let entry1 = ("foo" => 5) as Entry<string, int>;
 let entry2 = "foo" => 5 (as Entry<string, int>);
 ```
 
-- `(entry_expression) as Entry<K,V>` is the normal expression cast/ascription; it checks the **whole** entry, not just the value.
+- `(entry_expression) as Entry<K,V>` is a checked **whole-Entry type ascription** (not a general unchecked `x as T` cast); it checks the **whole** entry, not just the value.
 - `entry_expression (as Entry<K,V>)` is a special trailing parenthesized type-ascription spelling, also applying to the **whole** entry. The sequence `(as` is reserved for this suffix in entry context, not a function call or an ascription of just the right operand.
 - Both normalize to the **same typed AST**: `EntryExpr(key, value, expected_type=Entry<K,V>)`. An implementation may retain the source spelling separately for diagnostics and formatter round-trip. The formatter canonical spelling is `(key => value) as Entry<K,V>`; the alternative must still parse correctly.
 - Generic arity must be exactly two; key and value must each be assignable to their corresponding generic parameters. A typed `Entry` may be held in a variable, passed to methods, returned or transferred under normal Atto ownership checks. An unrelated `as Map<K,V>` cast may never reinterpret an Entry.
 - An untyped `key => value` expression is legal only when inference supplies non-ambiguous `K,V` or there is an expected `Entry<K,V>`; no implicit `any`/host value fallback. No Entry expression may bypass hashing/equality constraints when eventually inserted into a Map.
 - A file-scope `let entry = ...;` using a fully pure, statically evaluable and frozen Entry initializer is an intended compatible static binding; its initialized value is private and read-only after module startup, not a mutable global shared between actors. This **additional file-scope admission** is not a claim that arbitrary runtime top-level `let`, cross-actor mutable globals or effectful initializers are already supported. Compilers must reject those until their module-initialization contract is verified. Local `let` retains its existing rebinding semantics.
 
-`Map<K,V>.add(entry: Entry<K,V>): bool` has exactly the same **insert-if-absent** semantics as `add(k,v)`. Duplicate keys return `false`, leave the existing value untouched and do not replace it; the caller may discard the bool. In the initial copyable-scalar profile the call borrows a reusable Entry and copies its immutable key/value into owned Map storage. For non-copyable resources, require a proven ownership transfer/clone protocol (`take!` or `copy!!` when appropriate); storing a reference to a caller's temporary or active borrow is forbidden. `Entry` is not itself evidence of Sendable or Serializable conformance.
+`Map<K,V>.add(entry: Entry<K,V>): Option<V>` performs the same checked **insert-or-replace** as `set(k,v)`; a duplicate key replaces the value, returning the previous value when copyable. `try_add(entry): bool` is the distinct insert-if-absent operation: it returns `false` and preserves the old value when a key already exists. In the initial copyable-scalar profile the call borrows a reusable Entry and copies its immutable key/value into owned Map storage. For non-copyable resources, require a proven ownership transfer/clone protocol (`take!` or `copy!!` when appropriate); storing a reference to a caller's temporary or active borrow is forbidden. `Entry` is not itself evidence of Sendable or Serializable conformance.
 
 ### Complete requested program (target contract, not yet a guest pass)
 
@@ -52,11 +52,11 @@ pub fnc main(): int {
     };
     x.set("foo", 6);
     x["foo"] = 3;
-    x.add(entry1); // false: key exists, value remains 3
-    x.add(entry2); // false: key exists, value remains 3
+    x.add(entry1); // replaces 3 with 5
+    x.add(entry2); // replaces 5 with 5
     return x.get("foo").unwrap();
 }
-// expected exit: 3
+// expected exit: 5
 ```
 
 `get` returns `Option<V>`; `unwrap()` produces `V` on Some and signals the language's checked missing-value error on None. An unwrap is **not** an implicit conversion from `Option<V>` to `V`. In this particular example, the literal and sequential mutations establish the key exists. The actual guest implementation must still handle missing keys safely.
@@ -79,9 +79,10 @@ The following literal contract from inline-collection v1 remains in force: `{"fo
 | `m.get(k)` | `Option<V>` for copyable scalar `V` in the first executable profile | `None` on missing; `Some(v)` on present |
 | `m.set(k, v)` | `Option<V>` for copyable scalar `V` in the first profile | Insert or replace; return prior `Some(old)`, or `None` |
 | `m[k] = v` | Indexed write, equivalent to `m.set(k, v)` with result discarded | Insert or replace; not a checked record-field write |
-| `m.add(k, v)` | `bool` | Atomic insert-if-absent; returns `true` only for new key, `false` and preserves old value for duplicate |
-| `m.add(k => v)` | Pass an inferred or contextually typed `Entry<K,V>` to `add(Entry<K,V>)`; `bool` | Same as above |
-| `m.add(entry)` | `bool`; checked `Entry<K,V>` argument | Atomic insert-if-absent, including when the Entry is reusable |
+| `m.add(k, v)` | `Option<V>` in scalar profile | Insert-or-replace; alias of `m.set(k,v)` with the same ownership and previous-value contract |
+| `m.add(k => v)` | Pass an inferred or contextually typed `Entry<K,V>` to `add(Entry<K,V>)`; `Option<V>` | Insert-or-replace, same as `set` |
+| `m.add(entry)` | `Option<V>` in scalar profile; checked `Entry<K,V>` | Atomic insert-or-replace, including when the Entry is reusable |
+| `m.try_add(entry)` | `bool` | Atomic insert-only; returns `false` for duplicate keys without replacement |
 | `m.contains_key(k)` | `bool` | Does not transfer ownership of value |
 
 `m.get(k)` is never silently coerced to `V`, so `pub fnc main(): int { ... return m.get("foo"); }` must reject with `E_TYPE` even if the literal has that key. The caller may use `unwrap_or(default)`, explicit presence handling, or an explicit, effect-checked unwrap API. This v1 does not define a bare `m[k]` **read**: do not fabricate a default or silently read a Record field. Checked bracket-read semantics need a separate contract.
@@ -93,7 +94,7 @@ Non-Copy values require a separate, verified borrow/owned-value policy for `get`
 ## Safety, execution order and actor isolation
 
 1. `m.set(k,v)`, `m.add(k,v)` and `m[k]=v` require mutable access to the owned map and an exclusive admissible borrow. `let` alone never grants that authority; `mut` alone cannot bypass active loans.
-2. Evaluate receiver, key and value exactly once, in that order. Preserve side effects, integer checked operations and traps/raises. For `add`, evaluate both arguments even if the key already exists, but do not publish or leak the unused value; release any consumed value according to ownership on failed insertion.
+2. Evaluate receiver, key and value exactly once, in that order. Preserve side effects, integer checked operations and traps/raises. For `try_add`, evaluate the Entry even if the key already exists, but do not publish or leak the unused value; release any consumed value according to ownership on failed insertion. For `add`, cleanup of the displaced old value follows `set`.
 3. Mutation is transactional from the guest's perspective: allocation, hashing, equality, conversion or quota failure must not leave a partial entry, invalid value, stale pointer, double-drop or corrupted map.
 4. Every lookup/mutation has explicit budget accounting: bounded memory and quotas, collision-resistant degradation policies and no unchecked host object escapes. Reject mismatched key/value types before guest execution where statically provable.
 5. No direct access to another actor's map. Transport via checked `take!` or `copy!!` and the separate Sendable/Serializable contracts; read-only shared state and isolated tenant heaps remain isolated. `val mut` is not a transport capability.
@@ -102,22 +103,22 @@ Non-Copy values require a separate, verified borrow/owned-value policy for `get`
 
 ## Negative cases and formatter requirements
 
-- Valid: both `(\"foo\" => 5) as Entry<string, int>` and `\"foo\" => 5 (as Entry<string, int>)` yield the same typed Entry; both `x.add(entry)` calls in the program above leave the previous map value at `3`.
+- Valid: both `(\"foo\" => 5) as Entry<string, int>` and `\"foo\" => 5 (as Entry<string, int>)` yield the same typed Entry; both `x.add(entry)` calls in the program above replace the previous map value, with final result `5`.
 - Invalid: wrong generic arity, mismatched Entry key/value types, `as Map<K,V>` for an Entry, malformed `(as Type)` suffix, or an Entry passed to a Map whose `K,V` are incompatible.
 - A formatter must preserve Entry value identity, cast target, and evaluation order when canonicalizing the trailing parenthesized suffix; the canonical result is `(key => value) as Entry<K,V>`.
 
 - Invalid: `return m.get("foo");` in an `int` function (`Option<int>` is not `int`).
 - Invalid: `let Map<string,int> m = {}; m.set("foo",5);` or `val Map<string,int> m = {}; m["foo"] = 5;` (read-only referent).
 - Invalid: `let mut m = new Map();` (insufficient `K,V` inference), `Map<int,int>` with string key, or statically duplicate keys inside a map literal.
-- Valid: `x.add("foo" => 7)` after `foo` exists evaluates to `false`, **not** an overwrite or an exception; `x.set("foo",7)` and `x["foo"]=7` overwrite.
+- Valid: `x.try_add("foo" => 7)` after `foo` exists evaluates to `false` without overwrite; `x.add("foo" => 7)`, `x.set("foo",7)` and `x["foo"]=7` all overwrite.
 - Invalid: attempting to mutate a map after `take!` or through a live read-only loan; trying an unsupported indexed target must remain fail-closed.
 
 The formatter must round-trip `let mut Map<string, int>`, brace map entries, contextual `=>` within `add`, method calls and `m[k] = v` with AST/semantic equivalence. It must never change `=>` into `:`, reinterpret a `Map` as a `Record`, change `add` into `set`, or drop `mut`. Canonical spelling for the built-in type is `Map`; ordinary identifiers retain case.
 
 ## Verification gates
 
-Entry-specific gates: both typed ascription spellings (including file-scope pure bindings), AST equivalence, generic arity/type negatives, `add(Entry)` overload and duplicate-no-overwrite execution, exactly-once key/value evaluation, reusable Entry storage ownership, missing-key `unwrap()` failure behavior, and parse-format-parse/idempotence. Both compiler and formatter must retain entry-versus-Map-brace-vs-lambda distinctions. Runtime and security evidence must be collected for each target independently.
+Entry-specific gates: both typed ascription spellings (including file-scope pure bindings), AST equivalence, generic arity/type negatives, `add(Entry)` upsert and distinct `try_add(Entry)` no-overwrite execution, exactly-once key/value evaluation, reusable Entry storage ownership, missing-key `unwrap()` failure behavior, and parse-format-parse/idempotence. Both compiler and formatter must retain entry-versus-Map-brace-vs-lambda distinctions. Runtime and security evidence must be collected for each target independently.
 
-A backend is conformant only if real compiler-produced guest code (not a host/reference model) exercises actual allocation, collision handling, replacement, add-if-absent, missing-key `Option`, indexing mutation, ownership and cleanup. Pin executed evidence to exact source commit/tree, tests, toolchain and nonzero-step CI run. Keep all independent backend cells **NOT_EXECUTED** unless their own compiled-guest evidence passes. A parser/type-only pass is distinct from executable runtime conformance.
+A backend is conformant only if real compiler-produced guest code (not a host/reference model) exercises actual allocation, collision handling, replacement, try_add insert-only, missing-key `Option`, indexing mutation, ownership and cleanup. Pin executed evidence to exact source commit/tree, tests, toolchain and nonzero-step CI run. Keep all independent backend cells **NOT_EXECUTED** unless their own compiled-guest evidence passes. A parser/type-only pass is distinct from executable runtime conformance.
 
 Related work: [atto-source.rs #274](https://github.com/atto-lang/atto-source.rs/pull/274) (parser/type preflight), [atto-source.rs #278](https://github.com/atto-lang/atto-source.rs/pull/278) (flow), [atto-source.rs #284](https://github.com/atto-lang/atto-source.rs/pull/284) / [#287](https://github.com/atto-lang/atto-source.rs/pull/287) (closed Record guest reads, **not** Map), [atto-source.rs #102](https://github.com/atto-lang/atto-source.rs/pull/102) (binding mutability), and legacy Java map factory [#2735](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2735) and nominal Entry [#1668](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/1668), to be semantically reconciled before merging.
