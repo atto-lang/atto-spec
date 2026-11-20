@@ -213,7 +213,12 @@ test('bare rests match prefix, suffix, infix, zero-length and exact arity',()=>{
     ['Tuple.of(1)',tuple(1),true],['Tuple.of(1)',[1],false],
     ['Tuple.of(1, _)',tuple(1,2),true],['Tuple.of(1, _)',tuple(1),false],
     ['Array.of(1, ..., 9)',array(1,2,3,9),true],
-    ['List.of()',[],true],['Array.of()',array(),true]
+    ['List.of()',[],true],['List.of()',[1],false],
+    ['List.of(...)',[],true],['List.of(...)',[1],true],
+    ['List.of(...)',Array(256).fill(3),true],
+    ['List.of(...)',array(1),false],
+    ['Array.of()',array(),true],['Array.of(...)',array(),true],
+    ['Array.of(...)',array(1,2,3),true]
   ];
   for(const [src,value,expected] of cases)
     assert.equal(match(parse(src),value).matched,expected,src);
