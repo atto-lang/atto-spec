@@ -10,9 +10,9 @@ The core generic type constructor names \`Record\`, \`Map\`, \`List\`, \`Array\`
 
 \`\`\`ebnf
 inline_expression = record_or_map | list_or_array | tuple_or_group | named_record ;
-record_or_map    = "{" [ (field_entry | map_entry), { separator, (field_entry | map_entry) }, [","] ] "}" ;
-field_entry      = (IDENT | STRING), ":", expression ;
-map_entry        = expression, "=>", expression ;
+record_or_map    = "{" [ (record_field | map_field), { separator, (record_field | map_field) }, [","] ] "}" ;
+record_field     = IDENT, ":", expression ;
+map_field        = STRING, ":", expression | expression, "=>", expression ;
 list_or_array    = "[", [expression, {",", expression}, [","]], "]" ;
 tuple_or_group   = "()" | "(", expression, "," [expression, {",", expression}, [","]], ")"
                  | "(", expression, ")" ;
@@ -89,80 +89,42 @@ describe(...named);                   // explicit checked Record expansion, prop
 
 ## Map, Record and Struct: keys, fields, and layout
 
-| Type | Name/key language | Type discipline | Primary optimization |
+| Type | Key language | Type discipline | Runtime model |
 | --- | --- | --- | --- |
-| `Map<K,V>` | Any runtime key expression of type `K` satisfying hash + equality; strings may contain arbitrary Unicode, punctuation and the empty string | Homogeneous key/value types; entries added/removed dynamically | Hash table / backend-specific keyed storage |
-| `Record` | Compile-time identifier or **quoted string field name**, including `""`, whitespace and hyphens | Structural, potentially heterogeneous fields; closed shape or explicitly open shape | Closed record may use an AOT field layout / interned shape |
-| `Struct` | Declared **identifier-only** field names in this candidate | Nominal, statically declared heterogeneous fields | Predictable AOT offsets and unboxed fields where safe |
+| `Map<K,V>` | Checked expression key of type `K`; quoted strings may use all three delimiters | Homogeneous keys and values with Hash/Eq | Dynamic keyed storage |
+| `Record` | Identifier-only fields, `{foo:1}` or `(foo=1)` | Heterogeneous structural fields | Static known shape and authenticated slots |
+| `Struct` | Declared identifier-only fields | Nominal fields | Statically declared layout |
 
-The `Struct` rule describes the intended distinction from records; this proposal does **not** add a new struct declaration grammar. A serializer may attach an external field-name alias (for example `content-type`) to a struct's ordinary identifier field `content_type`. The alias is serialization metadata, **not** an additional member, and never makes `s["content-type"]` an implicit struct lookup.
+**Quotation determines Map status.** `{"foo":5}`, `{'foo':5}`, `{`foo`:5}`, and `{"foo"=>5}` are Maps, never Records. `{foo:5}` is a Record. Quoted keys may include punctuation, spaces, embedded quotes, Unicode or the empty string. Map `:` and `=>` entries may coexist; an identifier-colon Record entry cannot be mixed with Map entries (`E_LITERAL_KIND`). Distinct quote styles yielding the same decoded string key are duplicates (`E_DUPLICATE`), with no case folding or Unicode normalization.
+
+Single and double quoted strings share existing escape decoding. Backticks are **literal and non-interpolating**: `${...}` is text, not code; ordinary backslashes are retained and only backslash-backtick escapes the delimiter. This first compiler profile disallows raw newlines inside backticks, enforces 4,096 decoded UTF-8 bytes, and rejects unterminated literals. See the [authoritative quoted Map-key correction](quoted-map-vs-record-literals-v1.md).
 
 ```atto
-let Map<string, int> settings = {
-    "retry-count" => 3,
-    "" => 0
-};
-let Record headers = {
+let Map<string,int> counts = {"retry-count": 3, 'active' => 1};
+let Map<string,string> headers = {
     "content-type": "application/json",
-    "x-request-id": "abc123",
-    status_code: 200
+    'x-user-id': "42",
+    `"foo"`: "includes interior quotes in key"
 };
-// Intended record reads once typed field access is implemented:
-headers.status_code;
-headers["content-type"];
+let Record response = {status_code: 200, ok: true};
+let Record response2 = (ok=true, status_code=200);
+// headers.get("content-type") is a dynamic Map lookup, not a Record slot.
+// response.status_code and response["status_code"] refer to the same Record slot.
 ```
 
-A quoted key in a record is a **literal field name**, not a runtime expression; `"content-type": v` does not create a map entry. A map key is an expression: `"content-type" => v` or `key_expression => v`. The `Map<K,V>` type is not restricted to `string`: e.g. `Map<int,string>` and `Map<Symbol,int>` are semantically valid when the key type implements the required hash/equality contract. This is a language-level contract, **not** a claim that the Rust/Wasm profile currently supports Symbols or arbitrary key types.
+### Access, ownership and runtime admission
 
-### Access and presence (candidate syntax/semantics, not implemented guest execution)
+- Record fields are statically known identifiers; a closed Record has a compiler-authenticated canonical field layout independent of declaration order. Source initializers still execute exactly once in lexical order. A known `foo` slot may be accessed by `r.foo`, `r["foo"]`, `r['foo']` or `r[`foo`]` when static string-literal projection is implemented.
+- Record static indexed **writes** update an existing field only with verified referent mutability, type/borrow ownership, lexical receiver provenance, safe failure/cleanup and no fabricated Map operation. `let` permits rebinding but not an unqualified field write. A missing field is E_NO_FIELD; an open Record requires a proof of shape/presence. Computed keys and nominal Struct bracket access are not implicitly static Record fields.
+- Map lookups use the Map Hash/Eq contract and explicit missing-key handling (e.g., `get` returning `Option`). Duplicate compile-time constants reject; dynamic equal-key replacement must have ownership-safe cleanup. Map allocation/lookup, transport and mutation require independent guest runtime proof and are NOT provided by parser/typed-IR admission.
+- No implicit Map↔Record conversion, no static Record field offset for a Map key, no ambient named-call expansion, and no cross-TenantVM capability/actor-state privilege from a quoted literal.
 
-- `record.field` accesses a statically known identifier field, while `record["field-name"]` accesses a statically known field by a **compile-time string literal**. A quoted identifier-name and the identical ordinary identifier are the *same field*: `{a: 1, "a": 2}` is `E_DUPLICATE`; strings compare after decoding their escapes, without case folding.
-- A **closed record** with no matching field is a compile-time missing-field error (`E_NO_FIELD`). Two closed record shapes with the same decoded names and compatible types have the same structural field set **regardless of declaration order**. Evaluation of initializers and any destructors still follows the specified source order; canonicalizing a type's field set cannot reorder effects.
-- For the **open** bare `Record` supertype, an unguarded field read is rejected with a presence/type diagnostic (`E_FIELD_PRESENCE`) unless the checker has proved and narrowed the required field. A presence guard must refine both field existence and type. No speculative raw AOT offset reads are allowed.
-- `record[key_expression]` where the key is not a compile-time string is **not** silently converted into a map operation. This candidate only commits to literal-key record indexing; computed record lookup needs a separately typed dynamic-reflection API.
-- A missing map key is different from a missing record field: map lookup must expose explicit absence (the safe `get` family uses `Option`), rather than manufacturing a default or returning an unchecked value. The exact `map[key]` indexing return/throw behavior is reserved for the map API contract and is **not** fixed by this record-bracket-access proposal.
-- Map key equality uses `eq`/hash-compatible value semantics, not object-identity `==`. Equal keys must hash identically, `hash`/equality must remain stable while inserted, and a replacement for a duplicate runtime key must not create a second live slot. Compile-time duplicate constants are errors, including positive/negative zero when equal by key semantics.
+### Serialization and conformance
 
-### Static Record bracket mutation (candidate; requires separate guest proof)
-
-**Decision:** A closed, owned, writable `Record` may update an **existing** statically known field with `record["field-name"] = value;`. This is a checked *Record field assignment*, **not** a Map insert/upsert or a runtime-key hash-table operation. If the decoded quoted field name is a valid identifier, `r["foo"]` and `r.foo` select the **same field slot** for both reads and writes. Quoted non-identifier field names (including hyphens, spaces, empty strings, Unicode) are accepted with literal brackets but have no fabricated dot spelling. Distinct decoded UTF-8 byte sequences (including NFC/NFD) must not be conflated.
-
-```atto
-pub fnc main(): int {
-    let mut Record r = { foo: 1, "content-type": 2 };
-    r["foo"] = 3;          // same existing field as r.foo
-    r["content-type"] = 4; // quoted field with punctuation
-    return r["foo"] + r["content-type"]; // expected: 7
-}
-```
-
-- A mutation requires mutable write authority over the **owned referent**: `val mut Record r` and `let mut Record r` may update where ownership/loans permit; `val Record` and `let Record` must reject writes (`E_IMMUTABLE`). `let` by itself permits rebinding, not a field write. Active shared loans, moved owners, sealed actor state and final/readonly fields remain protected.
-- Only a compile-time **quoted string literal** `r["foo"]` is admitted for indexed Record assignment in this version. `r[key]`, interpolated/computed strings and numeric indexes are **not** treated as static field access (`E_UNSUPPORTED`). The compiler must resolve `r` to a proven closed structural Record after lexical scope and type checking, never by variable name alone. A bare open `Record` lacking a proven narrowed shape is not eligible for offset writes (`E_FIELD_PRESENCE` or a precise unsupported diagnostic).
-- A missing field in a **closed** shape is `E_NO_FIELD` for both reads and writes. `r["new_field"] = 1` does not extend or retype the Record. An RHS with an incompatible static type rejects `E_TYPE`; no implicit field replacement that changes the structural type. Use the separate immutable `r with {"new_field": value}` operation to produce a *new* Record shape, if independently implemented.
-- `r["foo"] = expr` evaluates the receiver once and the RHS once, in left-to-right order. The compile-time field lookup uses the shape's established slot/layout; the guest write is checked against that exact slot, preserves the original shape and other fields, and never invokes Map hashing. If evaluating `expr` fails, the previous field value is preserved. Replacing an owned value requires validated move/borrow/drop ownership before commit, with safe cleanup on failure.
-- A nominal **`Struct` is deliberately NOT bracket-indexable**: `s["foo"]` and `s["foo"] = v` are invalid (`E_UNSUPPORTED` or the target's dedicated index diagnostic), even for an existing declared `foo`. `s.foo` and admissible `s.foo = v` remain the nominal field API. External JSON aliases do not become extra member names.
-- The compiler must preserve the `Index`/indexed-lvalue AST until type resolution distinguishes `Map`, `Record`, `Struct` and unsupported classes; no lexically guessed `index -> member` rewrite. Index writes are nonescaping assignments and require the same actor/borrow checks as dot field writes.
-- This extension does **not** assert that static Record guest writes, generic nested mutable Records or arbitrary Struct guest code are already implemented. Existing limited closed-Record **reads** are not sufficient evidence.
-
-Required cases: positive identifier/quoted-nonidentifier/empty/Unicode same-field updates; negative immutability, missing field, mismatched value type, computed index, open shape, shadowing, moved/borrowed alias, attempted Struct bracket read/write, and record-vs-map distinctions. Positive **compiled guest** programs, no-artifact negative checks, formatter parse–format–parse and exact source-SHA evidence are required separately per backend.
-
-### Serialization and layout boundaries
-
-- Record JSON property names preserve their decoded UTF-8 field names, including quoted non-identifier names. String-map JSON property names preserve the actual string keys. JSON objects cannot faithfully encode an arbitrary non-string-key `Map<K,V>` without an explicitly selected key codec or entry-array representation; no implicit lossy stringification.
-- Struct JSON external names follow declared serialization metadata; internal field names, static typing and AOT offsets remain unchanged. A duplicate **serialized** name (including collisions between aliases and unaliased fields) is a compile-time error when metadata is static.
-- JSON object property order must not affect semantic equality. A deterministic/canonical serializer may sort names, but must not change the **source-order evaluation** of initializers. Duplicate JSON input properties need an explicit decoder policy and must never bypass schema validation or ownership rules.
-- Closed records may share an interned structural layout; `Record` open values require runtime shape/presence metadata if dynamically accessed; structs retain nominal layouts; maps retain keyed lookup semantics. These are distinct IR/runtime representations even when the surface braces look similar.
-
-### Additional conformance cases
-
-1. `{"content-type": 1, status_code: 2}` has two record fields; `{"": 1}` is a valid quoted record field; `{"": 1, "" : 2}` is duplicate.
-2. `{a: 1, "a": 2}` must reject after key decoding. Record structural type identity must not depend on field declaration order; guest initializer evaluation order still must.
-3. A missing field on a closed shape rejects with `E_NO_FIELD`; open-record reads reject with `E_FIELD_PRESENCE` unless a verified presence/type guard narrows the field.
-4. `headers["content-type"]` selects a record field, not a map key; `headers[some_runtime_string]` must not compile as a fabricated static field access.
-5. Dynamically duplicate map keys replace the prior value with ownership-safe cleanup; static duplicate map keys reject. `Map<int,string>` and hashable Symbols require backend conformance before being advertised executable.
-6. Round-trip record quoted field names and string-map arbitrary keys through JSON; reject non-string map-key JSON encoding without an explicit codec; detect conflicting serialized struct aliases.
-
-**Staging rule:** the Rust compiler's parser/typed-IR acceptance is not proof of field indexing, Map operations, Struct layout or any guest serialization. Track separate parser, type-checker, guest allocation, guest access and codec statuses.
+- JSON serialization of Records uses declared identifier fields. String Map keys retain exact decoded strings including punctuation, interior quotes, backticks, empty names and Unicode. Non-string Map keys require an explicit codec; no silent lossy JSON property conversion.
+- A nominal Struct may have external serialization aliases but they do not become source-visible members. Duplicate serialized names require a defined validation failure.
+- Test all six quoted Map forms (`:` and `=>` with double/single/backticks), mixed quoted separators, cross-delimiter key collisions, escaped Unicode, literal interior quote marks, bounded backtick strings, noninterpolated `${...}`, Record/Map mixing in both orders, mutable Record slot checks, and unsupported Map guest operations with zero output artifacts.
+- Each backend and formatter must establish independent exact-source guest/conformance and parse–format–parse results. A host parser test cannot be promoted as runtime implementation.
 
 ## Ownership, security and implementation requirements
 
