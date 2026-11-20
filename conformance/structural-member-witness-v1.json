@@ -2024,6 +2024,57 @@
       "expected": "reject",
       "code": "E_METHOD_SIGNATURE",
       "note": "generic constraints must be compatible"
+    },
+    {
+      "id": "SW043",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "ping",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "ping",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "ping",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_METHOD_AMBIGUOUS",
+      "note": "two equally compatible exported implementations must fail ambiguous dispatch"
     }
   ]
 }
