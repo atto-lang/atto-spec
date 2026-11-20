@@ -19,7 +19,7 @@ function check_effect_graph(nodes) {
     for (const [name, f] of Object.entries(nodes)) {
       const may_spawn = Boolean(f.direct_spawn) ||
         (f.calls ?? []).some(c => c.kind === 'call' &&
-          (c.target ? effects[c.target] : Boolean(c.may_spawn)));
+          (c.target ? Boolean(nodes[c.target]?.declares_spawns) || effects[c.target] : Boolean(c.may_spawn)));
       if (may_spawn && !effects[name]) {
         effects[name] = true;
         changed = true;
@@ -88,6 +88,16 @@ test('direct, indirect, mutually recursive, and opaque callback effects', () => 
     cycle_a:['E_SPAWNS_REQUIRED'],
     callback:['E_SPAWNS_REQUIRED']
   });
+});
+
+test('declared spawns is an upper bound even when the callee does not actually spawn', () => {
+  const r = check_effect_graph({
+    future_factory: {declares_spawns: true},
+    unmarked: {declares_spawns: false, calls:[{kind:'call',target:'future_factory'}]},
+    marked: {declares_spawns: true, calls:[{kind:'call',target:'future_factory'}]}
+  });
+  assert.deepEqual(r.failures, {unmarked:['E_SPAWNS_REQUIRED']});
+  assert.equal(r.effects.unmarked,true);
 });
 
 test('actor mailbox delivery does not carry handler effects into sender', () => {
