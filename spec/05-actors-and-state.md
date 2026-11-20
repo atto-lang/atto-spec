@@ -43,7 +43,21 @@ At most one effective persistent guest state schema belongs to one actor. Direct
 
 An actor has a bounded DATA inbox. Sending has a **linearization point**: either an owned message is admitted exactly once (with quota/ownership obligations transferred) or the send fails without partial publication. Admission checks type, identity, incarnation, authority, closure state and queue count/byte limits.
 
-`send(message)` should return an explicit typed admission outcome such as `Result<Ack, SendError>` (or a Future thereof where admission is asynchronous); never mistake mailbox admission for recipient processing or completion. Existing backend APIs may expose different aliases, and must be reconciled before finalizing the signature. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
+`send(message)` should return an explicit typed admission outcome such as `Result<Ack, SendError>` (or a Future thereof where admission is asynchronous); never mistake mailbox admission for recipient processing or completion. The canonical `match` syntax for a send outcome has **`on` before every arm**, including both variants:
+
+```atto
+val result = worker.send(42)
+match result over
+  on Ok(ack) -> {
+    // Admitted to the mailbox; not necessarily processed.
+  }
+  on Err(err) -> {
+    // Refused; caller handles the admission failure.
+  }
+end
+```
+
+The snippet is a **language target**, not evidence that any backend already returns the typed value or lowers the guest program. `Ack` is an admission acknowledgment only. A bare `Ok(ack) ->`, bare `Err(err) ->`, `else` or `default` must not be accepted as canonical `match ... over` arms. Existing backend APIs may expose different aliases, and must be reconciled before finalizing the signature. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
 
 A receiver is serialized with other conflicting turns. Messages may be rejected due to full/closed inbox, stale actor generation, invalid payload, cancelled sender or missing authority. No backend may silently drop a message while returning success.
 
