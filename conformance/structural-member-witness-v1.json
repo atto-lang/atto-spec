@@ -1,0 +1,2029 @@
+{
+  "schema": "atto.structural-member-witness.v1",
+  "status": "HOST_REFERENCE_ONLY_NOT_GUEST_EXECUTED",
+  "alias": [
+    "~Type",
+    "structural Type"
+  ],
+  "semantics": "readonly exported instance member conjunction; exact primitive method types in conservative host oracle; language variance and ABI remain compiler work",
+  "cases": [
+    {
+      "id": "SW001",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "other",
+            "type": "bool",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "extra",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "accept",
+      "note": "all interface instance methods, extra permitted"
+    },
+    {
+      "id": "SW002",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_MISSING_METHOD",
+      "note": "not any-overlap"
+    },
+    {
+      "id": "SW003",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "private",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_INACCESSIBLE_METHOD",
+      "note": "private implementation is not public"
+    },
+    {
+      "id": "SW004",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [
+              "int"
+            ],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_METHOD_SIGNATURE",
+      "note": "method arity and params must agree"
+    },
+    {
+      "id": "SW005",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [
+              "throws"
+            ],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_METHOD_EFFECT",
+      "note": "extra thrown effect is unsafe"
+    },
+    {
+      "id": "SW006",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "mutable",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_METHOD_RECEIVER",
+      "note": "mutating receiver cannot satisfy readonly"
+    },
+    {
+      "id": "SW007",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "static",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_MISSING_METHOD",
+      "note": "static is not instance member"
+    },
+    {
+      "id": "SW008",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": true,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_METHOD_SIGNATURE",
+      "note": "async mismatch"
+    },
+    {
+      "id": "SW009",
+      "required": {
+        "kind": "trait",
+        "fields": [
+          {
+            "name": "id",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "run",
+            "params": [],
+            "returns": "bool",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "id",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "run",
+            "params": [],
+            "returns": "bool",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "accept",
+      "note": "trait combines fields and methods"
+    },
+    {
+      "id": "SW010",
+      "required": {
+        "kind": "trait",
+        "fields": [
+          {
+            "name": "id",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "run",
+            "params": [],
+            "returns": "bool",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "run",
+            "params": [],
+            "returns": "bool",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_MISSING_FIELD",
+      "note": "trait field required"
+    },
+    {
+      "id": "SW011",
+      "required": {
+        "kind": "trait",
+        "fields": [
+          {
+            "name": "id",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "run",
+            "params": [],
+            "returns": "bool",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "id",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "expected": "reject",
+      "code": "E_MISSING_METHOD",
+      "note": "trait callable required"
+    },
+    {
+      "id": "SW012",
+      "required": {
+        "kind": "trait",
+        "fields": [
+          {
+            "name": "id",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "run",
+            "params": [],
+            "returns": "bool",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "id",
+            "type": "int",
+            "visibility": "private",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "run",
+            "params": [],
+            "returns": "bool",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_INACCESSIBLE_FIELD",
+      "note": "private trait data not exposed"
+    },
+    {
+      "id": "SW013",
+      "required": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "y",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "distance",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "y",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "unused",
+            "type": "bool",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "distance",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "layout": "unrelated"
+      },
+      "expected": "accept",
+      "note": "unrelated struct satisfies all public class members without cast"
+    },
+    {
+      "id": "SW014",
+      "required": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "y",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "distance",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "distance",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_MISSING_FIELD",
+      "note": "class requires y as well"
+    },
+    {
+      "id": "SW015",
+      "required": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "y",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "distance",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "y",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "expected": "reject",
+      "code": "E_MISSING_METHOD",
+      "note": "class methods also required"
+    },
+    {
+      "id": "SW016",
+      "required": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "private",
+            "readable": true
+          },
+          {
+            "name": "y",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "y",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "expected": "accept",
+      "note": "private requirement is not part of exported structural contract"
+    },
+    {
+      "id": "SW017",
+      "required": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true,
+            "getter_effects": [
+              "throws"
+            ]
+          }
+        ],
+        "methods": []
+      },
+      "expected": "reject",
+      "code": "E_FIELD_EFFECT",
+      "note": "effectful getter does not masquerade as data slot"
+    },
+    {
+      "id": "SW018",
+      "required": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "private",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "expected": "reject",
+      "code": "E_INACCESSIBLE_FIELD",
+      "note": "private actual field cannot satisfy"
+    },
+    {
+      "id": "SW019",
+      "required": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "actual": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "count",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "extra",
+            "type": "bool",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "expected": "accept",
+      "note": "field declaration order irrelevant for readonly projection"
+    },
+    {
+      "id": "SW020",
+      "required": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "count",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "actual": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "count",
+            "type": "string",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "expected": "reject",
+      "code": "E_FIELD_TYPE",
+      "note": "wrong field type"
+    },
+    {
+      "id": "SW021",
+      "required": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true,
+            "writable": true
+          }
+        ],
+        "methods": []
+      },
+      "actual": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true,
+            "writable": false
+          }
+        ],
+        "methods": []
+      },
+      "expected": "reject",
+      "code": "E_FIELD_WRITE",
+      "note": "writable projection requires separate proof"
+    },
+    {
+      "id": "SW022",
+      "required": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "content-type",
+            "type": "string",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "actual": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "content-type",
+            "type": "string",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "other",
+            "type": "bool",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "expected": "accept",
+      "note": "quoted/static UTF-8 labels supported as schema"
+    },
+    {
+      "id": "SW023",
+      "required": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "distance",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          },
+          {
+            "name": "unused",
+            "type": "bool",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "distance",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "accept",
+      "note": "struct shape can be met by class with safe projected layout"
+    },
+    {
+      "id": "SW024",
+      "required": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "distance",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "expected": "reject",
+      "code": "E_MISSING_METHOD",
+      "note": "struct methods checked"
+    },
+    {
+      "id": "SW025",
+      "required": {
+        "kind": "tuple",
+        "fields": [],
+        "methods": [],
+        "elements": [
+          "int",
+          "string"
+        ]
+      },
+      "actual": {
+        "kind": "tuple",
+        "fields": [],
+        "methods": [],
+        "elements": [
+          "int",
+          "string"
+        ]
+      },
+      "expected": "accept",
+      "note": "tuple exact arity/types"
+    },
+    {
+      "id": "SW026",
+      "required": {
+        "kind": "tuple",
+        "fields": [],
+        "methods": [],
+        "elements": [
+          "int",
+          "string"
+        ]
+      },
+      "actual": {
+        "kind": "tuple",
+        "fields": [],
+        "methods": [],
+        "elements": [
+          "int",
+          "string",
+          "bool"
+        ]
+      },
+      "expected": "reject",
+      "code": "E_TUPLE_ARITY",
+      "note": "tuple cannot be width-subtyped by extra items"
+    },
+    {
+      "id": "SW027",
+      "required": {
+        "kind": "tuple",
+        "fields": [],
+        "methods": [],
+        "elements": [
+          "int",
+          "string"
+        ]
+      },
+      "actual": {
+        "kind": "tuple",
+        "fields": [],
+        "methods": [],
+        "elements": [
+          "int",
+          "bool"
+        ]
+      },
+      "expected": "reject",
+      "code": "E_TUPLE_ELEMENT",
+      "note": "different positional type"
+    },
+    {
+      "id": "SW028",
+      "required": {
+        "kind": "tuple",
+        "fields": [],
+        "methods": [],
+        "elements": [
+          "int",
+          "string"
+        ]
+      },
+      "actual": {
+        "kind": "array",
+        "fields": [],
+        "methods": [],
+        "elements": [
+          "int",
+          "string"
+        ]
+      },
+      "expected": "reject",
+      "code": "E_TUPLE_KIND",
+      "note": "array not inferred to tuple"
+    },
+    {
+      "id": "SW029",
+      "required": {
+        "kind": "map",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "key_type": "string",
+        "value_type": "int"
+      },
+      "actual": {
+        "kind": "map",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "key_type": "string",
+        "value_type": "int"
+      },
+      "expected": "accept",
+      "note": "map key/value and get contract satisfied"
+    },
+    {
+      "id": "SW030",
+      "required": {
+        "kind": "map",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "key_type": "string",
+        "value_type": "int"
+      },
+      "actual": {
+        "kind": "map",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "key_type": "int",
+        "value_type": "int"
+      },
+      "expected": "reject",
+      "code": "E_MAP_TYPE",
+      "note": "map generic key incompatible"
+    },
+    {
+      "id": "SW031",
+      "required": {
+        "kind": "map",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "key_type": "string",
+        "value_type": "int"
+      },
+      "actual": {
+        "kind": "map",
+        "fields": [],
+        "methods": [],
+        "key_type": "string",
+        "value_type": "int"
+      },
+      "expected": "reject",
+      "code": "E_MISSING_METHOD",
+      "note": "map API is part of contract"
+    },
+    {
+      "id": "SW032",
+      "required": {
+        "kind": "map",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "key_type": "string",
+        "value_type": "int"
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "mapping": {
+          "validated": true,
+          "key_type": "string",
+          "value_type": "int"
+        }
+      },
+      "expected": "accept",
+      "note": "validated independent mapping adapter can satisfy"
+    },
+    {
+      "id": "SW033",
+      "required": {
+        "kind": "map",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "key_type": "string",
+        "value_type": "int"
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "mapping": {
+          "validated": false,
+          "key_type": "string",
+          "value_type": "int"
+        }
+      },
+      "expected": "reject",
+      "code": "E_MAP_ADAPTER",
+      "note": "no unchecked dynamic duck map conversion"
+    },
+    {
+      "id": "SW034",
+      "required": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "foo",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "actual": {
+        "kind": "map",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "key_type": "string",
+        "value_type": "int"
+      },
+      "expected": "reject",
+      "code": "E_MAP_KEY_PROOF",
+      "note": "Map<string,int> does not guarantee foo key"
+    },
+    {
+      "id": "SW035",
+      "required": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "foo",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "actual": {
+        "kind": "map",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "key_type": "string",
+        "value_type": "int",
+        "guaranteed_keys": {
+          "foo": "int"
+        },
+        "snapshot_safe": true
+      },
+      "expected": "accept",
+      "note": "immutable guaranteed key witness"
+    },
+    {
+      "id": "SW036",
+      "required": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "foo",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "actual": {
+        "kind": "map",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "key_type": "string",
+        "value_type": "int",
+        "guaranteed_keys": {
+          "foo": "int"
+        },
+        "snapshot_safe": false
+      },
+      "expected": "reject",
+      "code": "E_MAP_SNAPSHOT",
+      "note": "prevent TOCTOU"
+    },
+    {
+      "id": "SW037",
+      "required": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "foo",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": []
+      },
+      "actual": {
+        "kind": "map",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "string"
+            ],
+            "returns": "Option<int>",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ],
+        "key_type": "string",
+        "value_type": "int",
+        "guaranteed_keys": {
+          "foo": "string"
+        },
+        "snapshot_safe": true
+      },
+      "expected": "reject",
+      "code": "E_FIELD_TYPE",
+      "note": "guaranteed key wrong value type"
+    },
+    {
+      "id": "SW038",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "open",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [
+              "io",
+              "throws"
+            ],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "open",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [
+              "io"
+            ],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "accept",
+      "note": "implementation may have fewer effects"
+    },
+    {
+      "id": "SW039",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "get",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "take"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_METHOD_OWNERSHIP",
+      "note": "cannot silently consume a borrow"
+    },
+    {
+      "id": "SW040",
+      "required": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [],
+        "tenant": "tenant-B"
+      },
+      "actual": {
+        "kind": "record",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [],
+        "tenant": "tenant-A"
+      },
+      "expected": "reject",
+      "code": "E_TENANT_BOUNDARY",
+      "note": "cross-tenant structural projection is not implicit"
+    },
+    {
+      "id": "SW041",
+      "required": {
+        "kind": "interface",
+        "fields": [
+          {
+            "name": "x",
+            "type": "int",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [
+          {
+            "name": "other",
+            "type": "bool",
+            "visibility": "public",
+            "readable": true
+          }
+        ],
+        "methods": [
+          {
+            "name": "read",
+            "params": [
+              "int"
+            ],
+            "returns": "string",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "close",
+            "params": [],
+            "returns": "void",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          },
+          {
+            "name": "extra",
+            "params": [],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow"
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_INTERFACE_DATA",
+      "note": "interface contract cannot invent instance data"
+    },
+    {
+      "id": "SW042",
+      "required": {
+        "kind": "interface",
+        "fields": [],
+        "methods": [
+          {
+            "name": "compute",
+            "params": [
+              "int"
+            ],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow",
+            "generic_constraints": [
+              "T:Sendable"
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "kind": "class",
+        "fields": [],
+        "methods": [
+          {
+            "name": "compute",
+            "params": [
+              "int"
+            ],
+            "returns": "int",
+            "visibility": "public",
+            "kind": "instance",
+            "receiver": "readonly",
+            "async": false,
+            "effects": [],
+            "ownership": "borrow",
+            "generic_constraints": [
+              "T:Copyable"
+            ]
+          }
+        ]
+      },
+      "expected": "reject",
+      "code": "E_METHOD_SIGNATURE",
+      "note": "generic constraints must be compatible"
+    }
+  ]
+}
