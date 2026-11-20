@@ -12,6 +12,10 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 - `//` starts a line comment. `/* ... */` is a block comment, and block comments nest.
 - **TARGET (decided, 2026-11-14):** block comments nest at most 128 deep. Opening a 129th level is a compile error, reported as `block comment nesting exceeds 128`, before parsing. Java, .NET and LLVM main all enforce this limit with that wording (LLVM via oreslang-source.llvm#1251, merged 2026-11-15, with fixtures at depth 128 accepted and 129 rejected).
 
+## Canonical exceptional bang keywords (proposed target)
+
+The lexer inventory below describes **historically observed** Java/LLVM revisions. For new canonical source, see [exception-control bang spellings v1](../language/exception-control-bang-spellings-v1.md): `trap!`, `throw!`, `raise!`, `panic!` are contiguous exceptional tokens; bare forms remain temporary migration aliases. This is a target proposal, not evidence that those older compiler revisions or every modern backend implements the spelling. Existing `!=`, `!eq`, ownership bangs, quoted text and comments remain distinct.
+
 ## Keywords
 
 The Java lexer reserves these words. The LLVM parser has its own keyword handling, and the two lists have not been compared.
