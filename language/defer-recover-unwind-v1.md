@@ -1,6 +1,8 @@
 # Deferred cleanup and recovery chains (proposed AttoLang v1)
 
 **Status: normative candidate; not an executable-backend parity claim.**
+
+**Trap Result migration:** [trap-result-v1](trap-result-v1.md) now defines `trap expression` as returning `Result`, retaining the original caught Error rather than the obsolete Option/None wrapper. Existing restricted browser execution receipts below do not establish full new Result/error-join parity.
 The Rust/Wasm browser compiler executes a **restricted synchronous
 top-level free-function slice** of ordinary `throw Error(message)`, `trap`,
 `try/catch/finally`, `defer`, `recover`, and `raise` with executable Wasm
@@ -13,7 +15,7 @@ guest-source conformance across backends.
 
 | Source effect | Ordinary `catch` | `trap expression` | Registered `recover` | Ultimate failure |
 | --- | --- | --- | --- | --- |
-| `throw Error` | Nearest matching catch in the caller chain | Can wrap as `None` at a reached trap boundary | **Only if still unhandled** on reaching an eligible recovery boundary | Escalate at actor/task boundary |
+| `throw Error` | Nearest matching catch in the caller chain | Capture as `Err(original Error)` inside `Result` at a reached trap boundary | **Only if still unhandled** on reaching an eligible recovery boundary | Escalate at actor/task boundary |
 | `raise Error` | Bypass | Bypass | Nearest eligible recover callback | Parent task or supervisor CONTROL |
 | `panic Error` | Bypass | Bypass | **Never locally recoverable** | Supervisor CONTROL / root fatal policy |
 | cancellation, host fatal | Bypass | Bypass | **Never** | Scheduler / host policy |
@@ -129,6 +131,8 @@ Factory argument failures do not register an incomplete cleanup, but
 previously registered cleanups still unwind. Full cleanup-failure
 suppression and cross-backend effect-polymorphic admission await separate
 proof.
+
+**Effect spelling compatibility:** The verified browser subset presently documents legacy `throws(Error)` and `raises(Error)` effects; the target Java-style `throws Error`/`raises Error` spelling is a separate grammar migration and must be admitted by a real parser before it is claimed executable.
 
 **Explicit source upper bounds (browser compiler hardening):** A top-level
 function may declare `throws(Error)`, `raises(Error)`, or both. Once any
@@ -263,8 +267,4 @@ Each row is an **expected future guest trace**, not a passed test.
    promotion may the public playground move these source-only previews
    into its runnable picker.
 
-Cross-reference: `oreslang-source.java/docs/RECOVERY_CHAIN_DATA_LAYOUT_V1.md`,
-`oreslang-source.java/docs/TASK_CANCEL_DEFER_RECOVER_LOCKS_V1.md` and
-`oreslang-source.llvm/docs/EXCEPTION_SUPERVISION_SEMANTICS.md`. The
-older LLVM document contains an outdated proposal permitting local
-panic recovery; this document explicitly rejects that possibility.
+Cross-reference: the active [Java/GraalVM backend](https://github.com/atto-lang/atto-source.java), [LLVM backend](https://github.com/atto-lang/atto-source.llvm), and [platform conformance](https://github.com/atto-lang/atto-platform-conformance). Earlier design snapshots included an obsolete proposal permitting local panic recovery; **this document explicitly rejects local interception of panic**. The earlier snapshot paths are not published in these canonical repositories, so do not treat them as live documentation or execution evidence.
