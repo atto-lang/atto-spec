@@ -1,0 +1,138 @@
+{
+  "schema": "atto.operator_spelling.contract.v1",
+  "status": "PROPOSED",
+  "scope": "typed source grammar and semantics, not compiled guest evidence",
+  "notes": [
+    "Statement-leading ^ expression; means return expression; and is not an expression operator",
+    "Infix ^^ on int is bitwise XOR; bit-shift operators are <<< and >>>",
+    "Math.pow is a typed API call; overload, precision, and rounding are defined separately",
+    "Double-angle << and >> operate on statically verified read/write capabilities or traits, not bit shifts",
+    "Java/LLVM/Wasm/Forge/.NET/browser guest parity is not certified by this contract"
+  ],
+  "cases": [
+    {
+      "id": "explicit-return",
+      "source": "return 5;",
+      "context": "statement",
+      "expected": "ACCEPT",
+      "meaning": "RETURN",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "caret-return",
+      "source": "^ 5;",
+      "context": "statement",
+      "expected": "ACCEPT",
+      "meaning": "RETURN",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "caret-return-of-xor",
+      "source": "^ (12 ^^ 10);",
+      "context": "statement",
+      "expected": "ACCEPT",
+      "meaning": "RETURN",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "bitwise-xor",
+      "source": "12 ^^ 10",
+      "context": "int_expression",
+      "expected": "ACCEPT",
+      "meaning": "BITWISE_XOR",
+      "reference_result": "6",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "left-triple-shift",
+      "source": "8 <<< 2",
+      "context": "int_expression",
+      "expected": "ACCEPT",
+      "meaning": "BIT_SHIFT_LEFT",
+      "reference_result": "32",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "right-triple-shift",
+      "source": "-1 >>> 1",
+      "context": "int_expression",
+      "expected": "ACCEPT",
+      "meaning": "BIT_SHIFT_RIGHT_LOGICAL",
+      "reference_result": "9223372036854775807",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "typed-pow-api",
+      "source": "Math.pow(2, 3)",
+      "context": "call_expression",
+      "expected": "ACCEPT",
+      "meaning": "MATH_POW_CALL",
+      "note": "API overload and return type require separate Math contract",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "channel-write",
+      "source": "stdio.out << 5;",
+      "context": "statement_with_writable_capability",
+      "expected": "ACCEPT",
+      "meaning": "WRITE",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "stream-read",
+      "source": "stream >> val item;",
+      "context": "statement_with_readable_capability",
+      "expected": "ACCEPT",
+      "meaning": "READ",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "trait-write",
+      "source": "writable << value;",
+      "context": "statement_with_writable_trait",
+      "expected": "ACCEPT",
+      "meaning": "WRITE",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "trait-read",
+      "source": "readable >> val item;",
+      "context": "statement_with_readable_trait",
+      "expected": "ACCEPT",
+      "meaning": "READ",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "invalid-infix-caret",
+      "source": "12 ^ 10",
+      "context": "int_expression",
+      "expected": "REJECT",
+      "meaning": "INVALID_INFIX_CARET",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "invalid-bool-bitwise-xor",
+      "source": "true ^^ false",
+      "context": "bool_expression",
+      "expected": "REJECT",
+      "meaning": "BITWISE_XOR_REQUIRES_INT",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "invalid-double-left-shift",
+      "source": "8 << 2",
+      "context": "int_expression",
+      "expected": "REJECT",
+      "meaning": "DOUBLE_ANGLE_IS_IO_NOT_SHIFT",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "invalid-double-right-shift",
+      "source": "8 >> 2",
+      "context": "int_expression",
+      "expected": "REJECT",
+      "meaning": "DOUBLE_ANGLE_IS_IO_NOT_SHIFT",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    }
+  ]
+}
