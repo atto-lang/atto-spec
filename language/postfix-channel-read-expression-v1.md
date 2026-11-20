@@ -75,6 +75,55 @@ Successful channel creation does **not** authorize silently replacing
 `c << value` with nonparking `c.try_send(value)`; the former remains a
 distinct suspending, checked backpressure contract.
 
+## Checked suspending writes (restricted Rust/Wasm source pilot)
+
+`c << value` is a statically typed write. Unlike `c.try_send(value)`,
+it may suspend until a bounded FIFO queue admits the value (or a
+zero-capacity channel registers a receiving continuation). Its result is
+`Result<void,IoError>`: a successful write means admission, not that
+the receiver has executed. It may fail with `Closed`, `Cancelled`,
+`Quota`, or invalid-handle errors. The underlying backend must never
+park scheduler carriers while waiting.
+
+The admitted Rust/Wasm candidate forms are:
+```atto
+pub susp fnc send_then_read(Channel<int> c): Result<Option<int>,IoError> {
+    match c << 42 over
+        on Ok() -> { return (c >>); }
+        on Err(error) -> { return Err(error); }
+    end
+}
+```
+
+A method form `c.send_async(42)` shares the same checked operation.
+`c.try_send(42)` remains nonparking and can produce `Err(Full)`;
+neither is a substitute for the other. A successful send moves/adopts
+the payload only at its admission linearization point. A cancelled
+or closed waiting send must not make a value visible or consume the
+sender's ownership.
+
+A bare `c << 42;` that discards its checked outcome is rejected as
+`E_IO_DISCARD` by the restricted browser compiler; the caller must
+bind, match or propagate `Result<void,IoError>`. The original
+`val int answer=(c >>);` is still invalid: a checked read cannot
+silently become an `int`. These gates are consistent for
+`Channel<int>.bounded(capacity)` and `new Channel<int>(capacity)`.
+
+The first browser implementation lowers to
+`channel_int_send_async_v1(i32,i64)->i32` as a JSPI-suspending host
+import with a mandatory cooperative turn and checked result
+construction. No second read/write or implicit retry may be introduced.
+General `select`, detached I/O, arbitrary `Channel<T>`, shared
+cross-tenant memory, and native compiled channel runtimes are not
+authorized by the pilot. Every backend must independently prove
+FIFO, full/zero-capacity backpressure, close, cancellation, checked
+errors, and TenantVM owner isolation before calling this executable
+parity.
+
+**Status:** candidate; compiler and host changes are staged in
+[atto-source.rs #257](https://github.com/atto-lang/atto-source.rs/pull/257).
+No exact-head compiled-guest execution receipt is available yet.
+
 ## Required conformance
 
 | Case | Expected |
