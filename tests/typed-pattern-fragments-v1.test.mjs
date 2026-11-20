@@ -107,7 +107,8 @@ function kind(value) {
   return 'other';
 }
 function check(node,value) {
-  if(node.kind==='any'||node.kind==='bind') return true;
+  if(node.kind==='any') return true;
+  if(node.kind==='bind') return kind(value)===node.type;
   if(node.kind==='lit') return Object.is(node.value,value);
   if(node.kind==='type') return (kind(value)===node.name)!==node.negative;
   return false;
@@ -125,12 +126,15 @@ function match_sequence(nodes,values) {
       : Number(Boolean(j<n&&check(p,values[j])&&table[i+1][j+1]));
   }
   if(!table[0][0]) return {matched:false,bindings:{}};
-  const bindings={};let i=0,j=0;
+  const bindings={};const restStarts=new Map();let i=0,j=0;
   while(i<m){
     const p=nodes[i];
     if(p.kind==='rest') {
-      if(table[i+1][j]){ if(p.capture) bindings[p.capture]=values.slice(p.start??0,j);i++; }
-      else j++;
+      if(!restStarts.has(i)) restStarts.set(i,j);
+      if(table[i+1][j]){
+        if(p.capture) bindings[p.capture]={start:restStarts.get(i),end:j};
+        i++;
+      } else j++;
     } else {
       if(p.kind==='bind') {
         if(kind(values[j])!==p.type) fail('binding type mismatch');
@@ -162,7 +166,7 @@ test('infix, exact typed repetition and value-vs-type distinction',()=>{
   const nodes=composition(parse_fragment('...','int'),
       parse_fragment('...(3 of int)','int'),parse_fragment('...','int'));
   assert.equal(match_sequence(nodes,[9,8,7,6,5]).matched,true);
-  assert.equal(match_sequence(nodes,[9,true,7,6,5]).matched,false);
+  assert.equal(match_sequence(nodes,[9,true,7,false,5]).matched,false);
   assert.equal(match_sequence(parse_fragment('...(3 of 7)','int'),[7,7,7]).matched,true);
   assert.equal(match_sequence(parse_fragment('...(3 of 7)','int'),[7,8,7]).matched,false);
   assert.equal(match_sequence(parse_fragment('is int','Any'),[3]).matched,true);
@@ -203,4 +207,15 @@ test('a failing guard does not trigger another witness',()=>{
   assert.equal(accepted,false);
   assert.equal(candidate.bindings.x,1);
   assert.equal(count,1);
+});
+
+test('rest captures track borrowed-view ranges rather than implicit copies',()=>{
+  const before=parse_fragment('...','Any').map(x=>({...x,capture:'before'}));
+  const after=parse_fragment('...','Any').map(x=>({...x,capture:'after'}));
+  const nodes=composition(before,
+    [{kind:'bind',name:'a',type:'int'},{kind:'bind',name:'b',type:'int'},
+     {kind:'bind',name:'c',type:'int'}],after);
+  assert.deepEqual(match_sequence(nodes,[false,1,2,3,true]).bindings,{
+    before:{start:0,end:1},a:1,b:2,c:3,after:{start:4,end:5}
+  });
 });
