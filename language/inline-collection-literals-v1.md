@@ -145,6 +145,8 @@ All frontends must agree on parse tree shape, contextual type inference, diagnos
 
 > **Symbol-keyed Entry clarification:** [Symbol-keyed Entries v1](symbol-keyed-entries-v1.md) specifies `#foo => 5` as a candidate `Entry<Symbol,int>`, `{#foo => 5}` as a `Map<Symbol,int>`, and deliberately does NOT define standalone `bar :: 5` Record-entry syntax. `::` remains reserved by the existing callable-body grammar. This is a normative target, not evidence of executable Symbol support.
 
+> **Expression-key clarification (2026-11-20):** [Entry expression keys, collection keys and Record syntax](entry-expression-and-record-literals-v1.md) defines `foo => 5` as a computed-value key, `[foo] => 5` as a **List/Array-valued key**, `#foo => 5` as a Symbol-valued key, and `["foo" => 5]` as a List whose element is an Entry. Brackets never act as a computed-key marker. A growable List key is not automatically a hashable Map key. The two Record literal forms remain `{foo:5}` and `(foo=5)`; `bar :: 5` is not a RecordEntry operator.
+
 ## Nominal Entry literal and mutable Map operations (candidate extension, 2026-11-19)
 
 The binary `=>` token has two **context-dependent** uses:
