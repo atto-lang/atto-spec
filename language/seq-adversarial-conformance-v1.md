@@ -20,9 +20,9 @@ Do not count an unexecuted case as a pass.
 
 ## Edition-sensitive delimiter boundary
 
-The closing `) ` token ends an explicit \`seq(...)\` expression. A subsequent comma is owned by the **enclosing callable body**, whereas a bare \`seq ...;\` statement owns its commas through its own semicolon. Conflating these contexts can conceal the required version diagnostic.
+The closing `)` token ends an explicit `seq(...)` expression. A subsequent comma is owned by the **enclosing callable body**, whereas a bare `seq ...;` statement owns its commas through its own semicolon. Conflating these contexts can conceal the required version diagnostic.
 
-\`\`\`atto
+```atto
 // v1 accepted, strict v2 rejects with E_BODY_VERSION
 fnc f() -> int seq(1, 2), 42 end
 
@@ -31,7 +31,7 @@ fnc f() -> int :: seq(1, 2), 42 end
 
 // v1 and v2 accepted; no implicit return from the seq statement
 fnc f() -> int seq 1, 2; return 42; end
-\`\`\`
+```
 
 The checker must not retry the v1 grammar silently in v2 or reinterpret the outer comma as belonging to the already-closed delimited sequence.
 
