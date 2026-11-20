@@ -73,6 +73,12 @@ hypothetical authenticated inputs, not a production host principal proof;
 therefore neither its positive cases nor passing Rust tests certify TenantVM
 security or compiled Atto guests.
 
+### Accepted versus processed mail accounting (v1 hardening)
+
+The mailbox linearization point admits a message; it does **not** certify that an actor handler ran. Terminal accounting MUST distinguish `processed` from `abandoned_after_admission` when STOP, close, restart, cancellation, or supervisor teardown prevents a handler from consuming an admitted message. An abandoned envelope must be retired exactly once (including its payload storage and capability leases), never counted as processed and never silently returned to the sender after accepted admission. Pre-admission escrow must instead roll back to precisely one recoverable sender owner. Repeat STOP/close/restart operations must not double-count abandonment, and stale incarnation/epoch tickets must not resurrect or deliver an abandoned envelope.
+
+The source-only `actor_isolation_broker_v1.rs` reference model has distinct `Retired` (delivered) and `Abandoned` (accepted but unprocessed) terminal states and explicit counters. This is an accounting model, **not** evidence of crash-durable delivery, production broker memory reclamation, or guest-runtime parity. A compiled guest acceptance test must observe admission and handler execution separately, and a cancellation/restart adversarial test must check retained sender ownership only for *uncommitted* escrow.
+
 ## Threats and mandatory verification
 
 - Traverse every reachable nested field/variant and generic instantiation; do not trust a top-level declared trait, descriptor cache, unreachable-at-runtime branch or codec. Reject unknown, open-world dynamic, erased, foreign or reflective shapes without an authenticated bound.
