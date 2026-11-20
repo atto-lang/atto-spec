@@ -31,11 +31,39 @@ pub susp fnc example(): int {
 
 The existing lexical `block { ... }` is NOT redefined to spawn work by this v1 change. Its prior proposal to alias `do task` conflicts with a current sequential block grammar and requires an explicit, separately reviewed migration. Ordinary `{ ... }` remains a lexical sequential block.
 
+## Task frames, shared storage and suspension
+
+**Normative decision: distinct logical task frames, shared lexical TaskScope, optional proven physical stack coallocation.** A child `task<T>` is a separately schedulable computation, not a nested call running on the parent's raw stack by definition. It has its own program counter, task-local variables, return slot, cancellation state, and suspension/exception cleanup state. It shares the parent's **structured task scope**, not unrestricted read/write access to its activation record. A `Future<T>` is an owned handle to the child result, **not** a pointer to a parent's stack slot.
+
+The specification MUST NOT require a fresh native thread or dedicated stack allocation per task. A backend MAY use stackless coroutine frames, segmented stacks, guarded stacks, arenas, or stack allocation/coallocation of an independent task frame **as a nonobservable optimization**, if compiler and runtime jointly prove all of the following:
+
+1. **Independent continuation and reentrancy:** any child that can suspend, be rescheduled, or run in parallel must retain its own live locals/PC and cannot reuse an active parent's mutable activation slots. Parent suspension, reentrant calls, nested tasks and recursion must not clobber child state. If a child can move between carriers, all live state and synchronization must remain valid across migration.
+2. **Lifetime and escape:** physical stack placement is permitted only while the complete descendant lifetime is bounded by the storage's lifetime. The storage cannot be popped, overwritten, unmapped, or recycled before **physical** child retirement, including cancellation/throw/raise/panic races. If escape/suspension proof fails, allocate an independent continuation in the same tenant's checked arena (or reject before producing a guest artifact). A bare `Future<T>` return does not silently extend a parent's stack lifetime. Any explicit future escape or scope transfer needs a separate, proven ownership and supervision contract.
+3. **Capture and aliasing:** the child can only see explicitly or compiler-verified captured values with independent ownership, safe copies, or certified scope-bounded loans. No raw parent-frame aliases are implied. A shared readonly loan requires the appropriate cross-carrier thread-safety/immutability proof (e.g. `Sync` when tasks may run on multiple carriers); concurrent writers or parent writes under a child loan are rejected. An exclusively borrowed capture needs a separately certified exclusive-loan profile and cannot be inferred from `sync`.
+4. **Effects:** `await task<T>` and `sync task<T>` are identical suspension and typed-join operations. Neither spelling guarantees synchronous execution, a shared physical stack, blocking an OS carrier, or an optimization. `do task<T>` / `do sync task<T>` submit independent supervised children; they cannot alias parent stack slots merely because their handles are discarded.
+5. **Retirement and quotas:** the TaskScope owns admitted children until terminal acknowledgment/quiescence. Scope exit on normal return, cancellation or error must not release borrowed frame storage until descendants have physically stopped; it must remain non-parking for scheduler carriers. All task frames, retained stacks/segments and nested scopes are tenant-accounted and bounded by quotas, stack/recursion limits and admission control. Exhaustion fails in a specified, rollback-safe way; stack overflow must not corrupt an adjacent tenant's memory. Cooperative cancellation alone is not proof of retirement.
+
+An optimizer MAY eliminate a child frame or inline execution only when it proves equivalence in externally observable effects: scheduling/cooperation requirements, cancellation, supervision/error reporting, ownership, ordering and TaskScope retirement still hold. **Shared physical storage is an optimization, never a language-visible promise.** A backend with no safe continuation/scope-lifetime implementation MUST reject task execution instead of borrowing a live parent stack unsafely.
+
+Example (conceptual physical layouts, both must produce the same guest behavior):
+
+```text
+parent TaskScope
+  parent frame (locals, return state)
+    + child A logical frame -> Future<int>
+    + child B logical frame -> Future<int>
+
+allowed: separate checked coroutine frames in a tenant arena
+allowed: compiler-proven coallocated frames with valid lifetime and no slot overlap
+invalid: both tasks executing through one mutable parent stack frame
+invalid: popping parent frame while a borrowed child still runs
+```
+
 ## Ownership, borrows and scoped lifetime
 
 Every spelling maps to one canonical typed TaskSpawn + optional TaskJoin/TaskDiscard MIR path with identical borrow facts:
 
-1. Evaluate task capture expressions exactly once at submission, in source order. A child task has its own continuation/stack and a verified task scope. A captured independent owned value requires explicit `take!` and a transitive, compiler-proven `Send` witness; a value copied into the child requires `Copy + Send` and a distinct valid owned child slot. No implicit move, clone, sharing, or capability grant is inferred from task syntax.
+1. Evaluate task capture expressions exactly once at submission, in source order. A child task has its own logical continuation frame (physical frame storage may be safely coallocated as specified above) and a verified task scope. A captured independent owned value requires explicit `take!` and a transitive, compiler-proven `Send` witness; a value copied into the child requires `Copy + Send` and a distinct valid owned child slot. No implicit move, clone, sharing, or capability grant is inferred from task syntax.
 2. `borrow!` or implicit argument borrowing never becomes an owned `Send` task capture. A scoped, immutable borrowed capture may be admitted ONLY with an exact compiler-bound TaskScope region and runtime-guaranteed physical descendant quiescence before the lender can be moved/dropped; lacking that proof, reject `E_TASK_BORROW_ESCAPE`. Mutable task captures, overlapping exclusive loans and returning a borrowed captured object beyond the owner lifetime are rejected unless a separately certified exclusivity/lifetime profile proves them.
 3. At `await` / `sync task`, live ordinary loans must have a proven suspension-safe continuation lifetime and pinning/layout policy or be rejected with `E_SUSPEND_WITH_LIVE_LOAN`; synchronous critical lock/state leases may not span suspension. `do task` does not evade these checks for its child and does not retain unsupervised stack references.
 4. A `Future<T>` handle has linear/affine ownership and verified result-observation semantics as defined by the runtime contract; observing it may not implicitly transfer T twice. Awaiting exactly one future layer preserves an inner Future. Discard cannot bypass supervisor error reporting.
