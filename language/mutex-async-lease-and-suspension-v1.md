@@ -104,6 +104,12 @@ Required stable diagnostic families (specific display text is backend-dependent)
 | `E_LOCK_CANCELLED` | Canceled acquisition or deadline with no duplicate grant |
 | `E_LOCK_UNSUPPORTED` | Missing verified compiler/stdlib/runtime lowering, shared-memory support, or unavailable waiter semantics |
 
+## Proven closed-world uncontended lock elision
+
+An optimizing compiler MAY eliminate a physical lock/unlock pair only when an auditable, sound whole-program/guest-domain proof establishes all of the following: the mutex owner is freshly constructed in the current task domain; no alias, actor, FFI, user-defined method, detached task, reentrant host callback or future suspension can access it during the guard; acquisition is definitely ready; protected mutation is checked and cannot throw or trap before cleanup; and the lease is nonescaping and disposed at every normal return. The compiler must still generate the actual protected scalar computation and preserve observable values and effect ordering. Merely seeing a method named `lock_async`, optimizing away an `await`, or assuming no contention because a test is single-threaded is NOT sufficient.
+
+A narrowly admitted scalar profile (`Mutex<int>` with constant checked initializer and update, one private increment callable, one `main` and at most one await) can be reported as **single-task uncontended fast-path execution** only after real guest compilation/execution receipts. It is **not** general `Mutex<T>`, async queue, shared-memory, structured task, or TenantVM isolation support. Unsupported source shapes must still produce diagnostics without an executable guest artifact. The full portable conformance contract remains unsatisfied until independently scheduled contention and cancellation are executed.
+
 ## Portability and conformance
 
 Authoritative fixture registry: `atto-platform-conformance/contracts/mutex-async-lease-v1.json`, with both source spellings, ready and contended acquisitions, lazy-task nonexecution, prompt nonparking failure, return/unwind/cancellation exactly-once cleanup, guard escape/suspension negatives, stale/cross-tenant tokens, nested task ownership and unsupported-target diagnostics. No backend is certified merely because this spec or a source fixture exists.
