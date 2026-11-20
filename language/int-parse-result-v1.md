@@ -42,7 +42,7 @@ A successful source-compiled guest returns 42. Replacing `"42"` with `"bad"` fol
 | `"9223372036854775808"` | `Err(Error)` |
 | `"-9223372036854775809"` | `Err(Error)` |
 | `""`, `"+"`, `"-"`, `" 42"`, `"42 "` | `Err(Error)` |
-| `"٤٢"`, `"4_2"`, `"42x"`, `"4\\0" (embedded NUL) | `Err(Error)` |
+| `"٤٢"`, `"4_2"`, `"42x"`, `"4\\0"` (embedded NUL) | `Err(Error)` |
 | 1024 zeros | `Ok(0)` |
 | 1025 zeros | `Err(Error)` |
 
