@@ -240,6 +240,37 @@ separate candidate contract in
 [typed-io-continuation-pipelines-v1.md](typed-io-continuation-pipelines-v1.md).
 The new `rpipe` only connects continuous source/sink endpoints.
 
+## Closed and stopped endpoint admission (normative candidate)
+
+A continuous DATA edge MUST NOT attach to a closed `Channel<T>`, a
+stopped/completed actor, or a stream whose relevant source/sink port has
+closed or been revoked. The ownership/generation check is required at
+**runtime**, even when the compiler has already established static
+`receives T` and `emits T` roles.
+
+Before publishing any new edge, graph admission MUST check every endpoint's
+live generation, tenant capability, closure state and exclusive-port owner.
+On any failure it MUST return a checked `Err(PipeSetupError)` (the specific
+closed-port variant is not yet assigned) **without any new DATA delivery,
+bridge task, retained borrow, or partially active graph**. Do not treat a
+generic panic or a string-based endpoint descriptor as the stable contract.
+A runtime that cannot roll back a partially acquired graph must reject
+before activation rather than publish a prefix and then fail.
+
+Both `producer pipe channel` and `channel rpipe producer` have the same
+closed-port admission obligation. An actor that stops while graph admission
+is in progress must be protected by an atomic generation/lease check; a
+preflight-only check is insufficient under concurrent cancellation.
+
+Atto v2's experimental single-guest-memory actor runtime may use a
+provisional trap code 10 to reject a closed or stopped endpoint. This is
+only a **legacy implementation regression**, not proof of the future
+`Result<PipeHandle, PipeSetupError>` contract or secure TenantVM isolation.
+The portable source-only admission fixtures are in
+[atto-platform-conformance PR #102](https://github.com/atto-lang/atto-platform-conformance/pull/102)
+(`stopped-source`, `closed-channel`, `stopped-consumer`,
+`stopped-actor-sink`).
+
 ## Checked setup and stage failures
 
 Connection creation is a checked operation. The candidate outcome shape is
