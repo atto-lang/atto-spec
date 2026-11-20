@@ -43,3 +43,5 @@ This README records the intended role of this repository; it is not a claim of f
 Keep canonical AttoLang (.atto) semantics consistent with the language specification, while treating Oreslang-named tooling and .ores as compatibility surfaces.
 
 Changes asserting compiler/runtime support must identify the exact source head, target, toolchain, executed positive and negative guest tests, and failure/unsupported status; an empty CI step list is **not executed**. Documentation records responsibility, **not** a claim of feature completion.
+
+- [Process stdio channel endpoints v1](language/stdio-channel-endpoints-v1.md): target process/stdin/stdout/stderr identity aliases, checked reads and writes, nonparking suspension, one stdin consumer lease, host-permission isolation and executable parity gates; **not guest-verified**.
