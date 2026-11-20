@@ -54,6 +54,25 @@ val admitted2 = observer.send(share! snapshot);
 
 These are targets, **not** accepted standalone fixture programs. A full implementation must type-check `ActorMail<M>`, `ActorRef<A>`, `receives`/`sends`, aliases, capability provenance and effects *before* guest emission; reject unsupported profiles with stable codes (`E_ACTOR_SEND_NOT_SENDABLE`, `E_ACTOR_SHARE_NOT_SHAREABLE`, `E_ACTOR_BORROW_ESCAPE`, `E_ACTOR_CAPABILITY_ESCAPE`, `E_ACTOR_STALE_REF`, `E_TENANT_MESSAGE_DENIED`, or backend-specific `E_UNSUPPORTED`) and **no artifact**. Exact public naming of type witnesses is still subject to spec review; code should not allow a user-provided trait implementation to mint the proof.
 
+### Reference-ticket admission hardening (v1 security audit)
+
+A nominal `ActorRef<A>` type, serialized bits, `Serializable` implementation, or
+a Boolean `grant=true`/`generation_current=true` check is never proof that the
+speaker holds destination authority. A trusted broker must independently derive
+the requesting principal and check the ref's holder, TenantVM/actor/incarnation/
+placement, grant generation, message rights, revocation and attenuated rights
+at admission. A delegated ref cannot grant broader DATA types, CONTROL, state
+access or recursive delegation than its parent. Local refs cannot cross tenants;
+only a separate broker-minted proxy may represent a remote target. Retry after
+suspension, cancellation or restart requires revalidation.
+
+The source-only conformance oracle changed permissive nominal-`actor_ref`
+delegation cases AI-015/AI-035 to reject. A separate adversarial broker model
+exercises narrow delegation and two-phase mailbox ownership. It takes
+hypothetical authenticated inputs, not a production host principal proof;
+therefore neither its positive cases nor passing Rust tests certify TenantVM
+security or compiled Atto guests.
+
 ## Threats and mandatory verification
 
 - Traverse every reachable nested field/variant and generic instantiation; do not trust a top-level declared trait, descriptor cache, unreachable-at-runtime branch or codec. Reject unknown, open-world dynamic, erased, foreign or reflective shapes without an authenticated bound.
