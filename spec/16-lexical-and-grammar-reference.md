@@ -64,14 +64,17 @@ From lowest to highest precedence, following the v0.6 grammar:
 | Assignment | `=` | Right |
 | Pipeline | `\|>` | Left |
 | Conditional | `? :` | Right |
-| Logical OR | `\|\|` (and `\|` inside conditions) | Left |
+| Logical OR | `\|\|` (and legacy `\|` inside conditions) | Left |
+| Logical AND | `&&` (and legacy `,` inside conditions) | Left |
+| Integer bitwise OR | `\|` | Left |
 | Integer bitwise XOR | `^^` | Left |
-| Logical AND | `&&` (and `,` inside conditions) | Left |
+| Integer bitwise AND | `&` | Left |
 | Equality and identity | `eq` `neq` `!eq` `==` `!=` `is` | Left |
 | Comparison and type tests | `<` `<=` `>` `>=` `is type` `matches` `as` `as?` | Left |
+| Shifts | `<<<` `>>>` `ashr` | Left |
 | Additive | `+` `-` | Left |
 | Multiplicative | `*` `/` `%` | Left |
-| Unary | `!` `-` `+` `await` `&` `&mut` `readch` `writech` | Prefix |
+| Unary | `!` `-` `+` `~` `await` (legacy borrow/I/O forms by profile) | Prefix |
 | Postfix | call, `.member`, `[index]` | Left |
 
 - `eq` and `neq` are the canonical comparisons. `==` and `!=` are accepted aliases.
