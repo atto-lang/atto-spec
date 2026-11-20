@@ -1,0 +1,171 @@
+{
+  "schema": "atto.actor.spawns-effect.contract.v1",
+  "status": "TARGET_NOT_COMPILER_OR_GUEST_VERIFIED",
+  "effective_date_proposed": "2026-11-19",
+  "normative_document": "language/actor-spawns-effect-v1.md",
+  "source_cases": [
+    {
+      "id": "accept-actor-receive",
+      "phase": "compiler_source_target",
+      "expected": "ACCEPT",
+      "source": "define actor Child receives int as susp receive(ActorMail<int> m): void {} end define actor Parent receives int as susp spawns receive(ActorMail<int> m): void { val child = spawn Child(); child.send(m.value); } end",
+      "rationale": "actor handler may spawn"
+    },
+    {
+      "id": "accept-main-susp-spawns",
+      "phase": "compiler_source_target",
+      "expected": "ACCEPT",
+      "source": "define actor Child receives int as receive(ActorMail<int> m): void {} end pub susp spawns fnc main(): int { val child = spawn Child(); child.send(42); return 0; }",
+      "rationale": "main may spawn"
+    },
+    {
+      "id": "accept-sync-spawns",
+      "phase": "compiler_source_target",
+      "expected": "ACCEPT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end spawns fnc create(): ActorRef<A> { return spawn A(); }",
+      "rationale": "spawns is independent of suspension"
+    },
+    {
+      "id": "accept-helper-propagation",
+      "phase": "compiler_source_target",
+      "expected": "ACCEPT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end spawns fnc make(): ActorRef<A> { return spawn A(); } spawns fnc delegate(): ActorRef<A> { return make(); }",
+      "rationale": "spawns helper and caller"
+    },
+    {
+      "id": "accept-mailbox-effect-boundary",
+      "phase": "compiler_source_target",
+      "expected": "ACCEPT",
+      "source": "define actor Child as receive(ActorMail<int> m): void {} end define actor Parent as spawns receive(ActorMail<int> m): void { val c = spawn Child(); } end spawns fnc start(): ActorRef<Parent> { return spawn Parent(); }",
+      "rationale": "no propagation through later message handling"
+    },
+    {
+      "id": "accept-declared-unused-spawns",
+      "phase": "compiler_source_target",
+      "expected": "ACCEPT",
+      "source": "spawns fnc identity(int x): int { return x; }",
+      "rationale": "effect is upper bound"
+    },
+    {
+      "id": "accept-suspends-alias",
+      "phase": "compiler_source_target",
+      "expected": "ACCEPT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end suspends spawns fnc create(): ActorRef<A> { return spawn A(); }",
+      "rationale": "suspends alias remains valid"
+    },
+    {
+      "id": "reject-unmarked-main",
+      "phase": "compiler_source_target",
+      "expected": "REJECT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end pub fnc main(): int { val a = spawn A(); return 0; }",
+      "rationale": "direct unmarked spawn",
+      "code": "E_SPAWNS_REQUIRED"
+    },
+    {
+      "id": "reject-unmarked-handler",
+      "phase": "compiler_source_target",
+      "expected": "REJECT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end define actor B as receive(ActorMail<int> m): void { val a = spawn A(); } end",
+      "rationale": "actor does not get ambient spawns",
+      "code": "E_SPAWNS_REQUIRED"
+    },
+    {
+      "id": "reject-indirect-helper",
+      "phase": "compiler_source_target",
+      "expected": "REJECT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end spawns fnc make(): ActorRef<A> { return spawn A(); } fnc caller(): ActorRef<A> { return make(); }",
+      "rationale": "effect must be propagated",
+      "code": "E_SPAWNS_REQUIRED"
+    },
+    {
+      "id": "reject-pure-spawns",
+      "phase": "compiler_source_target",
+      "expected": "REJECT",
+      "source": "pure spawns fnc f(): int { return 1; }",
+      "rationale": "purity contradiction",
+      "code": "E_PURE_SPAWNS"
+    },
+    {
+      "id": "reject-duplicate",
+      "phase": "compiler_source_target",
+      "expected": "REJECT",
+      "source": "spawns spawns fnc f(): int { return 0; }",
+      "rationale": "duplicate effect",
+      "code": "E_SPAWNS_DUPLICATE"
+    },
+    {
+      "id": "reject-callback-erasure",
+      "phase": "compiler_source_target",
+      "expected": "REJECT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end spawns fnc make(): ActorRef<A> { return spawn A(); } val callback: fnc() -> ActorRef<A> = make;",
+      "rationale": "effect-typed callbacks",
+      "code": "E_SPAWNS_EFFECT_MISMATCH"
+    },
+    {
+      "id": "reject-inside-critical",
+      "phase": "compiler_source_target",
+      "expected": "REJECT",
+      "source": "define actor A as receive(ActorMail<int> m): void {} end define actor B as spawns receive(ActorMail<int> m): void { self.handle_state(critical-write |s| -> { val a = spawn A(); }); } end",
+      "rationale": "no actor activation under sealed-state lock",
+      "code": "E_SPAWN_IN_CRITICAL"
+    }
+  ],
+  "runtime_cases": [
+    {
+      "id": "tenant-denied",
+      "trigger": "child actor type not permitted by tenant policy",
+      "expected": "DENY_TYPED_SPAWN_ERROR",
+      "assert": [
+        "no actor published",
+        "no capability escalation",
+        "no quota leaked"
+      ]
+    },
+    {
+      "id": "tenant-cross-boundary",
+      "trigger": "untrusted actor requests child in a different tenant with no delegated broker capability",
+      "expected": "DENY_TYPED_SPAWN_ERROR",
+      "assert": [
+        "no cross-tenant actor created",
+        "no host socket leaked"
+      ]
+    },
+    {
+      "id": "quota-exhaustion",
+      "trigger": "spawn rate, live actor or byte budget exhausted",
+      "expected": "DENY_TYPED_SPAWN_ERROR",
+      "assert": [
+        "no partial ActorRef",
+        "reservations restored",
+        "neighbor tenant progresses"
+      ]
+    },
+    {
+      "id": "parent-retire-race",
+      "trigger": "parent incarnation retired while child admission is pending",
+      "expected": "FENCED_OR_EXPLICIT_REPARENT",
+      "assert": [
+        "no orphan",
+        "no successor-incarnation inheritance",
+        "no stale supervisor publication"
+      ]
+    },
+    {
+      "id": "delivered-not-completed",
+      "trigger": "main sends to a spawned parent and exits without joining",
+      "expected": "NO_COMPLETION_CLAIM",
+      "assert": [
+        "admission distinct from guest execution"
+      ]
+    }
+  ],
+  "verification": {
+    "source_compiler": "NOT_EXECUTED",
+    "rust_wasm_guest": "NOT_EXECUTED",
+    "java_guest": "NOT_EXECUTED",
+    "llvm_guest": "NOT_EXECUTED",
+    "net_guest": "NOT_EXECUTED",
+    "forge_guest": "NOT_EXECUTED",
+    "formatter": "NOT_EXECUTED"
+  }
+}
