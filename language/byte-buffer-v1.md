@@ -68,3 +68,16 @@ Each `atto-source.*` backend, including Java, LLVM, Wasm, Rust/browser, .NET, Fo
 **Conformance source:** `atto-platform-conformance/contracts/byte-buffer-v1.json`.
 **Implementation home:** `atto-common-source` canonical `.atto` and each `atto-source.*` compiler/runtime.
 **Migration overlaps:** `atto-common-source#10/#23`, `atto-spec#7/#42`, and legacy `oreslang-source.java#2934` require integration/compatibility review but do not certify this API.
+
+## Source-first sealed storage ABI (implementation milestone)
+
+Canonical source is staged at `atto-common-source/stdlib/std/buffer.atto`, with pure helpers under `stdlib/core/`. The current implementation is **not yet compiled**. It requires a minimal compiler-sealed `OwnedBytes` type in the `alloc` layer, not a public host buffer class. The versioned contract is `atto-common-source/contracts/owned-bytes-runtime-abi-v1.json`.
+
+- Primitive surface: `OwnedBytes.empty()`, `OwnedBytes.allocate_zeroed(int)`, `length`, `read_byte(int)` returning 0..255, and exclusive `write_byte(int,int)` accepting only 0..255. The primitive alone does not expose raw pointers, arbitrary object memory, foreign host APIs or untrusted owner tokens.
+- Backend runtime allocates and owns storage; **the endian and offset algorithms remain canonical .atto**. Compiler/frontend/linker must reject unresolved sealed intrinsics, forbidden direct guest calls, and any invalid import/effect boundary before code emission.
+- The primitive must enforce trusted TenantVM/actor/generation identity, quota accounting and zeroization; no cross-tenant transfer is admitted in v1. Capacity and in-flight loans remain valid for the entire non-suspending checked multi-byte write.
+- `ByteBuffer.allocate(0)` is permitted as an empty owned buffer; every nonzero-width read/write rejects. This differs from a fixed-buffer **pool** requiring nonzero slot capacity (`atto-common-source#10`).
+- If the frontend cannot type-check private `OwnedBytes` or `mtd (mut self: ByteBuffer)` and `pub static fnc allocate`, emit deterministic `E_UNSUPPORTED` with no artifact, rather than falling back to an implicit host byte-array implementation.
+- The current staged source intentionally does not include borrow-checked `view`/`view_mut`, `try_*` Result methods or u64 operations. These remain mandatory future API/ABI gates, not claims about current support.
+
+Verification is still `NOT_EXECUTED` for all compilers. Source-only SHA/Node tests and host Rust bit-model tests are not compiled Atto guest evidence.
