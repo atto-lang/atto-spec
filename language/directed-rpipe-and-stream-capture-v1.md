@@ -46,6 +46,33 @@ spawn Consumer() rpipe spawn Processor() rpipe spawn Producer();
 Actor roles still come from `receives` and `emits`, never arbitrary
 `sends` or CONTROL messages.
 
+## Canonical compiler-IR direction normalization
+
+A compiler MUST preserve endpoint expressions in the written lexical order
+and may compute source-to-sink edges using immutable lexical indices. Stage
+evaluation order and DATA direction are deliberately separate properties:
+
+| Source | Written indices | Directed DATA edges |
+| --- | --- | --- |
+| `producer pipe transform pipe consumer` | `[0,1,2]` | `(0,1),(1,2)` |
+| `consumer rpipe transform rpipe producer` | `[0,1,2]` | `(2,1),(1,0)` |
+
+Endpoint constructors must run **exactly once in lexical order**. An
+implementation must not reverse constructor evaluation or execute a stage
+again while reversing the DATA edges. The normalizer must reject an invalid
+stage count before allocating runtime resources; a backend's smaller profile
+limit, such as the current browser subset's 16 stages, must be declared
+rather than silently truncating the graph. No stage may be created
+implicitly by type inference.
+
+The compiler's typed edge proof is **not** a runtime connection. It cannot
+grant an ActorRef, sendable/tenant capability, sink ownership, mail queue,
+or supervisor CONTROL path. Graph activation remains checked and atomic
+under the separately specified `PipeHandle` lifetime and port contracts.
+See [atto-source.rs #224](https://github.com/atto-lang/atto-source.rs/pull/224)
+for the Rust source-only `DirectedPipeTopology` candidate; its presence is
+not evidence that the guest transport is executable.
+
 ## Named actor references and duplicate directional edges
 
 A previously spawned, typed actor reference may be used as a stage. `spawn`
