@@ -87,6 +87,21 @@ From lowest to highest precedence, following the v0.6 grammar:
 
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
 
+## Canonical match-arm introducer (2026-11-20 decision)
+
+**TARGET:** After `over`, every `match` arm MUST start with the **contextual** word `on`. This applies equally to `match value over`, `do match value over`, typed match variants, ADT payload bindings, guards, and wildcard fallback. `on` is contextual (not a blanket globally reserved identifier). The normal arm arrow is `->`, not `=>`.
+
+```atto
+match outcome over
+  on Ok(ack) -> { mark_admitted(ack); }
+  on Err(err) -> { handle_send_error(err); }
+end
+```
+
+A compiler MUST reject bare `Ok(ack) ->` or `Err(err) ->` **in an `over` match**, and `else`, `default` or `on default` are not catch-all aliases in this canonical form; use `on _`. Preserve a separately documented legacy `match value` without `over` only if that mode is explicitly selected. A formatter MUST preserve `on` and variant names, must not rewrite a `match` into a `switch` or turn `on _` into `default`, and must not silently make bare invalid arms valid when formatting a canonical source.
+
+The historical **Accepted spellings today** table below describes earlier source revisions and must not be treated as the currently normative syntax. LLVM's *browser-subset* parser already requires `on` for `match ... over`, but its native compiler still lacks general guest `Result<Ack, SendError>` lowering. Independent backends must report their own parse/typecheck/guest execution evidence.
+
 ## Return-first named callables and explicit `begin`/`end` (target)
 
 The mandatory return-type rule accepts both conventional `fnc name(args) -> T` / `fnc name(args): T` and return-first `fnc T <- name(args)` or `T <- name(args)`. `T` may be `void`, `infer`, or a concrete return type. The contiguous `<-` is a declaration delimiter, not assignment. Return-first spelling is also valid for class/actor methods in declaration context; existing visibility, ownership and actor isolation rules do not change.
