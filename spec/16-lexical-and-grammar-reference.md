@@ -64,22 +64,25 @@ From lowest to highest precedence, following the v0.6 grammar:
 | Assignment | `=` | Right |
 | Pipeline | `\|>` | Left |
 | Conditional | `? :` | Right |
-| Logical OR | `\|\|` (and `\|` inside conditions) | Left |
-| Logical XOR | `^^` | Left |
-| Logical AND | `&&` (and `,` inside conditions) | Left |
+| Logical OR | `\\|\\|` (legacy `\\|` inside conditions) | Left |
+| Logical AND | `&&` (legacy `,` inside conditions) | Left |
+| Integer bitwise OR | `\\|` | Left |
+| Integer bitwise XOR | `^^` | Left |
+| Integer bitwise AND | `&` | Left |
 | Equality and identity | `eq` `neq` `!eq` `==` `!=` `is` | Left |
 | Comparison and type tests | `<` `<=` `>` `>=` `is type` `matches` `as` `as?` | Left |
+| Shifts | `<<<` `>>>` `ashr` | Left |
 | Additive | `+` `-` | Left |
 | Multiplicative | `*` `/` `%` | Left |
-| Unary | `!` `-` `+` `await` `&` `&mut` `readch` `writech` | Prefix |
+| Unary | `!` `-` `+` `~` `await` (legacy borrow/I/O forms by profile) | Prefix |
 | Postfix | call, `.member`, `[index]` | Left |
 
 - `eq` and `neq` are the canonical comparisons. `==` and `!=` are accepted aliases.
 - `is` tests identity. Type tests use `is type`, as in `if animal is type Dog dog then`.
 - Inside an `if` or `while` condition, `,` means AND and `|` means OR, and comma binds tighter.
-- **TARGET (decided, 2026-11-14):** `&&` is short-circuit boolean AND, `^^` is boolean XOR, and `||` is short-circuit boolean OR. `^^` is eager: it evaluates both operands exactly once, left to right. Precedence is `&&` above `^^` above `||`. Every operand must have static type `bool`, and there is no truthiness conversion. The built-in `And`, `Or` and `Xor` functions stay valid.
+- **Canonical owner decision (2026-11-20):** `&&` and `||` short-circuit on `bool`; `^^` is eager integer bitwise XOR on two `int` operands, never Boolean XOR. Boolean XOR uses `Xor(bool,bool)`. Single `^` is statement-leading return, not infix XOR. The result, evaluation order and precedence agree with atto-spec #151 and the versioned operator contract.
 - Backend status on 2026-11-14: Java main and LLVM main accept `&&` and `||`. .NET main accepts only the `and`/`or`/`xor` words. All three mains still reject `^^` as reserved. The fixes are oreslang-source.java#3009, oreslang-source.llvm#1728 / #1739 and oreslang-source.net#521, which adds `&&`, `^^` and `||` to the structured frontend.
-- Single `^` and the bitwise and shift operators are not in the grammar. Integer bit operations use named functions such as `Integer.bitXor(a, b)`.
+- `^ expr;` is a return statement. Infix single `^` is invalid; integer XOR is `^^`, and shifts are `<<<`, `>>>`, `ashr`, with checked distances `0..63`. `<<`/`>>` are typed I/O, not shifts. `Integer.bitXor(a,b)` is a named alternative.
 - Open: whether the condition-only `,` and `|` spellings stay. oreslang-source.java#3009 proposes removing them in favor of `&&` and `||`.
 - Assignment is an expression, but `if x = y then` is rejected.
 - `name = value` in a call is never a named argument. Named value arguments use `name: value` ([chapter 03](03-functions-and-effects.md)).
@@ -104,7 +107,7 @@ The historical **Accepted spellings today** table below describes earlier source
 
 ## Return-first named callables and explicit `begin`/`end` (target)
 
-The mandatory return-type rule accepts both conventional `fnc name(args) -> T` / `fnc name(args): T` and return-first `fnc T <- name(args)` or `T <- name(args)`. `T` may be `void`, `infer`, or a concrete return type. The contiguous `<-` is a declaration delimiter, not assignment. Return-first spelling is also valid for class/actor methods in declaration context; existing visibility, ownership and actor isolation rules do not change.
+The mandatory return-type rule accepts conventional `fnc name(args) -> T` / `fnc name(args): T` and both equivalent return-first separators `fnc T <- name(args)`, `T <- name(args)`, `fnc T • name(args)` and `T • name(args)` (exact Unicode U+2022 BULLET). `T` may be `void`, `infer`, or a concrete return type. Contiguous `<-` and U+2022 `•` are declaration separators, not assignment; split `< -`, U+00B7 middle dot and U+2219 bullet operator are invalid. Return-first spelling is also valid for class/actor methods in declaration context; existing visibility, ownership and actor isolation rules do not change.
 
 All three body families are supported for return-first declarations: `{ ... }`, `begin ... end`, and `statement; ... end` with no `begin`. The latter two require explicit return for a nonvoid result and admit empty bodies for void. Existing name-first `: T -> { ... }` remains valid. The legacy `-> T` comma/end tail-expression form remains distinct from semicolon/end. These variants define the *same* callable signature, and duplicate declarations remain errors.
 
