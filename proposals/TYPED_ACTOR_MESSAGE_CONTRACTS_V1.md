@@ -106,6 +106,36 @@ A polymorphic actor or helper may send `T` to `ActorRef<T>` if both the handle t
 
 Implement parser/formatter acceptance, typed HIR/MIR, flow-sensitive effect checking, actor reference capability typing, mailbox admission, and supervisor CONTROL separation independently in the Java, LLVM, .NET, Wasm and Forge backends (plus other supported compilers). Maintain shared positive/negative `.atto` fixtures; retain `.ores` compatibility checks where supported. Use Rust-based test infrastructure where tests are newly introduced; do not use Python. A backend can be marked supported only with exact HEAD/commit provenance, observed compiler execution, positive/negative guest fixtures, and runtime tests for CONTROL isolation. Untested and unsupported are **not** passed.
 
+## Compiler data-flow hardening requirement
+
+The explicit `sends never` effect must be a distinct sum-case in the
+syntax/typed representation (`Never`), **never** an alias for the `void`
+return type. The typed checker must reject a forged
+`Payload(void)` AST even when a parser would not produce one.
+
+For each actor, audit every reachable **application DATA** send in:
+its receive handler, all actor methods, transitive statically resolved
+helpers and all actor field initializer expressions **and helper calls from
+those initializers**. A cycle in the static call graph must terminate the
+audit without granting new authority; an unresolved or erased call target
+cannot silently become an allowed effect. The runtime's authenticated
+supervisor CONTROL channel remains outside this application send graph.
+Source-level omission of `sends` is an independent inference mode: it
+must not be implemented as `Never` or unrestricted `Any`.
+
+The Rust/Wasm and LLVM-repository Rust frontends carry a byte-identical,
+pure Rust reference effect-graph implementation (Git blob
+`16b475542987066097e4ce66a06e18603d16f796`) and compiler-scope
+regression tests in draft PRs
+[atto-source.rs#406](https://github.com/atto-lang/atto-source.rs/pull/406)
+and [atto-source.llvm#46](https://github.com/atto-lang/atto-source.llvm/pull/46).
+The source is not yet promoted as tested compiler support: external
+runner attempts in three independent private organizations had **zero
+executed steps**. See
+[atto-platform-conformance#33](https://github.com/atto-lang/atto-platform-conformance/pull/33)
+for SHA-pinned `NOT_EXECUTED` evidence. The LLVM-repository Rust frontend
+emits Wasm, not independent native LLVM/C++ actor code.
+
 ## Bounded v1 header semantics and diagnostic alignment
 
 For all conforming compiler frontends, `sends never` denotes an empty
