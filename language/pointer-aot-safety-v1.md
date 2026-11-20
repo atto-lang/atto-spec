@@ -25,6 +25,73 @@ pub fnc use_pointer(): Result<int, PointerError> {
 
 The illustrated PointerError and Result-returning method signatures, plus mutation-receiver syntax, are proposed and must be verified in the final type checker. read_at returns a copied value only when T is Copy. Non-Copy element access uses a proved loan or ownership move.
 
+## Local checked-pointer aliases: `rt ref` and `ref!` (TARGET, not compiler-certified)
+
+In addition to `Pointer.alloc<T>(count)`, AttoLang proposes a **nonallocating, checked,
+local-place capability**. These two source programs MUST be type-equivalent and
+produce the integer exit result `42` on each conforming compiler backend:
+
+```atto
+pub fnc main(): int {
+  let value: int = 42;
+  val Pointer<int> ptr = rt ref value;
+  val answer = rt deref ptr;
+  rt unref ptr;
+  return answer;
+}
+```
+
+```atto
+pub fnc main(): int {
+  let value: int = 42;
+  val Pointer<int> ptr = rt ref value;
+  val answer = deref! ptr;
+  unref! ptr;
+  return answer;
+}
+```
+
+### Required typing and effects
+
+- For an addressable named local `value: T`, `rt ref value` makes a compiler-minted
+  `Pointer<T>` to the *existing* place. It MUST NOT expose a raw stack address,
+  copy an allocation, silently create a heap allocation, move a primitive `int`,
+  or treat the handle as an untyped integer. The referent must remain alive and
+  stable until the last handle release. `ref! value` is its canonical operator
+  alias when the contextual result type is `Pointer<T>`; token boundaries and
+  one-time operand evaluation match the ownership-bang grammar.
+- `rt deref ptr` and `deref! ptr` have the same read semantics. For
+  `Pointer<int>` they return a fresh `int` **value copy**. For non-`Copy`
+  referents they yield an explicitly checked readonly loan, not an implicit
+  ownership copy. Read requires a live authenticated region, correct generation,
+  domain, access rights and initialized referent.
+- `rt unref ptr;` and `unref! ptr;` both consume the unique **handle** and
+  end its loan. They return `void` in the `Pointer<T>` case and **do not free**
+  the original stack local or invalidate the already-copied `answer`. A
+  non-`mut` `val` binding may be consumed exactly once. Neither spelling
+  means unsafe reference-count decrement or arbitrary memory reclamation.
+- Existing `CheckedRef<Class>` / ownership-moving `ref!` prototypes are a
+  **different checked-handle family**, with different `unref!` ownership-restoring
+  result semantics. They must not be silently treated as `Pointer<Class>` or
+  substituted for a local-place pointer. Type-directed resolution must be
+  unambiguous; an unsupported/ambiguous combination fails closed.
+- While the local pointer is live, reject unsafe referent writes, moves, drops,
+  escape/return of the pointer, aliasing mutable loans, stale or forged handles,
+  double unref, use after unref, cross-actor/tenant transport, and unproved
+  suspension/exceptional exits. End-of-scope paths require a proven release
+  or safe automatically inserted cleanup; no manual cleanup is elided on error.
+- Both spellings must lower to the **same typed HIR/MIR ownership events** and
+  backend effect checks; formatter normalization must preserve their meaning,
+  and may retain `rt` as a compatibility spelling. A parser-only match, a host
+  oracle, or an unexecuted fixture is NOT implementation parity.
+
+Conformance authority: the target-only `atto-platform-conformance`
+`pointer-ref-local-v1` fixtures. Promoting any backend to PASS requires an
+actual compiled Atto guest returning 42, equivalent artifact/behavior for
+both forms, and compiled negative rejection with no output artifact.
+This candidate extends the separately staged `Pointer.alloc` capability
+work; it is **not** a claim that any present compiler supports these programs.
+
 ## Logical representation and integrity
 
 Every pointer capability identifies a T layout, its owning actor incarnation and tenant/memory domain, a live region plus **generation**, a byte length and initialized-element range, a checked offset, its access rights (read, exclusive write, own/drop, frozen share), and revocation epoch. The compiler can choose inline metadata or bounded region-table entries, but **never** omit the semantic checks.
