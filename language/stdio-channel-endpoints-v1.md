@@ -171,3 +171,25 @@ typed, suspending, checked semantics above.
 **Backend status on authoring:** no new compiled guest or runtime receipt
 has been supplied by this document. Preserve `NOT_EXECUTED` until a
 verified target-specific test run establishes otherwise.
+
+## Compatibility gate: existing browser stdout subset
+
+The existing Rust/Wasm browser compiler's draft `stdio.out` subset
+([atto-source.rs #176](https://github.com/atto-lang/atto-source.rs/pull/176))
+lowers `writech stdio.out, value` and `stdio.out << value` to the
+already-supported `stdio.print` import. That particular scalar print
+operation has been admitted in **non-`susp` callables** and does not
+provide a checked `Result<void,IoError>` for process-stdout close,
+quota, cancellation or flush. It is **not** the full endpoint API here.
+
+Introducing a checked, potentially suspending `writech stdio.out`
+outcome is therefore a **source-visible API/ABI migration**, not a
+drop-in compiler optimization. Before merging any implementation:
+version the new typed host import, audit old stdout fixtures/call sites,
+preserve a documented legacy-print adapter where needed, and require
+positive/negative compiled-guest receipts for both forms. Never
+retroactively claim the old non-suspending `stdio.print` test is
+evidence of the new checked channel contract. If the language decides
+to keep `stdio.print` permanently, its weaker admission-only
+semantics must remain an explicitly distinct API rather than changing
+the read/write channel rules.
