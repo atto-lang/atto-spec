@@ -20,6 +20,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Typed task payloads and sync aliases v1](language/typed-task-payload-sync-v1.md): TARGET `task<T> : Future<T>`, `sync task` as suspension-preserving join alias, `do sync task` as supervised discard, `sync` reserved, and scoped borrow/capture restrictions. **Not yet guest-verified**.
+
 - [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^ ~`, `<<< >>> ashr`, compound updates, and typed-I/O `<< >>`, with context-sensitive caret/structural-tilde parsing; target semantics, not backend parity.
 
 - [Trap-to-Result v1](language/trap-result-v1.md): caller-side `trap` preserves returned `Result`/`Option` layers and catches ordinary `throw` as `Err(original Error)`; unverified backends must fail closed rather than emit legacy Option results.
