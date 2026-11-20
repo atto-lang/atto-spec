@@ -6,6 +6,7 @@ on:
       - "language/declarative-exports.md"
       - "conformance/namespaced-exports-v1.json"
       - "tests/namespaced-export-contract.test.mjs"
+      - "tests/declarative-export-contract.test.mjs"
       - ".github/workflows/namespaced-exports.yml"
       - "conformance/visibility-linkage-final-v1.json"
       - "language/visibility-linkage-and-final-v1.md"
@@ -17,6 +18,7 @@ on:
       - "language/declarative-exports.md"
       - "conformance/namespaced-exports-v1.json"
       - "tests/namespaced-export-contract.test.mjs"
+      - "tests/declarative-export-contract.test.mjs"
       - ".github/workflows/namespaced-exports.yml"
 permissions:
   contents: read
@@ -27,4 +29,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run host-only contract consistency tests
-        run: node --test tests/namespaced-export-contract.test.mjs tests/visibility-linkage-final-contract.test.mjs
+        run: node --test tests/declarative-export-contract.test.mjs tests/namespaced-export-contract.test.mjs tests/visibility-linkage-final-contract.test.mjs

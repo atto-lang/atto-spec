@@ -72,9 +72,13 @@ declaration can be unambiguously resolved.
 6. Export names must refer to declarations in the owning compilation module
    scope. Imported symbols are not implicitly re-exported. Namespaces must
    not grant visibility into unrelated namespaces by unqualified name lookup.
-7. Multiple exports of the same symbol within a scope are an error, including
-   repeated exports with identical visibility; contradictory visibility
-   declarations must not be silently merged.
+7. Identical source exports resolving to the **same owner, local declaration,
+   external name, kind and effective visibility** are idempotent: they yield
+   one source/ABI binding. An inferred-kind export and the same explicitly
+   typed export may be identical, as may matching implicit `pub` provenance
+   and an explicit export. Conflicting aliases, scopes, declaration kinds,
+   external-name collisions and attempts to disclose explicitly private
+   declarations are errors, never silently widened.
 8. Missing export targets, wrong explicit kinds, malformed visibility
    brackets, and illegal nested exports are compile errors. Diagnostics
    should identify the source position of the export.
@@ -96,7 +100,9 @@ declaration can be unambiguously resolved.
 | `export pub foo;` targeting overloaded functions | Accept, preserve overload set |
 | `export pub class foo;` targeting only a function | Reject: kind mismatch |
 | `export pub Missing;` | Reject: unresolved symbol |
-| Exporting the same symbol twice | Reject: duplicate export |
+| Identical inferred/explicit exports of the same resolved binding | Accept: idempotent, one binding |
+| Exports of one symbol with conflicting visibility scopes | Reject: visibility conflict |
+| Two distinct source symbols with the same exported alias | Reject: external-name collision |
 | `export pub[other] Foo;` | Reject: invalid visibility |
 | Export inside a function or class body | Reject: invalid scope |
 | Different package imports `pub[pkg]` symbol | Reject at link/import stage |

@@ -105,10 +105,13 @@ declaration/member rules; a namespace match is not a package-equality or
 public-visibility bypass. `pub[pkg]` never becomes public host Wasm exports.
 
 `define pub module` and `export pub module` select the same visibility
-kind, but two separate `export` directives of the same symbol are always a
-duplicate error, even when their scopes are identical. A package/private
-versus public conflict is a diagnostic. The compiler MUST not broaden a
-private member when exporting the enclosing module.
+kind. Repeated `export` declarations with identical resolved owner,
+local symbol, external name, kind and effective visibility are idempotent,
+producing one source binding. A compatible implicit `pub` and explicit
+export of the same module also agree. Conflicting scopes, kind/alias/target
+collisions and private-member disclosure must fail deterministically: the
+compiler MUST not broaden a private member merely because its containing
+module is public.
 
 ## Linkage, identity, and AOT requirements
 

@@ -62,6 +62,11 @@ test("diagnostics cover scope, identity, kind, conflict, alias and privacy", () 
     "namespace-identity-not-leaf-name"
   ];
   for (const id of forbidden) assert.equal(byId.get(id)?.expect, "reject", id);
+  assert.equal(byId.get("module-export-duplicate")?.diagnostic, "export-visibility-conflict");
+  for (const id of ["module-export-identical-duplicate", "module-export-matching-inline"]) {
+    assert.equal(byId.get(id)?.expect, "accept", id);
+    assert.equal(byId.get(id)?.phase, "compile", id);
+  }
   assert.ok(fixture.receiptRequirements.includes("source_commit_sha"));
   assert.ok(fixture.receiptRequirements.includes("source_tree_sha"));
   assert.ok(fixture.receiptRequirements.includes("linker_result_or_unsupported"));

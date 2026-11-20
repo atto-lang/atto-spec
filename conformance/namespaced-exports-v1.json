@@ -44,11 +44,24 @@
       "source": "export pub module Missing;\n"
     },
     {
+      "id": "module-export-identical-duplicate",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "export pub module Math;\nexport pub module Math;\ndefine module Math as end\n"
+    },
+    {
+      "id": "module-export-matching-inline",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "define pub module Math as end\nexport pub module Math;\n"
+    },
+    {
       "id": "module-export-duplicate",
       "phase": "compile",
       "expect": "reject",
-      "diagnostic": "duplicate-export",
-      "source": "export pub module Math;\nexport pub[pkg] module Math;\ndefine module Math as end\n"
+      "diagnostic": "export-visibility-conflict",
+      "source": "export pub module Math;\nexport pub[pkg] module Math;\ndefine module Math as end\n",
+      "note": "Historical case ID: this is a scope conflict, not a repeated identical binding."
     },
     {
       "id": "nested-module-export",
