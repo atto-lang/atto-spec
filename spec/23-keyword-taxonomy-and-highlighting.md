@@ -31,6 +31,8 @@ For example, in the **TARGET** form `declare actor Worker implements Runnable;`,
 
 An entry appearing in two rows is intentional: this is a set of *explanatory* facets, not a partition of mutually exclusive reserved tokens.
 
+**Contextual bang aliases (TARGET):** `pipe!`, `rpipe!`, and `stop!` are exact alias spellings only in existing, statically recognized infix-pipeline or graceful-stop positions, under the [v1 alias contract](../language/bang-pipeline-and-stop-aliases-v1.md). They are not new documented Java reserved words, arbitrary suffix operators, `Actor.pipe!` method names, or force-stop effects. A highlighter must respect contextual grammar and preserve the author's spelling; parser/compiler admission and guest parity require independent evidence. `rpipe` direction is staged in [PR #45](https://github.com/atto-lang/atto-spec/pull/45).
+
 `blocking` in an API name such as `read_blocking` is **not** thereby a standalone keyword. `suspends` is the documented effect modifier; do not silently substitute a hypothetical `suspend` keyword. Likewise, `pipe` is a target/contextual actor connection word in chapter 01, not a documented reserved Java keyword; `|>` remains a separate operator. An ordinary hyphenated word is not an identifier: only grammar-enumerated compound spellings may include ASCII `-`.
 
 ## New contextual ownership operators (TARGET)
