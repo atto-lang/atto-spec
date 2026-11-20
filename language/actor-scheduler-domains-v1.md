@@ -58,3 +58,59 @@ Hard/soft real-time targets must explicitly declare their scheduling and allocat
 Record exact backend head/tree and toolchain, real guest compile/run, positive and negative isolation outcomes, Atto-owned and process-wide startup/peak thread counts, pool-owner/queue logs, supervisor CONTROL priority and fairness, reactor wake behavior, tenant kill and stale-generation tests, plus LLVM ASan/UBSan and deterministic heap retirement. Report per-backend `passed`, `failed`, `unsupported`, or `not_executed`; source-free models and zero-executed-step CI runs are **not** guest proof.
 
 On 2026-11-16 the existing Oreslang runtime showed these migration gaps: Java `OresScheduler` still has an eager `prestartAllCoreThreads()` constructor and `TenantIsolateManager` explicitly supports only trusted Context-based tenancy; LLVM `OresIsolateVM.hpp` is not a production actor scheduler or hostile native sandbox; .NET `ActorDispatchDomains.cs` has lazy but **runtime-global** Shared/Private/Untrusted pools rather than per-account untrusted pools. The current Atto Java/LLVM/.NET default branches contain repository initialization READMEs only; implementing this contract and obtaining real guest results remain outstanding.
+
+## Stackless continuation ABI and tenant-confined scheduling
+
+**Default execution model:** suspending Atto callables lower to typed, stackless
+continuation frames in the owning actor's tenant-private memory. The runtime
+may use bounded native worker threads and M:N scheduling, but an actor cannot
+assume a stable native thread. Optional stackful fibers are non-default and
+require independently verified in-cage stacks, guard/bounds enforcement,
+context-switch validation, and tenant-specific lifecycle accounting.
+
+- A frame belongs to one immutable tuple
+  `(tenant_id, tenant_generation, actor_id, actor_incarnation, frame_slot, frame_generation)`.
+  Identifiers supplied by a guest are *requests*, never scheduling authority.
+  The trusted host authenticates the tuple, checks actor-turn nonreentrancy,
+  the current capability epoch and resource budget, and rejects stale,
+  foreign, forged or already-consumed resumes *before* any guest state access.
+- A continuation's data, program counter and stack-like spill slots MUST live
+  within the verified guest cage or a separately validated host structure
+  containing **no guest-writable host pointers or executable callbacks**.
+  Generations must fence slot reuse, timer wakeups, reactor completions,
+  cancellation and late mailbox delivery. Never capture an unchecked native
+  stack pointer across suspension.
+- Worker reuse and work stealing are permitted **inside** the authorized
+  domain only. No cross-TenantVM stealing, implicit shared executor fallback,
+  actor frame sharing, or continuation migration to a different tenant.
+  A trusted reactor may deliver a bounded authenticated wake *receipt* to
+  the owning domain, but cannot directly run a guest callback.
+- A suspend/await/select boundary releases host locks and checks all live
+  ownership loans. Guest mutable references surviving a suspend require
+  compiler-verified lifetimes and enforceable memory confinement; host
+  descriptor, broker and guest-memory pins remain charged until cancellation,
+  I/O completion or quiescent retirement.
+- Apply both per-actor reduction accounting and per-tenant CPU/fuel/time
+  budgets. Cooperative yields alone do not stop arbitrary hostile infinite
+  loops. Untrusted execution requires independently enforceable interruption
+  or termination without unwinding a corrupted host process.
+- Closing a TenantVM fences new dispatch first, revokes broker capabilities,
+  cancels queued work, quiesces outstanding frames and I/O, emits exactly one
+  authenticated supervisor CONTROL fault where required, and only then
+  reclaims private memory. Never use a signal-handler SIGSEGV recovery trick
+  as evidence of native hostile-guest isolation.
+
+**Admission invariant:** until the backend proves actual, enforceable
+same-process hostile-code confinement, attempting to schedule any untrusted
+guest on a native worker MUST return `UNSUPPORTED` or `DENIED`.
+A sandboxed child process is a separately labeled fallback, not same-PID
+TenantVM proof. A thread pool, `pthread`, `io_uring`, `epoll`, private heap,
+or C++ host-side dispatch gate alone cannot cross this admission boundary.
+
+**Adversarial evidence:** compiled .atto hostile guests must attempt forged
+resume tickets, foreign/cross-generation continuations, stale slot reuse,
+cross-tenant work stealing, borrowed-memory escape across await, timer/FD
+completion replay, queued CONTROL starvation, CPU-fuel exhaustion and
+noncooperative loops. Pin compiler/runtime/artifact hashes and demonstrate
+that another active tenant survives expected guest traps in the same
+measured process. Host-only tests must be reported separately.
