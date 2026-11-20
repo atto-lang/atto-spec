@@ -10,7 +10,9 @@
     "cranelift",
     "rs",
     "js",
-    "hdl"
+    "hdl",
+    "atto",
+    "realtime"
   ],
   "cases": [
     {
