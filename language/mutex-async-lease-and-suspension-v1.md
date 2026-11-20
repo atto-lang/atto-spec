@@ -75,6 +75,18 @@ Migration must: (1) introduce a **new versioned async guest/host ABI** for ready
 
 A normal exceptional unwind can guarantee scope cleanup. A hard native process abort, compromised hostile guest, or forcibly destroyed Wasm instance cannot guarantee in-guest finalizers; a privileged host supervisor must own revocation/reclamation of outstanding permits and pending waiter accounting. Never claim `using` alone guarantees cleanup across forced termination.
 
+### Deterministic contention oracle — no illicit yield inside a guard
+
+A test with **one cooperative scheduler carrier** cannot put task A in an unsuspendable critical section and then schedule task B on the *same* carrier to contend before A exits: that would require an illegal yield, preemption or a second carrier. The nonparking test therefore uses **two controlled carriers** (or equivalent independently controlled owner and waiting-carrier dispatch):
+
+1. Carrier A grants the lease and deliberately holds it in a bounded, synchronous critical region; no await/select or unbounded spin inside the region.
+2. Carrier B tries `lock_async()`, records `PENDING` in an observable event ledger, and relinquishes **only its logical continuation**.
+3. Another runnable task C on carrier B must complete and record progress **before** A releases the lease.
+4. A releases; exactly one grant to B is recorded; B resumes with the right logical continuation and scoped cleanup.
+5. Repeat at queued-waiter cancellation/grant boundary, and with a stale wake and revoked tenant incarnation; deny replay, wrong owner or duplicate cleanup.
+
+Host-side simulation alone is insufficient. To claim compiled-guest parity, compile the exact `.atto` source into a guest with a bound, authenticated scheduler trace and demonstrate the ordering under a real runtime. Do not insert a special `await` within A's guard merely to manufacture contention.
+
 ## Required typed lowering and diagnostics
 
 Resolve `Mutex<T>`, the exact acquisition overload, `using` resource trait and `susp` effect before MIR. Lower contextual syntax to the same typed operation as the explicit `using await` spelling, with one acquisition evaluation and one cleanup edge. Emit an auditable suspension-site ID, owner origin, tenant/actor/continuation tokens, acquisition/cleanup state machine and exceptional/cancellation CFG edges. Verify every exit edge releases at most one acquired permit and no retained mutable alias survives cleanup. Do not fall back to a host `synchronized` block or unverified JavaScript interpreter.
@@ -96,6 +108,6 @@ Required stable diagnostic families (specific display text is backend-dependent)
 
 Authoritative fixture registry: `atto-platform-conformance/contracts/mutex-async-lease-v1.json`, with both source spellings, ready and contended acquisitions, lazy-task nonexecution, prompt nonparking failure, return/unwind/cancellation exactly-once cleanup, guard escape/suspension negatives, stale/cross-tenant tokens, nested task ownership and unsupported-target diagnostics. No backend is certified merely because this spec or a source fixture exists.
 
-Required executable proof per independently maintained `atto-source.*` backend: (a) parse/typed HIR/MIR guard and suspension site identity, (b) compile real .atto guest with correct stdout/exit, (c) demonstrate nonparking contention on a single carrier with independently progressing work, (d) forced throw/cancellation race and single-release, (e) negative diagnostics with **no guest artifact**, (f) tenant/actor isolation adversarial cases, and (g) exact source/compiler Git SHA and nonzero-step CI. Hard-target embedded/HDL backends may report **UNSUPPORTED** until they implement an equivalent scheduler; they must not claim parity by accepting syntax alone.
+Required executable proof per independently maintained `atto-source.*` backend: (a) parse/typed HIR/MIR guard and suspension site identity, (b) compile real .atto guest with correct stdout/exit, (c) demonstrate that a waiting scheduler carrier continues independently runnable work while a different carrier or controlled external owner holds the guard, (d) forced throw/cancellation race and single-release, (e) negative diagnostics with **no guest artifact**, (f) tenant/actor isolation adversarial cases, and (g) exact source/compiler Git SHA and nonzero-step CI. Hard-target embedded/HDL backends may report **UNSUPPORTED** until they implement an equivalent scheduler; they must not claim parity by accepting syntax alone.
 
 **Rollout:** spec + source-only conformance first, borrow/effects checker and formatter, then runtime+stdlib implementations and real backend guest tests; promote backend status only from executed evidence. Legacy Oreslang Java mutex PRs #19, #56, #1351, #1923 and #1938 are design/integration leads, not automatically migrated or certified Atto code.
