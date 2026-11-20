@@ -10,12 +10,12 @@
 | `(foo=5)` | Record | Parenthesized identifier field |
 | `{"foo": 5}` | Map<string,int> | Quoted key, even though `foo` is a valid identifier |
 | `{'foo': 5}` | Map<string,int> | Equivalent decoded key |
-| `{`foo`: 5}` | Map<string,int> | Non-interpolating backtick key |
+| ``{`foo`: 5}`` | Map<string,int> | Non-interpolating backtick key |
 | `{"foo" => 5}` | Map<string,int> | General Map-entry spelling |
 | `{'foo' => 5}` | Map<string,int> | Equivalent key and value |
-| `{`foo` => 5}` | Map<string,int> | Equivalent key and value |
+| ``{`foo` => 5}`` | Map<string,int> | Equivalent key and value |
 | `{'"foo"': 5}` | Map<string,int> | The decoded key contains two double-quote characters |
-| `{`"foo"` => 5}` | Map<string,int> | The decoded key contains two double-quote characters |
+| ``{`"foo"` => 5}`` | Map<string,int> | The decoded key contains two double-quote characters |
 | `{foo => 5}` | Map | `foo` is an expression; requires checked Hash/Eq |
 | `{foo: 5, "bar": 6}` | INVALID | E_LITERAL_KIND: cannot mix Record field and Map entry |
 | `{"foo":5,'foo' => 6}` | INVALID | E_DUPLICATE: duplicate constant Map key after decoding |
@@ -39,13 +39,13 @@ Only the lexer-proved identifier-colon form is a Record field. Quoted colon and 
 
 - Double and single quotes use the current string-literal escape contract, including `\n`, `\r`, `\t`, escaped quotes and `\u{HEX}`. Both produce the same `Str` value for the same decoded characters.
 - Backticks delimit a non-interpolating literal string: `${expr}` remains literal text, not a code expression; ordinary backslashes are retained. Only backslash followed by backtick escapes the delimiter; the decoded value contains a literal backtick.
-- To include double quotes literally in a Map key, write `{'"foo"':5}` or `{`"foo"` :5}`; to include a single quote use `{"it's ok":5}`; to embed a backtick use an escaped backtick inside the backtick literal.
+- To include double quotes literally in a Map key, write `{'"foo"':5}` or ``{`"foo"`:5}``; to include a single quote use `{"it's ok":5}`; to embed a backtick use an escaped backtick inside the backtick literal.
 - The first Rust/browser profile disallows raw newlines in backtick strings, rejects unterminated/backtick literals with E_STRING, and applies the existing 4,096-byte decoded UTF-8 string limit (E_SOURCE_LIMIT). It never performs interpolation, template evaluation or ambient host reflection.
 - Exact decoded string identity determines duplicate constant Map key detection across all three quote styles, including escaped Unicode. The compiler must not NFC/NFD normalize, case-fold, discard interior quote marks or merge distinct keys. `{"foo":1,'foo'=>2}` is E_DUPLICATE.
 
 ## Type, ownership and guest admission
 
-Map<K,V> is homogeneous; inference applies common key/value typing and Hash/Eq checks, with incompatible key/value or unhashable key rejected before emission. `Record` is structural, potentially heterogeneous, with statically known identifier-named fields. `r.foo`, `r["foo"]`, `r['foo']` and `r[`foo`]` refer to the SAME existing Record field only when the compiler admits static-literal Record indexing. `map.get("foo")` is a dynamic Map lookup; a Map string key is not a fixed Record slot. No implicit Record↔Map conversion, named-parameter expansion, or synthetic AOT static layout is allowed.
+Map<K,V> is homogeneous; inference applies common key/value typing and Hash/Eq checks, with incompatible key/value or unhashable key rejected before emission. `Record` is structural, potentially heterogeneous, with statically known identifier-named fields. `r.foo`, `r["foo"]`, `r['foo']` and ``r[`foo`]`` refer to the SAME existing Record field only when the compiler admits static-literal Record indexing. `map.get("foo")` is a dynamic Map lookup; a Map string key is not a fixed Record slot. No implicit Record↔Map conversion, named-parameter expansion, or synthetic AOT static layout is allowed.
 
 All key and value expressions execute once in source order. Duplicate constant keys reject before guest execution; runtime equality collision/upsert and ownership-safe release are separate Map runtime obligations. A parser/typed-IR PASS is **not** compiled guest Map execution: targets without authenticated runtime Map allocation/lookup MUST fail with E_UNSUPPORTED and emit zero guest artifacts.
 
