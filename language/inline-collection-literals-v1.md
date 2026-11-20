@@ -2,6 +2,8 @@
 
 **Status:** candidate language contract. This document defines intended portable semantics; no backend is considered conformant without successful guest execution and negative cases at an exact commit. It does not reinstate removed \`~map(...)\`, \`~array(...)\`, \`~record(...)\`, or other tilde-prefixed constructors.
 
+> **Normative correction (2026-11-20):** [Quoted Map keys versus identifier Record fields](quoted-map-vs-record-literals-v1.md) **supersedes all conflicting quoted-Record grammar, examples, bracket-write descriptions and conformance clauses below**. Quoted string keys (double, single, or backtick) with `:` or `=>` now construct **Maps**; only identifier `:` or `(name=value)` constructs Records. Old examples treating `{"content-type":1}` as a Record are obsolete and must NOT be used as conformance evidence. Migration and formatter coverage are required.
+
 ## Spelling and grammar
 
 The core generic type constructor names \`Record\`, \`Map\`, \`List\`, \`Array\` and \`Tuple\` also accept the exact lowercase aliases \`record\`, \`map\`, \`list\`, \`array\` and \`tuple\`. These spellings have the **same** type identity and generic arity; this rule is contextual to type positions and does not lower-case arbitrary identifiers, modules, namespaces or user types. Formatter canonical output is upper-cased built-in type names, never renamed user identifiers.
