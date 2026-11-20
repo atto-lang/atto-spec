@@ -14,6 +14,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Inline collections and nominal Entry/Map mutation (candidate)](language/inline-collection-literals-v1.md): `key => value` Entry literal, `{key => value}` Map literal, checked mutable upserts, `get(): Option<V>`; target only, not guest-certified ([conformance #99](https://github.com/atto-lang/atto-platform-conformance/pull/99)).
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
 
