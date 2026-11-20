@@ -78,8 +78,10 @@ pub fnc main(): int {
 - While the local pointer is live, reject unsafe referent writes, moves, drops,
   escape/return of the pointer, aliasing mutable loans, stale or forged handles,
   double unref, use after unref, cross-actor/tenant transport, and unproved
-  suspension/exceptional exits. End-of-scope paths require a proven release
-  or safe automatically inserted cleanup; no manual cleanup is elided on error.
+  suspension/exceptional exits. The initial `pointer-ref-local-v1` profile requires explicit `unref`
+  on every reachable normal exit and rejects a missing release. A future
+  automatic cleanup profile must be independently specified and proved for
+  all normal, exceptional and cancellation exits before relaxing this gate.
 - Both spellings must lower to the **same typed HIR/MIR ownership events** and
   backend effect checks; formatter normalization must preserve their meaning,
   and may retain `rt` as a compatibility spelling. A parser-only match, a host
