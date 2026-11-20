@@ -188,7 +188,7 @@ For this example, **module-scope `let`** is a per-module, per-tenant/isolated-ru
 | `map[key] = value` | Same checked insert-or-replace operation as `set`; key is evaluated once before value |
 | `map.add(Entry<K,V> entry)` | Insert or replace using Entry's immutable key/value, identical collision/replacement semantics to `set` |
 | `map.try_add(Entry<K,V> entry): bool` | Insert only; returns `false` without replacing when key exists |
-| `map.get(K key): Option<V>` | Explicit absence; `unwrap()` returns the present V or raises the standard missing-value error |
+| `map.get(K key): Option<V>` | Explicit absence; `unwrap()` returns the present V or follows the canonical `Option.unwrap()` failure contract |
 | `map.has(K key): bool` | Presence test using the same key equality/hash rules |
 
 `set`, `add`, and indexed assignment are **upserts**; the example returns `5` (initial 5, then 6, then 3, then the entry's 5). `try_add` is distinct and cannot silently overwrite. This is a proposed API contract, not a claim of existing `set`/`add` guest implementation. These operations must use the *same* typed key codec, hash/equality, replacement cleanup, quota checks, and transactional admission; a failed allocation/type/ownership/capability check leaves the map unchanged. Do not expose host Java/JS Map objects to bypass these checks. Required mutation is valid only for `let mut` / `val mut` (or an authorized exclusive mutable borrow), never an immutable-view `let Map`, ordinary `val`, shared frozen Map, or sealed actor state outside `critical-write`.
