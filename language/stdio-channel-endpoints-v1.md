@@ -2,6 +2,7 @@
 
 **Status: proposed normative target, NOT executable cross-backend parity.**
 Companion: [I/O direction shorthand](io-direction-shorthand-v1.md),
+[nominal `on is` ADT patterns](adt-is-variant-patterns-v1.md),
 [unary checked reads](unary-read-expression-v1.md), and
 [suspension effect aliases](susp-effect-shorthand-v1.md).
 This deliberately continues existing Atto/Ores work (legacy Java stdio #540)
@@ -123,6 +124,32 @@ hide EOF, or invent auto-unwrapping. Future explicit `?` propagation
 may shorten this example only when the enclosing callable return type
 supports it. The `stdio.in.stream()` path is an **alternative**,
 not an additional concurrent stdin reader.
+
+## Checked result matching with `on is`
+
+Both `on Ok(value)` and `on is Ok<value>` match the same **nominal**
+`Result` tag; both `on Some(item)` and `on is Some<item>` match the
+same `Option` tag. The `<...>` token here is a **pattern binder**,
+not a generic type argument or a dynamic extractor. `on is Ok<_>`
+discards the successful value of either `Result<void,IoError>` or
+`Result<T,IoError>`; it never unwraps the Result itself. `on is None`
+is EOF; `on is Some<item>` may match an empty string. Nested syntax:
+
+```atto
+on is Ok<_> -> match << input over
+  on is Ok<line> -> match line over
+    on is Some<item> -> item,
+    on None -> "",
+  end,
+  on is Err<error> -> "",
+end
+```
+
+This illustrates a branch inside a larger `match` expression, where an
+enclosing callable returns `string`. The `""` branches are an
+explicit application fallback, **not a channel EOF sentinel**.
+Implementation/negative rules are in
+[nominal `on is` ADT patterns](adt-is-variant-patterns-v1.md).
 
 ## Tenant security and profile rules
 
