@@ -45,6 +45,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Return-first and begin/end callable syntax v1](language/return-first-and-begin-callables-v1.md): accept `fnc int <- name(args)` and bare `int <- name(args)` plus brace, `begin`/`end`, and statement/`end` bodies (target; backend parity pending).
 
+- [Actor attached state and guarded lifecycle v1](language/actor-attached-state-and-lifecycle-v1.md): inline `state {}` and out-of-line `define state on actor` equivalence, definite activation initialization, `using state.read/write`, generation-fenced guards and mailbox admission; TARGET / NOT CROSS-BACKEND VERIFIED.
+
 ## Validation
 
 Validation should rely on checked-in tests and exact-commit CI results. When reporting parity, distinguish **passed**, **failed**, **unsupported**, and **not executed**. Avoid inferring guest-runtime support from host-only tests.
