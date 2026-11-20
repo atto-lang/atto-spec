@@ -230,12 +230,18 @@ expected type, not inferred from string labels. Explicit constructor
 generic arguments, if exposed later, must refer to **types/row witnesses**,
 never to unvalidated runtime field sets.
 
-**Staging:** existing Rust/parser work in atto-source.rs#274 deliberately
-does not admit `Record<...>` type arguments. Accordingly the new
-`Record<{...}>` spelling and `field=value` factory grammar are
-not advertised as existing support. A compiler must either implement
-the contract end-to-end or reject the syntax with a precise
-unsupported/inference diagnostic; no host-language object fallback.
+**Implementation checkpoint (2026-11-19):** Rust/Wasm
+[atto-source.rs#284](https://github.com/atto-lang/atto-source.rs/pull/284)
+at source head `efe995f7ec64528f064b25378247d407e35b8372` now parses and
+typechecks closed `Record<{...}>` row annotations for direct local
+`Record.of(field=value, ...)` initializers, with a verified 1–8 scalar
+field guest ABI. Its [exact-source private CI run](https://github.com/usa-acc/atto-ci/actions/runs/44661343216)
+passed focused Rust tests, strict Clippy and actual native/browser-compiled
+Wasm guests. This is **not** full generic Record support: `wrap<T>`,
+open required-field bounds, nested guest values, arbitrary row-polymorphic
+calls, and other compiler backends remain unverified. A compiler without
+these capabilities must reject them with precise diagnostics, never use
+unchecked host-language objects or claim source-only conformance.
 Generic code whose field set is truly unknown at runtime must use a
 typed Map or a separately defined, schema-validated dynamic-record API.
 Do **not** make `Record.of` accept unchecked dynamic keyword spreads.
