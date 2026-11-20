@@ -4,6 +4,8 @@ Status: **normative syntax target / backend execution pending**. This extends
 [the directional I/O shorthand v1](io-direction-shorthand-v1.md). It is not
 evidence that the Java, LLVM, .NET, or browser/Wasm compilers execute guest reads.
 
+**Postfix expression companion:** [\`readable >>\` single reads](postfix-channel-read-expression-v1.md) are defined as the same checked read operation as \`<< readable\`; neither spelling unwraps an EOF/error-capable \`Channel<T>\` into bare \`T\`.
+
 ## Decision
 
 At expression-start position, contiguous prefix \`<<\` reads **one** item
