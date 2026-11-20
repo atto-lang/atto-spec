@@ -26,7 +26,10 @@ pub fnc sum_three(Any values): int {
 ```
 
 In a `List.of` or `Array.of` *pattern*, bare `...` consumes zero or more
-unconstrained elements. `_` consumes one element. Named subpatterns before/after
+unconstrained elements. A standalone `List.of(...)` matches **every List length,
+including zero** (likewise `Array.of(...)` for Array values); it denotes one
+unbound, unconstrained witness, not one alternative for every possible split.
+`List.of()` without a rest matches **only an empty List**. `_` consumes one element. Named subpatterns before/after
 rests still anchor to the start/end of the matched sequence. `List.of(..., 2, ...)`
 searches for `2` anywhere; there is **no** `...(int)...` construct.
 
