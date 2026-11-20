@@ -70,6 +70,7 @@ invalid: popping parent frame while a borrowed child still runs
 * `TaskCancelled` is an `Error`-compatible typed cancellation outcome for explicit handling, but **its propagation is not equivalent to an arbitrary user `throw`/unhandled `raise` escalating to actor panic**. The runtime preserves the separate terminal cause. A cancelled parent cannot clear its own cancellation merely by catching or trapping an awaited child outcome. Explicit cancellation shielding/reparenting is **not** in this v1 contract.
 * A `Future<T>` is **not** a detached execution permit. Dropping it or saying `do task` does not remove its child from TaskScope, stop error supervision, or disable scope cancellation. Only an authorized owner of the Future or owning TaskScope may request cancellation; a guest cannot forge handles or cancel another tenant's task.
 * `cancel()` may be called from a non-`susp` context because it never joins or parks a carrier. Waiting for retirement via `await` requires a suspension-capable context. Calling `cancel()` is **not** evidence of successful cleanup.
+* Calling `.cancel()` on a non-`Future<T>` receiver is `E_TASK_CANCEL_TARGET`; using the `void` result of `Future<T>.cancel()` as a value is `E_TASK_CANCEL_TYPE`. These failures produce no guest artifact. Neither a matching method name on an arbitrary object nor a host Promise callback may silently substitute for the task cancellation capability.
 
 ```atto
 pub susp fnc main(): int {
@@ -131,6 +132,8 @@ The formatter MAY normalize `do sync task<T> { B }` to `do task<T> { B }` only w
 | cancellation before child admission | no child execution; capture rollback and no escaped loan |
 | cancellation of parent with live `do task` and nested task | transitive cancellation and physical descendant quiescence before scope retirement |
 | plain `Future<T>.cancel()` on an unsupported backend | E_UNSUPPORTED / no guest artifact; never a silent no-op |
+| `val int x = pending.cancel();` | E_TASK_CANCEL_TYPE / no guest artifact |
+| `val int x = 1; x.cancel();` | E_TASK_CANCEL_TARGET / no guest artifact |
 
 
 Verification: check tokens, parser AST equivalence, effects, typed MIR, ownership path, formatter round-trip and negative no-artifact diagnostics. Then run actual .atto guest fixtures on each backend, with exact source SHA/tree, toolchain and meaningful successful steps. Host-only Rust/Node model tests do not certify a compiler. Status for every backend begins NOT_EXECUTED until independent evidence proves otherwise.
