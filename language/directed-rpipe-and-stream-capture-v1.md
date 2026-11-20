@@ -46,6 +46,68 @@ spawn Consumer() rpipe spawn Processor() rpipe spawn Producer();
 Actor roles still come from `receives` and `emits`, never arbitrary
 `sends` or CONTROL messages.
 
+## Named actor references and duplicate directional edges
+
+A previously spawned, typed actor reference may be used as a stage. `spawn`
+is not required inside the graph expression. The compiler checks the
+**declared** actor `emits` and `receives` contracts, regardless of whether
+the stage is a fresh `spawn Foo()` or an existing `ActorRef<Foo>`.
+
+The following is **target-language syntax, not verified guest execution**:
+
+```atto
+define actor Producer receives int emits int as
+    susp receive(ActorMail<int> mail): void {
+        emit(mail.value);
+    }
+end
+
+define actor Consumer receives int as
+    susp receive(ActorMail<int> mail): void { }
+end
+
+pub susp fnc main(): int {
+    val producer = spawn Producer();
+    val consumer = spawn Consumer();
+    val link = producer pipe consumer;
+    // Equivalent topology when used INSTEAD of the previous declaration:
+    // val link = consumer rpipe producer;
+    // The eventual checked PipeHandle must be owned and supervised.
+    return 0;
+}
+```
+
+`Producer receives int` **without `emits int`** is *not* a pipe
+source, even if the handler handles `ActorMail<int>`. `send` and `sends`
+are likewise not `emit` and `emits`. Neither spawning nor attaching a
+pipe injects an initial message or guarantees the producer will emit.
+
+```atto
+producer pipe consumer;
+consumer rpipe producer;
+```
+
+These are **two separate graph-construction expressions with the same
+`producer → consumer` direction**. The second line is not a return
+connection, an ACK path, or a duplex pipe. Both must undergo independent
+checked admission; implementations must not silently merge them,
+create an implicit broadcast, double-deliver, or discard unchecked
+`Result<PipeHandle, PipeSetupError>` outcomes. If the runtime's unicast
+ownership policy disallows a second attachment, reject it atomically
+with a typed duplicate-edge/occupied-port error, leaving the first
+graph intact. If an explicit adapter permits multiple attachments,
+create and retain distinct handles and obey its fan-out policy.
+No reverse CONTROL flow can be inferred from `rpipe`.
+
+For genuine two-way application DATA, declare matching `emits` and
+`receives` capabilities on **both** actors, or use a separate typed
+request/reply API, then explicitly connect the reverse edge. Bidirectional
+capability must never be inferred from the spelling of a single operator.
+An owned connection must remain live for the intended task lifetime;
+ending `main()` immediately is not a proof of message delivery or graceful
+pipeline completion. A portable implementation needs checked setup,
+completion via `get_done()`, cancellation and quiescence.
+
 ## Directed type checking
 
 The compiler constructs **one graph** with edges directed by the keyword,
