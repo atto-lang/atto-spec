@@ -45,3 +45,5 @@ Keep canonical AttoLang (.atto) semantics consistent with the language specifica
 Changes asserting compiler/runtime support must identify the exact source head, target, toolchain, executed positive and negative guest tests, and failure/unsupported status; an empty CI step list is **not executed**. Documentation records responsibility, **not** a claim of feature completion.
 
 - [Process stdio channel endpoints v1](language/stdio-channel-endpoints-v1.md): target process/stdin/stdout/stderr identity aliases, checked reads and writes, nonparking suspension, one stdin consumer lease, host-permission isolation and executable parity gates; **not guest-verified**.
+
+- [Nominal `on is` ADT constructor patterns (v1 target)](language/adt-is-variant-patterns-v1.md)
