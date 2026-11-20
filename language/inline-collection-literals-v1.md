@@ -7,13 +7,15 @@
 The core generic type constructor names \`Record\`, \`Map\`, \`List\`, \`Array\` and \`Tuple\` also accept the exact lowercase aliases \`record\`, \`map\`, \`list\`, \`array\` and \`tuple\`. These spellings have the **same** type identity and generic arity; this rule is contextual to type positions and does not lower-case arbitrary identifiers, modules, namespaces or user types. Formatter canonical output is upper-cased built-in type names, never renamed user identifiers.
 
 \`\`\`ebnf
-inline_expression = record_or_map | list_or_array | tuple_or_group ;
+inline_expression = record_or_map | list_or_array | tuple_or_group | named_record ;
 record_or_map    = "{" [ (field_entry | map_entry), { separator, (field_entry | map_entry) }, [","] ] "}" ;
 field_entry      = (IDENT | STRING), ":", expression ;
 map_entry        = expression, "=>", expression ;
 list_or_array    = "[", [expression, {",", expression}, [","]], "]" ;
 tuple_or_group   = "()" | "(", expression, "," [expression, {",", expression}, [","]], ")"
                  | "(", expression, ")" ;
+named_record     = "(", named_field, { ",", named_field }, [","], ")" ;
+named_field      = IDENT, "=", expression ;
 separator        = "," | NEWLINE ;
 \`\`\`
 
@@ -53,6 +55,34 @@ The equivalent \`let name: Type = literal;\` binding form is valid.
 - Bare \`Record\` is an open record supertype of record values with different field sets. Thus \`Array<Record>\` can contain \`{job:1}\`, \`{car:"str"}\`, and \`{x:true}\` without inventing fields or assuming that all elements have the same layout. Access to an absent field is rejected or must first be guarded by presence/type checking. A specialized closed record type remains eligible for AOT layout optimization.
 - A bare \`List\` or \`Map\` annotation with an initializer may infer its type arguments from its elements; empty bare declarations require a future explicitly specified default or contextual type and cannot silently invent \`Any\` storage. **Exception for this v1 compatibility syntax:** \`let List x = []\` is valid as a zero-element list with an as-yet-unconstrained element type; later writes must resolve the element type or fail at compile time. No runtime-dependent widening.
 - Tuple values preserve order, length and per-position types. \`()\` is an arity-zero tuple (a unit-like value), distinct in type from \`void\`. A tuple may not be silently flattened by a comma operator or used as an automatic multi-return.
+
+## Parenthesized named Records, arity-zero Tuples, and named-argument boundaries (v1)
+
+**Normative candidate decision:** `(foo=1, bar=true)` constructs a **Record**, with the same structural type, checked field inventory, field access, canonical shape and source-order evaluation as `{foo:1, bar:true}`. The compiler may preserve a distinct syntax-origin span for diagnostics/formatting, but the typed expression is the ordinary `Record`; it is never a Tuple, Map, function-call argument list or anonymous nominal Struct. No new runtime Record/Map representation may be invented for parentheses.
+
+- A parenthesized Record starts only when the first token inside `(` is a legal, non-reserved identifier immediately followed by the assignment token `=` (whitespace permitted). The separator between entries is a comma. Only identifier field labels are accepted in this parenthesized spelling. A quoted/nonidentifier Record field must use the brace form `{"content-type": "json"}`; its name is not a callable parameter name.
+- `(foo=1)` and `(foo=1,)` are one-field Records; `(foo=1, bar=2,)` is a two-field Record. Field order is not part of structural type identity; value initializers are evaluated once in the original source order. Duplicate fields, including Unicode-identical decoded names, reject `E_DUPLICATE`.
+- `(foo=1, 2)`, `(foo=1, bar:2)` and `(foo=1, "bar"=2)` reject `E_LITERAL_KIND`; there is no mixture of positional Tuple items and named fields. An assignment expression `(x = 1)` is never silently created by this rule. `(foo==1)` still groups a comparison expression when valid.
+- `()` is **always** `Tuple` of arity zero, with unit-like value but distinct from `void`. It is **never** an empty Record or function argument list in expression position, even with an expected Record type. `(x)` is grouping; `(x,)` is a one-element Tuple; `(x,y)` is a two-element Tuple. Empty tuple construction uses `()` with optional expected `Tuple` type; do **not** invent an unsupported `Tuple<>` generic spelling. The syntax of a zero-argument **call** `f()` is independently determined by call context.
+- Bare `{}` has no default interpretation and requires a known expected `Record` or concrete `Map<K,V>` type; bare `[]` requires contextual typing when empty to distinguish `Array<T>` from `List<T>`. Neither `()` nor `{}` may be guessed from a globally searched nominal Struct of identical shape. An anonymous zero-field Struct uses explicit `infer struct {}` and a nominal Struct initializer uses `T{...}` or contextually typed `infer struct {...}`, subject to the separate checked Struct contract.
+- A Struct field must use its declared identifier name; serializable aliases do not become bracket index or named-argument identifiers. The form `let struct<T> v = {...};` is **not** a new type declaration/constructor rule; use `let v: T = infer struct {...};` or `let v = T{...};` once that target has guest support.
+
+**Callable argument distinction:** `f(foo=1)` is a proposed *named argument* in **call context**; `f((foo=1))` passes one **Record value** positionally; `f(r)` never auto-expands a Record. `f(...r)` explicitly expands a statically known Record's identifier-named fields to named arguments, subject to the callable's resolved parameter signature. The call site must reject unknown, duplicated, inaccessible or type-incompatible arguments; defaulted parameters may be omitted. Positional arguments may precede named arguments, but positional arguments after named ones reject. Nested expansion, an open Record without proven fields, and quoted nonidentifier keys have no ambient reflection fallback. No duplicate can arise from `f(foo=1, ...r)`, even if its values are equal. Evaluate arguments/fields left-to-right exactly once; reject unsafe ownership transfer, mutable borrowed graph escapes, actor state access and any tenant boundary bypass. `...` is not implicit general spread or host `Map` iteration.
+
+```atto
+let tuple_value = ("5", 3, true);      // Tuple<string,int,bool>
+let named = (foo="star", abc=5);       // Record with identifier fields
+let braced = {foo:"star", abc:5};      // structurally same Record
+let empty_tuple = ();                 // Tuple of zero elements
+let empty_record: Record = {};        // Record; context required for {}
+let empty_map: Map<string,int> = {};  // Map; context required for {}
+
+describe(name="Atto", count=5);       // named call args, proposed distinct feature
+describe((name="Atto", count=5));     // one Record positional arg
+describe(...named);                   // explicit checked Record expansion, proposed
+```
+
+**Admission stages:** The Rust/Wasm narrow compiler may first lower parenthesized, fully scalar closed Records through the *existing* compiler-authenticated fixed-field Record ABI. That is real guest support only after execution at an exact compiler SHA. Named calls, Record spread, dynamic Map, nominal Struct and general Tuple allocation/indexing remain independent, fail-closed stages; a grammar or static typing pass cannot certify their runtime execution. Canonical formatter output for parenthesized named Records is `(foo=1, bar=2)` (do not rewrite user syntax to a call). Both accepted Record surface forms must have parse-equivalent typed shapes, and formatting must be idempotent.
 
 ## Map, Record and Struct: keys, fields, and layout
 
