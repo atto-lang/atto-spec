@@ -200,3 +200,42 @@ Entry argument ownership follows existing default borrowing: a Copy-safe scalar 
 **Required negative conformance:** bare `a => b => c`; invalid `Entry<int>` generic arity; mismatched `Entry<string,int> = 1 => "x"`; assignment to `entry.key` or `entry.value`; insert wrong K or V; mutation through non-`mut` Map view; unhashable/unstable key; use-after-`take!`; borrowed mutable values escaping in an Entry; quotas/collision rollback; unguarded cross-tenant mutable alias; missing-key `unwrap()` failure; literal duplicate constant map keys. A parser accepting the token is **not** evidence of executable guest Map mutation.
 
 **Migration and interoperability:** the legacy Java Entry model recognized only `Entry.of(key,value)` and older Map APIs used `put`/required-read indexing. This addition makes a deliberate new-source sugar and upsert API choice. Implementations should retain explicitly supported legacy aliases without confusing required-read indexing `map[key]` with write-place `map[key] = value`; they require different checking and diagnostics. The formatter preserves `=>` and Map brace context and proves parse-equivalent, idempotent round trips. Track this staged contract alongside atto-source.rs#274 and atto-platform-conformance; do not claim backend parity before executable tests.
+
+### Whole-Entry type ascription (two equivalent spellings)
+
+The following are **equivalent** nominal `Entry<string,int>` declarations:
+
+```atto
+let entry1 = ("foo" => 5) as Entry<string, int>;
+let entry2 = "foo" => 5 (as Entry<string, int>);
+```
+
+Both annotate the **entire** `Entry` value, never only the right-hand operand, and normalize to a single checked `EntryExpr(key, value, expected_type=Entry<K,V>)` typed expression. The second spelling is a narrowly reserved trailing `(as Entry<K,V>)` suffix, *only for a completed Entry expression*. This does not enable general `x as T` unchecked casts, redefine `as val` conditional captures, or override the separate type-conversion proposal. The first spelling requires the ordinary Entry expression to be grouped; an arbitrary Record, Struct, Map, Tuple or scalar cannot be reinterpreted into `Entry` by a cast.
+
+```ebnf
+whole_entry_ascription =
+    "(", entry_expression, ")", "as", "Entry", "<", type, ",", type, ">"
+  | entry_expression, "(", "as", "Entry", "<", type, ",", type, ">", ")" ;
+```
+
+Both spellings must statically verify exact `K` and `V` compatibility and generic arity, and preserve source-order, exactly-once evaluation and checked ownership. They produce the same semantic typed IR; only diagnostic source spans can differ. The formatter's canonical output is `(key => value) as Entry<K,V>`, and both spellings must round-trip without changing behavior.
+
+For a file-scope `let entry = ...;`, v1 admission is limited to **pure, immutable, runtime-independent, statically evaluable Entry expressions with recursively frozen/COPY-safe components**, instantiated privately per module/tenant. General mutable global `let` initialization or effectful module evaluation is **not** approved by this Entry syntax. The compiler must reject impure or non-isolated initializers until a separately verified module lifecycle is available.
+
+```atto
+let entry1 = ("foo" => 5) as Entry<string, int>;
+let entry2 = "foo" => 5 (as Entry<string, int>);
+
+pub fnc main(): int {
+    let mut Map<string, int> x = {"foo" => 5};
+    x.set("foo", 6);
+    x["foo"] = 3;
+    x.add(entry1);
+    x.add(entry2);
+    return x.get("foo").unwrap(); // 5: both adds are upserts
+}
+```
+
+`set`, indexed Map assignment, and `add(Entry)` all replace an existing key by this contract. `try_add(Entry)` is the insert-only operation and returns `false` for a duplicate; the dedicated Map mutation proposal must agree. Distinct module-scope Entries do not alias mutable Map storage or import host objects.
+
+Required negative cases include malformed `(as Entry<K,V>)`, `Entry<T>` wrong arity, mismatched key/value types, a scalar/Record ascribed as Entry, `Entry` ascribed as Map, ambiguous arrow nesting, a suffix that captures only the RHS, `as val` erroneously treated as a cast, and impure module-scope initializers. Static compiler checks and formatter golden cases are **not** a claim of backend guest support.
