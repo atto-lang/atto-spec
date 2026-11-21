@@ -44,7 +44,7 @@ additive     = product { ("+" | "-") product } ;
 unary        = "~" unary | other_unary ;
 ```
 
-`^^` is **integer bitwise XOR** on two `int` operands, never an alternate return marker or a Boolean coercion. `^` has **no infix expression meaning**. The ordinary `|>` functional pipeline remains distinct. The separate proposed Boolean-operator contract in #6 must be reconciled with this operator spelling; do not claim `bool ^^ bool` support from this document.
+`^^` is **integer bitwise XOR** on two `int` operands, never an alternate return marker or a Boolean coercion. `^` has **no infix expression meaning**. The ordinary `|>` functional pipeline remains distinct. The owner-approved reconciliation in [#151](https://github.com/atto-lang/atto-spec/pull/151) reserves `^^` exclusively for integer XOR; Boolean XOR is the explicit `Xor(bool,bool)` operation. This supersedes the competing `bool ^^ bool` spelling in draft [#6](https://github.com/atto-lang/atto-spec/pull/6) for the canonical language. No backend execution is established by this decision.
 
 **Compatibility rule:** legacy single `|` inside an unparenthesized `if` or `while` condition remains boolean OR until separately migrated. To use integer `|` there, parenthesize the integer subexpression: `if (flags | mask) eq expected then ... fi`. `|x| -> expression` remains a lambda.
 
