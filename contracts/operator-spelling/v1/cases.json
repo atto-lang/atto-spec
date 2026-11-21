@@ -8,7 +8,8 @@
     "Math.pow is a typed API call; overload, precision, and rounding are defined separately",
     "Double-angle << and >> operate on statically verified read/write capabilities or traits, not bit shifts",
     "Java/LLVM/Wasm/Forge/.NET/browser guest parity is not certified by this contract",
-    "Shift distances are checked in [0,63]; never mask count with n & 63. This is an expected language failure, not a numeric modulo-64 result."
+    "Shift distances are checked in [0,63]; never mask count with n & 63. This is an expected language failure, not a numeric modulo-64 result.",
+    "The 2026-11-20 owner-approved target uses Xor(bool,bool), not bool ^^ bool (atto-spec #151); source-only contract case, no guest PASS."
   ],
   "cases": [
     {
@@ -128,6 +129,15 @@
       "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
     },
     {
+      "id": "boolean-xor-api",
+      "source": "Xor(true, false)",
+      "context": "typed_bool_call_expression",
+      "expected": "ACCEPT",
+      "meaning": "BOOLEAN_XOR_CALL",
+      "reference_result": "true",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
       "id": "invalid-bool-bitwise-xor",
       "source": "true ^^ false",
       "context": "bool_expression",
@@ -149,6 +159,15 @@
       "context": "int_expression",
       "expected": "REJECT",
       "meaning": "DOUBLE_ANGLE_IS_IO_NOT_SHIFT",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "valid-shift-distance-63",
+      "source": "1 <<< 63",
+      "context": "int_expression",
+      "expected": "ACCEPT",
+      "meaning": "BIT_SHIFT_LEFT",
+      "reference_result": "-9223372036854775808",
       "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT"
     },
     {
