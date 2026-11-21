@@ -8,6 +8,12 @@ Canonical AttoLang language specification, including syntax, semantics, types, o
 
 [AttoLang](https://github.com/atto-lang) is the sole canonical project name; configure repository remotes as `https://github.com/atto-lang/atto-spec.git` and refer to `.atto` in new examples. [atto-spec](https://github.com/atto-lang/atto-spec) owns normative grammar, ownership, lifetime, effects and actor contracts; [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance) tracks executed verification. Distinguish design proposals from tested compiler support and do not advertise zero-step CI as guest conformance.
 
+## Atto Theater application-platform architecture
+
+The adopted platform names are **Atto Theater** (OTP-style application platform), **Atto Director** (supervision), **Atto Ensemble** (actor groups, typed topics and subscriptions), and **Atto Runtime** (execution engine). These are architectural names, not new language keywords or claims of completed guest support.
+
+- [Atto Theater v1 — canonical naming, layering, safety boundaries and conformance plan](architecture/atto-theater-v1.md)
+
 ## Purpose
 
 Define normative syntax and semantics; document actor isolation, effects, ownership, and portability requirements.
