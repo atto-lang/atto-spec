@@ -58,7 +58,7 @@ These scopes are a design vocabulary; no theme is required to adopt a particular
 
 ## Canonical keyword registry (staged contract)
 
-The [versioned catalog](../contracts/keyword-taxonomy-v1/catalog.json) now stores a **documentation-derived snapshot** of the 93 words in chapter 16's recorded Java reserved-keyword table, all 12 words chapter 16 explicitly names as non-reserved, four recognized compounds, 10 additional *candidate/contextual* spellings, and special-case/non-keyword examples. Its status is `DRAFT_TOOLING_METADATA_NOT_COMPILER_VERIFIED`.
+The [versioned catalog](../contracts/keyword-taxonomy-v1/catalog.json) now stores a **documentation-derived snapshot** of the 95 words in chapter 16's recorded Java reserved-keyword table, all 12 words chapter 16 explicitly names as non-reserved, four recognized compounds, 10 additional *candidate/contextual* spellings, and special-case/non-keyword examples. Its status is `DRAFT_TOOLING_METADATA_NOT_COMPILER_VERIFIED`.
 
 The catalog's `reserved_groups` provide grouped metadata (`id`, `linguistic_role`, `semantic_role`, `highlight_scope`, `lsp_fallback`, `lexical_status`, and `words`). A group is a compact representation of per-word classification, **not** evidence of a compiler AST node or proof that every occurrence of a member has the same syntactic role. Context-sensitive spellings remain separately recorded. The catalog distinguishes:
 

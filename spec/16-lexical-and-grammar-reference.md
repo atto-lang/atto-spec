@@ -14,7 +14,7 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 
 ## Keywords
 
-The Java lexer reserves these words. The LLVM parser has its own keyword handling, and the two lists have not been compared.
+The Java lexer reserves these words in the proposed feature branch (oreslang-source.java#3086); the independent native parser supports the two new spellings in oreslang-source.llvm#1791. Exact-head guest CI has not verified these PRs yet.
 
 | Group | Words |
 | --- | --- |
@@ -97,7 +97,7 @@ if_statement  = "do" conditional_head condition "then" { statement } [ "else" { 
 ternary       = expression "?" expression ":" expression ;
 ```
 
-`ifnot` and `unless` are equivalent negated-condition heads. They evaluate the condition once and execute the then-arm only when it is false. The expression form has mandatory `else` and yields a statically checked value. A branch cannot use a bare `break`, `continue`, or `return` as its result. The two statement forms yield no value; control transfer is permitted when otherwise legal (e.g. `break` within an enclosing loop). Canonical brace statements require no `fi`. A strict compiler must reject `if true then break; fi` even when nested inside a loop. Historical `if ... then` statements and `if { ... } fi` files remain migration-only until updated. See [chapter 27](27-value-conditionals-and-do-if.md).
+`ifnot` and `unless` are equivalent negated-condition heads. They evaluate the condition once and execute the then-arm only when it is false. The expression form has mandatory `else` and yields a statically checked value. A branch cannot use a bare `break`, `continue`, or `return` as its result. The two statement forms yield no value; control transfer is permitted when otherwise legal (e.g. `break` within an enclosing loop). Canonical brace statements require no `fi`. A strict compiler must reject `if true then break; fi` even when nested inside a loop. Historical `if ... then` statements and `if { ... } fi` files remain migration-only until updated. See [chapter 27](27-value-conditionals-and-do-if.md). The corresponding [machine-readable contract](../contracts/ifnot-unless-v1.json) codifies the three conditional categories and fail-closed negative heads.
 
 
 ## Function forms

@@ -86,7 +86,22 @@ while should_continue() do
 done
 ```
 
-The negated synonyms `ifnot` and `unless` are available after `do` and with braces, and as value expressions; they negate the boolean condition without changing control-flow category. Thus `do ifnot true then break; fi` and `do unless true then break; fi` both skip the break.
+Both `ifnot` and `unless` negate the **first** boolean condition and evaluate it exactly once. They follow the same expression-versus-statement distinction as `if`: a value form has **mandatory** `else` and `fi` with compatible arm types; a `do ifnot/unless ... then` statement has **optional** `else` and closes with `fi`; a braced imperative form has optional `else` and **no `fi`**. The resulting `elif` conditions, if any, are not implicitly negated. Neither keyword supports postfix `unless`. Refutable pattern heads and conditional `as let` bindings in the negated head remain rejected until sound narrowing is implemented. See [the semantic contract](../contracts/ifnot-unless-v1.json) and [conditional-expression grammar PR #183](https://github.com/atto-lang/atto-spec/pull/183).
+
+```atto
+do ifnot ready then
+  start_worker();
+else
+  notify_ready();
+fi
+
+unless should_stop {
+  process_next();
+}
+
+val int selected = unless ready then 5 else 6 fi;
+```
+
 
 A bare `if ... then ... fi` is not a statement in the canonical AttoLang grammar; it requires an `else` value and value-producing arms. `do if ... then ... fi` and `if ... { ... } else { ... }` are imperative statements. Inside a loop, use `do if condition then break; fi`, **not** `if condition then break; fi`. `break`, `continue`, and `return` are control transfers, not conditional expression values. See [value conditionals and do-if](27-value-conditionals-and-do-if.md).
 
