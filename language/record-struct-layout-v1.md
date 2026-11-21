@@ -4,11 +4,30 @@
 These are semantic and optimizer requirements, **not** evidence of completed
 guest allocation, field access, ABI, or backend parity.
 
+## Superseding literal grammar and implementation boundary
+
+This proposal defines **layout**, not an independent literal grammar.
+[atto-spec #133](https://github.com/atto-lang/atto-spec/pull/133) is the
+newer, authoritative candidate for the quoted-key correction: only
+identifier-colon `{field: value}` or parenthesized `(field=value)`
+constructs a structural Record field. A quoted brace key constructs a Map
+item with either `:` or `=>`; a dynamic expression key uses `=>`.
+The literal `record["field"]` projects an **identifier-named** Record
+field when statically proven; it is not a constructor grammar rule.
+Mixed Map/Record entries reject and there is no implicit conversion.
+
+Older compiler tests that accepted quoted brace fields as Records are
+**historical behavior**, not current-grammar conformance. Re-run guest
+evidence on exact source SHAs before asserting parity, layout savings, or
+cross-backend behavior.
+
 ## Definitions
 
 - **Closed Record:** structural value with a finite, statically known set of
-  names and types. Fields may be identifiers or quoted UTF-8 strings, including
-  punctuation or whitespace. `{a:1, "content-type":"json"}` is a Record.
+  names and types. Fields are identifier-named: `{a:1, status_code:200}` and
+  `(a=1, status_code=200)` construct Records. Quoted string keys in braces,
+  whether separated by `:` or `=>`, construct Maps, not Records. A single
+  brace literal cannot mix Map and Record entries.
   Its *type identity* is the canonical set of (field name, field type) pairs:
   **field order does not distinguish two otherwise identical closed Records**.
   A closed Record never requires a hash table for access to a known field.
@@ -35,15 +54,16 @@ guest allocation, field access, ABI, or backend parity.
 ## Proposed examples (not verified guest syntax)
 
 ```atto
-let Record headers = {
+let Record response = {
+    status_code: 200,
+    ok: true
+};
+let Record response_paren = (ok=true, status_code=200);
+
+let Map<string, string> headers = {
     "content-type": "application/json",
     "x-request-id": "123",
-    status_code: 200
-};
-
-let Map<string, string> metadata = {
-    "content-type" => "application/json",
-    "header name" => "value"
+    'header name' => "value"
 };
 
 // Candidate Struct declaration: the parser/runtime do not yet support this.
@@ -53,12 +73,14 @@ define struct ResponseHeader as
 end
 ```
 
-`headers.status_code` is a statically known field. The proposed
-`headers["content-type"]` is a **constant-name Record field projection**
-and can lower to direct access when the closed shape is known; this spelling
-and its open-Record presence-check counterpart still need a dedicated
-parser/type-checker contract. A dynamic `headers[key]` cannot silently
-become a Map lookup, nor may it bypass type/presence checks.
+`response.status_code` is a statically known Record field.
+`response["status_code"]` is a **constant-name Record field projection**
+that may lower to direct access when its closed shape is known; it does not
+make `{"status_code": 200}` a Record initializer. Open-Record
+presence-checking requires independent parser/type-checker proof.
+`headers.get("content-type")` is a checked **Map lookup** with Hash/Eq and
+explicit absence, not a constant Record offset. Dynamic `response[key]`
+cannot silently become a Map lookup or bypass type/presence checks.
 
 If a Struct must serialize a field as `"content-type"`, use a future
 explicit external-name/serialization annotation. Do not encode arbitrary
@@ -71,8 +93,10 @@ quoted field names into the Struct's internal type identity.
    use a canonical bytewise UTF-8 field-name ordering. Keep an explicit
    source-field-to-canonical-slot permutation when lowering. Never reorder
    effects to achieve a compact memory layout. No Unicode case folding or
-   implicit normalization; a bare `name` and quoted `"name"` are the same
-   field name and duplicates reject.
+   implicit normalization. Duplicate identifier Record fields reject.
+   Quoted Map keys never become Record field aliases: a mixed
+   `{name: 1, "name": 2}` rejects `E_LITERAL_KIND`, rather than being
+   accepted as a Record or inferred Map.
 2. **No map allocation for closed shapes:** compile-time-known Record fields
    may be stored in compact inline/stack/arena memory according to target
    ownership, escape and alignment rules; access becomes a constant slot or
@@ -116,9 +140,14 @@ quoted field names into the Struct's internal type identity.
 - Closed Records `{a:1,b:true}` and `{b:true,a:1}` have identical static
   structural type and a single canonical layout shape; their evaluation
   order stays source-ordered.
-- `{"content-type":"x", status_code:200}` permits the quoted label in
-  Record and rejects duplicate `status_code` or `"status_code"`.
-  Two distinct label spellings that differ in UTF-8 bytes do not collide.
+- `{status_code:200, ok:true}` and `(ok=true, status_code=200)`
+  canonicalize to the same closed Record shape independently of source order;
+  a duplicate identifier field rejects `E_DUPLICATE`.
+- `{"content-type":"x", "status_code":"200"}` is a typed Map with
+  decoded string keys; `{"content-type":"x", 'other' => "y"}`
+  may mix quoted Map delimiters. `{status_code:200, "content-type":"x"}`
+  rejects `E_LITERAL_KIND`; dynamic Map key expressions never resolve
+  through Record field offsets or bypass stable Hash/Eq.
 - A nominal Struct `S1` is distinct from `S2` despite matching fields,
   and a Struct's declaration order is retained in its stable layout plan.
 - A closed Record known field resolves directly to a static slot; an
@@ -144,7 +173,9 @@ the compiler-owned canonical logical slot planner is in
 A first **executable, restricted closed-scalar Record** profile now exists
 in [`atto-source.rs#284`](https://github.com/atto-lang/atto-source.rs/pull/284).
 It accepts direct local bindings with **1–8 statically typed, owned scalar**
-int/bool/float/string fields. The compiler checks the canonical type/slot
+int/bool/float/string fields. Historical guest receipts from before the
+quoted-key correction are **not** proof that the revised grammar accepts
+quoted brace fields as Records. The compiler checks the canonical type/slot
 inventory, interns equivalent field-name/type sets, evaluates the field
 initializers in original source order and passes those values to a generated
 private constructor in canonical slot order.
@@ -152,9 +183,10 @@ private constructor in canonical slot order.
 The current guest implementation reuses the existing **checked nominal
 class Wasm allocation and 8-byte field slot layout**, including constant
 field offsets and typed loads. A direct local closed Record supports
-`record.field` and `record["literal-field"]` (also Unicode labels) via
+`record.field` and `record["literal-field"]` (for known identifier field names) via
 checked static field lookup. Missing names produce `E_NO_FIELD`.
-Computed keys remain `E_UNSUPPORTED`. There is **no Map hash-lookup
+Computed Map key lookup and dynamic Record reflection remain unsupported
+until independently verified guest lowering. There is **no Map hash-lookup
 fallback**. Unproven nested data/effectful field expressions, open Record
 runtime fields, mutable borrowing of the generated storage, unsafe aliases,
 actor transport, value-equality semantics and general Record/Struct
