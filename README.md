@@ -34,6 +34,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 - [Class field binding defaults v2](language/class-field-binding-defaults-v2.md): canonical implicit `val` for ordinary class fields, explicit `let` for writable bindings; replaces historical v1 implicit-`let` rule. Focused Rust/browser guest execution verified; cross-backend and package-linker parity remain pending.
 - [Class field binding defaults v1 (historical)](language/class-field-binding-defaults-v1.md): previously adopted `let` default, retained for migration and explicit supersession tracking.
 
+- [Field-sensitive borrowing and projected actor-state receivers v1](language/field-sensitive-borrow-effects-v1.md): TARGET typed disjoint places/NLL, authenticated method effects, and `mtd (Foo mut self.state.{counter, xyz})` contracts; no executable backend parity claimed.
 - [Implicit argument borrowing v1](language/implicit-argument-borrow-v1.md): target non-owning default for nonprimitive call arguments, checked mutable loans, explicit ambiguous cases and breaking ownership migration (not yet compiler-certified).
 
 - [Struct field equals initializer v1](language/struct-field-equals-v1.md): restricted `StructName(field=value)` with checked name resolution, ordinary-call rejection, and source-order safety (TARGET / NOT EXECUTED).
