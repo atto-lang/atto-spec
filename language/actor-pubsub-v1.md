@@ -12,14 +12,14 @@ A typed group-scoped topic's identity is (broker instance, group identity, case-
 
 ## Illustrative source surface
 
-The following is a **source contract target**, not a claim that all parsers or backends currently compile it. The spelling follows the existing Java compiler guest proposal; `try_publish` is the portable nonblocking admission target.
+The following is a **source contract target**, not a claim that all parsers or backends currently compile it. Publication happens in an **authorized group member actor turn**, not in anonymous root code. The spelling follows the existing Java compiler guest proposal; `try_publish` is the portable nonblocking admission target. The producer and subscriber startup handshake must be completed before triggering the first publication.
 
 ```atto
 define actor AuditWorker as
   suspends receive(ActorMail<String> mail) -> void ::
-    val group = actor.group("payments")
-    val topic = group.topic<String>("payment.completed")
-    val subscription = topic.subscribe(capacity: 32)?
+    val topic = actor.group("payments").topic<String>("payment.completed")
+    val subscription = topic.subscribe()?
+    // Send readiness to the coordinator before waiting for the first event.
     val event = await subscription.next()
     process_event(event)
     subscription.unsubscribe()
@@ -27,16 +27,27 @@ define actor AuditWorker as
   end
 end
 
+define actor PaymentPublisher as
+  suspends receive(ActorMail<String> mail) -> void ::
+    val topic = actor.group("payments").topic<String>("payment.completed")
+    val attempt = topic.try_publish(rt share "p-1")
+    // Explicitly handle Result; admission is not processing acknowledgement.
+  end
+end
+
 pub suspends fnc main() -> void ::
   val group = actor.group("payments")
   val topic = group.topic<String>("payment.completed", "reliable", 32)
   val audit = spawn AuditWorker()
+  val publisher = spawn PaymentPublisher()
   await audit.get_ready()
-  val membership = group.join(audit)?
+  await publisher.get_ready()
+  val audit_membership = group.join(audit)?
+  val publisher_membership = group.join(publisher)?
   audit.send("start")?
-  val receipt = topic.try_publish(rt share "p-1")?
-  // receipt means *admitted*, not consumed by AuditWorker.
-  membership.leave()?
+  // Wait for audit's explicit subscription-ready signal, then:
+  publisher.send("publish")?
+  // Revoke both memberships only after delivery/handler quiescence.
 end
 ```
 
@@ -54,6 +65,8 @@ The authenticated actor turn and explicit delegated group authority are runtime 
 ## Publication and delivery
 
 **Portable core = `RELIABLE` only.** Publication validates live publisher authority for the topic's group, `Sendable` immutable shared payload ownership, target generations, broker/group state and all bounded per-recipient quota (queued + in flight). It atomically reserves **every** eligible recipient before assigning the next monotonic per-topic unsigned 64-bit sequence. If **any** recipient is full or the operation is busy/unauthorized, it fails **without** a partial enqueue, leaked credit, sequence increment, consumed payload or handler callback. A publication with zero recipients succeeds and consumes a topic sequence without retention.
+
+Subscription events are read from a **dedicated bounded subscription queue** through `subscription.next()` / `try_read()`; publication does **not** implicitly inject a message into the actor's ordinary `receive(Message)` DATA inbox and never invokes actor code inline. An adapter may explicitly forward subscription events into DATA, subject to independent mailbox admission and error handling. This reconciles the current Java guest API with the portable model; the older conformance document describes direct `receive(Message)` routing and must be amended before declaring parity.
 
 A successful `PublishReceipt` reports topic sequence and recipient *admission attempts*, **not** processing, delivery completion or durable acknowledgement. One successful publication produces at most one attempt **per eligible subscription-recipient edge**. Recipient queues start events in increasing topic-sequence order; concurrent publishers admit at one linearization order per topic. No total order is required **between topics**. No automatic retry, deduplication or exactly-once application effects.
 

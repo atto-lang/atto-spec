@@ -5,27 +5,48 @@ const c=JSON.parse(readFileSync(new URL("../contracts/actor-pubsub-v1/contract.j
 
 // SOURCE-FREE invariants only. This suite is deliberately not a compiler/actor guest.
 class Broker {
-  constructor(){this.actors=new Map();this.groups=new Map();this.grants=new Set();this.topics=new Map();this.subs=[];}
-  actor(name,generation=1){const a={name,generation,alive:true};this.actors.set(name,a);return a;}
-  group(name){const g={name,alive:true,members:new Set()};this.groups.set(name,g);return g;}
+  constructor(){this.actors=new Map();this.groups=new Map();this.grants=new Set();this.grantState=new WeakMap();this.topics=new Map();this.subs=[];this.actorHandles=new Set();this.groupHandles=new Set();this.topicHandles=new Set();this.closed=false;}
+  actor(name,generation=1){if(this.closed)return {error:"Closed"};const a={name,generation,alive:true};this.actors.set(name,a);this.actorHandles.add(a);return a;}
+  group(name){if(this.closed)return {error:"Closed"};const g={name,alive:true,members:new Set()};this.groups.set(name,g);this.groupHandles.add(g);return g;}
   join(g,a){
-    if(!g.alive||!a.alive) return {error:"StaleTarget"};
-    if(g.members.has(a)) return {alreadyMember:true};
-    const cap={g,a,active:true};this.grants.add(cap);g.members.add(a);return {cap};
+    if(this.closed)return {error:"Closed"};
+    if(!this.groupHandles.has(g)||!this.actorHandles.has(a)||!g.alive||!a.alive)
+      return {error:"StaleTarget"};
+    if(g.members.has(a))return {alreadyMember:true};
+    const cap=Object.freeze({g,a});
+    this.grants.add(cap);this.grantState.set(cap,true);g.members.add(a);
+    return {cap};
   }
   leave(cap){
-    if(!this.grants.has(cap)||!cap.active) return {error:"StaleMembership"};
-    cap.active=false;cap.g.members.delete(cap.a);
+    if(!this.grants.has(cap)||!this.grantState.get(cap))return {error:"StaleMembership"};
+    this.grantState.set(cap,false);cap.g.members.delete(cap.a);
     for(const s of this.subs) if(!s.closed&&s.topic.g===cap.g) {
       if(s.kind==="actor"&&s.target===cap.a)this.unsubscribe(s);
       else if(s.kind==="group"&&s.target===cap.g)s.queues.delete(cap.a);
     }
     return {ok:true};
   }
-  topic(g,name){const t={g,name,seq:0};this.topics.set(g.name+":"+name,t);return t;}
+  topic(g,name,type="Event",policy="RELIABLE"){
+    if(this.closed)return {error:"Closed"};
+    if(!this.groupHandles.has(g)||!g.alive)return {error:"StaleGroup"};
+    if(typeof name!=="string"||!/^[A-Za-z][A-Za-z0-9._/-]{0,127}$/.test(name))
+      return {error:"InvalidName"};
+    const scoped=this.topics.get(g)??new Map(),existing=scoped.get(name);
+    if(existing)return existing.type!==type?{error:"TopicTypeMismatch"}:
+      existing.policy!==policy?{error:"TopicPolicyMismatch"}:existing;
+    const t={g,name,type,policy,seq:0};
+    scoped.set(name,t);this.topics.set(g,scoped);this.topicHandles.add(t);
+    return t;
+  }
   subscribe(t,kind,target,capacity){
-    if(!t.g.alive||(!target.alive&&kind==="actor"))return {error:"StaleTarget"};
-    if(kind==="group"?target!==t.g:!t.g.members.has(target))return {error:"UnauthorizedSubscriber"};
+    if(this.closed)return {error:"Closed"};
+    if(!this.topicHandles.has(t))return {error:"UnknownTopic"};
+    if(!t.g.alive)return {error:"StaleGroup"};
+    if(kind!=="actor"&&kind!=="group")return {error:"InvalidTargetKind"};
+    if(kind==="actor"? !this.actorHandles.has(target)||!target.alive :
+      !this.groupHandles.has(target)||!target.alive)return {error:"StaleTarget"};
+    if(kind==="group"?target!==t.g:!t.g.members.has(target))
+      return {error:"UnauthorizedSubscriber"};
     const old=this.subs.find(s=>!s.closed&&s.topic===t&&s.kind===kind&&s.target===target);
     if(old)return old.capacity===capacity?{sub:old,alreadySubscribed:true}:{error:"SubscriptionConflict"};
     if(!Number.isInteger(capacity)||capacity<1)return {error:"InvalidCapacity"};
@@ -33,9 +54,11 @@ class Broker {
     this.subs.push(sub);return {sub};
   }
   publish(t,cap,payload,shared=true){
+    if(this.closed)return {error:"Closed"};
+    if(!this.topicHandles.has(t))return {error:"UnknownTopic"};
     if(!t.g.alive)return {error:"StaleGroup"};
-    if(!this.grants.has(cap)||!cap.active||cap.g!==t.g||!cap.a.alive||!t.g.members.has(cap.a))
-      return {error:"UnauthorizedPublisher"};
+    if(!this.grants.has(cap)||!this.grantState.get(cap)||cap.g!==t.g||
+      !cap.a.alive||!t.g.members.has(cap.a))return {error:"UnauthorizedPublisher"};
     if(!shared)return {error:"NotShared"};
     const all=[];
     for(const sub of this.subs)if(!sub.closed&&sub.topic===t){
@@ -54,8 +77,10 @@ class Broker {
     return {sequence:t.seq,recipients:all.length};
   }
   begin(s,a){
+    if(!this.subs.includes(s)||!this.actorHandles.has(a))return {error:"StaleTarget"};
     if(s.closed)return {error:"Closed"};
-    if(!a.alive||!s.topic.g.members.has(a))return {error:"StaleTarget"};
+    if(!a.alive||!s.topic.g.alive||!s.topic.g.members.has(a)||
+      (s.kind==="actor"&&s.target!==a))return {error:"StaleTarget"};
     const q=s.queues.get(a);if(!q?.length)return {error:"Empty"};
     s.inflight.set(a,(s.inflight.get(a)??0)+1);return q.shift();
   }
@@ -68,11 +93,29 @@ class Broker {
   done(s){return s.closed&&[...s.inflight.values()].every(n=>n===0);}
   stop(a){
     a.alive=false;
-    for(const cap of this.grants)if(cap.active&&cap.a===a)this.leave(cap);
+    for(const cap of this.grants)
+      if(this.grantState.get(cap)&&cap.a===a)this.leave(cap);
     for(const sub of this.subs){
       sub.queues.delete(a);
       if(sub.kind==="actor"&&sub.target===a)this.unsubscribe(sub);
     }
+  }
+  closeGroup(g){
+    if(!this.groupHandles.has(g)||!g.alive)return {error:"StaleGroup"};
+    for(const cap of this.grants)
+      if(this.grantState.get(cap)&&cap.g===g)this.leave(cap);
+    g.alive=false;
+    for(const sub of this.subs)
+      if(sub.topic.g===g)this.unsubscribe(sub);
+    return {ok:true};
+  }
+  close(){
+    if(this.closed)return {ok:true};
+    this.closed=true;
+    for(const cap of this.grants)this.grantState.set(cap,false);
+    for(const g of this.groupHandles){g.alive=false;g.members.clear();}
+    for(const sub of this.subs)this.unsubscribe(sub);
+    return {ok:true};
   }
 }
 function setup(){
@@ -88,8 +131,8 @@ test("contract identity and evidence cannot masquerade as backend execution",()=
   assert.deepEqual(Object.keys(c.backend_evidence),c.targets);
   for(const value of Object.values(c.backend_evidence))assert.equal(value,"NOT_VERIFIED");
   assert.deepEqual(c.cases.map(x=>x.id),
-    Array.from({length:12},(_,i)=>"AP"+String(i+1).padStart(3,"0")));
-  assert.equal(new Set(c.cases.map(x=>x.invariant)).size,12);
+    Array.from({length:18},(_,i)=>"AP"+String(i+1).padStart(3,"0")));
+  assert.equal(new Set(c.cases.map(x=>x.invariant)).size,18);
 });
 test("AP001 membership alone never subscribes",()=>{
   const {b,cap,t}=setup();assert.deepEqual(b.publish(t,cap,"a"),{sequence:1,recipients:0});
@@ -177,4 +220,75 @@ test("AP012 leave in group g leaves an independent group's subscription intact",
   assert.equal(b.begin(gs,a).error,"StaleTarget");
   assert.equal(b.begin(hs,a).payload,"h");
   assert.deepEqual(b.publish(ht,other,"h2"),{error:"Full"});
+});
+
+test("AP013: forged group, actor, topic and kind are rejected before publication",()=>{
+  const {b,a,g,cap,t}=setup(),s=b.subscribe(t,"group",g,2).sub;
+  assert.equal(b.join({...g},a).error,"StaleTarget");
+  assert.equal(b.join(g,{...a}).error,"StaleTarget");
+  assert.equal(b.topic({...g},"events").error,"StaleGroup");
+  assert.equal(b.subscribe({...t},"actor",a,1).error,"UnknownTopic");
+  assert.equal(b.publish({...t},cap,"no").error,"UnknownTopic");
+  assert.equal(b.subscribe(t,"whatever",a,1).error,"InvalidTargetKind");
+  assert.equal(b.publish(t,cap,"yes").sequence,1);
+  assert.equal(b.begin(s,a).payload,"yes");
+});
+
+test("AP014: equal group and topic names cannot cross broker boundaries",()=>{
+  const {b,a,g,cap,t}=setup(),stranger=new Broker();
+  assert.equal(stranger.join(g,a).error,"StaleTarget");
+  assert.equal(stranger.publish(t,cap,"no").error,"UnknownTopic");
+  assert.equal(stranger.subscribe(t,"group",g,1).error,"UnknownTopic");
+  const fake=stranger.group("g");
+  assert.equal(stranger.topic(g,"events").error,"StaleGroup");
+  assert.notEqual(fake,g);
+  assert.equal(b.publish(t,cap,"still-authorized").sequence,1);
+});
+
+test("AP015: topic identity locks nominal payload type and delivery policy",()=>{
+  const {b,g,cap,t}=setup();
+  assert.equal(b.topic(g,"events"),t);
+  assert.equal(b.topic(g,"events","Other").error,"TopicTypeMismatch");
+  assert.equal(b.topic(g,"events","Event","LOSSY").error,"TopicPolicyMismatch");
+  for(const name of ["",".bad","-bad","bad space","ü"])
+    assert.equal(b.topic(g,name).error,"InvalidName");
+  assert.equal(b.publish(t,cap,"yes").sequence,1);
+});
+
+test("AP016: group shutdown revokes its grants and subscriptions but not neighbors",()=>{
+  const {b,a,g,cap,t}=setup(),h=b.group("h"),hc=b.join(h,a).cap;
+  const ht=b.topic(h,"events"),s=b.subscribe(t,"group",g,1).sub;
+  const other=b.subscribe(ht,"group",h,1).sub;
+  b.publish(t,cap,"pending");b.publish(ht,hc,"surviving");
+  assert.equal(b.closeGroup(g).ok,true);
+  assert.equal(b.publish(t,cap,"no").error,"StaleGroup");
+  assert.equal(b.begin(s,a).error,"Closed");
+  assert.equal(b.join(g,a).error,"StaleTarget");
+  assert.equal(b.begin(other,a).payload,"surviving");
+  assert.equal(b.publish(ht,hc,"next").error,"Full");
+});
+
+test("AP017: broker close fences grants; in-flight work remains quiescence tracked",()=>{
+  const {b,a,g,cap,t}=setup(),s=b.subscribe(t,"group",g,2).sub;
+  b.publish(t,cap,"active");
+  assert.equal(b.begin(s,a).payload,"active");
+  assert.equal(b.close().ok,true);
+  assert.equal(b.close().ok,true);
+  assert.equal(b.done(s),false);
+  assert.equal(b.publish(t,cap,"no").error,"Closed");
+  assert.equal(b.join(g,a).error,"Closed");
+  assert.equal(b.subscribe(t,"group",g,1).error,"Closed");
+  assert.equal(b.finish(s,a).ok,true);
+  assert.equal(b.done(s),true);
+});
+
+test("AP018: revoked immutable membership cannot be reactivated externally",()=>{
+  const {b,a,g,cap,t}=setup();
+  assert.equal(Object.isFrozen(cap),true);
+  assert.equal(b.leave(cap).ok,true);
+  assert.throws(()=>{cap.active=true},TypeError);
+  const next=b.join(g,a).cap;
+  assert.notEqual(next,cap);
+  assert.equal(b.publish(t,cap,"stale").error,"UnauthorizedPublisher");
+  assert.equal(b.publish(t,next,"new").sequence,1);
 });

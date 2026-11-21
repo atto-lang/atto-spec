@@ -96,6 +96,36 @@
       "id": "AP012",
       "name": "group leave preserves other group's deliveries",
       "invariant": "group_independence"
+    },
+    {
+      "id": "AP013",
+      "name": "reject forged group, actor, topic and target kind",
+      "invariant": "identity_authentication"
+    },
+    {
+      "id": "AP014",
+      "name": "same-named groups and topics remain broker-local",
+      "invariant": "cross_broker_scope"
+    },
+    {
+      "id": "AP015",
+      "name": "topic type, name and policy are immutable per identity",
+      "invariant": "topic_identity_validation"
+    },
+    {
+      "id": "AP016",
+      "name": "group close cancels scoped queues without harming neighbors",
+      "invariant": "group_close_fence"
+    },
+    {
+      "id": "AP017",
+      "name": "broker close revokes queued grants but waits for active handlers",
+      "invariant": "broker_close_fence"
+    },
+    {
+      "id": "AP018",
+      "name": "immutable stale grant cannot be reactivated on rejoin",
+      "invariant": "immutable_grant"
     }
   ],
   "backend_evidence": {
