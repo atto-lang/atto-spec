@@ -9,7 +9,7 @@ The grammar below describes the **unchanged legacy callable body families**.
 When a signature contains inline `throws`/`raises`/`panics` clauses,
 the more specific
 [java-style failure signature and body rules](java-style-failure-signature-bodies-v1.md)
-apply: return-before-effects requires `{` or `begin`; a trailing
+apply: return-before-effects requires `{`, `begin` or `::`; a trailing
 `-> T` after effects permits a newline-separated statement/`end` body
 without `begin`. That form uses ordinary explicit-return statements,
 not the comma-tail implicit-result semantics specified below.
