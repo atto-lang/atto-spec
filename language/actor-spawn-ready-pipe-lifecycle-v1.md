@@ -47,6 +47,8 @@ pub susp fnc main(): Result<int, Error> {
   // Then request an orderly shutdown under its structured scope.
   stop! producer;
   (await link.get_done())?;
+  // The drained graph no longer needs its consumer actor.
+  stop! consumer;
   await producer.get_done();
   await consumer.get_done();
   return Ok(0);
