@@ -130,17 +130,22 @@ skips its value `else` and may be handled by a surrounding `try/catch`.
 The surrounding `finally` retains its existing once-only structured-exit
 semantics, including normal `return` from a `maybe` handler.
 
-**Status / integration hold (2026-11-21):** `maybe` is not yet a
-cross-backend compiled feature. Proposed contracts in
-[maybe/else/defer proposal](https://github.com/atto-lang/atto-spec/pull/22) (draft PR #22) and
-atto-platform-conformance draft PR #485 disagree about:
-(1) whether `else` is mandatory;
-(2) whether reached **body-local** `defer` runs before or after an
-`else` value handler; and
-(3) contextual vs reserved `maybe` and `do maybe` admission.
-Those discrepancies must be reconciled before claiming a shared runtime
-contract. This `try` syntax PR neither silently enables `maybe`
-nor makes either `maybe` proposal normative.
+**Cross-feature integration candidate (2026-11-21):** the
+[maybe/else/defer proposal](https://github.com/atto-lang/atto-spec/pull/22)
+and [conformance draft #485](https://github.com/atto-lang/atto-platform-conformance/pull/485)
+now agree on the v1 target: `do maybe` / `return maybe` are contextual,
+`else` is mandatory and exhaustive, and reached body-local defers
+unwind **before** the chosen value-failure handler. Handler-local defers
+then unwind, followed by enclosing function cleanup and eligible outer
+`finally`. The parser must keep the two nested keyword `end` scopes
+independent, and `?=` must not dispatch to the exception `catch`.
+
+This is a **design reconciliation**, not compiler/runtime admission.
+Java's restricted maybe implementation is still open at
+[atto-source.java #1541](https://github.com/atto-lang/atto-source.java/pull/1541);
+Rust/Wasm's unsupported maybe forms still fail closed. Neither compiler
+may claim cross-feature execution until exact-source integration runs
+prove it.
 
 Required integration tests, *once a compiler admits `maybe`*:
 - `try ... do maybe ... else ... end ... catch ... finally ... end`;
