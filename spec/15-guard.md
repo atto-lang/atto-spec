@@ -32,8 +32,9 @@ fnc optional_port(bool present): Option<int> {
 ```
 
 In **both** forms, all guard tests passing continues after the guard;
-a failed test executes the failure statements, which MUST terminate the
-enclosing continuation. The `else` here introduces the *failure* block;
+a failed test executes the failure statements, which MUST explicitly
+return from the enclosing function on every path. This is a statically
+enforced requirement even when the predicate is a constant `true`. The `else` here introduces the *failure* block;
 it is not an optional success branch. This is distinct from the
 `if ... then ... else ... fi` construct.
 
@@ -43,8 +44,9 @@ Grammar target:
 guard_statement = "guard" guard_test ("," guard_test)* guard_failure ;
 guard_test      = boolean_expression | option_presence_test ;
 option_presence_test = identifier "is" "Some" ;
-guard_failure   = "{" statement* terminal_statement "}"
-                | "else" statement* terminal_statement "end" ;
+guard_failure   = "{" statement* returning_statement "}"
+                | "else" statement* returning_statement "end" ;
+returning_statement = return_statement | exhaustive_returning_conditional ;
 ```
 
 The `{` or `else` delimiter begins the failure block only immediately
@@ -85,16 +87,19 @@ including on round-trips, unless explicitly requested otherwise.
 
 ## Mandatory termination
 
-Every reachable path through the failure block MUST exit the enclosing
-continuation; a block that may fall through is a compile error. Supported
-exits depend on their enclosing context: `return`, a well-typed
-`throw` or other checked exceptional exit, and `break` or
-`continue` **only when they target an enclosing loop outside the guard**.
-A nested `if` is valid only when all reachable arms terminate; a
-nonexhaustive `match` cannot prove termination. Merely calling a
-function with unknown effects, spawning work, `await`, `defer`, or
-`yield` does not prove exit. Dead code after a terminal exit remains
-subject to the backend's dead-code policy.
+Every reachable path through the failure block MUST execute an explicit
+`return` or the equivalent explicit lexical return marker `^` that returns
+from the **enclosing function**. A block that can fall through is a compile
+error. `throw`, `raise`, `panic`, `break`, and `continue` are **not substitutes**
+for the required return, even if they would otherwise terminate a control-flow
+path; `break` and `continue` inside a guard never count as function returns.
+The return must match the enclosing function's declared return type; a `void`
+function uses `return;` (or its verified lexical equivalent). A nested `if`
+is valid only if all reachable arms explicitly return; similarly, a nested
+`match` may be accepted only if exhaustiveness and return on every arm are
+proved. Calling a function with unknown effects, spawning work, `await`,
+`defer`, or `yield` does not prove a return. Unreachable code remains subject
+to the backend's dead-code policy.
 
 ```atto
 guard ready { return; }                  // valid in a void callable
@@ -104,11 +109,16 @@ guard x > 0 else log("bad"); end           // reject: may fall through
 guard x > 0 else { return; }              // reject: mixed delimiters
 guard x > 0 { return; } else return; end   // reject: mixed delimiters
 guard x > 0 else return; fi               // reject: guard closes with end
+guard x > 0 { break; }                   // reject: loop break is not return
+guard x > 0 else continue; end          // reject: loop continue is not return
+guard x > 0 { throw new Error("bad"); }  // reject: throw is not return
 ```
 
 An implementation may initially support **only a stricter, statically
 provable subset** (such as a direct `return` failure block), but MUST
-not silently execute unsupported forms as if they were equivalent.
+not silently execute unsupported forms as if they were equivalent. An
+exceptional exit does not satisfy a mandatory-return guard and must not be
+promoted into one by lowering.
 
 ## Optional presence without `name = name`
 
@@ -156,12 +166,12 @@ must produce diagnostics rather than runtime panics.
 ## Backends, effects and exact evidence
 
 - Java: boolean guards can lower through a checked inverted `IfStmt`;
-  source `throw` and optional narrowing remain closed until independently
-  enabled by effect/type/ownership checking.
+  source `throw` does not discharge the guard return obligation; optional
+  narrowing remains closed until independently enabled by effect/type/ownership checking.
 - LLVM: initial source lowering admits scalar-only guard failures
   ending in `return`, including earlier side-effecting statements and
-  nested exhaustive conditionals with all paths returning. Other
-  terminating control transfers and Option payload narrowing remain
+  nested exhaustive conditionals with all paths explicitly returning. Other
+  control transfers and Option payload narrowing remain
   unimplemented. This is **authored**, not compiler-executed proof.
 - Wasm, .NET and Forge: fail closed until matching implementation and
   executed backend receipts exist.
@@ -172,7 +182,7 @@ must produce diagnostics rather than runtime panics.
   requires additive fixtures and versioned contract updates.
 
 All backends must check strict `bool` conditions, one-time evaluation,
-short circuit, nested/void/loop exits, malformed syntax, guard scope
+short circuit, nested/void function returns, invalid loop exits and throw-only branches, malformed syntax, guard scope
 and cleanup ordering. Exact source SHA, compiled guest execution
 and nonempty CI steps are required for parity claims. Source-free
 reference tests are useful but are **not** backend conformance.
