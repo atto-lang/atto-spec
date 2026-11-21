@@ -132,11 +132,54 @@ mtd (Foo mut self.state.{counter, xyz}) update(): void { /* guarded writes */ }
 **Grammar (contextual in the `mtd` receiver position only):**
 
 ```ebnf
-actor_receiver = nominal_type, "self"
-               | nominal_type, "mut", "self", ".", "state", state_projection? ;
+actor_receiver = nominal_type, receiver_name
+               | nominal_type, "mut", receiver_name, ".", "state", state_projection?
+               | receiver_name, ":", nominal_type ;  // readonly typed alias
+receiver_name = "self" | identifier ;
 state_projection = ".", field_name
                  | ".", "{", field_name, { ",", field_name }, "}" ;
 ```
+
+**Receiver binding (lexical alpha-equivalence):** The receiver name is a
+source-local variable bound to the exact `Foo` instance represented by the
+method's receiver. `self` is a conventional contextual name, **not the only
+legal name**. `mtd (Foo this)`, `mtd (this: Foo)`,
+`mtd (Foo mut this.state.counter)`, and
+`mtd (Foo mut node.state.{counter, xyz})` all bind their named receiver.
+The body must use that same name, including the
+`this.handle_state(critical-write |s| -> { ... })` call; renaming a header
+without renaming its body is a compile error, not an implicit `self` alias.
+The callback's `s` is a separate scoped state-borrow binder and must never
+shadow the receiver itself. Receiver bindings may not be shadowed by parameters
+or local declarations. `_` is the existing discarded-receiver spelling, not
+an addressable binding. Reserved keywords (for example `actor`) are not
+user-defined receiver names.
+
+**Semantic identity:** Receiver bindings are alpha-equivalent. Renaming
+`self` to `this` throughout a declaration preserves nominal owner,
+method identity, dispatch slot, ABI, receiver capabilities and canonical state
+write set. The binder is retained only as lexical metadata while checking the
+method body; the typed effect IR normalizes writes as
+`receiver.state.counter` rather than `self.state.counter` or
+`this.state.counter`. An override/interface implementation may use another
+local name without changing the contract. No receiver name alone gives
+write, move, send, or state-guard authority.
+
+```atto
+mtd (Foo mut self.state.counter) increment(): void {
+  self.handle_state(critical-write |s| -> { s.counter += 1; });
+}
+
+// Alpha-equivalent write set, bound under a different source-local name:
+mtd (Foo mut this.state.counter) increment(): void {
+  this.handle_state(critical-write |s| -> { s.counter += 1; });
+}
+```
+
+The two declarations above illustrate equivalent signatures **in separate
+sources**; declaring both on the same nominal `Foo` is a duplicate method,
+not an overload distinguished by receiver name. Actual actor guard lowering
+remains a separate verification requirement.
 
 In this grammar `Foo mut self.state` means the whole sealed user-state
 region; `Foo mut self.state.counter` means one field; and
@@ -168,9 +211,9 @@ field-scoped state permissions.
    fields and unsupported nested/index projections are errors. A non-state
    field can never be smuggled through this syntax. Bound the group length
    and nesting in parsers before allocation.
-3. Writes through `self.handle_state(critical-write |s| -> { ... })` must be
+3. Writes through `<receiver>.handle_state(critical-write |s| -> { ... })` must be
    statically within the declared write set; `critical-read` never writes.
-   Direct `self.state.field` access remains forbidden outside validated
+   Direct `<receiver>.state.field` access remains forbidden outside validated
    guarded scopes. This spelling grants no direct state access.
 4. Read effects are **not** erased: any additionally read field is tracked by
    the authenticated method effect summary. Narrower write permissions do not
@@ -193,7 +236,7 @@ field-scoped state permissions.
    diagnostics, not silently lower a whole-state mutable receiver.
 
 **Required source-level positive/negative cases (target outcomes):**
-accept `(Foo self)` calling `send/end` without state writes; accept one
+accept `(Foo self)` and `(Foo this)` calling `send/end` without state writes; accept one
 or two statically resolved distinct writable state fields in declared
 projections; accept a guarded write exclusively to `counter` with
 `mut self.state.{counter, xyz}`. Reject an unknown field, duplicate
