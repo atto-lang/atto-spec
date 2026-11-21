@@ -70,3 +70,5 @@ This README records the intended role of this repository; it is not a claim of f
 This repository is the normative AttoLang (`.atto`) specification; migration-era syntax is not automatically part of current supported semantics.
 
 Changes asserting compiler/runtime support must identify the exact source head, target, toolchain, executed positive and negative guest tests, and failure/unsupported status; an empty CI step list is **not executed**. Documentation records responsibility, **not** a claim of feature completion.
+
+- [ActorGroup typed pub/sub v1](language/actor-pubsub-v1.md): group membership is distinct from topic subscriptions; bounded RELIABLE atomic fan-out, affine cancellation and incarnation fencing are TARGET, not yet backend-verified.

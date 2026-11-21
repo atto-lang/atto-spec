@@ -1,0 +1,109 @@
+{
+  "schema": "atto.actor_pubsub.v1",
+  "status": "TARGET_NOT_BACKEND_VERIFIED",
+  "evidence": "SOURCE_FREE_MODEL_ONLY_NOT_GUEST_EXECUTION",
+  "scope": "runtime-local in-memory typed group-scoped events",
+  "core_policy": "RELIABLE",
+  "optional_extensions": [
+    "LOSSY",
+    "LATEST",
+    "PG_MONITOR_REVISIONS"
+  ],
+  "targets": [
+    "java",
+    "llvm",
+    "wasm",
+    "cranelift",
+    "net",
+    "forge"
+  ],
+  "authority": {
+    "membership": "opaque live actor-incarnation/group grant; duplicate join does not mint another",
+    "publisher": "authenticated executing turn plus same-group live grant",
+    "subscriber": "authenticated actor or delegated exact-group target admission"
+  },
+  "delivery": {
+    "topology": "one attempt per eligible (subscription,target incarnation); overlap not deduplicated",
+    "capacity": "per recipient outstanding=queued+inflight",
+    "admission": "atomic all-recipient reserve before u64 topic sequence",
+    "order": "one per-topic admission sequence; no cross-topic ordering",
+    "receipt": "admission only, not processing ack",
+    "retention": "none",
+    "unsubscribe": "cancel queued, fence new starts, wait for inflight"
+  },
+  "references": {
+    "canonical_conformance_pr": "https://github.com/atto-lang/atto-platform-conformance/pull/280",
+    "qos_extension_pr": "https://github.com/atto-lang/atto-platform-conformance/pull/451",
+    "monitor_extension_pr": "https://github.com/atto-lang/atto-platform-conformance/pull/452"
+  },
+  "cases": [
+    {
+      "id": "AP001",
+      "name": "membership alone never subscribes",
+      "invariant": "membership_no_auto_subscribe"
+    },
+    {
+      "id": "AP002",
+      "name": "atomic reliable admission does not skip sequence on full recipient",
+      "invariant": "reliable_atomic"
+    },
+    {
+      "id": "AP003",
+      "name": "scoped publish requires exact live publisher grant",
+      "invariant": "publisher_authority"
+    },
+    {
+      "id": "AP004",
+      "name": "scoped direct subscription requires membership",
+      "invariant": "subscriber_authority"
+    },
+    {
+      "id": "AP005",
+      "name": "overlapping group scoped edges are independent",
+      "invariant": "overlap_independent"
+    },
+    {
+      "id": "AP006",
+      "name": "unsubscribe cancels pending and fences starts",
+      "invariant": "unsubscribe_fence"
+    },
+    {
+      "id": "AP007",
+      "name": "get_done waits for an in-flight handler",
+      "invariant": "quiescence"
+    },
+    {
+      "id": "AP008",
+      "name": "leave and rejoin cannot resurrect old grant",
+      "invariant": "stale_grant"
+    },
+    {
+      "id": "AP009",
+      "name": "actor stop revokes prior incarnation",
+      "invariant": "stop_generation"
+    },
+    {
+      "id": "AP010",
+      "name": "nonshared payload cannot consume sequence",
+      "invariant": "sendable_reject"
+    },
+    {
+      "id": "AP011",
+      "name": "duplicate subscribe is one edge and capacity conflict rejected",
+      "invariant": "unique_edge"
+    },
+    {
+      "id": "AP012",
+      "name": "group leave preserves other group's deliveries",
+      "invariant": "group_independence"
+    }
+  ],
+  "backend_evidence": {
+    "java": "NOT_VERIFIED",
+    "llvm": "NOT_VERIFIED",
+    "wasm": "NOT_VERIFIED",
+    "cranelift": "NOT_VERIFIED",
+    "net": "NOT_VERIFIED",
+    "forge": "NOT_VERIFIED"
+  }
+}
