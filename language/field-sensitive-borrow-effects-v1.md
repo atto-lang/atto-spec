@@ -105,6 +105,105 @@ must conservatively borrow `self` as a whole and conflict. Unknown
 callbacks, setters, destructors and foreign calls invalidate narrowed
 summaries unless explicitly modeled and independently verified.
 
+## Projected actor receiver footprints (TARGET; not executable yet)
+
+Actor method receivers may declare **which sealed user-state fields they are
+permitted to mutate**, without acquiring a mutable borrow of the actor identity.
+The selected canonical spelling is **type-first** and uses a brace projection:
+
+```atto
+use namespace workers;
+declare actor Foo;
+
+// Actor identity and runtime capabilities only; send/end do not require mut self.
+mtd (Foo self) receive(ActorMail<String> mail): void {
+  self.send(41);
+  self.end();
+}
+
+// Whole user-state write effect (still requires an authorized guard).
+mtd (Foo mut self.state) reset(): void { /* guarded writes */ }
+
+// Exactly one mutable field, or a set of two disjoint mutable fields.
+mtd (Foo mut self.state.counter) increment(): void { /* guarded write */ }
+mtd (Foo mut self.state.{counter, xyz}) update(): void { /* guarded writes */ }
+```
+
+**Grammar (contextual in the `mtd` receiver position only):**
+
+```ebnf
+actor_receiver = nominal_type, "self"
+               | nominal_type, "mut", "self", ".", "state", state_projection? ;
+state_projection = ".", field_name
+                 | ".", "{", field_name, { ",", field_name }, "}" ;
+```
+
+In this grammar `Foo mut self.state` means the whole sealed user-state
+region; `Foo mut self.state.counter` means one field; and
+`Foo mut self.state.{counter, xyz}` means the unordered set of **distinct**
+fields. The singleton braced form may be accepted and formatter-normalized
+to `self.state.counter`. The square-bracket variants
+`Foo mut [self.state.counter, self.state.xyz]` and
+`Foo mut [self.state.{counter, xyz}]` are **not part of this grammar**:
+they misleadingly resemble expression lists/array literals.
+
+**Crucial separation:** `Foo self` is a receiver of actor identity and
+permitted actor runtime operations, **not** a promise that no interior actor
+runtime bookkeeping changes. `self.send`, `self.end`, `get_done`, etc.
+require their normal actor capabilities and admission/lifecycle checks,
+not `mut self` or `mut self.state`. Ordinary `mut self` on a class/struct
+continues to mean a whole ordinary-object mutable borrow; this proposal
+does not reinterpret class receivers. Existing `(mut self: Foo)` actor
+spelling is legacy compatibility until migration, **not** a shortcut to
+field-scoped state permissions.
+
+**Static obligations and dynamic guards are separate.**
+
+1. Receiver projections are *effects/permission ceilings*, not first-class
+   arrays, references, destructuring, addressable expressions or borrow tokens.
+   They do not implicitly enter a critical region or extend a loan's lifetime.
+2. All referenced fields must exist in that actor's resolved, sealed state
+   schema, have independently proven place identities and permit mutation;
+   duplicates, empty groups, trailing commas, unknown fields, inaccessible
+   fields and unsupported nested/index projections are errors. A non-state
+   field can never be smuggled through this syntax. Bound the group length
+   and nesting in parsers before allocation.
+3. Writes through `self.handle_state(critical-write |s| -> { ... })` must be
+   statically within the declared write set; `critical-read` never writes.
+   Direct `self.state.field` access remains forbidden outside validated
+   guarded scopes. This spelling grants no direct state access.
+4. Read effects are **not** erased: any additionally read field is tracked by
+   the authenticated method effect summary. Narrower write permissions do not
+   imply all unrelated reads are free. Calls through other methods, generic
+   specializations, interfaces, virtual dispatch, closures, FFI and callbacks
+   must have a sealed transitive read/write/escape/suspend summary; otherwise
+   conservatively conflict on the whole state or reject.
+5. Disjoint write *footprints* may coexist in static borrowing analysis, but
+   actors still obey the real synchronization granularity. Existing
+   `critical-write` guards are whole-state exclusive, so this proposal
+   alone **does not** make two critical writers run concurrently. Finer
+   guard partitioning requires a separately verified runtime implementation.
+6. A method body may request less than its declared permission but never
+   more. Overrides, conformances and dynamic dispatch cannot widen write
+   effects beyond the declared interface contract. Receiver mutability or
+   write-set alone must not introduce an overload.
+7. Unverified alias roots, state layouts, unknown callee effects, escapes,
+   moves, cross-actor access, suspension or cancellation invalidate a
+   narrowed proof. All unsupported backends must reject compilation with
+   diagnostics, not silently lower a whole-state mutable receiver.
+
+**Required source-level positive/negative cases (target outcomes):**
+accept `(Foo self)` calling `send/end` without state writes; accept one
+or two statically resolved distinct writable state fields in declared
+projections; accept a guarded write exclusively to `counter` with
+`mut self.state.{counter, xyz}`. Reject an unknown field, duplicate
+`{counter, counter}`, empty group, trailing comma, square-bracket receiver,
+direct `self.state.counter` access, a guarded write to undeclared
+`s.other`, and a call whose unverified effect may write `other`.
+Reject overlapping live loans and guard/suspension escape even if the
+declared field names are disjoint. Every accepted guest requires a real
+compiler/borrow-checker/runtime proof, not a successful token preflight.
+
 ## Implementation and evidence requirements
 
 1. Frontends must emit **typed place identities** with verified class/record
