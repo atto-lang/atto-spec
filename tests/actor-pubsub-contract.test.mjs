@@ -34,6 +34,9 @@ class Broker {
     const scoped=this.topics.get(g)??new Map(),existing=scoped.get(name);
     if(existing)return existing.type!==type?{error:"TopicTypeMismatch"}:
       existing.policy!==policy?{error:"TopicPolicyMismatch"}:existing;
+    // This spec oracle models RELIABLE core only. An unimplemented extension
+    // must never inherit RELIABLE semantics just because its name is accepted.
+    if(policy!=="RELIABLE")return {error:"UnsupportedPolicy"};
     const t={g,name,type,policy,seq:0};
     scoped.set(name,t);this.topics.set(g,scoped);this.topicHandles.add(t);
     return t;
@@ -291,4 +294,12 @@ test("AP018: revoked immutable membership cannot be reactivated externally",()=>
   assert.notEqual(next,cap);
   assert.equal(b.publish(t,cap,"stale").error,"UnauthorizedPublisher");
   assert.equal(b.publish(t,next,"new").sequence,1);
+});
+
+test("portable core rejects LOSSY/LATEST until a versioned policy model is selected",()=>{
+  const {b,g,cap,t}=setup();
+  assert.equal(b.topic(g,"telemetry","Event","LOSSY").error,"UnsupportedPolicy");
+  assert.equal(b.topic(g,"snapshots","Event","LATEST").error,"UnsupportedPolicy");
+  assert.equal(b.topic(g,"weird","Event","INVALID").error,"UnsupportedPolicy");
+  assert.equal(b.publish(t,cap,"reliable").sequence,1);
 });
