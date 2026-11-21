@@ -34,7 +34,10 @@
   "references": {
     "canonical_conformance_pr": "https://github.com/atto-lang/atto-platform-conformance/pull/280",
     "qos_extension_pr": "https://github.com/atto-lang/atto-platform-conformance/pull/451",
-    "monitor_extension_pr": "https://github.com/atto-lang/atto-platform-conformance/pull/452"
+    "monitor_extension_pr": "https://github.com/atto-lang/atto-platform-conformance/pull/452",
+    "ownership_alias_spec_pr": "https://github.com/atto-lang/atto-spec/pull/185",
+    "ownership_formatter_pr": "https://github.com/atto-lang/atto-format/pull/70",
+    "java_ownership_bang_guest_pr": "https://github.com/atto-lang/atto-source.java/pull/1706"
   },
   "cases": [
     {
@@ -135,5 +138,14 @@
     "cranelift": "NOT_VERIFIED",
     "net": "NOT_VERIFIED",
     "forge": "NOT_VERIFIED"
+  },
+  "ownership_syntax": {
+    "canonical": "share! event",
+    "compatibility": "rt share event",
+    "same_checked_operation": true,
+    "evaluate_operand_once": true,
+    "reject_unproven_share": true,
+    "failed_admission": "no transfer, no retained credit, no topic sequence",
+    "guest_try_publish": "NOT_IMPLEMENTED"
   }
 }

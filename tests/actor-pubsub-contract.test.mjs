@@ -130,6 +130,12 @@ test("contract identity and evidence cannot masquerade as backend execution",()=
   assert.equal(c.status,"TARGET_NOT_BACKEND_VERIFIED");
   assert.equal(c.evidence,"SOURCE_FREE_MODEL_ONLY_NOT_GUEST_EXECUTION");
   assert.equal(c.core_policy,"RELIABLE");
+  assert.equal(c.ownership_syntax.canonical,"share! event");
+  assert.equal(c.ownership_syntax.compatibility,"rt share event");
+  assert.equal(c.ownership_syntax.same_checked_operation,true);
+  assert.equal(c.ownership_syntax.evaluate_operand_once,true);
+  assert.equal(c.ownership_syntax.reject_unproven_share,true);
+  assert.equal(c.ownership_syntax.guest_try_publish,"NOT_IMPLEMENTED");
   assert.deepEqual(c.optional_extensions,["LOSSY","LATEST","PG_MONITOR_REVISIONS"]);
   assert.deepEqual(Object.keys(c.backend_evidence),c.targets);
   for(const value of Object.values(c.backend_evidence))assert.equal(value,"NOT_VERIFIED");
