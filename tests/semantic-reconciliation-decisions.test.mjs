@@ -20,6 +20,9 @@ test('both return-first separators and exact bullet code point are normative', (
   'a generic raise tag MUST reject a Foo raise',
   'the unqualified `raise! Error(...)` site',
   'subtype identity surviving the return to `recover`',
+  'err.is_type(Foo)',
+  'distinct module-private Wasm EH tags',
+  'widened owned instance handle',
  ]) assert.ok(spec.includes(phrase), phrase);
 });
 test('core reconciled spec examples are present', () => {
