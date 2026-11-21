@@ -16,6 +16,10 @@ test('both return-first separators and exact bullet code point are normative', (
   'older same-line',
   'require `begin`, `::`, or a brace block',
   'a missing body separator after return-first effects',
+  'nominal subtype identity and owned payload',
+  'a generic raise tag MUST reject a Foo raise',
+  'the unqualified `raise! Error(...)` site',
+  'subtype identity surviving the return to `recover`',
  ]) assert.ok(spec.includes(phrase), phrase);
 });
 test('core reconciled spec examples are present', () => {
