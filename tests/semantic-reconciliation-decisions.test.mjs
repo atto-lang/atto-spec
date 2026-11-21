@@ -13,6 +13,7 @@ test('both return-first separators and exact bullet code point are normative', (
   'raises Foo ::',
   'raise! new Foo();',
   'physical_newline',
+  'older same-line',
   'require `begin`, `::`, or a brace block',
   'a missing body separator after return-first effects',
  ]) assert.ok(spec.includes(phrase), phrase);
