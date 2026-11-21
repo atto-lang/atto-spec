@@ -73,6 +73,12 @@ An absent feature is `UNSUPPORTED` or `NOT_EXECUTED` with provenance, not an imp
 
 **Evidence:** exact commit and tree, fixture blob SHAs, compiler/artifact digests, toolchain, nonempty executed steps, actual guest outcome, negative no-artifact proof, sanitizer/native AOT/perf/GC metrics where applicable. Track `PASSED`, `FAILED`, `UNSUPPORTED`, `NOT_EXECUTED` separately for each backend. Host-only reference tests, source-only manifests and zero-step CI cannot certify actor heap behavior.
 
+## Control-loop storage and zero-managed-allocation target
+
+The main/root runtime control loop has its **own** unmanaged allocation domain with compact four-byte **ControlRef32** internal logical locators; it is not actor-owned guest memory. All actor and control locators require out-of-band authority, domain-instance, epoch, type, generation/lifetime and bounds checks. Neither is a native process pointer, and equal numeric words cannot authorize aliasing across domains. See [control-loop and actor unmanaged memory v1](control-and-actor-unmanaged-memory-v1.md).
+
+The v1 **offset8_plus_one** ref and the host prototypes' **generation20_slot12** (Java/LLVM) and **generation16_slot16** (.NET) formats are **distinct ABI IDs**. A compiler/runtime ABI mismatch must fail closed before guest admission. The 32 GiB logical-offset math applies only to offset8_plus_one, not slot-handle encodings. JVM/CLR may retain bounded managed host metadata, but strict Atto runtime hot paths must instrument managed allocation rate and host GC independently. Zero tracing GC for Atto-owned objects is not a claim that the host process runs no GC.
+
 ## Reconciliation / existing work (not superseded)
 
 * Storage and objects: atto-spec PR #91; `Pointer<T>`: #18; bounded pooled buffers: #7; shared ownership: `shared-ownership-and-guards-v1.md`.
