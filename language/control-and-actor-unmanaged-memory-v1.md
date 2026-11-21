@@ -12,6 +12,8 @@ Companion to [hybrid actor memory](hybrid-actor-memory-v1.md), [primitive/object
 5. The **JVM / CLR managed heap is NOT the Atto language-object heap**. Language values, identity objects, actor-owned graphs and control-loop hot-path payloads/records must reside in custom unmanaged arenas under the strict profile. Host Java/.NET objects are permitted for VM bootstrapping, necessary carrier integration, diagnostics and explicitly admitted FFI bridges, but cannot become the implicit fallback allocation path for Atto guest objects.
 6. **Zero tracing GC for Atto-owned objects** is the language/runtime target. **Zero managed allocations in a measured steady-state execution path** is a stronger, separately proved performance profile, not an automatic consequence of off-heap bytes. Never call an entire JVM or CLR process `zero-GC` or guarantee absence of unrelated host-runtime GC without genuine system-level evidence.
 
+The control-plane pilot ABI ID is **`control_generation12_slot20_v1`**: the *high 12 bits are the generation* and the *low 20 bits are slot+1*. Earlier draft text used `control_generation20_slot12_v1`, reversing the bit-count names without changing the actual binary layout. That old name must **not** be emitted or admitted by current artifacts. Separately versioned actor-object prototype names may be legacy, and MUST NOT be equated with this control-domain identity.
+
 ## Unambiguous ABI registry
 
 All four-byte words are scoped by a **typed domain + issuer/epoch witness** out of band, validated before any native access. A raw word alone is neither authority nor a network wire representation.
