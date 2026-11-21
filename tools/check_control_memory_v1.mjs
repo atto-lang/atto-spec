@@ -9,6 +9,7 @@ const required=["atto-source.atto","atto-source.net","atto-source.hdl","atto-sou
 assert.equal(c.schemaVersion,1);
 assert.equal(c.feature,'control-and-actor-unmanaged-memory-v1');
 assert.equal(c.status,'TARGET_ONLY_NOT_EXECUTED');
+assert.equal(c.controlPlaneAbiId,'control_generation12_slot20_v1');
 assert.deepEqual(Object.keys(c.backendStatus).sort(),required.sort());
 for(const v of Object.values(c.backendStatus))assert.equal(v,'NOT_EXECUTED');
 assert.deepEqual(c.referenceAbis,['offset8_plus_one','generation20_slot12','generation16_slot16','segmented_handle32']);
