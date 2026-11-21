@@ -32,11 +32,39 @@ AttoLang uses explicit rights operations. **TARGET (decided, 2026-11-14):** the 
 - Resolve effects, generics, overloads, receiver identity, argument evaluation order, named/default arguments, and each lifetime edge in typed frontend/MIR **before** backend lowering. A virtual/FFI/unknown callee must prove read/write effects and nonescape or reject. Actor state remains sealed; `await`, `select`, actor transport, cancellation and exceptions need pinned/cleanup/outlives proof. Any missing proof fails closed **without generating a guest artifact**.
 - A borrowed-local `Pointer<T>` is a compiler-minted non-owning handle, **distinct** from an implicit loan and from the owning `CheckedRef<Class>` prototype. `ref! local` may mint a checked local lease, `deref! ptr` safely reads while live, and `unref! ptr` consumes that lease and returns `void` (never frees the local). An owning `Pointer<T>` region has separate `close`/drop rules; `CheckedRef<Class>` may have an ownership-restoring `unref!` according to its distinct type. No implicit handle copying or raw address syntax.
 
+
+### Java-style zero-payload-copy calls with checked rights (TARGET)
+
+The ordinary nonprimitive call `inspect(obj)` passes a **temporary read-only loan to the original allocation**, analogous in cost to Java passing a reference value, but unlike an unrestricted Java mutable alias. The callee gets no new object identity or ownership; no payload graph copy, clone, implicit share, refcount promotion or additional destructor is permitted. ABI lowering MAY copy an offset, pointer-sized word or register/spill **representing** that loan, without minting a second owner. A small reference-word transfer is not an object `copy!`. Argument call sugar never creates a user-visible `Pointer<T>`.
+
+- `inspect(obj)` and `inspect(borrow! obj)` have equivalent loan rights and provenance; `obj.inspect()`, virtual/interface/generic receivers and nested synchronous calls must preserve this. `inspect_pair(obj, obj)` may hold two simultaneous read loans to the same place; no clone is performed.
+- `write(mut obj)` or `write(borrow! mut obj)` is an **exclusive write-through** loan only if the writable formal effect is sealed and statically proven. It mutates the caller's original allocation. `write(obj)` cannot silently promote read access to write. The first argument's loan remains active while later arguments are evaluated: `f(mut obj, obj)`, `f(obj, mut obj)`, and `f(mut obj, mut obj)` must fail before emission when their proven place projections overlap.
+- `take! obj` explicitly transfers ownership (caller invalidated). `copy! obj` produces a verified shallow copy; `copy!! obj` produces a separately verified deep copy; `share! obj` requires a separate sharing proof. Plain arguments, methods, receiver lookup and return lowering MUST NOT insert any of these. Primitive scalar and proven inline-value ABI passing remain by-value; the no-copy rule concerns nonprimitive/reference-backed object **payloads**, not machine register movement.
+- An assignment such as `val alias = obj` MUST NOT silently create a second independently droppable owner or duplicate the object graph. Until the binding rule establishes a checked scoped alias or a separately specified affine move, ambiguous binding must fail closed. An implicit read-only parameter cannot return an independently owned `T`, store a borrow into an unbounded field, or detach it to a task. A `Borrow<T>` result must carry a proven origin/outlives relation; an owned return requires proved explicit transfer.
+- Passing a unique `Pointer<T>` to an ordinary readonly formal passes a **loan of the pointer capability**, not a cloned or transferred handle. The callee cannot `unref!`, `close()`, `take!`, return or retain that pointer as an owner. Under a separately supported consuming-formal contract, `take! ptr` may transfer the unique handle with all-path cleanup; the old binding becomes invalid. Copying pointer bits for ABI delivery does **not** create a second independently releasable token. `copy! ptr` and `copy!! ptr` reject even when the pointee type has copy traits. Independently minting multiple read leases with `ref! local` is distinct from duplicating one linear handle.
+- `deref! ptr` of a Copy primitive yields a primitive value; for a non-Copy referent it grants a bounded checked view, **not a copied referent**. The read-only lease cannot be upgraded to write authority. `unref! ptr` of a local borrowed pointer consumes that lease exactly once, does not free the original local and returns `void`. Owning-region `Pointer<T>` requires its own close/drop protocol. The separate `CheckedRef<Class>` ownership-restoring `unref!` must not be confused with either form.
+- A compact actor-local `Ref32` can move as a 32-bit ABI word but is **not** an unscoped physical address: origin actor, actor incarnation, domain, allocation generation, bounds, alignment, type and authority must still be checked in typed IR/runtime sidecars. Numeric equality of handles from different actors grants no access. `Pointer<T>` is never actor/network `Sendable` or `Serializable` by inheritance from `T`.
+- Before emission, validate non-escape, alias last use, receiver identity, argument evaluation order, dynamic callees, FFI, exceptional/cancellation cleanup, suspension and actor critical sections. Unknown effects or unproved provenance fail closed with **zero emitted guest artifact**. Host structural fixtures alone cannot certify guest soundness.
+
+~~~atto
+fnc read(Document d): int { return d.version; }
+fnc write(mut Document d): void { d.version += 1; }
+let mut doc = make_document();
+val before = read(doc);  // uses same allocation; no payload copied
+write(mut doc);         // modifies original; no clone
+val after = read(doc);
+val other = copy!! doc; // a new graph is explicitly requested
+// write(doc);          // E_BORROW_MUT_REQUIRED
+// f(mut doc, doc);     // E_BORROW when argument loans overlap
+~~~
+
+**Conformance admission (TARGET, not guest-verified):** check unchanged allocation identity, no additional guest object-payload allocation, alias/loan exclusion, readonly mutation rejection, pointer token non-Copy/non-Send, local all-path release, borrowed return outlives, actor numeric-handle collision and no-artifact negative diagnostics across every backend. Host/ABI register copies are not object cloning.
+
 Illustrative compiler acceptance/rejection **targets**, not executed guest evidence:
 
 ```atto
 fnc inspect(Document d): int { return d.version; }
-fnc modify(Document d): void { d.version += 1; }
+fnc modify(mut Document d): void { d.version += 1; } // explicit exclusive-writer formal
 fnc consume(take! Document d): int { return d.version; }
 
 let mut doc = make_document();
@@ -160,7 +188,7 @@ The target actor-heap reference representation uses checked **32-bit arena-relat
 
 Each message transfer must have a provable ownership action (`take`, `copy`, or permitted `share`), validated payload graph, bounded bytes/depth/nodes, and type-correct domain admission. A mutable pointer, synchronized cell, closure with host capability, or foreign pointer cannot be smuggled across isolation merely because its in-memory representation is small.
 
-`Pointer<T>` transport is only admissible under a proof of pointee safety and a domain-specific copy, move, or immutable share strategy; a raw address is never a portable wire representation. `Sendable` and `Serializable` are distinct properties.
+`Pointer<T>` capability transport or serialization across actors, tenants, isolates or networks is forbidden, even if `T` is `Sendable`/`Serializable`/`Copyable`. An authorized broker can separately transfer, copy or serialize **pointee data** with its own proof and receiving-domain ownership; this never exports the source pointer token. Proven same-domain owned-value transfer is a distinct operation, not capability serialization. See `language/pointer-aot-safety-v1.md` (#18).
 
 ## Resource lifecycle
 
