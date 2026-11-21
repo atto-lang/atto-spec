@@ -146,6 +146,42 @@ matching, transcript hashing and signature-only tests using locally
 generated **synthetic** keys. Those are \`HOST_ONLY\` primitives, not
 cryptographic AMD endorsement or real-hardware test results.
 
+### Offline VCEK endorsement validation — Family 19h only
+
+The first implementation is a **non-admission, offline VCEK verifier**.
+It MUST authenticate the exact AMD ARK trust anchor using an independently
+approved, product-specific SHA-256 certificate fingerprint. A fingerprint
+included in the evidence payload or received from an untrusted guest is not
+an authorized trust anchor. The X.509 chain MUST bind ARK → ASK → VCEK and
+reject expired/untrusted/revoked endorsements.
+
+For Family 19h VCEK certificates (AMD `structVersion=0`), the verifier
+compares certificate extensions to the signed report's `REPORTED_TCB`:
+`blSPL (1.3.6.1.4.1.3704.1.3.1)` ↔ offset `0x180`;
+`teeSPL (.2)` ↔ `0x181`; `snpSPL (.3)` ↔ `0x186`;
+`ucodeSPL (.8)` ↔ `0x187`. The `hwID`
+extension (`1.3.6.1.4.1.3704.1.4`) must match the full
+64-byte `CHIP_ID` at `0x1a0..0x1df`. Malformed, duplicate, missing or
+wrong-type extensions reject. Proof must establish the report signature
+using the *verified* VCEK public key, never arbitrary caller-supplied keys.
+
+The offline implementation requires trusted-host-provisioned, fresh issuer
+CRLs for VCEK and ASK; absence of either denies rather than silently
+disabling revocation. TCB policy and the authenticated AMD product family
+must be independently reviewed before enabling a provider. **VLEK**
+and Turin/family-1Ah `structVersion=1` are unsupported by this first
+VCEK-only path. In particular, do not route cloud VLEK reports through
+a VCEK endorsement verifier.
+
+A successful `EndorsementCryptographyValid` /
+`ENDORSEMENT_CRYPTOGRAPHY_VALID` is a **host-only cryptographic
+observation**, not hardware-attested admission or authority to release a
+secret. It does not establish a fresh, bound report-collection session,
+trusted-product-root provisioning, authenticated ephemeral TLS private
+key possession, tenant generation, or per-tenant guest isolation.
+Those must be separately enforced and evidenced before a real
+`HARDWARE_ATTESTED` classification.
+
 ## 6. Backend allocation
 
 - **Java/GraalVM:** trusted Java host should verify TEE evidence via an
