@@ -132,7 +132,7 @@ semantics, including normal `return` from a `maybe` handler.
 
 **Status / integration hold (2026-11-21):** `maybe` is not yet a
 cross-backend compiled feature. Proposed contracts in
-[maybe/else/defer v1](maybe-else-defer-v1.md) (draft PR #22) and
+[maybe/else/defer proposal](https://github.com/atto-lang/atto-spec/pull/22) (draft PR #22) and
 atto-platform-conformance draft PR #485 disagree about:
 (1) whether `else` is mandatory;
 (2) whether reached **body-local** `defer` runs before or after an
