@@ -30,8 +30,9 @@ end
 define actor PaymentPublisher as
   suspends receive(ActorMail<String> mail) -> void ::
     val topic = actor.group("payments").topic<String>("payment.completed")
-    val attempt = topic.try_publish(rt share "p-1")
-    // Explicitly handle Result; admission is not processing acknowledgement.
+    val event = "p-1"
+    val receipt = topic.try_publish(share! event)?
+    // Receipt means admission; it is not a processing acknowledgement.
   end
 end
 
@@ -51,7 +52,7 @@ pub suspends fnc main() -> void ::
 end
 ```
 
-The authenticated actor turn and explicit delegated group authority are runtime capabilities, **not strings** or caller-supplied actor IDs. `group.join` requires join authority; `topic.subscribe` inside an actor binds the executing actor incarnation, and externally registering an actor or subscribing an entire group requires separate, validated scope authority. Do not expose a host method accepting a forged actor identity as the caller. Exact Result/ownership signatures and blocking vs suspended convenience wrappers require compiler+stdlib admission.
+**Canonical ownership spelling:** the pub/sub publication form is `val receipt = topic.try_publish(share! event)?`. As specified by [the ownership-bang syntax PR](https://github.com/atto-lang/atto-spec/pull/185), `share!` is the preferred source spelling; `rt share` remains a compatibility alias, and [the formatter PR](https://github.com/atto-lang/atto-format/pull/70) should normalize it to `share!`. Both forms must lower through the **same** ownership/share proof, not two independent capability paths. `share!` must not fabricate sharing of borrowed, move-only, callable, mutable, actor-state, runtime-handle or otherwise non-Share values. The operand is evaluated exactly once. Failed admission must not leak or silently transfer ownership; any use-after-freeze/move must be statically rejected. A syntactically accepted `share!` is **not evidence** of `Topic<T>.try_publish` lowering.\n\nThe authenticated actor turn and explicit delegated group authority are runtime capabilities, **not strings** or caller-supplied actor IDs. `group.join` requires join authority; `topic.subscribe` inside an actor binds the executing actor incarnation, and externally registering an actor or subscribing an entire group requires separate, validated scope authority. Do not expose a host method accepting a forged actor identity as the caller. Exact Result/ownership signatures and blocking vs suspended convenience wrappers require compiler+stdlib admission.
 
 ## Membership and subscriptions
 
@@ -78,4 +79,4 @@ An optional Erlang-`pg.monitor`-style group monitor observes join/leave **metada
 
 ## Mandatory acceptance
 
-See [the machine-readable target/fixtures](../contracts/actor-pubsub-v1/contract.json) and [the source-free test](../tests/actor-pubsub-contract.test.mjs). Before marking any backend implemented: same-source typed positive and negative `.atto` fixtures; exact compiler+runtime head/fixture blobs; real nonzero-step runner receipts and guest output; RELIABLE contention/full atomicity; group overlap, late join, leave/rejoin, subscription cancellation, `get_done()`, actor restart and stale-token rejection; Sendable/ownership proof; sanitizer/native AOT where applicable. Track **Java, LLVM, Wasm, Cranelift, .NET and Forge** independently. Unsupported syntax MUST fail closed before backend artifact emission. Host-only reference-model tests cannot certify guest parity.
+See [the machine-readable target/fixtures](../contracts/actor-pubsub-v1/contract.json) and [the source-free test](../tests/actor-pubsub-contract.test.mjs). Before marking any backend implemented: same-source typed positive and negative `.atto` fixtures, including `try_publish(share! event)?`, legacy-alias AST equivalence, unsafe share refusal, evaluation-once and full-queue ownership rollback; exact compiler+runtime head/fixture blobs; real nonzero-step runner receipts and guest output; RELIABLE contention/full atomicity; group overlap, late join, leave/rejoin, subscription cancellation, `get_done()`, actor restart and stale-token rejection; Sendable/ownership proof; sanitizer/native AOT where applicable. Track **Java, LLVM, Wasm, Cranelift, .NET and Forge** independently. Unsupported syntax MUST fail closed before backend artifact emission. Host-only reference-model tests cannot certify guest parity.
