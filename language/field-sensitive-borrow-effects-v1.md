@@ -247,6 +247,33 @@ Reject overlapping live loans and guard/suspension escape even if the
 declared field names are disjoint. Every accepted guest requires a real
 compiler/borrow-checker/runtime proof, not a successful token preflight.
 
+### Parser-stage security gates (21 November 2026)
+
+The current Rust target syntax stage is *not* the executable typed
+actor-state checker. Nonetheless, it must reject obvious unsafe spellings
+before any lowering: scanning a verified receiver call must **not** skip
+nested argument expressions. For example,
+`this.send(this.state.counter)` is an unguarded state read even though
+`this.send(...)` is a legitimate runtime operation. Calls through unknown
+receiver members, receiver escape via `this.send(this)` / `return this`,
+and referencing a discarded `_` receiver require typed capability proofs
+and must fail closed.
+
+Inside `handle_state(critical-read |s| -> ...)`, all direct mutations,
+including prefix `++s.counter`, suffix `s.counter--` and compound
+`s.counter -= 1`, are read-only violations. In a
+`critical-write` region, the same operations must be checked against
+the declared field ceiling. Partial indexing (`s.other[0]`), nested
+field paths (`s.other.child`) and state-field method calls
+(`s.other.method()`) lack verified layout/escape/effect information
+at the syntax stage and are denied in both guard modes.
+
+A passing parser or host-side test does not prove actor guest execution.
+Actual `attoc` CLI denial tests must assert both a nonzero diagnostic
+and **absence of output Wasm artifacts**; the supported scalar compiler
+must still be able to produce a real Wasm module. No normalization,
+forward-declared actor or receiver renaming may weaken these guarantees.
+
 ## Implementation and evidence requirements
 
 1. Frontends must emit **typed place identities** with verified class/record
