@@ -1,0 +1,35 @@
+name: Actor pipe factory source-free reference model
+
+on:
+  pull_request:
+    paths:
+      - 'spec/03-functions-and-effects.md'
+      - 'spec/05-actors-and-state.md'
+      - 'spec/11-conformance.md'
+      - 'spec/14-actor-pipeline-factories.md'
+      - 'scripts/actor-pipe-factory-model.mjs'
+      - 'tests/actor-pipe-factory-v0.json'
+      - 'tests/actor-pipe-factory-model.test.mjs'
+      - '.github/workflows/actor-pipe-factory-model.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/actor-pipe-factory-model.mjs'
+      - 'tests/actor-pipe-factory-v0.json'
+      - 'tests/actor-pipe-factory-model.test.mjs'
+      - '.github/workflows/actor-pipe-factory-model.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-free-shape-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify typed factory shape only (NOT guest execution)
+        run: node --test tests/actor-pipe-factory-model.test.mjs

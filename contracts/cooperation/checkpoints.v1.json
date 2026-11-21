@@ -1,0 +1,259 @@
+{
+  "schema": "atto.cooperation.checkpoint.contract.v1",
+  "status": "PROPOSED",
+  "evidence": "SOURCE_FREE_MODEL_ONLY_NOT_GUEST_EXECUTION",
+  "units": "committed_work_units",
+  "softFairnessThreshold": 512,
+  "allowedIntervals": [
+    128,
+    256,
+    512
+  ],
+  "cases": [
+    {
+      "id": "trusted-127",
+      "mode": "trusted",
+      "interval": 128,
+      "attempts": 127,
+      "slowPolls": [],
+      "committed": 127,
+      "terminal": "RUNNING"
+    },
+    {
+      "id": "trusted-128",
+      "mode": "trusted",
+      "interval": 128,
+      "attempts": 128,
+      "slowPolls": [
+        128
+      ],
+      "committed": 128,
+      "terminal": "RUNNING"
+    },
+    {
+      "id": "trusted-512-soft-limit",
+      "mode": "trusted",
+      "interval": 128,
+      "attempts": 512,
+      "slowPolls": [
+        128,
+        256,
+        384,
+        512
+      ],
+      "committed": 512,
+      "terminal": "RUNNING"
+    },
+    {
+      "id": "trusted-513-not-cold",
+      "mode": "trusted",
+      "interval": 128,
+      "attempts": 513,
+      "slowPolls": [
+        128,
+        256,
+        384,
+        512
+      ],
+      "committed": 513,
+      "terminal": "RUNNING"
+    },
+    {
+      "id": "trusted-640-next-cold",
+      "mode": "trusted",
+      "interval": 128,
+      "attempts": 640,
+      "slowPolls": [
+        128,
+        256,
+        384,
+        512,
+        640
+      ],
+      "committed": 640,
+      "terminal": "RUNNING"
+    },
+    {
+      "id": "trusted-256",
+      "mode": "trusted",
+      "interval": 256,
+      "attempts": 768,
+      "slowPolls": [
+        256,
+        512,
+        768
+      ],
+      "committed": 768,
+      "terminal": "RUNNING"
+    },
+    {
+      "id": "trusted-512-interval",
+      "mode": "trusted",
+      "interval": 512,
+      "attempts": 1024,
+      "slowPolls": [
+        512,
+        1024
+      ],
+      "committed": 1024,
+      "terminal": "RUNNING"
+    },
+    {
+      "id": "trusted-cancel-after-512",
+      "mode": "trusted",
+      "interval": 128,
+      "attempts": 8192,
+      "cancelBeforeStep": 513,
+      "slowPolls": [
+        128,
+        256,
+        384,
+        512,
+        640
+      ],
+      "committed": 640,
+      "terminal": "CANCELLED_AT_SOFT_POLL"
+    },
+    {
+      "id": "trusted-cancel-before-512",
+      "mode": "trusted",
+      "interval": 128,
+      "attempts": 8192,
+      "cancelBeforeStep": 511,
+      "slowPolls": [
+        128,
+        256,
+        384,
+        512
+      ],
+      "committed": 512,
+      "terminal": "CANCELLED_AT_SOFT_POLL"
+    },
+    {
+      "id": "trusted-critical-defers",
+      "mode": "trusted",
+      "interval": 128,
+      "attempts": 640,
+      "criticalThroughStep": 639,
+      "peerRunnable": true,
+      "slowPolls": [
+        128,
+        256,
+        384,
+        512,
+        640
+      ],
+      "committed": 640,
+      "terminal": "RUNNING",
+      "handoffAt": 640
+    },
+    {
+      "id": "trusted-no-peer",
+      "mode": "trusted",
+      "interval": 128,
+      "attempts": 640,
+      "peerRunnable": false,
+      "slowPolls": [
+        128,
+        256,
+        384,
+        512,
+        640
+      ],
+      "committed": 640,
+      "terminal": "RUNNING"
+    },
+    {
+      "id": "untrusted-127-fuel",
+      "mode": "untrusted",
+      "interval": 128,
+      "attempts": 127,
+      "hardFuel": 127,
+      "slowPolls": [],
+      "committed": 127,
+      "terminal": "RUNNING",
+      "hardCharges": 127
+    },
+    {
+      "id": "untrusted-128-exhaust-next",
+      "mode": "untrusted",
+      "interval": 128,
+      "attempts": 129,
+      "hardFuel": 128,
+      "slowPolls": [
+        128
+      ],
+      "committed": 128,
+      "terminal": "FUEL_EXHAUSTED",
+      "hardCharges": 128
+    },
+    {
+      "id": "untrusted-exhaust-before-poll",
+      "mode": "untrusted",
+      "interval": 128,
+      "attempts": 8192,
+      "hardFuel": 63,
+      "slowPolls": [],
+      "committed": 63,
+      "terminal": "FUEL_EXHAUSTED",
+      "hardCharges": 63
+    },
+    {
+      "id": "untrusted-cancel-513",
+      "mode": "untrusted",
+      "interval": 128,
+      "attempts": 8192,
+      "hardFuel": 8192,
+      "cancelBeforeStep": 513,
+      "slowPolls": [
+        128,
+        256,
+        384,
+        512
+      ],
+      "committed": 512,
+      "terminal": "CANCELLED_AT_HARD_BOUNDARY",
+      "hardCharges": 512
+    },
+    {
+      "id": "untrusted-cancel-before-128",
+      "mode": "untrusted",
+      "interval": 512,
+      "attempts": 8192,
+      "hardFuel": 8192,
+      "cancelBeforeStep": 127,
+      "slowPolls": [],
+      "committed": 126,
+      "terminal": "CANCELLED_AT_HARD_BOUNDARY",
+      "hardCharges": 126
+    },
+    {
+      "id": "untrusted-no-refill-on-dispatch",
+      "mode": "untrusted",
+      "interval": 128,
+      "attempts": 130,
+      "hardFuel": 129,
+      "dispatchAfterStep": 64,
+      "slowPolls": [
+        128
+      ],
+      "committed": 129,
+      "terminal": "FUEL_EXHAUSTED",
+      "hardCharges": 129
+    },
+    {
+      "id": "untrusted-still-charges-in-critical",
+      "mode": "untrusted",
+      "interval": 256,
+      "attempts": 300,
+      "hardFuel": 259,
+      "criticalThroughStep": 258,
+      "slowPolls": [
+        256
+      ],
+      "committed": 259,
+      "terminal": "FUEL_EXHAUSTED",
+      "hardCharges": 259
+    }
+  ]
+}
