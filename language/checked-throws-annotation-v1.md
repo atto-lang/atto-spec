@@ -26,7 +26,7 @@ the canonical signature spellings; parenthesized clause forms remain
 compatible. Capitalized `@Throws(...)` / `@Raises(...)` are canonical
 annotation aliases. See
 [java-style-failure-signature-bodies-v1.md](java-style-failure-signature-bodies-v1.md)
-for trailing return types, `T•` signatures and mandatory `begin` rules.
+for trailing return types, `T•`/`T <-` signatures, optional `begin`, and a final `::` body-boundary marker.
 
 Both spellings normalize to the same typed callable signature,
 `load(int) : User ! {throws(Error)}`. The modifier is not a runtime
