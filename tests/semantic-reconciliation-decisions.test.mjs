@@ -36,8 +36,9 @@ test('operator contract does not regress to the superseded caret, Boolean XOR or
    '`int ^^ int`', '`Xor(bool,bool)`',
    '`int / int` yields floating-point', '`Integer.div_trunc`'
  ]) assert.ok(decisions.includes(phrase),phrase);
- assert.ok(index.includes('integer `^^` XOR'));
- assert.ok(index.includes('bitwise-backend-status-snapshot-2026-11-20.md'));
+ assert.ok(index.includes('int-only `& | ^^ ~`'));
+ assert.ok(decisions.includes('bitwise-backend-status-snapshot-2026-11-20.md'));
+ assert.ok(read('language/bitwise-backend-status-snapshot-2026-11-20.md').includes('Historical status report'));
  assert.ok(!index.includes('int-only `& | ^ ~`'));
  assert.ok(!rules.includes('The effective shift count is the low six bits'));
  assert.ok(!rules.includes('`bool ^^ bool` support'));
