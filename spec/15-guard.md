@@ -1,4 +1,4 @@
-# 15 — Else-free `guard` and flow narrowing
+# 15 — Dual-form `guard` and flow narrowing
 
 **Status: TARGET contract.** The scalar boolean subset is being introduced in
 Java and LLVM frontends independently. Optional payload narrowing is **not**
@@ -7,37 +7,56 @@ before executable admission.
 
 ## Motivation and syntax
 
-The canonical form has **no `else`**, `then`, `fi` or mandatory
-trailing semicolon:
+AttoLang supports **two equivalent spellings** for an early-exit guard.
+The original brace form remains accepted for source compatibility:
 
 ```atto
-fnc positive(int x) -> int {
-  guard x > 0 {
-    return 0;
+fnc optional_port(bool present): Option<int> {
+  guard present {
+    return None;
   }
-  return x;
+  return Some(8080);
 }
 ```
+
+The keyword-delimited form places the same failure statements between
+`else` and `end`:
+
+```atto
+fnc optional_port(bool present): Option<int> {
+  guard present else
+    return None;
+  end
+  return Some(8080);
+}
+```
+
+In **both** forms, all guard tests passing continues after the guard;
+a failed test executes the failure statements, which MUST terminate the
+enclosing continuation. The `else` here introduces the *failure* block;
+it is not an optional success branch. This is distinct from the
+`if ... then ... else ... fi` construct.
 
 Grammar target:
 
 ```ebnf
-guard_statement  = "guard" guard_test ("," guard_test)* failure_block ;
-guard_test       = boolean_expression | option_presence_test ;
+guard_statement = "guard" guard_test ("," guard_test)* guard_failure ;
+guard_test      = boolean_expression | option_presence_test ;
 option_presence_test = identifier "is" "Some" ;
-failure_block    = "{" statement* terminal_statement "}" ;
+guard_failure   = "{" statement* terminal_statement "}"
+                | "else" statement* terminal_statement "end" ;
 ```
 
-The `{` starting the failure block must be unambiguous at the end of
-the last guard test; source parsers must not interpret it as a record
+The `{` or `else` delimiter begins the failure block only immediately
+after the final guard test; a brace must not be mistaken for a record
 literal or closure. Commas are top-level, left-associative guard-test
-separators, not tuple construction, value assignment or a generic
-comma expression. Parenthesized calls with commas remain one test.
+separators, not tuple construction, value assignment or generic comma
+expressions. Parenthesized calls with commas remain one test.
+The parser must track nested expression delimiters and nested blocks
+rather than detect keywords with textual substitution.
 
-When a guard is the last statement inside a keyword-delimited outer
-`if ... then ... else ... fi`, the enclosing `else` or `fi` belongs
-to the **outer if**, not to the guard. The parser must not reject a legal
-outer delimiter merely because it follows a completed guard block:
+With the brace form, an outer keyword-delimited `if` can still own
+its following `else` or `fi`:
 
 ```atto
 if ready then
@@ -48,15 +67,21 @@ fi
 return 42;
 ```
 
-A standalone postfix `guard x { return; } else { ... }` remains
-invalid; `guard` never owns `else` or `fi`.
+In the keyword form, `guard x > 0 else ... end` consumes its own
+`else` and `end`; a subsequent outer `else` remains the outer
+`if` branch. Mixed syntax such as `guard x { return; } else ... end`
+is invalid, and `guard` never owns `fi` or `then`.
+No trailing semicolon is required after the failure block.
 
-The tests are evaluated **once, from left to right, with short-circuit
+Tests are evaluated **once, from left to right, with short-circuit
 semantics**. Only when **all** tests succeed does execution continue
-after `guard`. Any test failure executes the single failure block.
+after the guard. Any test failure executes the single failure block.
 Equivalently, a purely boolean guard lowers to a negated `if`
 containing the failure block; the compiler may use its normal
-conditional and cleanup lowering.
+conditional and cleanup lowering. Both surface spellings MUST produce
+identical typing, effect, ownership, CFG and cleanup behavior. The
+formatter preserves the author's brace-versus-keyword block style,
+including on round-trips, unless explicitly requested otherwise.
 
 ## Mandatory termination
 
@@ -73,9 +98,12 @@ subject to the backend's dead-code policy.
 
 ```atto
 guard ready { return; }                  // valid in a void callable
+guard ready else return; end              // same semantics; valid
 guard x > 0 { log("bad"); }               // reject: may fall through
-guard x > 0 else { return; }              // reject: else is forbidden
-guard x > 0 { return; } fi                // reject: fi is forbidden
+guard x > 0 else log("bad"); end           // reject: may fall through
+guard x > 0 else { return; }              // reject: mixed delimiters
+guard x > 0 { return; } else return; end   // reject: mixed delimiters
+guard x > 0 else return; fi               // reject: guard closes with end
 ```
 
 An implementation may initially support **only a stricter, statically
@@ -137,6 +165,11 @@ must produce diagnostics rather than runtime panics.
   unimplemented. This is **authored**, not compiler-executed proof.
 - Wasm, .NET and Forge: fail closed until matching implementation and
   executed backend receipts exist.
+- The new `else ... end` surface form is TARGET only until every
+  relevant frontend/parser, formatter and runtime path has separate
+  executed conformance receipts; existing guard-v1 fixtures and their
+  pinned Git blob IDs MUST remain unchanged. Adding this spelling
+  requires additive fixtures and versioned contract updates.
 
 All backends must check strict `bool` conditions, one-time evaluation,
 short circuit, nested/void/loop exits, malformed syntax, guard scope
