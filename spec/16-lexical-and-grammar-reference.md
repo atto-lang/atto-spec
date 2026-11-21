@@ -135,6 +135,20 @@ Only the first two forms run on free functions today. See [chapter 19](19-observ
 
 **PROPOSED** formatter rule: the formatter keeps the form the author wrote and does not rewrite one into another.
 
+### Negated conditionals (TARGET)
+`ifnot` and `unless` are interchangeable **negated boolean heads** in the
+value form `ifnot/unless condition then value else value fi`, the imperative
+`do ifnot/unless condition then statements [else statements] fi` form, and the
+brace form `ifnot/unless condition { statements } [else { statements }]`.
+Value arms require compatible static types; `else` is mandatory in a value
+expression, optional in statements. Braces do not consume `fi`. The original
+predicate is evaluated once, and only its **first** branch is inverted.
+`elif` predicates are not inverted. See [chapter 27 in grammar PR #183](https://github.com/atto-lang/atto-spec/pull/183)
+and [machine-readable contract](../contracts/ifnot-unless-v1.json).
+A strict backend must reject `if true then break; fi` as a value expression,
+and accept `do if true then break; fi` only inside a valid enclosing loop.
+This is a target specification, not a claim of compiler execution.
+
 ## Statements and semicolons
 
 Semicolons are the formatter's canonical output. They may be omitted only where the parser has a clear structural boundary, such as just before `}`, `fi` or `end`. There is no JavaScript-style automatic insertion. Imports and `namespace` declarations always need one.

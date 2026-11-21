@@ -6,13 +6,12 @@
     "ifnot",
     "unless"
   ],
-  "kind": "statement_only",
+  "kind": "expression_and_statement",
   "predicate_type": "bool",
   "evaluate_once": true,
   "invert_initial_only": true,
   "remaining_elif_predicates_positive": true,
   "else_semantics": "ordinary_fallback",
-  "terminator": "fi",
   "no_postfix_unless": true,
   "negative_binding_head": "REJECT_UNTIL_SCOPE_PROOF",
   "truth_table": [
@@ -30,5 +29,29 @@
     "llvm": "oreslang-source.llvm#1791 PR",
     "guest_execution": "NOT_EXECUTED",
     "other_backends": "NOT_EXECUTED"
-  }
+  },
+  "forms": [
+    {
+      "context": "expression",
+      "syntax": "ifnot/unless bool then value else value fi",
+      "else": "required",
+      "terminator": "fi",
+      "result": "compatible_static_type",
+      "control_transfer_value": "reject"
+    },
+    {
+      "context": "statement",
+      "syntax": "do ifnot/unless bool then statements [else statements] fi",
+      "else": "optional",
+      "terminator": "fi",
+      "result": "void"
+    },
+    {
+      "context": "statement",
+      "syntax": "ifnot/unless bool { statements } [else { statements }]",
+      "else": "optional",
+      "terminator": "matching_braces_only",
+      "result": "void"
+    }
+  ]
 }

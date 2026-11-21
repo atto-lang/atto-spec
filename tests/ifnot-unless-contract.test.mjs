@@ -8,12 +8,21 @@ const spec=JSON.parse(readFileSync(path.join(root,"contracts/ifnot-unless-v1.jso
 const catalog=JSON.parse(readFileSync(path.join(root,"contracts/keyword-taxonomy-v1/catalog.json"),"utf8"));
 test("both negated keywords have identical boolean semantics",()=>{
   assert.deepEqual(spec.keywords,["ifnot","unless"]);
-  assert.equal(spec.kind,"statement_only");
+  assert.equal(spec.kind,"expression_and_statement");
+  assert.equal(spec.forms.length,3);
+  assert.deepEqual(spec.forms.map(form=>form.context),["expression","statement","statement"]);
+  assert.equal(spec.forms[0].else,"required");
+  assert.equal(spec.forms[0].result,"compatible_static_type");
+  assert.equal(spec.forms[0].control_transfer_value,"reject");
+  assert.equal(spec.forms[1].else,"optional");
+  assert.equal(spec.forms[1].terminator,"fi");
+  assert.equal(spec.forms[2].else,"optional");
+  assert.equal(spec.forms[2].terminator,"matching_braces_only");
+  assert.equal(spec.forms[2].result,"void");
   assert.equal(spec.predicate_type,"bool");
   assert.equal(spec.evaluate_once,true);
   assert.equal(spec.invert_initial_only,true);
   assert.equal(spec.remaining_elif_predicates_positive,true);
-  assert.equal(spec.terminator,"fi");
   assert.equal(spec.no_postfix_unless,true);
   assert.equal(spec.negative_binding_head,"REJECT_UNTIL_SCOPE_PROOF");
   const reserved=new Set(catalog.reserved_groups.flatMap(g=>g.words));
