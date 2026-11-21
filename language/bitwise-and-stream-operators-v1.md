@@ -9,6 +9,8 @@
 | `a & b` | integer bitwise AND | `int` |
 | `a \| b` | integer bitwise OR | `int` |
 | `a ^^ b` | integer bitwise XOR | `int` |
+| `^ expression;` | return from the enclosing callable (alias for `return expression;`) | enclosing return type |
+| `Math.pow(a, b)` | exponentiation via the typed Math API, **not** a caret operator | Math API result type |
 | `~a` | integer bitwise complement | `int` |
 | `a <<< n` | integer left shift | `int` |
 | `a >>> n` | integer logical (zero-fill) right shift | `int` |
@@ -22,7 +24,7 @@ Bitwise operands MUST both have type `int` (signed, 64-bit). No implicit `bool`,
 
 ### Shift semantics
 
-- The shift count must be `0..63` inclusive. Negative counts or counts of 64 or greater cause a checked language-level failure, never masking. Native Java/LLVM implementations already fail closed but still need unified error/actor CONTROL behavior.
+- Shift counts MUST be within `0..63` inclusive. Negative distances and values 64 or greater fail with a checked, language-level error; masking with `n & 63` is invalid and must never be used to hide an invalid count. The exact error/actor CONTROL mapping requires its own backend contract.
 - `<<<` discards shifted-out high bits and introduces zero low bits; it does **not** trigger checked arithmetic-overflow errors.
 - `>>>` introduces zero high bits; the resulting 64-bit pattern is returned as a signed `int`. Example: `-1 >>> 1` is `9223372036854775807`.
 - `ashr` propagates the sign bit. Example: `-8 ashr 1` is `-4`.
@@ -42,7 +44,7 @@ additive     = product { ("+" | "-") product } ;
 unary        = "~" unary | other_unary ;
 ```
 
-`&&` and `||` are short-circuit Boolean operators; `^^` is eager integer XOR on `int`. Boolean XOR uses `Xor(bool, bool)`; `^` at statement start is return, never infix XOR. The ordinary `|>` functional pipeline remains distinct.
+`^^` is **integer bitwise XOR** on two `int` operands, never an alternate return marker or a Boolean coercion. `^` has **no infix expression meaning**. The ordinary `|>` functional pipeline remains distinct. The owner-approved reconciliation in [#151](https://github.com/atto-lang/atto-spec/pull/151) reserves `^^` exclusively for integer XOR; Boolean XOR is the explicit `Xor(bool,bool)` operation. This supersedes the competing `bool ^^ bool` spelling in draft [#6](https://github.com/atto-lang/atto-spec/pull/6) for the canonical language. No backend execution is established by this decision.
 
 **Compatibility rule:** legacy single `|` inside an unparenthesized `if` or `while` condition remains boolean OR until separately migrated. To use integer `|` there, parenthesize the integer subexpression: `if (flags | mask) eq expected then ... fi`. `|x| -> expression` remains a lambda.
 
@@ -55,16 +57,21 @@ when `value: int`. The parser must preserve the source syntactic context and
 type-check the resolved meaning; it must not choose a different meaning based
 on runtime data or silently reinterpret an invalid type as a value.
 
-In statement-return position, `^ expression;` remains the return shorthand
-(with the enclosing callable as its target). Infix `left ^ right` is invalid; integer XOR is `left ^^ right`. The lexer and parser must not turn a leading return
-caret into an XOR expression or vice versa. These roles are distinct from Boolean `Xor(bool,bool)`. These rules must be tested together with nested structural
-patterns, `~int_value`, and infix XOR in a returned expression.
+In statement-return position, `^ expression;` is identical to
+`return expression;` and exits the enclosing callable. It does **not** mean
+power or XOR. Infix `left ^ right` is invalid source; the integer XOR spelling
+is `left ^^ right`. These meanings are token/grammar distinctions rather than
+runtime type-dependent overloads. For powers, use `Math.pow(base, exponent)`;
+its numeric overloads and rounding rules belong to the typed Math API contract,
+not to an exponentiation operator. Do not silently use JavaScript `**` or `^`
+as a substitute. Test `^ 5;`, `return 5;`, `^ (12 ^^ 10);`, rejected
+`return 12 ^ 10;`, nested structural patterns and `~int_value`.
 
 ### Lexer and typed-I/O compatibility
 
 The expression grammar recognizes exactly **three contiguous** `<` or `>` characters as shifts. Two contiguous characters retain their existing I/O direction forms. Type/generic parsing MUST still parse nested closing `>` delimiters, e.g. `Future<Result<Option<int>>>`, without reinterpreting them as `>>>`. Do not retokenize generic close delimiters globally as shifts.
 
-`<<` and `>>` are for compatible typed channels/streams, potentially suspending, backpressured and subject to I/O effect checks. They are not integer shifts. Continuous endpoint pumping uses the separate `pipe` keyword, not a chained stream shift. This document does not claim that arbitrary channels or reads have executable guest backends.
+`<<` and `>>` are typed read/write operators on streams, channels, and **any value whose statically resolved type satisfies the appropriate read/write interface or trait**. A write must be authorized by the writable capability; a read must satisfy the readable capability and binding type. Operations are subject to effect, permission, lifecycle, cancellation and backpressure rules; an arbitrary host object with a coincidentally named method has no ambient authority. These operators are not integer shifts. Continuous endpoint pumping uses the separate `pipe` keyword. This document does not certify any general stream/trait guest lowering.
 
 ### Conformance cases
 
@@ -82,19 +89,6 @@ The expression grammar recognizes exactly **three contiguous** `<` or `>` charac
 | BW-010 | `(1 <<< 63) >>> 63` | 1 |
 | BW-011 | `(1 <<< 63) ashr 63` | -1 |
 
-Required negatives: `1.0 & 2`, `true ^^ false`, `1 >>> 1.0`, `~true`, immutable `val x; x |= 1`, `1 << 2` and `8 >> 2` as would-be integer shifts, malformed or whitespace-separated triple shifts, and incorrect stream classification of `x <<< 3`. Verify source `stdio.out << 1`, nested generics, boolean logic, and lambdas unchanged.
+Required negatives: `return 12 ^ 10;` (single caret is not binary), `true ^^ false` (no implicit bool-to-int XOR), `1.0 & 2`, `1 >>> 1.0`, `~true`, immutable `val x; x |= 1`, `1 << 2` and `8 >> 2` as would-be integer shifts, malformed or whitespace-separated triple shifts, and incorrect stream classification of `x <<< 3`. Verify `^ 5;` and `return 5;` produce identical callable results; `^ (12 ^^ 10);` returns 6. Verify `stdio.out << 1`, `stream >> val item`, other trait-conforming readable/writable endpoints, nested generics, Boolean logic, and lambdas remain distinct.
 
 **Evidence status:** A draft browser compiler implementation exists in [atto-source.rs #334](https://github.com/atto-lang/atto-source.rs/pull/334). Its source changes are not executable evidence. Rust tests, native-generated Wasm guest execution, actual browser compiler execution, alternate-runner exact-SHA tree proof, and independent Java/LLVM/.NET/Wasm/Forge parity must be reported separately as PASS / FAIL / UNSUPPORTED / NOT EXECUTED.
-
-### Backend status (2026-11-20)
-
-Reported as PASS / FAIL / UNSUPPORTED / NOT EXECUTED, locally on the exact pushed heads; hosted CI is billing-blocked.
-
-| Item | Java (atto-source.java 12ded133d8) | LLVM (atto-source.llvm 79827f2a4) | .NET (atto-source.net) |
-| --- | --- | --- | --- |
-| `<<<`, `>>>`, infix `ashr` | PASS: Graal guest tests incl. BW-005/006/007/009/010/011 | PASS: native guest `tests/native_odb1_bitshift_source_execution.sh` (13 executed assertions, 4 compile rejections, 4 runtime traps) | UNSUPPORTED (no shift operators) |
-| `<<`/`>>` rejected as integer shifts | PASS | PASS (fail closed: native channel I/O is not lowered) | PASS by absence (not tokenized as operators) |
-| Checked shift count `0..63` (BW-008) | PARTIAL: fails closed via host exception; needs language error normalization | PARTIAL: native trap; needs language error/CONTROL normalization | UNSUPPORTED |
-| Compound `<<<=`, `>>>=`, `ashr=` | UNSUPPORTED (no compound assignment) | UNSUPPORTED | UNSUPPORTED |
-
-Java also implements the io-direction shorthand (atto-spec #32 draft) for `Channel<T>` statements: `sink << value;`, `source >> val|let name [: T];` and `val|let name [: T] << source;`, desugared to exactly `writech`/`readch`. `select` arms and non-channel streams are NOT EXECUTED.
