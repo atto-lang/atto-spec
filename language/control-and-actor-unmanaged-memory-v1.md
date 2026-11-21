@@ -63,3 +63,14 @@ For **both**, the allocator may retain a limited, auditable set of managed boots
 4. Audit LLVM, Wasm, Forge, Rust, Cranelift, JS, self-hosted, realtime and HDL independently; fail closed on unsupported combinations.
 
 **This document is a proposal and test target, not executed backend proof.**
+
+## Current JVM and CLR opt-in native-root integration candidates (2026-11-21)
+
+These internal host APIs are **not** proposed AttoLang source grammar and do not establish compiled guest parity. They are bounded, optional runtime implementation evidence to advance the control-domain ownership design:
+
+- Java/GraalVM: `ActorRuntime.enableNativeControlCounters()` creates a single FFM root after strict supervisor/empty-runtime admission; the 32-byte record and 12-byte native metadata are charged to the existing aggregate policy. Atomic actor-slot reservations, failed-spawn rollback and physically quiescent deregistration publish a checked native count, and full runtime shutdown closes the root only after carrier/actor retirement. See [Java implementation #1273](https://github.com/atto-lang/atto-source.java/pull/1273).
+- .NET: `ActorRuntimeOptions.UseNativeControlCounters` (default false) creates a single `NativeMemory` root at boot; 32 bytes of data plus 16 bytes of padded metadata are charged before actor budget admission. The existing actor dictionary remains authoritative, while native live-actor and monotone completed-message summaries are updated on genuine Spawn/dispatch/FinalizeCell paths. See [.NET implementation #173](https://github.com/atto-lang/atto-source.net/pull/173).
+- Both use `control_generation12_slot20_v1` only for trusted root control storage. Neither runtime exports root control words as guest `ActorRef<T>`, actor-object `Ref32`, serializable data or host FFI pointers.
+- Java JDK25 JUnit and .NET CLR/Linux NativeAOT *runtime host* tests are authored but not independently executed on those exact source PR heads; their source repos have no authorized cross-org private CI destination. The host still allocates managed scheduler, mailbox, context and lifecycle objects. Do not claim zero managed allocations per actual message, all-guest tracing elimination, full process zero GC, or certified eleven-backend runtime parity.
+
+The [11-backend memory ledger](https://github.com/atto-lang/atto-platform-conformance/pull/550) records these implementations as `SOURCE_AUTHORED_NOT_EXECUTED`, separately from narrower LLVM/JS/Forge/Wasm host-only tests and from compiled Atto guest evidence.
