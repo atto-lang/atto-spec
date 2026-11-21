@@ -8,6 +8,14 @@ test('both return-first separators and exact bullet code point are normative', (
  for(const text of ['int <- calculate(int x)','int • calculate(int x)','fnc int • calculate(int x)','U+2022'])
    assert.ok(spec.includes(text),text);
  assert.ok(spec.includes('lookalikes'));
+ for (const phrase of [
+  'fnc int <- double_answer(int value) ::',
+  'raises Foo ::',
+  'raise! new Foo();',
+  'physical_newline',
+  'require `begin`, `::`, or a brace block',
+  'a missing body separator after return-first effects',
+ ]) assert.ok(spec.includes(phrase), phrase);
 });
 test('core reconciled spec examples are present', () => {
  assert.ok(read('spec/02-types-and-patterns.md').includes('implicit `val`'));
