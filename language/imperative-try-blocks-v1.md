@@ -115,3 +115,39 @@ catch binding; stray `end`; incorrect nested delimiter.
 Each `atto-source.*` backend must report separately whether it parses,
 type-checks, executes, and passes the required negative tests; the syntax
 contract does not imply blanket multi-backend parity.
+
+## Relationship to `maybe/?=/else/end`
+
+`maybe` is **not** a synonym or alternate spelling for `try`.
+The proposed `maybe` construct operates on the *value* of a conditional
+pattern match (`Pattern ?= expression`) and selects an `else` value
+handler when that match fails. An `Err(...)` or `None` value by itself
+is not an exception, and a failed `?=` does not enter `catch`.
+
+Conversely, an ordinary `throw Error` originating inside a `maybe`
+skips its value `else` and may be handled by a surrounding `try/catch`.
+`raise` bypasses `catch`, and panic cannot be intercepted locally.
+The surrounding `finally` retains its existing once-only structured-exit
+semantics, including normal `return` from a `maybe` handler.
+
+**Status / integration hold (2026-11-21):** `maybe` is not yet a
+cross-backend compiled feature. Proposed contracts in
+[maybe/else/defer v1](maybe-else-defer-v1.md) (draft PR #22) and
+atto-platform-conformance draft PR #485 disagree about:
+(1) whether `else` is mandatory;
+(2) whether reached **body-local** `defer` runs before or after an
+`else` value handler; and
+(3) contextual vs reserved `maybe` and `do maybe` admission.
+Those discrepancies must be reconciled before claiming a shared runtime
+contract. This `try` syntax PR neither silently enables `maybe`
+nor makes either `maybe` proposal normative.
+
+Required integration tests, *once a compiler admits `maybe`*:
+- `try ... do maybe ... else ... end ... catch ... finally ... end`;
+- failed `?=` handled by `else`, with outer `catch` not executed;
+- ordinary `throw` inside `maybe` handled by outer `catch`,
+  not its value `else`;
+- `return maybe ... end` inside `try` runs outer `finally` once;
+- `raise` bypasses outer `catch` without bypassing eligible `finally`;
+- nested `end` tokens close the inner `maybe` before the outer `try`;
+- invalid syntax/effects/borrows do not yield a guest artifact.
