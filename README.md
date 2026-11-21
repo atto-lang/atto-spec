@@ -20,6 +20,9 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Persistent immutable collections v1](language/persistent-immutable-collections-v1.md): **proposed** constexpr frozen `const Vector<T>` (including contextual `[]`), runtime immutable `val`/rebindable `let`, persistent Vector/List/Map/Set operations, and explicit owned `mut` permissions; guest/backend parity **NOT_EXECUTED**. Related drafts: #69, #130, #170 and #75.
+
+
 - [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^ ~`, `<<< >>> ashr`, compound updates, and typed-I/O `<< >>`, with context-sensitive caret/structural-tilde parsing; target semantics, not backend parity.
 
 - [Trap-to-Result v1](language/trap-result-v1.md): caller-side `trap` preserves returned `Result`/`Option` layers and catches ordinary `throw` as `Err(original Error)`; unverified backends must fail closed rather than emit legacy Option results.
