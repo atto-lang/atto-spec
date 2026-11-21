@@ -81,7 +81,7 @@ end
 ```
 
 `raise!` is the newer canonical spelling being tracked in
-[exception-control bang spellings](../language/exception-control-bang-spellings-v1.md).
+[exception-control bang spellings (draft spec #146)](https://github.com/atto-lang/atto-spec/pull/146).
 The Error subclass `Foo`, checked raises effect and runtime unwind must be
 implemented and executed in the relevant backend; **this is not browser guest
 execution evidence**.
