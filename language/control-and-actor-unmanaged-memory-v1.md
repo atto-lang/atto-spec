@@ -29,6 +29,14 @@ A compiler artifact and a runtime domain descriptor MUST agree on **encoding ID*
 
 For `offset8_plus_one`, largest encodable **object-start offset** is `(2^32-2)*8 = 34,359,738,352` bytes; actual object end must additionally pass checked `offset + length <= committed bounds`, alignment and per-domain quotas. A 64 MiB default budget is a **policy**, not an address-width ceiling. `generation16_slot16` and `generation20_slot12` are slot-count limited and must **not** be advertised as 32 GiB direct-offset encodings. Generation wrap must retire or independently invalidate the identity before reuse.
 
+## Issuer exhaustion cannot wrap
+
+The host-only 64-bit control witness combines one immutable unsigned 32-bit **issuer** with one 32-bit control slot/generation word. Once a process has reserved issuer `0xffff_ffff`, further arena creation MUST fail closed permanently for that process, even if all earlier arenas have been destroyed. A 64-bit backing counter MUST NOT continue incrementing until it eventually overflows and reissues an earlier 32-bit issuer.
+
+Use a saturating compare-and-swap reservation at arena creation. Reject negative/out-of-range synthetic counters; never reset the global issuer in ordinary runtime code. Test first issuer, final issuer, exhaustion and signed/unsigned counter boundaries. An issuer-witness match alone remains insufficient to validate a guest object: slot liveness, generation, domain provenance and borrow/permission checks are still mandatory.
+
+As of the candidate host PRs, LLVM's issuer saturation boundary tests executed locally with GCC and Clang ASan/UBSan. Java JDK25 and .NET CLR/NativeAOT issuer test sources are authored but `NOT_EXECUTED` on their exact PR heads. No compiled Atto guest parity or process-wide zero-GC claim follows.
+
 ## Mandatory control-domain security and lifecycle
 
 - Establish disjoint domain capabilities for `ControlRef32`, `ActorRef32`, broker/shared memory, foreign handles and OS/native pointers in typed HIR/MIR, codegen and runtime entrypoints. A control handle is never guest-reachable without a separately authorized operation. Reject integer-to-ref fabrication.
