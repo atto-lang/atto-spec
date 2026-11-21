@@ -47,6 +47,17 @@ For `offset8_plus_one`, largest encodable **object-start offset** is `(2^32-2)*8
 
 For **both**, the allocator may retain a limited, auditable set of managed bootstrap/carrier metadata. Keep control-loop payloads and guest object graphs out of the managed heap; measure warm steady-state `allocated_bytes_per_turn`, `allocated_bytes_per_send`, host GC collection deltas, unmanaged committed/live/peak bytes and deterministic cleanup. A PASS requires **zero measured managed allocation in the audited hot path under stated conditions**, not just a quiet collector during a short run. Full end-to-end zero GC of the host process is NOT certified by this profile.
 
+## Coherent 128-bit control values over Ref32 (incremental host target)
+
+The four-byte **control reference** locates an object; it does not constrain the size of a value within that object. For a statically declared 16-byte `i128`/`u128` field, store the **least significant 64 bits** at field offset 0 and the **most significant 64 bits** at offset 8, both in little-endian byte order. Preserve all bits for signed two's-complement and unsigned values; targets without a single 128-bit general-purpose register lower to multiple registers or memory.
+
+An operation that reads or writes the full 128-bit field MUST be **coherent** against competing accesses to that same field: never expose half the old value plus half the new value. The initial Java, .NET and LLVM **host** implementations acquire one arena lock across the two limbs. Ordinary independent 64-bit fields remain valid, but a typed compiler MUST NOT mix separate `i64` accesses with an `i128` field or permit an untyped caller to reinterpret a 128-bit field as two unrelated counters. Provenance, generation, issuer, object bounds, alignment and native lifetime checks precede access, and failed reads/writes must not partially publish a value.
+
+- JVM host: use caller-owned reusable two-limb output storage, without allocating a Java `BigInteger`, array or wrapper per access.
+- .NET host: return limbs through `out` values or a value-type snapshot without boxing or managed heap buffers.
+- LLVM native host: pass two `uint64_t` limbs and writable caller-owned outputs; reject null/aliased output destinations, stale refs and foreign domains.
+- A coherent pair of **native actor-runtime counters** is useful host integration evidence, not source-compiled Atto `i128` object lowering and not a whole-process zero-GC proof. Each target needs independently executed compiled `.atto` actor-object fixtures and an allocation/GC receipt before full parity is asserted.
+
 ## Required backend and conformance gates
 
 - Same compiled Atto fixture stores `i64`, optional `i128`, and `Ref32` fields with correct alignment in control and actor domains. A 32-bit reference must not truncate a 64/128-bit value. Reject absent i128 profile cleanly.
