@@ -1,6 +1,6 @@
 # Persistent immutable collections v1 — qualifier, literal and ownership contract
 
-**Status: PROPOSED / NOT COMPILER-EXECUTED (2026-11-21).** This is a target language contract, not a claim that any AttoLang backend already implements persistent collection guest allocation, frozen graph verification or updated methods. Do not merge or promote conformance solely from source-only checks.
+**Status: PROPOSED, PARTIALLY IMPLEMENTED (2026-11-21).** The entire seven-case normative registry remains NOT_EXECUTED. A separate narrow Rust/native-and-browser-compiler Wasm proof exists for <=8 scalar-element Vector literals, `appended` and `updated`; it is not general persistent collection guest allocation, deep frozen-graph verification, or cross-backend conformance. Do not merge/promote conformance solely from source-only checks or infer full feature status from separate prototype fixtures.
 
 Related: [inline collection literals (draft #69)](https://github.com/atto-lang/atto-spec/pull/69), [contextual empty literals (draft #130)](https://github.com/atto-lang/atto-spec/pull/130), [type-first implicit const (#170)](https://github.com/atto-lang/atto-spec/pull/170), [immutable Record with-update (#75)](https://github.com/atto-lang/atto-spec/pull/75), [mutable Map/Entry API (#116)](https://github.com/atto-lang/atto-spec/pull/116), [ownership vocabulary](ownership-vocabulary-v1.md), and [shared ownership / guards](shared-ownership-and-guards-v1.md). This proposal extends those contracts and must be reconciled against them before implementation.
 
@@ -35,11 +35,11 @@ The compiler's constexpr collection evaluator must support safe bounded constant
 | `const Vector<int> x = [...];` | constexpr only | no | no; frozen |
 | `val Vector<int> x = expr;` | runtime permitted | no | no |
 | `let Vector<int> x = expr;` | runtime permitted | yes | no (may rebind to a new vector) |
-| `val mut Vector<int> x = expr;` | runtime permitted | no | yes, with exclusive ownership/loans |
-| `let mut Vector<int> x = expr;` | runtime permitted | yes | yes, with exclusive ownership/loans |
-| `const mut Vector<int> x = constexpr;` | constexpr template | no | yes, **fresh owned local instance** per evaluation, only when independently implemented |
+| `val mut Vector<int> x = expr;` | **not admitted by the current Java/Rust qualifier grammar**: `val` already denotes a fixed binding with mutable-referent authority in the general model; duplicating `mut` is invalid | n/a | n/a |
+| `let mut Vector<int> x = expr;` | runtime permitted, if the qualifier parser admits it | yes | **no in-place Vector mutation in v1**; `mut` cannot conjure an unimplemented writer ABI |
+| `const mut Vector<int> x = constexpr;` | **future separate constexpr-template profile only** | no | no Vector writer ABI in v1; a future mutable specialization would require a fresh owned allocation and explicit exclusive-loan proof |
 
-The `val mut` and `const mut` examples are **targets**, not claims of universal current parser acceptance. In particular, existing Java code has a narrower qualifier profile; changing `val` from runtime fixed binding with a mutable referent into an automatic referent freeze is *not* assumed. Instead, this proposal specifies the value-level immutable interface for `Vector<T>` and the distinct explicitly authorized mutable operations. `let` alone is never mutation authority.
+**Qualifier reconciliation:** in the existing parser, `val mut` is a duplicate qualifier and must fail; `val` fixes a binding but does not automatically freeze a mutable referent of arbitrary type. However **`Vector<T>` itself provides no in-place writer capability in this immutable v1**. An otherwise writable referent qualifier (`let mut` or later `const mut`) does not grant nonexistent Vector mutation APIs. A future mutable Vector specialization must define explicit nominal/authority semantics, fresh owned allocation, and exclusive loans rather than assume `mut Vector` can mutate a persistent value. `let` alone is never mutation authority.
 
 ## Collection families, without type-identity collapse
 
@@ -49,7 +49,7 @@ The `val mut` and `const mut` examples are **targets**, not claims of universal 
 - `Set<T>`: distinct membership collection; stable Eq/Hash; nonmutating insertion/removal returns a new Set.
 - `Array<T>`: retains its separately defined contiguous storage, layout and ownership. A readonly `val Array<T>` view must not be confused with a proven deeply frozen aggregate; `const Array<T>` requires a frozen constexpr representation, and mutable array writes need `mut` plus an exclusive loan.
 
-For an immutable persistent collection, neither index assignment nor a mutating method is available without an explicit mutable capability. A mutable collection instance retains the same nominal type constructor but has independently checked owned/write permissions; a persistent operation works on either, but never mutates its source.
+For a v1 immutable persistent collection, neither index assignment nor an in-place mutating method is available. A mutation-capable *future* collection profile will require separately specified owned/write permissions **and a proven writer implementation**, not merely a `mut` qualifier on `Vector<T>`. A persistent operation always leaves its source unchanged.
 
 ## Pure persistent API (TARGET method spellings)
 
@@ -95,11 +95,12 @@ let Vector<int> current = [1, 2, 3];  // constexpr shorthand not used: runtime l
 current = current.appended(4);        // legal rebinding to a fresh logical value
 current[0] = 4;                       // E_IMMUTABLE
 
-val mut Vector<int> scratch = [1, 2, 3];
-scratch.push(4);          // TARGET: legal only with a valid exclusive mutable owner
+let mut Array<int> scratch = [1, 2, 3];
+// TARGET: an Array writer, if supported by its separate owned allocation/loan ABI.
+// This example is NOT an in-place mutation permission for Vector<T>.
 ```
 
-`const mut Vector<T>` is a separate local-only contract from #170: a constexpr template, independently materialized into a fresh mutable per-scope instance. It must never mutate or reuse the frozen `const Vector` template allocation.
+`const mut Vector<T>` remains a separately reviewed local-only constexpr-template *proposal* from #170, not a supported mutable Vector writer. If implemented in a future profile, each mutable instance must be independently materialized and cannot mutate/reuse the frozen `const Vector` template allocation. Its precise interaction with intrinsically persistent Vector values must be decided before Ready.
 
 ## Actors, domains, memory and failed updates
 
@@ -110,11 +111,11 @@ scratch.push(4);          // TARGET: legal only with a valid exclusive mutable o
 
 ## Conformance and rollout — no invented PASS
 
-1. **Spec + formatter:** validate declared-type `[]` for `Vector<T>`, `List<T>`, `Array<T>`; reject untyped `[]` or conflicting expected types. Parse/type-check all six qualifiers and uphold implicit-const equivalence only in its permitted contexts; formatter must roundtrip exact types and rights.
+1. **Spec + formatter:** validate declared-type `[]` for `Vector<T>`, `List<T>`, `Array<T>`; reject untyped `[]` or conflicting expected types. Respect current `val mut` duplicate-qualifier rejection and explicitly gate future `const mut Vector` semantics; uphold implicit-const equivalence only in supported contexts. Formatter must roundtrip exact types and rights.
 2. **Const evaluator:** prove constexpr empty/nonempty `Vector<int>`, immutable/frozen aggregate lowering, budget failure and runtime initializer refusal; never demote failed `const` to `val`.
 3. **Guest positive fixtures:** execute immutable vector reads, original-preserving appended/updated, List prepend, Map upsert/remove, Set insert/remove, `let` rebinding and valid exclusive mutable operation on actual compiled guest values.
 4. **Guest negative fixtures:** immutable index/method write, rebinding `const` and `val`, `const` runtime initializer, untyped `[]`, unhashable keys, out-of-bounds updates, unsafe retained mutable child, aliased mutable owner, stale borrow, use-after-take, actor state bypass and cross-domain unproven shared nodes. Require exact expected diagnostic category and **no guest artifact**.
 5. **Safety / performance:** prove structural-sharing identity only for frozen nodes; distinguish logical identity, allocator budget, drop/refcount balance, update failure rollback, nested aliases and cycles; exercise sanitizers, cancellation and actor isolation. Preserve separate `Vector/List/Array/Map/Set` type/layout/equality/ownership identities.
 6. **Parity:** run identical pinned-source fixtures on Rust native and browser-hosted compiler/Wasm guest, Java/GraalVM, LLVM, .NET, Forge and other independent compiler paths. Report **PASSED / FAILED / UNSUPPORTED / NOT_EXECUTED** separately; no parser-only, static oracle, zero-step Actions or borrowed CI result counts as guest verification.
 
-**Current state of this proposal:** all positive and negative guest cases are **NOT_EXECUTED**. Existing collection PRs and their historical receipts retain their own scope; this proposal certifies none of them.
+**Current state of this proposal:** all seven normative positive and negative guest fixture cases are **NOT_EXECUTED** and retain that status until the exact fixture source is executed. Related bounded Rust compiler proofs: [Vector literals #491](https://github.com/atto-lang/atto-source.rs/pull/491) and [static copy-updates #493](https://github.com/atto-lang/atto-source.rs/pull/493). Their pinned-source guest receipts establish only their separately tested scalar subset. They are stacked on old parser/collection work; current main uses a different `collection_layout_*` architecture, so the old stack must be semantically forward-ported rather than mechanically overwritten. The `Vector<int> x = ...` implicit-const spelling remains an unimplemented integration target in the tested Rust stack; `const Vector<int> x = ...` has executed evidence. General persistence, formatter parity, independent compiler backends, and the normative registry remain pending.
