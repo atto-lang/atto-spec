@@ -22,3 +22,23 @@ test('core reconciled spec examples are present', () => {
  assert.ok(read('spec/17-primitives-and-core-types.md').includes('Integer.div_trunc'));
  assert.ok(read('language/bitwise-and-stream-operators-v1.md').includes('checked failure (invalid shift distance)'));
 });
+
+test('operator contract does not regress to the superseded caret, Boolean XOR or shift masking rules', () => {
+ const rules=read('language/bitwise-and-stream-operators-v1.md');
+ const decisions=read('language/semantic-reconciliation-2026-11-20.md');
+ const index=read('README.md');
+ for(const phrase of [
+   '`a ^^ b`', '`^ expression;`', '`Math.pow(a, b)`',
+   '`Xor(bool,bool)`', '`0..63`', '`left ^ right` is invalid',
+   '`sink << value`', '`source >> val binding`'
+ ]) assert.ok(rules.includes(phrase),phrase);
+ for(const phrase of [
+   '`int ^^ int`', '`Xor(bool,bool)`',
+   '`int / int` yields floating-point', '`Integer.div_trunc`'
+ ]) assert.ok(decisions.includes(phrase),phrase);
+ assert.ok(index.includes('integer `^^` XOR'));
+ assert.ok(index.includes('bitwise-backend-status-snapshot-2026-11-20.md'));
+ assert.ok(!index.includes('int-only `& | ^ ~`'));
+ assert.ok(!rules.includes('The effective shift count is the low six bits'));
+ assert.ok(!rules.includes('`bool ^^ bool` support'));
+});
