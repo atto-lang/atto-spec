@@ -17,6 +17,10 @@
 
 These decisions do **not** supersede the separately proposed lambda four-style or exception-control bang keyword PRs; those need their own reviewed merge sequences.
 
+## Historical backend evidence preserved
+
+The original Java/LLVM/.NET operator implementation status from this decision draft is archived in [bitwise backend status snapshot](bitwise-backend-status-snapshot-2026-11-20.md), not appended to the canonical syntax chapter. Those reported historical execution labels are **not** current exact-head compiler or guest test receipts. The operator chapter and README are byte-identical to draft [atto-spec #143](https://github.com/atto-lang/atto-spec/pull/143), which remains the canonical operator proposal. Both drafts stay unmerged until review and execution gates pass.
+
 ## Evidence policy
 
 Keep prior source blobs and real execution receipts immutable. Create versioned new contracts where expected semantics change. A compiler returning `UNSUPPORTED` must fail closed without emitting a guest artifact. Every conformance PASS requires pinned source/compiler revisions, actual compiled guest execution, diagnostics and provenance; host-only semantic checks must not be promoted to guest PASS.
