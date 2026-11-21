@@ -20,8 +20,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
-- [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): integer `^^` XOR, statement-return `^`, `Math.pow(...)`, checked-count `<<< >>> ashr`, typed-I/O `<< >>`, and Boolean `Xor(bool,bool)`; target semantics, not backend parity.
-- [2026-11-20 operator backend snapshot](language/bitwise-backend-status-snapshot-2026-11-20.md): historical compiler implementation report preserved from this semantic-reconciliation draft; not new exact-head guest proof.
+- [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^^ ~`, `<<< >>> ashr`, compound updates, statement-return `^ value;`, `Math.pow(...)` (exponentiation API), and typed read/write `<< >>` on channel/stream/trait endpoints; proposed semantics, not backend parity.
 
 - [Trap-to-Result v1](language/trap-result-v1.md): caller-side `trap` preserves returned `Result`/`Option` layers and catches ordinary `throw` as `Err(original Error)`; unverified backends must fail closed rather than emit legacy Option results.
 
