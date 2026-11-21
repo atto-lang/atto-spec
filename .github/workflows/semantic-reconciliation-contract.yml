@@ -6,6 +6,8 @@ on:
       - 'language/return-first-and-begin-callables-v1.md'
       - 'language/bitwise-and-stream-operators-v1.md'
       - 'language/semantic-reconciliation-2026-11-20.md'
+      - 'language/bitwise-backend-status-snapshot-2026-11-20.md'
+      - 'README.md'
       - 'tests/semantic-reconciliation-decisions.test.mjs'
       - '.github/workflows/semantic-reconciliation-contract.yml'
   workflow_dispatch:
@@ -30,6 +32,14 @@ jobs:
           git diff --exit-code HEAD --
           test -z "$(git ls-files --others --exclude-standard)"
           test "$(git ls-files -s -- tests/semantic-reconciliation-decisions.test.mjs | cut -d' ' -f1)" = "100644"
+          for source in \
+            README.md \
+            language/bitwise-and-stream-operators-v1.md \
+            language/semantic-reconciliation-2026-11-20.md \
+            language/bitwise-backend-status-snapshot-2026-11-20.md \
+            tests/semantic-reconciliation-decisions.test.mjs; do
+            test "$(git hash-object --no-filters "$source")" = "$(git rev-parse "HEAD:$source")"
+          done
           printf 'head=%s tree=%s\n' "$EXPECTED_HEAD" "$(git rev-parse HEAD^{tree})"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
