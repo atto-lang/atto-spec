@@ -47,6 +47,45 @@ pub fnc load_config(path: String) -> Config {
 }
 ```
 
+## Return-first examples with optional `begin`
+
+The following are **alternatives**, not duplicate declarations in one scope.
+A nonvoid ordinary-statement body requires explicit `return`; the legacy
+name-first comma-tail body still has its separate implicit result semantics.
+
+```atto
+fnc int <- double_answer(int value)
+    return value * 2;
+end
+
+fnc int <- double_answer(int value) ::
+    return value * 2;
+end
+
+fnc int <- double_answer(int value)
+raises Foo
+begin
+    if value > 3 then
+        raise! new Foo();
+    fi
+    return value * 2;
+end
+
+fnc int <- double_answer(int value)
+raises Foo ::
+    if value > 3 then
+        raise! new Foo();
+    fi
+    return value * 2;
+end
+```
+
+`raise!` is the newer canonical spelling being tracked in
+[exception-control bang spellings](../language/exception-control-bang-spellings-v1.md).
+The Error subclass `Foo`, checked raises effect and runtime unwind must be
+implemented and executed in the relevant backend; **this is not browser guest
+execution evidence**.
+
 ## Grammar and disambiguation
 
 - The full language accepts a case-sensitive `throws` or `raises`
@@ -60,14 +99,22 @@ pub fnc load_config(path: String) -> Config {
 - `T• name(...)` is a type-prefix function or method. No source
   declaration may supply multiple return types.
 - An inline effect clause that **follows** `-> T`, `: T`,
-  or `T•` makes `{` or `begin` mandatory. A bare `... end`
-  body without an opener is a compile-time syntax error.
+  `T•`, or `T <-` requires an unambiguous body boundary:
+  `{`, `begin`, or the exact `::` separator. For `::`,
+  the ordinary statement body starts on a later physical line.
+  Without effects, return-first `T <- name(...)` and `T • name(...)`
+  also permit newline-started statements through `end` without
+  either `begin` or `::`. These are preferences, not different ABIs.
 - If the last header clause is instead `-> T` **after** all inline
   effect clauses, the body may use `{`, `begin ... end`, or
   a *physical newline* followed by statements and `end`.
   The first body token must occur on a later line than the final
   return-type token. Comments and blank lines between them are allowed.
   A same-line body without an explicit opener is rejected.
+- `raises Foo ::` and `throws E1, E2 ::` terminate the entire
+  effect header. `::` is forbidden inside an error-type list, after
+  an already-opened body or twice in one declaration. No effect
+  clause can appear after `::`.
 - The optional-`begin` newline/`end` body has ordinary
   semicolon/newline statement semantics and explicit `return`.
   It is **not** the earlier comma-separated Erlang-style body. Preserve
@@ -82,7 +129,8 @@ pub fnc load_config(path: String) -> Config {
 - The formatter preserves the body family. It may reorder `throws`
   before `raises`, but must not alter resolved effect types, change
   an explicit statement return to an implicit comma-tail return,
-  or remove a required `begin`.
+  or insert/delete `begin` or `::` without proven parser and
+  effect-equivalence. Retain the author's body-boundary choice by default.
 
 ## Safety obligations and target boundary
 
@@ -107,7 +155,8 @@ Positive: each body family with both return-type placements; prefix
 equivalence; multiline generic types; nested end/fi; comments/blank
 lines between signature and body; deterministic formatter round-trip.
 
-Negative: missing `begin` for return-before-effects; same-line
+Negative: missing `begin`/`::`/brace boundary for return-before-effects;
+`raises Foo :: throws Bar`; duplicate `::`; same-line
 implicit statement body after trailing return; missing `end`; dual
 return types; repeated effect kinds; duplicate error type in a list;
 invalid error ancestry; unsupported nominal types; effects illegally
