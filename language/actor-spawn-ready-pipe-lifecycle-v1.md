@@ -59,6 +59,29 @@ This illustrates lifecycle ordering only: the precise result/effect conversion a
 
 A `PipeHandle.get_done()` reports successful drain/cleanup or a checked pipeline error after physical quiescence; an actor `get_done()` reports the actor's own full retirement. These are different barriers. A parent `main()` returning `0` by itself is not proof that a detached graph delivered messages.
 
+## Incarnation-fenced lifecycle acknowledgments
+
+The actor runtime MUST bind every READY, ordinary DATA reply/admission receipt,
+terminal DONE acknowledgment, and in-flight callback to the exact actor
+incarnation that created the corresponding `ActorRef`. A stale or
+mismatched incarnation MUST NOT settle `get_ready()`, release delivery
+credits, or mark `get_done()` successful. The runtime MUST reject the
+mismatched acknowledgment and apply its fail-closed fault/supervision policy;
+it cannot silently attach old messages to a new actor after restart.
+
+This identity fence is an integrity condition, **not** by itself an
+unforgeable cross-tenant capability. In a browser profile, a dedicated
+child Worker may use a parent-assigned, never-reused local incarnation
+sequence for the child/parent protocol. For hostile multi-tenant runtimes,
+authenticated per-TenantVM capabilities and generation validation are both
+mandatory, including independent CONTROL/DATA authorization. A sequence
+number alone must not be used to authorize cross-tenant messaging, native
+I/O handles, or forged supervisor CONTROL.
+
+The first staged Rust-browser host protocol tests verify the incarnation
+fence independently from guest compiler execution. They do NOT establish
+continuous `pipe!` guest support or a secure OS isolation boundary.
+
 ## Compiler and runtime conformance
 
 Every `atto-source.*` backend MUST either:
