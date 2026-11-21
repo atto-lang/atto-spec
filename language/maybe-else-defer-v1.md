@@ -1,142 +1,167 @@
-# Maybe/else with defer: proposed AttoLang v1 contract
+# Maybe/else and defer: AttoLang v1 candidate contract
 
-Status: **proposal, not compiled support**, 2026-11-15. This defines a target
-language contract; it does not establish support in Rust/Wasm, Java or LLVM.
-Erlang's maybe uses value-pattern short-circuiting rather than catching
-exceptions. We preserve that separation.
+Status: **converged design, implementation NOT VERIFIED**, 2026-11-21.
+This is the *proposed* backend-neutral meaning, not a claim of supported
+runtime behavior. It reconciles the earlier Atto spec and
+[conformance proposal #485](https://github.com/atto-lang/atto-platform-conformance/pull/485).
+A runner-executed positive/negative guest suite and independent review
+are required before this can become an admitted cross-backend feature.
 
-## Canonical proposed syntax
+## Value matching, not an exception handler
 
-~~~atto
-fnc read_count() -> Result<int,string> ::
-    maybe
-        Ok(is int as val handle) ?= open_handle(),
-        defer close_blocking(handle),
-        Ok(is int as val count) ?= read_handle(handle),
-        Ok(count)
-    else
-        on Err(is string as val reason) -> Err(reason)
-    end
+A `maybe` evaluates its body from left to right. In `P ?= expr`, evaluate
+`expr` **once**; if the value matches pattern `P`, bind its names in the
+remaining successful body; otherwise skip every later body item and dispatch
+the **original unmatched value** to a compatible `else` arm. A plain
+`Err(value)` or `None` expression without `?=` is an ordinary value,
+not a failure or a thrown exception.
+
+```atto
+define pub fnc load_balance(int id) -> Result[float, Error] as
+  defer log("balance complete");
+
+  return maybe
+    Ok(user) ?= fetch_user(id);
+    Ok(account) ?= fetch_account(user);
+    Ok(balance) ?= get_balance(account);
+    Ok(balance)
+  else
+    Err(reason) -> {
+      log_error(reason);
+      Err(reason)
+    };
+  end;
 end
-~~~
+```
 
-The optional on marker deliberately follows AttoLang match-arm notation,
-not Erlang's exact spelling. The example is **target syntax**, not currently
-an executable fixture. Explicit binders (as val, as let, etc.) follow the
-structural pattern contract; none may default to mutable access.
-The callable's comma-delimited Erlang-style body and conventional
-brace/semicolon form must both parse without confusing expression commas,
-pattern commas or argument commas.
+The above is a **candidate source example**, not proof that any compiler
+accepts or executes it. Use `do maybe ... else ... end` for a procedural
+scope; an ordinary successful fallthrough is not an implicit function
+return. `return maybe ... else ... end;` requests a value from `maybe`
+and then returns it from the enclosing function. A `return` statement
+written inside a body or handler exits the **nearest enclosing callable**
+(including any nested lambda), not a match arm. If every branch explicitly
+returns, the `maybe` operand has bottom / `Never` completion and the
+outer `return` must not create a second return.
 
-Grammar sketch:
+## Syntax and keyword admission (v1)
 
-~~~ebnf
-maybe_expr = "maybe", maybe_body, ["else", maybe_arms], "end" ;
-maybe_body = maybe_item, {separator, maybe_item} ;
-maybe_item = statement | expression | conditional_match ;
-conditional_match = pattern, "?=", expression ;
-maybe_arms = "on", pattern, ["when", guard], "->", arm_body,
-             {"on", pattern, ["when", guard], "->", arm_body} ;
-~~~
+```ebnf
+maybe_stmt = "do", "maybe", maybe_body, "else", maybe_arms, "end", [";"] ;
+return_maybe = "return", "maybe", maybe_body, "else", maybe_arms, "end", ";" ;
+maybe_body = maybe_item, {";", maybe_item} ;
+maybe_item = ordinary_stmt | expression | fallible_bind ;
+fallible_bind = pattern, "?=", expression ;
+maybe_arms = ["on"], pattern, ["when", guard], "->", arm_body,
+             {";", ["on"], pattern, ["when", guard], "->", arm_body} ;
+```
 
-The ?= token is indivisible, is permitted only for top-level maybe-body
-items, and is not general assignment. The ? early-return operator
-remains distinct.
+- `maybe` is **contextual**, not a globally prohibited identifier.
+  `let maybe = 7;` and `return maybe;` are legal where identifiers are
+  otherwise legal. A parser must unambiguously recognize the structured
+  `do maybe` or `return maybe` form before treating it as a block.
+- `?=` is atomic and **only** legal as a fallible body item. It is not
+  an alias for `=`, `?` early-exit, or the ternary operator.
+- For v1, `else` is **mandatory** and its possible failure alternatives
+  must be exhaustively covered. Implicit propagation without `else`
+  is deferred to a separately reviewed future version.
+- `Ok(x) ?= Result[T,E]` exposes `x:T` only on success and has an
+  `Err(E)` failure path; `Some(x) ?= Option[T]` similarly has `None`.
+  All failure alternatives require matching handlers; there is no silent
+  `Err`/`None` conflation, implicit error type conversion, or flattening.
+- `on` before each failure pattern is accepted as a compatibility spelling.
+  Omit `on` in canonical new examples, preserving the source author's
+  choice in existing formatting until a dedicated formatter decision.
+- Braced `{ ... }` arm bodies are allowed. An `end` belongs to the
+  nearest active keyword block, including nested `try` and `maybe`.
+  Arbitrary comma-separated body items and a bare, expression-position
+  `maybe` form are future extensions; v1 uses explicit semicolons and
+  the disambiguated `do` / `return` forms.
 
-## Semantics and invariants
+## Binding, typing, effects, and control flow
 
-1. Evaluate each reached expression exactly once, from left to right.
-2. Successful P ?= expr binds its explicit pattern names only for
-   subsequent items in that maybe body. The last successful expression
-   yields the maybe result. Normal expression evaluation, including
-   Err(x) or None values, does not automatically enter else.
-3. Failed P ?= expr stops the body immediately. Feed the **original**
-   evaluated nonmatching value to the first matching else arm.
-   If there is no else, yield that original value, subject to static
-   type unification with the successful path.
-4. When else exists, require exhaustive error-value arms for the possible
-   failing subjects or an on _ fallback; never silently drop a failure.
-   Detect unreachable/duplicate arms and type-invalid guards. Guards
-   must evaluate once and must not mutate/move the failure subject.
-5. Bindings in the maybe body are not visible in else or outside end.
-   Else-arm binders are scoped to that guard/body only. Reject partially
-   initialized bindings, stale borrows, double moves and access to another
-   actor's sealed state. Both successful and handled failure branches
-   must unify to one static expression type; no implicit flattening of
-   nested Result/Option values.
-6. An ordinary throw Error(...) does **not** trigger else; nearest try/
-   catch applies. Raise follows defer/recover escalation. Actor panic
-   goes to supervisor CONTROL and is not interceptable by that actor.
-   trap is a separate, explicitly requested exception-to-value operation
-   and must not catch fatal engine traps.
-7. The existing expr? returns early from the enclosing callable, *not*
-   from the maybe body through else. It executes eligible cleanup on
-   the way out.
+The first failed `?=` chooses **one** compatible `else` handler.
+Successful `?=` binders are scoped to later success items; they are
+not visible to `else` or after `end`. An `else` arm binder is local
+to its arm. Exhaustiveness is static; unreachable/duplicate guards,
+invalid variant arity, incompatible success/failure types and partially
+initialized or escaping borrows must be rejected.
 
-## Defer and the finally effect
+The result type of a value-producing `maybe` unifies successful and
+handled-failure completions. Functions, including their nested explicit
+returns, obey definite-return and `Never` analysis. Ownership moves,
+actor sealed state, suspension, cancellation, borrowing and effects are
+checked on **every** CFG edge. Never implement `maybe` through untyped
+host exceptions, `catch`, or the value-match `ARM_RESULT` lowering
+that changes source function-return semantics.
 
-A reached defer registers one cleanup action in the entire maybe-expression
-scope, including its else arms. On successful completion or completion of a
-chosen else arm, run registered cleanup in **reverse registration order**
-before delivering the resulting value. A failed ?= transfers into else
-**before** unwind, so an inner resource can be inspected by the appropriate
-cleanup while else handles the failure *value*. A defer that was never
-reached is never registered. Nested scopes unwind inside-out.
+An ordinary guest `throw Error` inside `maybe` is **not caught by
+`else`**; it may be intercepted by the nearest applicable outer
+`try/catch`. `raise` bypasses ordinary catches; actor panic escalates
+via supervisor CONTROL and is not interceptable locally. Explicit
+`trap` and the distinct early-return `expr?` keep their own rules:
+`expr?` exits the enclosing callable and does not dispatch to `else`.
 
-The same registered defers must execute exactly once on an eligible
-ordinary return, break/continue, guest throw, raise or supported
-cooperative cancellation/unwind. Captures and loans stay live until their
-cleanup: reject moving a captured resource, borrowing across forbidden
-suspension, or escaping a maybe-local borrow. Defer may not use return,
-break, continue, ?, ?= or other control transfer to override an in-flight
-result. Require statically nonthrowing cleanup, or explicit handling of
-fallible cleanup operations, so cleanup failure never silently replaces
-the primary error. Cleanup in real-time or critical sections must respect
-effect, nonblocking and worst-case-time constraints.
+## Precisely ordered cleanup
 
-**No universal cleanup guarantee** exists for fatal panic, OOM,
-process termination, host trap, hard cancellation, or runtime death.
-Panic still reports through supervisor CONTROL; it is not converted into
-a value and is not caught by else. Never advertise defer as stronger than
-the runtime's actual unwind boundary.
+Defers are registered **only when reached** and execute exactly once
+on eligible structured exits, in LIFO order per lexical scope.
 
-The flow is: **conditional-match failure -> else value handler -> defer
-cleanup -> result**. Ordinary exception flow is **throw/raise -> defer
-cleanup on supported unwind -> outer exception machinery**.
-Therefore maybe/else + defer provides a finally-like effect for supported
-exits, but does not replace try/catch.
+1. Upon a failed `?=`, **exit the maybe body scope first**: run its
+   reached body-local defers in reverse registration order.
+2. Dispatch the original failed value to a matching `else` arm **after**
+   body cleanup. Run reached handler-local defers on leaving that arm.
+3. On a successful body completion, run body-local defers before the
+   `maybe` result is delivered. On an explicit function return from
+   the body/handler, return expression evaluation precedes cleanup.
+4. Function-scope defers then run on exit from the enclosing callable,
+   and outer `try/finally` performs its own applicable cleanup exactly
+   once. An outer `catch` on an ordinary throw is reached only after
+   inner eligible defers have unwound; value-based `else` is skipped.
 
-## Mandatory regression cases
+Example trace for a failed second `?=` with two body defers,
+an `else`-local defer, a function defer and an outer finally:
 
-| Scenario | Expected behavior |
-|---|---|
-| Two successful ?= | each operand evaluated once; final value |
-| Failure at first/second ?= | later items skipped; original failed value handled |
-| Failure without else | return original failure if type-compatible |
-| Err or None without ?= | ordinary value, not auto-failure |
-| Return or expr? inside maybe | registered defers run; else bypassed |
-| Throw inside maybe or else | else bypassed; eligible defer then catch |
-| Raise or actor panic | existing escalation; never swallowed |
-| Nested defers, partial registration | exactly once, reverse order |
-| Else using maybe-local binding | compile-time scope error |
-| Wrong pattern, missing qualifier, nonexhaustive else | static diagnostic |
-| ?= outside maybe or inside guard | static diagnostic |
-| Defer with control transfer or unhandled throw | static effect diagnostic |
-| Move/borrow across defer or await/select | ownership/effect rejection |
-| Fatal trap or hard cancellation | no false cleanup assertion |
+```text
+call:first; body-defer:B; body-defer:A; else:Err;
+handler-defer; function-defer; outer-finally
+```
 
-## Implementation and verification gate
+A defer cannot override the in-flight control transfer through a
+`return`, `break`, `continue`, `?` or `?=`. No untracked
+suspensions or unhandled cleanup errors may silently replace a primary
+failure. Borrowed captures stay alive through their own deferred cleanup.
+All cancellation/unwind promises are bounded by the backend's supported
+physical quiescence; no guarantee exists for hard process termination,
+fatal host traps, OOM or unrecoverable runtime death.
 
-The Rust browser subset does not lower general try/catch or defer.
-It supports only a narrower ordinary guest throw/trap mechanism.
-Until cleanup edges are verified, maybe is **E_UNSUPPORTED** and never
-approximated as a plain identifier or callable. A parser-only green test
-is not proof of runtime correctness.
+## Relationship to imperative try syntax
 
-For each backend: lexer/parser and formatter round trips; typed AST
-success/failure/unwind edges; exhaustive pattern/type and definite
-assignment analysis; ownership and effect checks; once-only cleanup
-lowering; executable guest native/Wasm tests for both paths; full-AOT,
-actor supervision and suspension verification where relevant. Record
-the exact commit SHA and status passed/failed/unsupported/not-executed.
-Do not call host-only reference tests executable backend conformance.
+Both `try { ... } catch(...) { ... } finally { ... }` (without `end`)
+and `try ... catch(...) ... finally ... end` lower to the same
+exception-handling AST. Neither alters `maybe` value semantics.
+A `maybe` nested inside a keyword `try` consumes its **own** `end`;
+a thrown Error passes through `maybe` cleanup into the outer catch,
+and an early function return performs eligible `finally` once. See
+[imperative try PR #196](https://github.com/atto-lang/atto-spec/pull/196).
+
+## Admission gates (unmet as of this proposal)
+
+- Positive and negative compiler tests: first/middle/last failed bind,
+  eval-once, no later calls after failure, result/option exhaustiveness,
+  distinct error types, user variable named `maybe`, `Never` return,
+  and `?=` outside structured maybe.
+- Real cleanup trace from guest programs: body-local defer **before**
+  `else`, handler cleanup afterward, function defer and outer finally;
+  ordinary throw skips else and reaches catch, raise skips catch.
+- Nested block parsing and formatter round-trip/idempotence, both
+  braced and keyword try contexts, no capture of an inner/outer `end`.
+- Type/ownership/actor-effect negatives; native LLVM O0/O2, Java/GraalVM,
+  .NET NativeAOT, Wasm, and Forge/Cranelift actual guest execution.
+- Record exact source/fixture blob SHAs and outcomes
+  PASS/FAIL/UNSUPPORTED/NOT_EXECUTED. Host JavaScript reference models
+  and runner-admission failures **cannot** certify guest execution.
+
+Implementation-specific limitations may remain stricter than this proposal,
+but must reject unsupported programs explicitly rather than reinterpret
+the value/exception boundary or cleanup order.
