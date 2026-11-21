@@ -21,6 +21,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 ## Language contracts
 
 - [Primitive, aggregate and object storage v1 — Java/LLVM](language/primitive-object-storage-java-llvm-v1.md): **draft target** for inline scalars, nominal Struct/structural Record, identity classes, actor-private heap handles and verified implicit borrowing. [30 target cases](conformance/primitive-object-storage-java-llvm-v1.json) are **NOT_EXECUTED** on Java and LLVM.
+- [Control-loop and actor unmanaged memory v1](language/control-and-actor-unmanaged-memory-v1.md): **draft target** for separate control/actor Ref32 memory domains, versioned offset-vs-slot ABIs, unmanaged JVM/.NET guest payloads and measured zero-managed-allocation hot paths; no backend certification.
 - [Hybrid actor memory v1 — 32/64/128-bit extensibility](language/hybrid-actor-memory-v1.md): **draft target** preserving the Ref32 offset8+1 layout while permitting explicitly versioned extended heaps, native pointers, SIMD and capability profiles; guest parity unverified.
 - [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^ ~`, `<<< >>> ashr`, compound updates, and typed-I/O `<< >>`, with context-sensitive caret/structural-tilde parsing; target semantics, not backend parity.
 
