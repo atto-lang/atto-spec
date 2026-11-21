@@ -406,5 +406,6 @@
         "atto-source.cranelift": "NOT_EXECUTED"
       }
     }
-  ]
+  ],
+  "controlPlaneAbiId": "control_generation12_slot20_v1"
 }
