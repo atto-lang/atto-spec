@@ -26,6 +26,8 @@ This is an accepted *semantic target*, not a claim that every backend already di
 
 AttoLang is statically typed and **nominal by default**. Two classes with the same fields are not automatically interchangeable. Explicit structural compatibility is permitted at designated call boundaries using `structural` or `struct{...}` / `structural {...}` forms after type-checker admission; structural typing is not a universal runtime cast.
 
+Class, trait, interface and type-alias **declarations are types, not runtime values**. Class *instances* remain valid parameter and result values; class names used for static member lookup are compiler-only namespace receivers. Bare declaration names must never be returned, passed or stored as runtime objects. See the [type-declaration/value separation v1 contract](../language/type-declarations-not-runtime-values-v1.md) for required negative and positive cases.
+
 Primitive families include booleans, signed/unsigned integral types, floating-point types, strings, bytes, arrays, records, enums, function references and typed handles. Exact widths, overflow modes, numeric promotion, float corner cases, and ABI packing require cross-backend tests. No backend may rely on host-language unchecked overflow. Integer overflow panics the actor; see [integer rules](17-primitives-and-core-types.md#integer-rules).
 
 An immutable binding does not imply deep immutability of every reachable object. The ownership model controls mutation, copying, sharing and lifetime separately.
