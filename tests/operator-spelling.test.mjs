@@ -30,12 +30,17 @@ test('single caret only returns; double caret only bitwise XOR',()=>{
   assert.equal(byId['bitwise-xor'].reference_result,'6');
   assert.equal(byId['invalid-infix-caret'].expected,'REJECT');
   assert.equal(byId['invalid-bool-bitwise-xor'].expected,'REJECT');
+  assert.equal(byId['boolean-xor-api'].source,'Xor(true, false)');
+  assert.equal(byId['boolean-xor-api'].meaning,'BOOLEAN_XOR_CALL');
+  assert.equal(byId['boolean-xor-api'].expected,'ACCEPT');
 });
 test('power API, shifts and stream/channel/trait operations are distinct',()=>{
   const byId=Object.fromEntries(contract.cases.map(c=>[c.id,c]));
   assert.equal(byId['typed-pow-api'].source,'Math.pow(2, 3)');
   assert.equal(byId['left-triple-shift'].source,'8 <<< 2');
   assert.equal(byId['right-triple-shift'].source,'-1 >>> 1');
+  assert.equal(byId['valid-shift-distance-63'].reference_result,'-9223372036854775808');
+  assert.equal(byId['valid-shift-distance-63'].expected,'ACCEPT');
   for(const id of ['invalid-shift-distance-64','invalid-shift-distance-negative']) {
     assert.equal(byId[id].expected,'REJECT');
     assert.equal(byId[id].meaning,'INVALID_SHIFT_DISTANCE');
