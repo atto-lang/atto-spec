@@ -87,6 +87,29 @@ end
 
 Effect clauses are checked *upper bounds*, not handlers; `raise!` retains its exceptional-control semantics and must be proved safe by the relevant backend. Nested `if/fi`, `match/end`, and `try/catch/finally/end` consume their own terminators. Bare bodies are not inferred as Erlang comma-tail expressions: the final `return` remains explicit in a nonvoid function. A no-effect header ending in `::` is legal; a `raises Foo ::` header is equally legal; a dangling `raises Foo` followed immediately by ordinary statements without `begin`, `::` or braces is rejected, preventing an ambiguous parse.
 
+## Nominal Error inheritance and checked exceptional effects
+
+The initial class-hierarchy acceptance case is an **explicit nominal** declaration, not a spelling alias:
+
+~~~atto
+define class Foo extends Error as
+end
+
+fnc int <- checked_answer(int value)
+raises Foo ::
+  if value > 3 then
+    raise! new Foo();
+  fi
+  return value * 2;
+end
+~~~
+
+A compiler must retain the `Foo -> Error` inheritance edge and the exact declared `raises Foo` bound. An ordinary `class Foo` without `extends Error`, a missing Foo, or another non-Error class does not satisfy that bound; neither does the unqualified `raise! Error(...)` site within a `raises Foo`-only function. Subtypes cannot be inferred by name, string contents, shape or construction syntax. Checked effect propagation must preserve type identities through calls and verify declared upper bounds without confusing `throws` with `raises`.
+
+The executable exception protocol must carry **nominal subtype identity and owned payload**, not merely a message string: `raise! new Foo()` must remain Foo through Wasm unwind, `finally`, caller propagation, `recover`, and actor supervisor CONTROL escalation. Ordinary `catch` and caller `trap` do not intercept `raise!`. A runtime with only `(i64 message)` and a generic raise tag MUST reject a Foo raise before artifact emission; it must not erase Foo into Error. Supporting subtype declarations without a triggered raise is **parser/contract progress only**. If a backend has not proved subtype-preserving tags, construction, lifetime and recovery using actual guest execution, its status remains `NOT_EXECUTED` or `UNSUPPORTED`, never `PASS`.
+
+Negative conformance requires a no-artifact diagnostic for a non-Error declared type and for a raised base Error violating narrower `raises Foo`. Positive conformance requires separate checks for a forward-declared Foo, non-raising source, triggered Foo recovery, catch bypass, and subtype identity surviving the return to `recover`. General class inheritance is a separate language feature; a bounded browser compiler may admit only direct `extends Error` but must not claim full inheritance parity.
+
 ## Formatting and safety
 
 Prefer the existing conventional form `fnc name(parameters) -> ConcreteType { ... }` in authored examples and tooling, **without rejecting any accepted alternate spelling**. Formatters may not reorder callables, change return/ownership/effect types, or rewrite brace vs begin/end vs legacy Erlang comma/end bodies unless explicitly requested and proven semantically equivalent. Preserve return-first syntax by default, including the optional fnc prefix and the exact source separator (`<-` or `•`). Rewriting one to the other requires an explicit formatting policy and parse-equivalence proof. `infer` remains explicit, not preferred, and must resolve to a concrete type before codegen.
