@@ -1,0 +1,25 @@
+name: AttoLang semantic-floor contract
+on:
+  push:
+    paths:
+      - 'contracts/attolang-semantic-floor-v1/**'
+      - 'tests/semantic-floor-contract.test.mjs'
+      - '.github/workflows/semantic-floor-contract.yml'
+  pull_request:
+    paths:
+      - 'contracts/attolang-semantic-floor-v1/**'
+      - 'tests/semantic-floor-contract.test.mjs'
+      - '.github/workflows/semantic-floor-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate staged semantic contract (source only)
+        run: node --test tests/semantic-floor-contract.test.mjs

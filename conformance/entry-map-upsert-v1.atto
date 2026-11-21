@@ -1,0 +1,15 @@
+// TARGET/NOT_EXECUTED: compile and run with an actual Atto guest backend.
+// The top-level let must be per-module/per-tenant, not shared process-wide.
+let Entry<string, int> entry = "foo" => 5;
+
+pub fnc main(): int {
+    let mut Map<string, int> x = {
+        "foo" => 5
+    };
+
+    x.set("foo", 6);
+    x["foo"] = 3;
+    x.add(entry);
+
+    return x.get("foo").unwrap(); // Expect 5
+}

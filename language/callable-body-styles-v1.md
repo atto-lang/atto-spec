@@ -97,6 +97,8 @@ distinct signatures or change receiver mutability.
 fat arrow for callable *type* definitions/declarations; do not rewrite one
 into the other.
 
+**Return-first extension:** the accepted `fnc T <- name(params)` / `T <- name(params)` spellings and their `{}`, `begin`/`end`, and return-first statement/`end` bodies are specified in [return-first callable syntax v1](return-first-and-begin-callables-v1.md). That extension is in addition to the name-first body forms below, not permission to omit a return annotation or to reinterpret legacy comma/end tail returns.
+
 ## Body boundary and disambiguation
 
 ```ebnf
