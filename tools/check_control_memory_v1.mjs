@@ -15,7 +15,7 @@ assert.deepEqual(c.referenceAbis,['offset8_plus_one','generation20_slot12','gene
 assert.equal(c.cases.length,18);
 const ids=new Set;
 for(const x of c.cases){
-  assert.match(x.id,/^CM\\d{2}$/);
+  assert.match(x.id,/^CM\d{2}$/);
   assert(!ids.has(x.id),'duplicate case id');
   ids.add(x.id);
   assert(['accept','reject'].includes(x.expect));
