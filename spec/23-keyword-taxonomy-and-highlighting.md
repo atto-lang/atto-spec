@@ -23,7 +23,7 @@ For example, in the **TARGET** form `declare actor Worker implements Runnable;`,
 | **Adjectives / qualifiers** | Constrain a declaration, binding, or access | `pub`, `private`, `static`, `const`, `mut`, `abstract`; TARGET/contextual `final`, `sealed` | `final` and `sealed` are not reserved by the documented Java lexer; validity depends on grammar context |
 | **Adverbs / execution qualifiers** | Specify execution or access mode | `async`, `suspends`, `rt`, `nb`; compound `critical-read`, `critical-write`, `nb-select` | `critical-read`/`critical-write` are context-handled by the parser; `nb-select` is a lexer-recognized compound |
 | **Connectives / prepositions** | Introduce clauses and relations | `as`, `from`, `of`, `over`, `then` | Different grammar productions; `as` can occur in more than one role |
-| **Control / structural words** | Form branching and syntactic boundaries | `if`, `else`, `elif`, `fi`, `match`, `switch`, `select`, `do`, `done`, `end`, `while` | These are structural tokens, not uniform nouns or verbs |
+| **Control / structural words** | Form branching and syntactic boundaries | `if`, `ifnot`, `unless`, `else`, `elif`, `fi`, `match`, `switch`, `select`, `do`, `done`, `end`, `while` | These are structural tokens, not uniform nouns or verbs |
 | **Comparatives / logical relations** | Compare or join expressions | `eq`, `neq`, `is`, `matches` | `\|>` is a pipeline **operator**, not a keyword; current `,` and `\|` in conditions are operators, not reserved words `and` and `or` |
 | **Pronouns / references** | Refer to the receiver or inherited context | `self`, `super` | Reserved lexemes with expression-specific roles |
 | **Literal / sentinel words** | Denote built-in values or markers | `true`, `false`, `null`, `void` | These belong to literal/type-marker scopes; `null` is lexed but a standalone null value is rejected (chapter 16) |
@@ -32,38 +32,6 @@ For example, in the **TARGET** form `declare actor Worker implements Runnable;`,
 An entry appearing in two rows is intentional: this is a set of *explanatory* facets, not a partition of mutually exclusive reserved tokens.
 
 `blocking` in an API name such as `read_blocking` is **not** thereby a standalone keyword. `suspends` is the documented effect modifier; do not silently substitute a hypothetical `suspend` keyword. Likewise, `pipe` is a target/contextual actor connection word in chapter 01, not a documented reserved Java keyword; `|>` remains a separate operator. An ordinary hyphenated word is not an identifier: only grammar-enumerated compound spellings may include ASCII `-`.
-
-## New contextual ownership operators (TARGET)
-
-`freeze!`, `weak!`, and `pin!` are prefix **operator forms**,
-distinct from the ordinary identifiers `freeze`, `weak` and `pin`.
-The lexer may emit an identifier followed by `!`; the parser must recognize
-the pair only in a valid expression position. Tooling SHOULD highlight the
-whole parsed operator as an ownership operation. Do **not** add the three
-bare words to the historical Java reserved-keyword inventory or infer that
-every backend has implemented these capabilities.
-
-`freeze!` is consuming deep immutability, `weak!` constructs non-owning
-generation-fenced handles, and `pin!` pins pointee storage rather than OS
-threads. Their semantic and runtime admission requirements are in
-[chapter 04](04-ownership-and-memory.md). Simple lexical highlighting does
-not prove any ownership invariant.
-
-### Full ownership prefix classification
-
-The canonical ownership vocabulary includes borrow!, take!, share!, copy!,
-copy!!, freeze!, weak!, pin!, drop!, plus the mut qualifier and the
-type-level lt! binder (lifetime! is a long-form spelling). A formatter MUST
-keep copy!! (two contiguous bangs) distinct from copy! !value (one copy
-operation followed by a separate logical negation). An editor should
-highlight parsed ownership operators, not indiscriminately reserve their
-bare identifier words; in particular lt! is not a runtime expression.
-
-The conservative atto-format ownership lexical pass and its verified wrapper
-are in atto-lang/atto-format PR #13. The browser parser and canonical borrow
-checker use different admission layers (atto-source.rs PR #344 and
-atto-borrow-checker.rs PR #43). Formatting and lexing tests never establish
-guest runtime memory-safety or native backend parity.
 
 ## Semantic categories for editors
 
@@ -75,7 +43,7 @@ These are **proposed descriptive scopes**, not mandatory colors and not a replac
 | Entity-kind keywords | `actor`, `class`, `trait`, `interface`, TARGET `singleton` | `keyword.entity.atto` |
 | Relationship introducers | `implements`, `extends`, `conforms` | `keyword.relationship.atto` |
 | Visibility and binding qualifiers | `pub`, `private`, `static`, `const`, `mut`, TARGET `sealed`/`final` | `storage.modifier.atto` |
-| Control and structure | `if`, `match`, `select`, `return`, `fi`, `end` | `keyword.control.atto` |
+| Control and structure | `if`, `ifnot`, `unless`, `match`, `select`, `return`, `fi`, `end` | `keyword.control.atto` |
 | Concurrency and scheduling | `spawn`, `await`, `suspends`, `nb-select` | `keyword.concurrency.atto` |
 | Ownership operations | `rt` with context-proven ownership constructs such as `borrow` or `take` | `keyword.ownership.atto` |
 | Effects and failure | `trap`, `throw`, `raise`, `panic`, `recover` | `keyword.effect.atto` |
@@ -90,7 +58,7 @@ These scopes are a design vocabulary; no theme is required to adopt a particular
 
 ## Canonical keyword registry (staged contract)
 
-The [versioned catalog](../contracts/keyword-taxonomy-v1/catalog.json) now stores a **documentation-derived snapshot** of the 93 words in chapter 16's recorded Java reserved-keyword table, all 12 words chapter 16 explicitly names as non-reserved, four recognized compounds, 10 additional *candidate/contextual* spellings, and special-case/non-keyword examples. Its status is `DRAFT_TOOLING_METADATA_NOT_COMPILER_VERIFIED`.
+The [versioned catalog](../contracts/keyword-taxonomy-v1/catalog.json) now stores a **documentation-derived snapshot** of the 95 words in chapter 16's recorded Java reserved-keyword table, all 12 words chapter 16 explicitly names as non-reserved, four recognized compounds, 10 additional *candidate/contextual* spellings, and special-case/non-keyword examples. Its status is `DRAFT_TOOLING_METADATA_NOT_COMPILER_VERIFIED`.
 
 The catalog's `reserved_groups` provide grouped metadata (`id`, `linguistic_role`, `semantic_role`, `highlight_scope`, `lsp_fallback`, `lexical_status`, and `words`). A group is a compact representation of per-word classification, **not** evidence of a compiler AST node or proof that every occurrence of a member has the same syntactic role. Context-sensitive spellings remain separately recorded. The catalog distinguishes:
 
@@ -143,8 +111,3 @@ The following are **tooling acceptance criteria**, not claims of currently passi
 7. For each required compiler backend, compare token classification and parser admission at exact immutable revisions; maintain positive, negative, formatter round-trip, and LSP semantic-token fixtures. Read-only/editor validation is not a substitute for executable guest conformance.
 
 **Status boundary:** The catalog, documentation-drift tests, test-only lexical model, reference fixtures, and CI workflow are authored as staged tooling artifacts. They do not establish actual parser admission, language-server semantic-token correctness, editor behavior, compiler execution, or cross-backend parity.
-## Current source-inspection snapshots (not execution evidence)
-
-A [2026-11-12 source snapshot](../contracts/keyword-taxonomy-v1/backend-lexical-evidence-v1.json) records Java's `KEYWORDS.put` map at Git blob `94920ee03b82c07d5bf962bc5b8ed1d555ac593e` (95 unique reserved spellings) and LLVM's `reserved(name)` policy at Git blob `ee18e3774dbead5111b6d5ddb122127a510e3eda` (120 unique spellings). The historical chapter-16 93-word table remains a dated baseline, **not** a current cross-backend keyword inventory. Java adds `guard` and `unsafe`; LLVM reserves names including `suspend`, `enum`, `borrow`, `and`, and `or` not in Java's keyword map. Do not impose LLVM's name-reservation policy on Java or vice versa.
-
-Java's `nb-select` spelling emits **two tokens** (`NB`, `SELECT`); native LLVM's lexer can consume it as one identifier-like lexeme. Java identifiers admit Unicode letters; LLVM's current native tokenizer is ASCII-identifier-based. The new [source-only contract tests](../tests/keyword-backend-lexical-evidence.test.mjs) protect snapshot interpretation, not actual compiler parsing. Each backend needs executable exact-head token/diagnostic tests before conformance claims.

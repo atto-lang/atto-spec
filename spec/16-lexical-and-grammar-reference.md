@@ -10,11 +10,11 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 - Identifiers and keywords are case-sensitive.
 - An identifier starts with a letter or `_` and continues with letters, digits or `_`. The Java lexer accepts any Unicode letter. Whether every backend must do the same is open (S-22).
 - `//` starts a line comment. `/* ... */` is a block comment, and block comments nest.
-- **TARGET (decided, 2026-11-14):** block comments nest at most 128 deep. Opening a 129th level is a compile error, reported as `block comment nesting exceeds 128`, before parsing. Java, .NET and LLVM main all enforce this limit with that wording (LLVM via oreslang-source.llvm#1251, merged 2026-11-15, with fixtures at depth 128 accepted and 129 rejected).
+- **TARGET (decided, 2026-11-14):** block comments nest at most 128 deep. Opening a 129th level is a compile error, reported as `block comment nesting exceeds 128`, before parsing. Java main and .NET main already enforce this limit with that wording. LLVM main has no limit yet; oreslang-source.llvm#1251 adds it, with fixtures at depth 128 (accepted) and 129 (rejected).
 
 ## Keywords
 
-The Java lexer reserves these words. The LLVM parser has its own keyword handling, and the two lists have not been compared.
+The Java lexer reserves these words in the proposed feature branch (oreslang-source.java#3086); the independent native parser supports the two new spellings in oreslang-source.llvm#1791. Exact-head guest CI has not verified these PRs yet.
 
 | Group | Words |
 | --- | --- |
@@ -22,7 +22,7 @@ The Java lexer reserves these words. The LLVM parser has its own keyword handlin
 | Callables | `fnc` `routine` `async` `suspends` `generator` `yield` `nlex` `return` `self` `super` `static` |
 | Visibility | `pub` `private` |
 | Bindings | `const` `val` `let` `mut` |
-| Control flow | `if` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
+| Control flow | `if` `ifnot` `unless` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
 | Errors | `try` `catch` `finally` `throw` `raise` `panic` `recover` `trap` `defer` |
 | Actors | `actor` `isoactor` `shared` `untrusted` `spawn` `stop` `rt` |
 | Async and channels | `await` `nb` `cb` `select` `readch` `writech` |
@@ -87,13 +87,18 @@ From lowest to highest precedence, following the v0.6 grammar:
 
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
 
-## Return-first named callables and explicit `begin`/`end` (target)
+### Canonical conditional forms (TARGET)
 
-The mandatory return-type rule accepts both conventional `fnc name(args) -> T` / `fnc name(args): T` and return-first `fnc T <- name(args)` or `T <- name(args)`. `T` may be `void`, `infer`, or a concrete return type. The contiguous `<-` is a declaration delimiter, not assignment. Return-first spelling is also valid for class/actor methods in declaration context; existing visibility, ownership and actor isolation rules do not change.
+```ebnf
+conditional_head = "if" | "ifnot" | "unless" ;
+if_expression = conditional_head condition "then" expression "else" expression "fi" ;
+if_statement  = "do" conditional_head condition "then" { statement } [ "else" { statement } ] "fi"
+              | conditional_head condition "{" { statement } "}" [ "else" "{" { statement } "}" ] ;
+ternary       = expression "?" expression ":" expression ;
+```
 
-All three body families are supported for return-first declarations: `{ ... }`, `begin ... end`, and `statement; ... end` with no `begin`. The latter two require explicit return for a nonvoid result and admit empty bodies for void. Existing name-first `: T -> { ... }` remains valid. The legacy `-> T` comma/end tail-expression form remains distinct from semicolon/end. These variants define the *same* callable signature, and duplicate declarations remain errors.
+`ifnot` and `unless` are equivalent negated-condition heads. They evaluate the condition once and execute the then-arm only when it is false. The expression form has mandatory `else` and yields a statically checked value. A branch cannot use a bare `break`, `continue`, or `return` as its result. The two statement forms yield no value; control transfer is permitted when otherwise legal (e.g. `break` within an enclosing loop). Canonical brace statements require no `fi`. A strict compiler must reject `if true then break; fi` even when nested inside a loop. Historical `if ... then` statements and `if { ... } fi` files remain migration-only until updated. See [chapter 27](27-value-conditionals-and-do-if.md). The corresponding [machine-readable contract](../contracts/ifnot-unless-v1.json) codifies the three conditional categories and fail-closed negative heads.
 
-See [normative return-first contract](https://github.com/atto-lang/atto-spec/blob/main/language/return-first-and-begin-callables-v1.md). Backend support and tests require independent evidence.
 
 ## Function forms
 
@@ -103,10 +108,8 @@ As a grammar rule (**TARGET (decided)**), this reads:
 
 ```ebnf
 callable_body = return_spec [ "::" ] ( block | { statement } "end" ) ;
-return_spec   = (":" | "->") (type_ref | "infer") ;
+return_spec   = ":" type_ref | "->" type_ref ;
 ```
-
-A named callable **must** include this return specification, even for `void`. `infer` is explicitly allowed but not preferred; omitting the annotation is an error and never means `void` by default. This applies to functions, routines, instance/static methods, actor handlers and out-of-line methods. Constructors and contextual lambda inference follow their separate grammar contracts.
 
 So these all declare the same function:
 
