@@ -12,10 +12,15 @@
   "targets": [
     "java",
     "llvm",
-    "wasm",
-    "cranelift",
     "net",
-    "forge"
+    "wasm",
+    "forge",
+    "cranelift",
+    "rs",
+    "js",
+    "hdl",
+    "atto",
+    "realtime"
   ],
   "authority": {
     "membership": "opaque live actor-incarnation/group grant; duplicate join does not mint another",
@@ -134,10 +139,15 @@
   "backend_evidence": {
     "java": "NOT_VERIFIED",
     "llvm": "NOT_VERIFIED",
-    "wasm": "NOT_VERIFIED",
-    "cranelift": "NOT_VERIFIED",
     "net": "NOT_VERIFIED",
-    "forge": "NOT_VERIFIED"
+    "wasm": "NOT_VERIFIED",
+    "forge": "NOT_VERIFIED",
+    "cranelift": "NOT_VERIFIED",
+    "rs": "NOT_VERIFIED",
+    "js": "NOT_VERIFIED",
+    "hdl": "NOT_VERIFIED",
+    "atto": "NOT_VERIFIED",
+    "realtime": "NOT_VERIFIED"
   },
   "ownership_syntax": {
     "canonical": "share! event",
@@ -147,5 +157,10 @@
     "reject_unproven_share": true,
     "failed_admission": "no transfer, no retained credit, no topic sequence",
     "guest_try_publish": "NOT_IMPLEMENTED"
-  }
+  },
+  "bootstrap_only": [
+    "atto",
+    "realtime"
+  ],
+  "conformance_gate": "https://github.com/atto-lang/atto-platform-conformance/pull/551"
 }

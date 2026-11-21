@@ -137,6 +137,11 @@ test("contract identity and evidence cannot masquerade as backend execution",()=
   assert.equal(c.ownership_syntax.reject_unproven_share,true);
   assert.equal(c.ownership_syntax.guest_try_publish,"NOT_IMPLEMENTED");
   assert.deepEqual(c.optional_extensions,["LOSSY","LATEST","PG_MONITOR_REVISIONS"]);
+  assert.deepEqual(c.targets,[
+    "java","llvm","net","wasm","forge","cranelift",
+    "rs","js","hdl","atto","realtime"
+  ]);
+  assert.deepEqual(c.bootstrap_only,["atto","realtime"]);
   assert.deepEqual(Object.keys(c.backend_evidence),c.targets);
   for(const value of Object.values(c.backend_evidence))assert.equal(value,"NOT_VERIFIED");
   assert.deepEqual(c.cases.map(x=>x.id),
