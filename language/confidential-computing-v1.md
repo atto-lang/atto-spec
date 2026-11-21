@@ -95,7 +95,58 @@ wrong channel binding, key replay, and denial of tenant isolation;
 one compromised tenant must not read a sibling's memory or socket.
 Tests must run on actual supported hardware before claiming support.
 
-## 5. Backend allocation
+## 5. AMD SEV-SNP raw evidence and transcript v1
+
+**Normative target, not currently certified.** AMD SEV-SNP evidence has a
+**1,184-byte** raw report, a **672-byte signed prefix**, and a **48-byte
+SHA-384 launch measurement** at offset \`0x90\`. The signed 64-byte
+\`REPORT_DATA\` field is at \`0x50\`. The signature algorithm is ECDSA P-384
+with SHA-384; its padded little-endian R and S are at \`0x2a0\` and \`0x2e8\`.
+The report's signer's endorsement identity must be authenticated against AMD's
+product-specific trust roots. A caller-supplied ECDSA key is not such proof.
+
+The **32-byte \`measurement_sha256\`** in the early generic
+\`ConfidentialAttestationPreflight\` examples is *untrusted host metadata*
+and is **not** an SNP measurement. Backends MUST NOT compare a 32-byte hash
+against an SNP measurement or use the metadata preflight as an authenticator.
+
+The draft application transcript binds \`REPORT_DATA\` as follows:
+
+\`\`\`text
+SHA512(
+  ASCII("atto-sev-snp-report-data-v1")
+  || verifier_nonce_32
+  || expected_deployment_image_identity_32
+  || uint32_be(ephemeral_tls_spki_der.length)
+  || ephemeral_tls_spki_der
+)
+\`\`\`
+
+The verifier MUST mint the nonce using an operating-system CSPRNG.
+The ephemeral TLS key must be generated and controlled inside the
+attested workload; the broker must verify possession of the corresponding
+private key on the authenticated encrypted channel. The deployment-image
+identity is an independently authenticated deployment identifier; it does
+not replace the firmware launch measurement. Guest-controlled transcript
+inputs cannot alter the verifier's policy or trusted root set.
+
+A real verifier MUST validate and distinguish VCEK and VLEK endorsement
+chains, pinned AMD ARK and ASK/ASVK roots, revocation, product/hardware
+identity, report-signature integrity, the certificate TCB extensions
+against the signed \`REPORTED_TCB\`, firmware launch TCB, debug and VMPL
+policy, measurement and fresh \`REPORT_DATA\`. A syntactically valid report
+or P-384 signature against an **unverified** key MUST NOT unlock the host,
+a TenantVM or a secret. If endorsement checking or CRLs are unavailable,
+the result is **UNSUPPORTED / NOT_EXECUTED**, never \`HARDWARE_ATTESTED\`.
+
+The ABI and deterministic transcript test vectors live in draft
+[atto-platform-conformance #543](https://github.com/atto-lang/atto-platform-conformance/pull/543).
+The current LLVM and Java changes implement raw-report parsing, policy
+matching, transcript hashing and signature-only tests using locally
+generated **synthetic** keys. Those are \`HOST_ONLY\` primitives, not
+cryptographic AMD endorsement or real-hardware test results.
+
+## 6. Backend allocation
 
 - **Java/GraalVM:** trusted Java host should verify TEE evidence via an
   approved verifier before any protected workload credential release.
