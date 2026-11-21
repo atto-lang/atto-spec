@@ -259,11 +259,16 @@ receiver members, receiver escape via `this.send(this)` / `return this`,
 and referencing a discarded `_` receiver require typed capability proofs
 and must fail closed.
 
-Inside `handle_state(critical-read |s| -> ...)`, all direct mutations,
-including prefix `++s.counter`, suffix `s.counter--` and compound
-`s.counter -= 1`, are read-only violations. In a
-`critical-write` region, the same operations must be checked against
-the declared field ceiling. Partial indexing (`s.other[0]`), nested
+Inside `handle_state(critical-read |s| -> ...)`, **every write spelling**
+is a read-only violation: simple `=`, prefix/suffix `++` and `--`,
+arithmetic compound `+=`, `-=`, `*=`, `/=`, bitwise compound `&=`,
+`|=`, `^=`, and shift compound `<<=`, `>>=`, `<<< =`, `>>> =`
+(including unspaced triple-shift spellings) must all be recognized.
+In a `critical-write` region, the same writes must be checked against
+the declared field ceiling, not merely recognized as syntactically
+well-formed. Ordinary read-only comparisons or shift expressions must
+not be misclassified as writes. These parser-stage gates do not grant
+typed field effects or executable actor guest support. Partial indexing (`s.other[0]`), nested
 field paths (`s.other.child`) and state-field method calls
 (`s.other.method()`) lack verified layout/escape/effect information
 at the syntax stage and are denied in both guard modes.
