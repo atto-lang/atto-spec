@@ -1,0 +1,27 @@
+name: compile-time reflection and ABI source-only contract
+on:
+  pull_request:
+    paths:
+      - 'language/compile-time-reflection-ffi-layout-v1.md'
+      - 'contracts/compile-time-reflection-ffi-layout-v1.json'
+      - 'src/compile-time-abi-reference.mjs'
+      - 'tests/compile-time-reflection-ffi-layout.test.mjs'
+      - '.github/workflows/compile-time-reflection-ffi-layout.yml'
+  push:
+    paths:
+      - 'language/compile-time-reflection-ffi-layout-v1.md'
+      - 'contracts/compile-time-reflection-ffi-layout-v1.json'
+      - 'src/compile-time-abi-reference.mjs'
+      - 'tests/compile-time-reflection-ffi-layout.test.mjs'
+      - '.github/workflows/compile-time-reflection-ffi-layout.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute source-free reference tests (NOT guest compiler AOT)
+        run: node --test tests/compile-time-reflection-ffi-layout.test.mjs
