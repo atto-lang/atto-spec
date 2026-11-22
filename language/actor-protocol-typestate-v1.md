@@ -13,6 +13,7 @@ define protocol ConnectionProtocol as
   end
   state Connected as
     on Query(Sql) -> Connected replies QueryReply
+    on Subscribe(Topic) -> Connected streams DataEvent
     on Close -> Closed replies ClosedAck
   end
   terminal state Closed
@@ -26,7 +27,7 @@ define actor Connection implements ConnectionProtocol as
 end
 ```
 
-This proposal is **additive** to [typed `receives`/`sends` (#28)](https://github.com/atto-lang/atto-spec/pull/28) and [unary/stream reply contracts (#40)](https://github.com/atto-lang/atto-spec/pull/40): existing `ActorRef<T>` and one-shot `UnaryRequest<T>` authority remain the transport/reply primitives. A protocol adds legal control-state/message pairs and checked successor authority; it does not define a competing reply transport or alter stream semantics. Any final API spellings must be reconciled with those drafts.
+This proposal is **additive** to [typed `receives`/`sends` (#28)](https://github.com/atto-lang/atto-spec/pull/28) and [unary/stream reply contracts (#40)](https://github.com/atto-lang/atto-spec/pull/40): `ActorRef<ActorClass>`, `OneWayMessage`, `UnaryRequest<T>`, `StreamRequest<T>`, `UnaryReply<T>` and `ReplyStream<T>` retain their independently specified transport and reply semantics. A protocol adds legal control-state/message pairs and checked successor authority. Streaming is **not** implemented as repeated unary calls or repeated protocol transitions. Any final API spellings must be reconciled with those drafts.
 
 `define protocol` is a **type-level contract**, not an actor declaration. Its grammar, parser, formatter and actor `implements` binding require explicit acceptance in every backend. Do not infer runtime support from the reference model. The protocol state (`Connected`) is a proof index, distinct from the actor's sealed data (`socket`). The actor implementation MUST establish a correspondence between the declared control state and the sealed storage invariants without exposing raw state pointers.
 
@@ -46,9 +47,88 @@ val (_, closed) = await close_pending?
 closed.complete_protocol()
 ```
 
-Required static judgement: `send(P, S, M)` is legal iff **every** state in the compiler's possible state set `S` admits message `M`, all possible branches agree on the reply type, and every declared successor is tracked. `Disconnected | Connected` can `Close` (both reply `ClosedAck` and enter `Closed`); it cannot `Query`. A raw `ActorRef`, dynamic state, unproved union, mutable alias, borrowed handle crossing a suspension, or a concurrent second sender has **no static state guarantee** and must use an explicitly runtime-checked admission path or be rejected. Do not simply cast a shared ref to a typed handle.
+Required static judgement: `send(P, S, M)` is legal iff **every** state in the compiler's possible state set `S` admits message `M`, all possible branches agree on the nominal response cardinality (`UnaryRequest<T>` versus `StreamRequest<T>`) and response payload type `T`, and every declared successor is tracked. `Disconnected | Connected` can `Close` (both reply `ClosedAck` and enter `Closed`); it cannot `Query`. A raw `ActorRef`, dynamic state, unproved union, mutable alias, borrowed handle crossing a suspension, or a concurrent second sender has **no static state guarantee** and must use an explicitly runtime-checked admission path or be rejected. Do not simply cast a shared ref to a typed handle.
 
-Call progression is two phase: `(Handle<S>, M) -> PendingCall<Reply, NextStates>` consumes the handle before admission; a matching successful completion yields `(Reply, Handle<NextStates>)`. Queued, unprocessed or timed-out messages do **not** mint the successor. A single handle cannot have two overlapping state-changing calls. No implicit copy, `share!`, fork, or clone is permitted. All functions/methods follow snake_case; surface spellings such as `complete_protocol()` and `call()` are proposed, not committed API.
+Unary call progression is `prepare → admit → commit → correlated reply`: `(Handle<S>, M) -> PendingCall<Reply, NextStates>` consumes the handle before admission; a matching successful completion yields `(Reply, Handle<NextStates>)`. Streaming progression is `prepare → admit → commit → zero-or-more bounded chunks → EOF observed and drained → successor`, and an error/cancellation never yields the next typed handle. Queued, unprocessed or timed-out messages do **not** mint the successor. A single handle cannot have two overlapping state-changing calls. No implicit copy, `share!`, fork, or clone is permitted. All functions/methods follow snake_case; surface spellings such as `complete_protocol()` and `call()` are proposed, not committed API.
+
+## Response cardinality: one-way, unary and streaming (v1 refinement)
+
+This proposal **does not make every actor message unary**. As specified by
+[typed actor replies #40](https://github.com/atto-lang/atto-spec/pull/40):
+
+- **`OneWayMessage`:** ordinary application-mailbox admission and a receipt,
+  not processing success. There is no application reply channel. In v1, a
+  state-changing protocol transition cannot obtain a new static typestate
+  proof from a one-way send. A one-way event may be allowed on a separate
+  non-state-changing actor API, subject to effects/capabilities and runtime
+  generation checks; it cannot forge an affine `ProtocolHandle`.
+- **`UnaryRequest<T>`:** one correlated response or terminal error.
+  Source `on M(...) -> Next replies R` requires `M` to resolve to
+  `UnaryRequest<R>`. Commit-before-reply returns the next affine authority
+  exactly once.
+- **`StreamRequest<T>`:** zero or more ordered `T` items, followed by one
+  terminal `None` (normal EOF) or `Err` (terminal failure). Proposed
+  `on M(...) -> Next streams T` is **candidate source syntax**, requiring
+  parser/formatter review, and requires a nominal `StreamRequest<T>` message
+  declaration. This is an ordinary actor type, not a new actor kind.
+
+Illustrative source (not yet executable `.atto`):
+
+```atto
+define class Subscribe implements StreamRequest<DataEvent> as
+  val Topic topic
+end
+
+// Conceptual state-indexed send; exact transport wrapper spelling remains under review:
+val stream = connected.send(Subscribe(topic))?
+loop
+  match (await stream.receive())? over
+    on Some(event) -> handle_event(event)
+    on None -> break
+  end
+end
+// EOF consumed; finish consumes the stream lease and may release the successor.
+val connected_after_stream = await stream.finish_async()?
+```
+
+The underlying application data stream must use the already-proposed
+`ReplyStream<T>` semantics from #40. A state-indexed transport may wrap it
+as a **single affine stream lease** carrying an internal, runtime-authenticated
+`NextStates` obligation. Calling `receive()` on any chunk yields only a
+data item; **no chunk**, mailbox admission, producer-side close, or partial
+receive mints a successor `ProtocolHandle`. Only after the actor committed
+the checked transition, the producer sent normal EOF, all earlier buffered
+items were delivered, the consumer observed EOF, and the stream lease retired
+without unresolved obligations may one successor authority be released.
+Reaching EOF is not proof that the actor itself terminated (`get_done()`).
+
+Stream writes use `StreamReplyTo<T>` / the actor-owned continuation lease
+from #40. Demand/backpressure must be bounded and cannot hold `critical-write`
+or an unproven mutable borrow across suspension. `try_send` may report Full,
+`send_async` may suspend; accepted items preserve per-stream sequence order,
+and the stream has exactly one logical consumer unless a separately authorized
+fan-out layer is introduced. Item values must be `Sendable` and, across a
+network/tenant transport, `Serializable` under explicit capability checks.
+In v1 the reference model permits at most eight outstanding demand credits
+and eight buffered items as **model limits, not production defaults**.
+
+If a stream errors, is dropped, times out, is cancelled, loses its producer,
+or is fenced by stop/restart/hot upgrade, it **must not mint the next typed
+state capability**. Previously observed items remain observed (no rollback);
+buffered accepted items may drain in order before a terminal error when the
+transport can still deliver them. A normal EOF and a terminal error are
+exclusive, and a duplicate terminal marker or late item is rejected. Streams
+cannot silently degrade into `UnaryReply<T>`, and a union containing
+incompatible response modes or item types is rejected without narrowing.
+A closed stream does not bypass supervisor CONTROL or actor DATA isolation.
+
+Compiler and runtime **must not infer a stream from an arbitrary handler's
+return values**: the nominal message marker determines cardinality. A
+state-changing `StreamRequest<T>` remains exclusively in-flight on its
+affine protocol handle; unrelated ordinary actor messages may coexist only
+if they cannot violate that state proof, or if they revoke it before a
+conflicting transition. No implicit duplicating, auto-sharing or cloning
+the state-indexed stream capability is permitted.
 
 ## Replies, effects, failure and closure
 
@@ -149,7 +229,7 @@ The runtime may implement a protocol using state-function or handle-event dispat
 
 Finite protocol declarations are bounded to **64 states, 256 transitions and 512 reference trace steps**. Duplicate `(state, message)` rules, unknown states, terminal outgoing transitions, reply-less calls, unreachable declared states, and states with no *graph path* to a terminal state are rejected. Graph reachability is only a structural sanity check and MUST NOT be reported as a proof of termination/liveness: a Query loop may run forever.
 
-The reference checker provides `validateProtocol`, `checkSend` and `checkTrace` in `scripts/actor-protocol-typestate-model.mjs`. It models unique handle consumption, begin/resolve/fail, strict reply types, generation invalidation and logical completion. It does not parse AttoLang, type-check real source, run an actor, perform network I/O, ensure isolation or provide compiler parity.
+The reference checker provides `validateProtocol`, `checkSend` and `checkTrace` in `scripts/actor-protocol-typestate-model.mjs`. It models unique handle consumption, unary and stream cardinality, bounded stream demand (eight outstanding credits in the reference model), FIFO sequences, single EOF/error terminal, begin/commit/settle/fail, generation invalidation and logical completion. It does not parse AttoLang, type-check real source, run an actor, perform network I/O, ensure isolation or provide compiler parity.
 
 ### Required compiler / formatter / runtime work
 
