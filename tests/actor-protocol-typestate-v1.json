@@ -98,6 +98,16 @@
       "message": "Connect"
     },
     {
+      "kind": "admit_call",
+      "ticket": "t1"
+    },
+    {
+      "kind": "commit_transition",
+      "ticket": "t1",
+      "from": "Disconnected",
+      "to": "Connected"
+    },
+    {
       "kind": "resolve_reply",
       "ticket": "t1",
       "reply": "ConnectedAck",
@@ -110,6 +120,16 @@
       "message": "Query"
     },
     {
+      "kind": "admit_call",
+      "ticket": "t2"
+    },
+    {
+      "kind": "commit_transition",
+      "ticket": "t2",
+      "from": "Connected",
+      "to": "Connected"
+    },
+    {
       "kind": "resolve_reply",
       "ticket": "t2",
       "reply": "QueryReply",
@@ -120,6 +140,16 @@
       "handle": "h2",
       "ticket": "t3",
       "message": "Close"
+    },
+    {
+      "kind": "admit_call",
+      "ticket": "t3"
+    },
+    {
+      "kind": "commit_transition",
+      "ticket": "t3",
+      "from": "Connected",
+      "to": "Closed"
     },
     {
       "kind": "resolve_reply",
@@ -150,7 +180,13 @@
     "cross_actor_and_cross_tenant_capability_rejection",
     "supervisor_CONTROL_bypasses_protocol_DATA",
     "hot_upgrade_protocol_version_migration",
-    "five_backend_guest_source_execution"
+    "five_backend_guest_source_execution",
+    "commit_required_before_typed_reply",
+    "mailbox_admission_not_processing_success",
+    "duplicate_or_forged_transition_commit",
+    "admission_reject_after_commit_denied",
+    "committed_but_reply_lost_requires_resync",
+    "restart_between_commit_and_reply_fences_successor"
   ],
   "expected_backend_status": {
     "java": "NOT_VERIFIED",
