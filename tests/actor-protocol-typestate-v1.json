@@ -1,0 +1,166 @@
+{
+  "schema": "attolang.actor-protocol-typestate.v1",
+  "evidence": "SOURCE_FREE_REFERENCE_ONLY_NOT_GUEST_EXECUTION",
+  "protocol": {
+    "name": "ConnectionProtocol",
+    "actor_kind": "actor",
+    "states": [
+      "Disconnected",
+      "Connected",
+      "Closed"
+    ],
+    "initial": "Disconnected",
+    "terminal_states": [
+      "Closed"
+    ],
+    "transitions": [
+      {
+        "from": "Disconnected",
+        "message": "Connect",
+        "kind": "call",
+        "reply": "ConnectedAck",
+        "to": "Connected"
+      },
+      {
+        "from": "Disconnected",
+        "message": "Close",
+        "kind": "call",
+        "reply": "ClosedAck",
+        "to": "Closed"
+      },
+      {
+        "from": "Connected",
+        "message": "Query",
+        "kind": "call",
+        "reply": "QueryReply",
+        "to": "Connected"
+      },
+      {
+        "from": "Connected",
+        "message": "Close",
+        "kind": "call",
+        "reply": "ClosedAck",
+        "to": "Closed"
+      }
+    ]
+  },
+  "allowed": [
+    {
+      "state": "Disconnected",
+      "message": "Connect",
+      "reply": "ConnectedAck",
+      "next_states": [
+        "Connected"
+      ]
+    },
+    {
+      "state": "Connected",
+      "message": "Query",
+      "reply": "QueryReply",
+      "next_states": [
+        "Connected"
+      ]
+    },
+    {
+      "state": [
+        "Disconnected",
+        "Connected"
+      ],
+      "message": "Close",
+      "reply": "ClosedAck",
+      "next_states": [
+        "Closed"
+      ]
+    }
+  ],
+  "rejected": [
+    {
+      "state": "Disconnected",
+      "message": "Query"
+    },
+    {
+      "state": [
+        "Disconnected",
+        "Connected"
+      ],
+      "message": "Query"
+    },
+    {
+      "state": "Closed",
+      "message": "Close"
+    }
+  ],
+  "complete_trace": [
+    {
+      "kind": "begin_call",
+      "handle": "h0",
+      "ticket": "t1",
+      "message": "Connect"
+    },
+    {
+      "kind": "resolve_reply",
+      "ticket": "t1",
+      "reply": "ConnectedAck",
+      "next_handle": "h1"
+    },
+    {
+      "kind": "begin_call",
+      "handle": "h1",
+      "ticket": "t2",
+      "message": "Query"
+    },
+    {
+      "kind": "resolve_reply",
+      "ticket": "t2",
+      "reply": "QueryReply",
+      "next_handle": "h2"
+    },
+    {
+      "kind": "begin_call",
+      "handle": "h2",
+      "ticket": "t3",
+      "message": "Close"
+    },
+    {
+      "kind": "resolve_reply",
+      "ticket": "t3",
+      "reply": "ClosedAck",
+      "next_handle": "h3"
+    },
+    {
+      "kind": "complete",
+      "handle": "h3"
+    }
+  ],
+  "required_guest_cases": [
+    "protocol_declaration_parse_and_resolve",
+    "actor_binding_to_existing_kind",
+    "stateful_send_reject_disconnected",
+    "union_state_all_arms_check",
+    "linear_unique_handle_consumption",
+    "matching_reply_obligation",
+    "pending_reply_cancel_crash_timeout",
+    "stale_restart_generation_fence",
+    "mailbox_admission_failure",
+    "atomic_sealed_state_transition",
+    "state_enter_callback",
+    "state_timeout_and_postpone",
+    "terminal_protocol_completion",
+    "physical_actor_get_done_separate",
+    "cross_actor_and_cross_tenant_capability_rejection",
+    "supervisor_CONTROL_bypasses_protocol_DATA",
+    "hot_upgrade_protocol_version_migration",
+    "five_backend_guest_source_execution"
+  ],
+  "expected_backend_status": {
+    "java": "NOT_VERIFIED",
+    "llvm": "NOT_VERIFIED",
+    "wasm": "NOT_VERIFIED",
+    "forge": "NOT_VERIFIED",
+    "net": "NOT_VERIFIED",
+    "rs": "NOT_VERIFIED",
+    "js": "NOT_VERIFIED",
+    "cranelift": "NOT_VERIFIED",
+    "hdl": "NOT_VERIFIED"
+  }
+}
