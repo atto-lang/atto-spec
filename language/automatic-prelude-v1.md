@@ -14,6 +14,25 @@ Each source file is compiled with one explicit profile:
 
 The frontend MUST select the effective prelude **before** resolving user type references, by target/manifest/profile admission. Selection is deterministic, independent of host filesystem search order and compiler process state. Missing modules, allocator support or source-to-AOT lowering do not become available simply because a name is listed above: reject with a capability/unsupported diagnostic before artifact emission. Compiler-specific `.atto` library bodies may differ across `atto-source.*` repositories; public contracts and conformance fixtures should agree.
 
+## Core Type Registry
+
+Every compiler MUST maintain one compiler-owned Core Type Registry (or an equivalent immutable representation) from which its implicit prelude, type resolver, borrow checker, Copy/Send analysis, and drop analysis derive canonical identities. A second, independently maintained list of "builtins" is not authoritative. A frontend facade such as `AutomaticPrelude` may filter registry entries by the target profile, but it MUST NOT redefine their ownership or canonical identity.
+
+Each registry entry records at least: source spelling, canonical identity, scope (`core`, `alloc`, or explicit-only), kind (value type, constructor, or trait), generic arity, ownership category, allocation requirement, drop policy, actor-transfer/Send policy, and backend lowering status. Source aliases that denote the same primitive MUST point to the same canonical identity. Unknown identities fail closed; a matching short name is never sufficient proof.
+
+Ownership categories are:
+- `Copy`: compiler-proven bitwise/value copy with no owned payload or loan.
+- `PayloadDependent`: recursively derived from every possible live payload/member; a sum/tuple/array is Copy/Send only when its contained values prove that property.
+- `BorrowedView`: non-owning access tied to a source lifetime; never becomes owned, Copy, or transferable merely by being named.
+- `Owned`: owns storage/resources and requires deterministic destruction.
+- `Trait`: compile-time contract, not a runtime value.
+
+For `Option<T>` and `Result<T,E>`, the registry records exact arity (1 and 2 respectively), payload-dependent ownership, and active-variant destruction. `Some`, `Ok`, and `Err` move their payload into the new carrier; `None` contains no payload. Destruction MUST visit only the active payload and do so exactly once. Copy/Send/Sync/Share facts are computed recursively from the contained payloads, not copied from the carrier name.
+
+Generic arity is checked against registry metadata after the parser has preserved named-argument and sequence-shape syntax. A type with a wrong generic arity MUST fail before lowering. Named layout metadata and fixed-product shape dimensions are not generic type parameters and MUST be validated by their own channels.
+
+The registry's backend-lowering field is an evidence/status distinction, not a permission to guess. A `CONTRACT_ONLY` or otherwise unsupported entry may be documented or listed, but the backend MUST reject its use before artifact emission. An old host scalar implementation for `string`/ `String` MUST NOT be reported as proof of an owned allocator-backed `String`.
+
 ## Name resolution
 
 1. Recognize syntax keywords and compiler-owned primitive/intrinsic identities first; they may not be shadowed or forged.
