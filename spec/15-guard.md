@@ -31,6 +31,27 @@ fnc optional_port(bool present): Option<int> {
 }
 ```
 
+The same two forms admit explicit void early returns in an unbraced
+`-> void ... end` callable body, exactly as follows:
+
+```atto
+fnc process_explicit() -> void
+    guard false else ^ void end
+end
+
+fnc process_braced() -> void
+    guard false { ^ void }
+end
+```
+
+Both are semantically identical to `guard false { return; }`, and
+`^ void` is a contextual **no-value return marker**, not a value expression.
+For the keyword guard, the first `end` closes the guard's failure branch
+and the second `end` closes the function. For the braced guard, `}`
+closes the guard and the lone `end` closes the function. Neither spelling
+implicitly returns from an enclosing lambda or actor instead of the
+nearest lexical callable. `^ void` in a non-void callable is rejected.
+
 In **both** forms, all guard tests passing continues after the guard;
 a failed test executes the failure statements, which MUST explicitly
 return from the enclosing function on every path. This is a statically
@@ -94,7 +115,8 @@ error. `throw`, `raise`, `panic`, `break`, and `continue` are **not substitutes*
 for the required return, even if they would otherwise terminate a control-flow
 path; `break` and `continue` inside a guard never count as function returns.
 The return must match the enclosing function's declared return type; a `void`
-function uses `return;` (or its verified lexical equivalent). A nested `if`
+function uses `return;`, `^;`, `^ void` or `return void;` as equivalent
+no-value returns. The `void` token is not a runtime value. A nested `if`
 is valid only if all reachable arms explicitly return; similarly, a nested
 `match` may be accepted only if exhaustiveness and return on every arm are
 proved. Calling a function with unknown effects, spawning work, `await`,
