@@ -20,7 +20,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
-- [Typed task payloads and sync aliases v1](language/typed-task-payload-sync-v1.md): TARGET `task<T> : Future<T>`, `sync task` as suspension-preserving join alias, `do sync task` as supervised discard, `sync` reserved, and scoped borrow/capture restrictions. **Not yet guest-verified**.
+- [Typed task payloads, inline sync and scoped ownership v1](language/typed-task-payload-sync-v1.md): TARGET `task<T> : TaskFuture<T>`, inline `sync task` returns T without spawning, `do task` spawns supervised child, `do sync task<void>` is inline, with cancellation, borrows and scope safety. **Not yet full guest-verified**.
+- [TaskFuture control, ready receipt and cooperative scheduler requests v1](language/task-future-control-v1.md): TARGET `get_ready(): Future<T>`, `cancel_task(): void`, `cooperate(): void`, one-result ownership and provenance-safe Future migration. **Not yet guest-verified**.
 
 - [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^ ~`, `<<< >>> ashr`, compound updates, and typed-I/O `<< >>`, with context-sensitive caret/structural-tilde parsing; target semantics, not backend parity.
 
