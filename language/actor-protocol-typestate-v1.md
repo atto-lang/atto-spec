@@ -130,6 +130,33 @@ if they cannot violate that state proof, or if they revoke it before a
 conflicting transition. No implicit duplicating, auto-sharing or cloning
 the state-indexed stream capability is permitted.
 
+## Continuous inbound, duplex and actor-pipeline streams (design boundary)
+
+**Streaming replies are not the only kind of streaming actor messaging.**
+There are also continuous **inbound** streams (many input items followed by
+one aggregate result), **full-duplex** conversations (concurrent inbound and
+outbound streams), and persistent **actor-to-actor pipelines**. These are
+different from repeating `UnaryRequest<T>` in a loop.
+
+The current v1 source-free model verifies **server-side response streaming**
+from a single admitted `StreamRequest<T>`. It **does not** certify client
+streaming, duplex sessions, or continuous actor-pipe execution. Future
+state-indexed sessions must separately type each directional stream endpoint
+(`Source<T>`, `Sink<U>` or equivalent compiler-resolved roles) and define
+half-close, per-direction credit/buffer limits, end-to-end cancellation,
+reply correlation, backpressure, terminal failure and ownership handoff. A
+duplex conversation cannot release a successor state proof while either
+direction still has an unresolved lifecycle obligation; both legs must
+quiesce or be fenced with an explicit failure outcome.
+
+This layer MUST compose with the existing
+[directional `pipe` / `rpipe` contract (#45)](https://github.com/atto-lang/atto-spec/pull/45)
+and the [authenticated `ActorStream` endpoint work](https://github.com/atto-lang/atto-source.java/pull/1217).
+It must not rebrand a continuous directed graph as a unary RPC, conflate
+application DATA with supervisor CONTROL, or silently cast a channel/ordinary
+`ActorStream<T>` into an affine protocol capability. Ordinary pipeline
+connections may be long-lived and have independent `get_done()` obligations.
+
 ## Replies, effects, failure and closure
 
 - Each declared `call` transition specifies exactly one required successful reply **type**. An admitted synchronous request must eventually resolve to that reply **or an explicit terminal error** (cancellation, timeout, shutdown, panic, stale generation, etc.). Static checking does not promise scheduling fairness or successful delivery. The runtime must enforce one-shot correlation, reject duplicates, and never turn mailbox admission `Ack` into processing success.
