@@ -29,7 +29,7 @@ Status: **PROPOSED**, source-free reference and adversarial fixtures only. v1 pr
     }
 
     pub fnc main(): int {
-        val result: Mapper::Item<int> = Mapper::map<int>(2, 40);
+        val result: Mapper.Item<int> = Mapper.map<int>(2, 40);
         return result;
     }
 
@@ -46,3 +46,4 @@ Open implementation gates:
 - Wasm/JS/other backends: do not claim parity from source-free catalog tests or parse-only acceptance
 
 No changes to unrestricted overloading or generic implicit conversion policies are proposed.
+**Static member syntax:** use `.` for both associated-type projections and typeclass method calls. The `::` spelling is invalid for these expressions, and the compiler rejects it; this is not a formatter alias.
