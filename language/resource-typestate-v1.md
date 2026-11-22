@@ -9,17 +9,18 @@ Resource typestate is a **compile-time property of an owned capability**, not a 
 Examples of desired type-indexed API (illustrative TARGET syntax; not claimed to compile yet):
 
 ```atto
-// Simplified infallible contracts for illustration; production I/O returns
-// Result with explicit resource ownership in every success/failure variant.
-fnc open_file(string path): File<Open>;
-fnc close_file(take! File<Open> file): File<Closed>;
-fnc read_file(File<Open> file): Bytes;
+// Simplified infallible contracts ONLY to illustrate resource typestate.
+// Actual I/O contracts return typed Result outcomes, preserving resource
+// ownership and cleanup responsibility on failure and cancellation.
+susp fnc open_file(string path): File<Open>;
+susp fnc close_file(take! File<Open> file): File<Closed>;
+susp fnc read_file(File<Open> file): Bytes;
 
-pub fnc main(): int {
-  let file = open_file("log.txt");
-  let closed = close_file(take! file);
-  // read_file(file);  // E_MOVED: ownership was transferred
-  // read_file(closed); // E_TYPESTATE_ILLEGAL_OPERATION: Closed is not Open
+pub susp fnc main(): int {
+  let file = await open_file("log.txt");
+  let closed = await close_file(take! file);
+  // await read_file(file);    // E_MOVED: take! invalidated the old owner
+  // await read_file(closed);  // E_TYPESTATE_ILLEGAL_OPERATION: Closed is not Open
   return 0;
 }
 ```
@@ -39,13 +40,30 @@ Do not add fundamental `resource` or `actor` kinds merely for this: existing nom
 
 The backend must not synthesize runtime discriminant tests for a state already proved statically. Runtime-dependent transitions return a **typed sum** or checked `Result` that preserves ownership in *every* alternative. On failure, the previous state is retained only when the operation's atomic-failure contract proves it; otherwise the result must express an explicit `Unknown`/`Failed` state, not a fictitious successful post-state.
 
+## Asynchronous I/O, suspending effects and ownership escrow
+
+**Mandatory:** File/network I/O, socket connect/send/receive/close, and any transactional or other operation that can wait for I/O must use the canonical `susp fnc` / `susp mtd` effect (source alias: `suspends`). Callers must `await` a suspending operation from a suspending context; neither ordinary `fnc` nor a non-awaiting call may hide blocking I/O, silently synchronously wait for a future, or erase suspension from a function value's type. CPU-only builder mutation may stay non-suspending when it cannot wait for I/O. See [suspension-effect spelling](susp-effect-shorthand-v1.md).
+
+`await open_file(path)` produces an initialized `File<Open>` **only after a successful awaited completion**. A failed, timed-out, or cancelled acquisition must not publish an open owner; a partially opened OS resource must be released under an independently verified cancellation/unwind contract. The examples above deliberately omit `Result` only to focus on compile-time state indices, not to imply infallible filesystem operations.
+
+For a consuming suspension, such as `await close_file(take! file)`, `take!` consumes the source owner at call/admission time, **before** suspension; the continuation/operation must own the live resource in an explicit pending/escrow state. The caller cannot read, close, transfer or drop it while pending. Successful completion yields `File<Closed>`; failed completion must return a typed outcome that identifies who owns the still-open, closed, or indeterminate resource, or establishes an independently verified cleanup. Never fabricate `File<Closed>` on error, silently restore the consumed `file`, or declare a resource inert merely because a future was cancelled.
+
+The full typed-CFG contract must cover:
+1. A versioned suspension effect on the callable/method signature and typed MIR, plus a distinct awaited-call operation or explicit begin/pending/resume transitions. A plain synchronous `Call` is **not** an acceptable representation of suspending I/O; missing `await` and effect erasure are errors.
+2. An exclusively owned resource survives `await` in the continuation frame with protocol ID, incarnation, generation, current state, cleanup authority and pending transition. It is not automatically closed at each suspension point. No mutable/shared loan may be retained across suspension without a separately proven suspension-safe lifetime, pinned frame, cancellation fencing and alias-safety witness. Pending operations may not be duplicated, replayed, or sent to another actor by borrowing.
+3. **Separate success, error, timeout and cancellation edges** for any potentially fallible in-flight transition. Each edge must settle the same linear pending authority exactly once, preserve the appropriate state and cleanup responsibility, and forbid any post-transition use while an outcome is unresolved. Early `?`, `throw!`, `raise!`, `return`, `defer` and task cancellation carry the same obligation.
+4. Explicit resource cleanup on cancellation/timeout must be asynchronous when cleanup requires I/O, must not block an executor/actor thread, and must finish or securely transfer responsibility to a verified runtime owner before final task settlement. A synchronous destructor may release only an independently proven non-blocking resource; the existing `VerifiedDestructor` model flag alone does not certify async close.
+5. A strict backend that has not implemented pending-ownership and all relevant outcome/cleanup edges must **reject** suspendable state-changing resource calls, rather than lower them to an optimistic synchronous success transition. A static oracle can model a fully authenticated, already-resolved outcome, but that host result is not executable async proof.
+
+**Required negative source tests:** missing `await`, `await` outside `susp`, suspending effect erased by a callable type/indirect call, use after `take!` before or after suspension, live borrow across unsupported suspension, double completion, cancelled in-flight close that leaks an owner, unmodeled timeout/unwind edges, error falsely treated as Closed, and synchronous/blocking fallback. Successful guest tests must explicitly exercise resumed completion and cancellation races, not only parse syntax.
+
 ## Ownership and loans
 
 - `take!` transfers the **current typestate and unique capability**. The source is unusable; the destination may be used only according to its actual state. Transfers into an already-live owner are rejected. No implicitly consuming ordinary argument calls.
 - An ordinary nonprimitive argument, or explicit `borrow!`, is a **scoped readonly loan**. Only declared state-preserving readonly actions are allowed through it. No `close`, `commit`, `connect`, `finish`, `drop!`, transfer or state refinement through a shared loan.
 - `borrow! mut` / `mut` on a proven writable referent gives an **exclusive loan**; state transitions may be admitted through that loan when the full declared method effect is known. Mutable loans exclude shared loans, moves, drops and direct owner access until end-of-loan. No silent mutation through a readonly formal.
 - `copy!` is not a way to duplicate a unique resource capability; a type's `Copy` proof must explicitly exclude unique external authority. `copy!!` clones data, **not** a file descriptor/socket/transaction identity unless a separately defined resource duplication capability proves a fresh independent instance. `share!` cannot erase protocol or mutable-alias restrictions.
-- Borrowed views cannot outlive their owner, cross `await`/`select`/task cancellation or an actor boundary without the existing independent lifetime, pin, Send and cleanup proofs. A transferred actor handle retains its resource protocol/epoch; actor message protocol typestate is separate but can compose with resource typestate.
+- Borrowed views cannot outlive their owner, cross `await`/`select`/task cancellation or an actor boundary without the existing independent lifetime, pin, Send and cleanup proofs; even synchronous-looking method syntax cannot conceal a suspending operation. A transferred actor handle retains its resource protocol/epoch; actor message protocol typestate is separate but can compose with resource typestate.
 
 ## CFG and checked effects
 
@@ -53,7 +71,7 @@ The backend must not synthesize runtime discriminant tests for a state already p
 2. Each basic block propagates a set of possible state indices for each live owner. At a join, **union** predecessor states (including may-be-uninitialized/moved). An operation is valid only if it is permitted in *every* possible state; a branch-local proof does not bleed into another branch. A state-preserving inspection may be legal on a union when all states allow it.
 3. A call requires the declared receiver access mode and the compatible live-loan set. State transitions require exclusive access. An unresolved overload, callback, FFI operation, reflection, dynamic dispatch or effectful closure must fail closed unless complete verifiable effect summaries are supplied.
 4. Every source exit—including error propagation `?`, `throw!`, `raise!`, `panic!` where applicable, `return`, `^`, `defer`/`finally`, cancellation and actor teardown—must verify deterministic release. `Closed`/terminal inert states can exit; a live state may exit only with an independently verified no-throw destructor/rollback on **all relevant exit paths**. A transaction whose `Active` state requires commit/rollback cannot silently disappear.
-5. A method whose post-state differs by outcome must encode separate successor facts, not promise one uniform state on both paths. The present host oracle models only atomic, single-post-state actions and **rejects cycles and unsupported exceptional exits**. No source compiler may treat this restricted success as whole-program certification.
+5. A method whose post-state differs by outcome must encode separate successor facts, not promise one uniform state on both paths. The present host oracle models only atomic, single-post-state actions and **rejects cycles and unsupported exceptional exits**. In particular, ordinary `Call`/`CallMut` events do not establish an awaited, cancellation-safe I/O transition. No source compiler may treat this restricted success as whole-program certification.
 6. Checker budgets are explicit: 64 protocols, 128 states/protocol, 256 methods/protocol, 64 resource places, 1,024 unique loan IDs, 4,096 CFG blocks, 16,384 edges, 1,024 operations/block and 100,000 operations/graph. Exceeding a bound fails closed.
 
 ## Canonical model and implementation boundary
