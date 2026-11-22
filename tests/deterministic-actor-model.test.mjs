@@ -112,3 +112,14 @@ test('violated property produces a failing, replayable schedule rather than a fa
  assert.match(t.failure.message,/property failed/);
  assert.deepEqual(schedule(s,{seed:4,replay:t}),t);
 });
+
+test('mailbox does not reorder admitted messages to the same serial actor',()=>{
+ const s={actors:[{id:'worker',handlers:{first:[{op:'assert',key:'count',value:0},{op:'add',key:'count'}],second:[{op:'assert',key:'count',value:1},{op:'add',key:'count'}]}}],shared:{count:0},tasks:[{id:'p',steps:[{op:'send',to:'worker',tag:'first'},{op:'send',to:'worker',tag:'second'}]}]};
+ for(let seed=0;seed<100;seed++){
+  const trace=schedule(s,{seed});
+  assert.equal(trace.status,'completed','seed='+seed);
+  assert.equal(trace.final_state.shared.count,2);
+  const delivered=trace.events.filter(e=>e.choice.startsWith('deliver:'));
+  assert.deepEqual(delivered.map(e=>e.choice),['deliver:m1','deliver:m2']);
+ }
+});
