@@ -636,6 +636,302 @@
         "value": "0.25",
         "inexact": false
       }
+    },
+    {
+      "id": "i16-min",
+      "domain": "integer",
+      "op": "literal",
+      "type": "i16",
+      "args": [
+        "-32768"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "-32768"
+      }
+    },
+    {
+      "id": "u16-negative",
+      "domain": "integer",
+      "op": "literal",
+      "type": "u16",
+      "args": [
+        "-1"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_literal_out_of_range"
+      }
+    },
+    {
+      "id": "i32-min-overflow",
+      "domain": "integer",
+      "op": "sub",
+      "type": "i32",
+      "args": [
+        "-2147483648",
+        "1"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow"
+      }
+    },
+    {
+      "id": "u32-max",
+      "domain": "integer",
+      "op": "literal",
+      "type": "u32",
+      "args": [
+        "4294967295"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "4294967295"
+      }
+    },
+    {
+      "id": "dimension-fractional-exact",
+      "domain": "dimension",
+      "op": "divide",
+      "left": {
+        "unit": {
+          "length": 1
+        },
+        "value": "3"
+      },
+      "right": {
+        "unit": {
+          "time": 1
+        },
+        "value": "2"
+      },
+      "expected": {
+        "kind": "value",
+        "unit": {
+          "length": 1,
+          "time": -1
+        },
+        "value": "1.5"
+      }
+    },
+    {
+      "id": "dimension-nonterminating",
+      "domain": "dimension",
+      "op": "divide",
+      "left": {
+        "unit": {
+          "length": 1
+        },
+        "value": "1"
+      },
+      "right": {
+        "unit": {
+          "time": 1
+        },
+        "value": "3"
+      },
+      "expected": {
+        "kind": "error",
+        "code": "decimal_context_required"
+      }
+    },
+    {
+      "id": "dimension-zero-divisor",
+      "domain": "dimension",
+      "op": "divide",
+      "left": {
+        "unit": {
+          "length": 1
+        },
+        "value": "3"
+      },
+      "right": {
+        "unit": {
+          "time": 1
+        },
+        "value": "0"
+      },
+      "expected": {
+        "kind": "error",
+        "code": "division_by_zero"
+      }
+    },
+    {
+      "id": "dimension-decimal-add",
+      "domain": "dimension",
+      "op": "add",
+      "left": {
+        "unit": {
+          "length": 1
+        },
+        "value": "0.1"
+      },
+      "right": {
+        "unit": {
+          "length": 1
+        },
+        "value": "0.2"
+      },
+      "expected": {
+        "kind": "value",
+        "unit": {
+          "length": 1
+        },
+        "value": "0.3"
+      }
+    },
+    {
+      "id": "matrix-checked-matmul",
+      "domain": "matrix",
+      "op": "matmul",
+      "type": "i64",
+      "args": [
+        [
+          [
+            "1",
+            "2"
+          ],
+          [
+            "3",
+            "4"
+          ]
+        ],
+        [
+          [
+            "5",
+            "6"
+          ],
+          [
+            "7",
+            "8"
+          ]
+        ]
+      ],
+      "expected": {
+        "kind": "value",
+        "value": [
+          [
+            "19",
+            "22"
+          ],
+          [
+            "43",
+            "50"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "matrix-product-overflow",
+      "domain": "matrix",
+      "op": "matmul",
+      "type": "i8",
+      "args": [
+        [
+          [
+            "127",
+            "1"
+          ]
+        ],
+        [
+          [
+            "2"
+          ],
+          [
+            "1"
+          ]
+        ]
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow",
+        "row": 0,
+        "column": 0,
+        "inner": 0
+      }
+    },
+    {
+      "id": "matrix-accumulate-overflow",
+      "domain": "matrix",
+      "op": "matmul",
+      "type": "i8",
+      "args": [
+        [
+          [
+            "10",
+            "10"
+          ]
+        ],
+        [
+          [
+            "7"
+          ],
+          [
+            "7"
+          ]
+        ]
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow",
+        "row": 0,
+        "column": 0,
+        "inner": 1
+      }
+    },
+    {
+      "id": "matrix-ragged-rejected",
+      "domain": "matrix",
+      "op": "matmul",
+      "type": "i64",
+      "args": [
+        [
+          [
+            "1",
+            "2"
+          ],
+          [
+            "3"
+          ]
+        ],
+        [
+          [
+            "1"
+          ],
+          [
+            "2"
+          ]
+        ]
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "shape_mismatch"
+      }
+    },
+    {
+      "id": "matrix-inner-mismatch",
+      "domain": "matrix",
+      "op": "matmul",
+      "type": "i64",
+      "args": [
+        [
+          [
+            "1",
+            "2"
+          ]
+        ],
+        [
+          [
+            "3",
+            "4"
+          ]
+        ]
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "shape_mismatch"
+      }
     }
   ]
 }
