@@ -62,11 +62,11 @@ test("a call consumes its linear handle: reuse or double send is invalid", () =>
 });
 
 test("required reply must match, and cannot be observed twice", () => {
-  const first = fixture.complete_trace.slice(0,2);
+  const first = fixture.complete_trace.slice(0,4);
   assert.throws(() => checkTrace(protocol, [
-    first[0], {...first[1], reply:"WrongAck"}
+    ...first.slice(0,-1), {...first.at(-1), reply:"WrongAck"}
   ]), /required reply/);
-  assert.throws(() => checkTrace(protocol, [...first, first[1]]), /missing, duplicate or stale/);
+  assert.throws(() => checkTrace(protocol, [...first, first.at(-1)]), /missing, duplicate or stale/);
 });
 
 test("no terminal completion before final state and no dropped pending reply", () => {
@@ -140,13 +140,13 @@ test("no protocol is proven complete merely because terminal is reachable", () =
 });
 
 test("previously settled tickets and handles cannot be recycled or replayed", () => {
-  const first = fixture.complete_trace.slice(0,2);
+  const first = fixture.complete_trace.slice(0,4);
   assert.throws(() => checkTrace(protocol, [
     ...first,
     {kind:"begin_call",handle:"h1",ticket:"t1",message:"Query"}
   ]), /duplicate ticket/);
   assert.throws(() => checkTrace(protocol, [
-    first[0], {...first[1], next_handle:"h0"}
+    ...first.slice(0,-1), {...first.at(-1), next_handle:"h0"}
   ]), /duplicate handle identity/);
   assert.throws(() => checkTrace(protocol, [
     ...first,
@@ -165,11 +165,71 @@ test("restart reports terminal failures for every pending call rather than silen
 });
 
 test("ticket identifiers and handle identifiers share an unforgeable linear namespace", () => {
-  const first = fixture.complete_trace.slice(0,2);
+  const first = fixture.complete_trace.slice(0,4);
   assert.throws(() => checkTrace(protocol, [
     ...first, {kind:"begin_call",handle:"h1",ticket:"h0",message:"Query"}
   ]), /duplicate ticket/);
   assert.throws(() => checkTrace(protocol, [
-    first[0], {...first[1],next_handle:"t1"}
+    ...first.slice(0,-1), {...first.at(-1),next_handle:"t1"}
   ]), /duplicate handle identity/);
+});
+
+const prepared = [{kind:"begin_call",handle:"h0",ticket:"t1",message:"Connect"}];
+const admitted = [...prepared, {kind:"admit_call",ticket:"t1"}];
+const committed = [...admitted, {kind:"commit_transition",ticket:"t1",from:"Disconnected",to:"Connected"}];
+
+test("matching reply alone does not prove admission or state commit", () => {
+  const reply = {kind:"resolve_reply",ticket:"t1",reply:"ConnectedAck",next_handle:"h1"};
+  assert.throws(() => checkTrace(protocol, [...prepared, reply]), /before an authenticated transition commit/);
+  assert.throws(() => checkTrace(protocol, [...admitted, reply]), /before an authenticated transition commit/);
+  assert.deepEqual(checkTrace(protocol, [...committed,reply], {requireComplete:false}), {
+    completed:false, fenced:false, generation:1, live_handles:1, pending_calls:0, terminal_failures:0
+  });
+});
+
+test("unadmitted or forged transitions cannot commit", () => {
+  assert.throws(() => checkTrace(protocol, [
+    ...prepared, {kind:"commit_transition",ticket:"t1",from:"Disconnected",to:"Connected"}
+  ]), /requires one admitted/);
+  assert.throws(() => checkTrace(protocol, [
+    ...admitted, {kind:"commit_transition",ticket:"t1",from:"Connected",to:"Connected"}
+  ]), /does not match actor-side/);
+  assert.throws(() => checkTrace(protocol, [
+    ...admitted, {kind:"commit_transition",ticket:"t1",from:"Disconnected",to:"Closed"}
+  ]), /declared successor/);
+  assert.throws(() => checkTrace(protocol, [...committed, committed.at(-1)]), /requires one admitted/);
+});
+
+test("admission is single-shot and admission rejection strictly pre-publication", () => {
+  assert.throws(() => checkTrace(protocol, [...admitted, admitted.at(-1)]), /requires one prepared/);
+  assert.throws(() => checkTrace(protocol, [
+    ...admitted, {kind:"fail_call",ticket:"t1",reason:"AdmissionRejected"}
+  ]), /impossible after mailbox admission/);
+  assert.equal(checkTrace(protocol, [
+    ...prepared, {kind:"fail_call",ticket:"t1",reason:"AdmissionRejected"}
+  ], {requireComplete:false}).terminal_failures, 1);
+});
+
+test("commit then timeout does not mint a successor and late replies are rejected", () => {
+  const failed = [...committed, {kind:"fail_call",ticket:"t1",reason:"Timeout"}];
+  assert.deepEqual(checkTrace(protocol, failed, {requireComplete:false}), {
+    completed:false, fenced:false, generation:1, live_handles:0, pending_calls:0, terminal_failures:1
+  });
+  assert.throws(() => checkTrace(protocol, [...failed,
+    {kind:"resolve_reply",ticket:"t1",reply:"ConnectedAck",next_handle:"h1"}
+  ]), /missing, duplicate or stale/);
+  assert.throws(() => checkTrace(protocol, [...failed,
+    {kind:"begin_call",handle:"h0",ticket:"t2",message:"Close"}
+  ]), /consumed, absent or stale/);
+});
+
+test("restart between commit and reply revokes all protocol proofs", () => {
+  assert.deepEqual(checkTrace(protocol, [...committed,{kind:"fence_restart"}],
+    {requireComplete:false}), {
+    completed:false, fenced:true, generation:2, live_handles:0, pending_calls:0, terminal_failures:1
+  });
+  assert.throws(() => checkTrace(protocol, [
+    ...committed, {kind:"fence_restart"},
+    {kind:"resolve_reply",ticket:"t1",reply:"ConnectedAck",next_handle:"h1"}
+  ]), /missing, duplicate or stale/);
 });
