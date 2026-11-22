@@ -149,6 +149,25 @@ The existing **private** runtime guest checker now consumes the structured param
 
 The final updated shared registry contains a third, narrow `FOCUSED_EXECUTED` record and an additional host-only test requiring that the broad contract remain `TARGET_NOT_EXECUTED` and all backends remain `NOT_VERIFIED`. [Authorized alternate CI #44979532710](https://github.com/zed-pkg-test/zed-pkg-e2e/actions/runs/44979532710) completed successfully on carrier SHA `8a9fbe44102743987e3c9d62b4d3eac3423c9634`, with independent post-run Git-tree verification of **84/84 Rust compiler source/tests/source workflow blobs** at `f55af346231eb2bcfb766aa18d2f8f59cbfcb664` and **14/14 shared registry/test/fixture blobs** at `b59256b334c4cb0ea0fceabe11bad545f9886e06`. All **98/98** blob SHAs matched. The runner executed 101/101 Rust tests, 17 compiled guests, ten native negative/no-artifact cases, six byte-identical native/wasm32 compiler guest results, eight matching browser/native negative diagnostic/no-artifact cases, pinned strict Clippy, rustfmt, and **3/3 host-only conformance assertions**. The latter validate registry integrity and non-promotion, **not** full fixture guest execution. The independent Java/LLVM/.NET/Forge/etc backends and actual runtime `RangeError` object remain unverified/unimplemented.
 
+## Production AST admission and compiled private Result propagation (November 22, 2026)
+
+The next verified Rust/browser increment introduces **real ordinary-parser/production-AST representations** for nominal i64 declarations, closed signed bounds, and interned `Result<Ok,Err>` type arguments (`Type::GenericResult(index)` and `Program::generic_results`). Repeated `Result<Port,RangeError>` signatures now share one nominally canonical specialization instead of depending on distinct parser occurrence indices. The normal `check::check` resolves declarations and errors, rejects duplicates/unknown success types, refuses public nominal ABI exposure, and **fails closed with `E_UNSUPPORTED_TYPE` before codegen** for generic instantiations whose Error-object and Result layout are not certified. It never silently aliases them to `Result<int,string>`.
+
+The earlier *private source-local* dynamic newtype compiler now admits a deliberately narrow `?` propagation form, e.g.:
+
+~~~atto
+fnc relay_port(int value): Result<Port,RangeError> {
+  val Port port = create_port(value)?;
+  return Ok(port);
+}
+~~~
+
+The exact nominal Result type is checked before lowering into the existing typed `Result<int,string>` production `AdtPropagate` instruction, which evaluates once and returns the **original Err tagged record** on failure. A dedicated syntax-candidate preflight lets this form reach the full private nominal checker without relaxing the normal newtype preflight: an unchecked raw `i64`, wrong newtype, unproved constructor or incorrect `Ok` wrapper still fails. The guest remains **full ahead-of-time compiled**; no interpreter, JIT, runtime source-to-code path, or host-validated range fallback is introduced.
+
+**Exact execution receipt:** source `atto-lang/atto-source.rs@e8fe817541c9282a1b9c7077df8ea3ce5c647b51` passed [authorized private carrier Actions #44981027690](https://github.com/zed-pkg-test/zed-pkg-e2e/actions/runs/44981027690), carrier `e28d691c648b5906b3c9036b9d4753bbb84137ac`. An independent Git-tree audit verified **85/85 current compiler/test/source-workflow blobs** plus **14/14 existing conformance registry/test/fixture blobs**, **99/99 exact Git SHAs**. Tests executed: **70 library + 8 admission + 5 static + 11 runtime + 10 typed Result/propagation + 8 production-AST integration = 112/112 Rust tests**; **17 real native-compiled guest Wasm executions** and **10 negative/no-artifact rejections**; **9 byte-identical native vs actual wasm32 browser compiler guest programs**, including checked `?` and recoverable out-of-range Err, plus **11 matching cross-target negative diagnostic/no-artifact cases**. Pinned Rust 1.85.1 strict Clippy, rustfmt output, and **3/3 host-only conformance assertions** passed. Source-organization [run #44980998012](https://github.com/atto-lang/atto-source.rs/actions/runs/44980998012) failed before **any job steps**; that is runner infrastructure, not a compiler failure.
+
+**Crucial limitations:** The general production AST/normal checker now preserves semantic type arguments but **does not yet generate the general `Result<T,E>` guest ABI**. There is still **no owned first-class runtime `RangeError extends Error` object**. The private executable profile still emits the pre-existing tagged `Result<int,string>` with an inaccessible error marker; only metadata models Error inheritance. General `?`, cross-module/import/public identity, actor messaging, FFI, arbitrary generic payloads and physical `Array<T,N>`/`Matrix<T,R,C>` layouts remain **NOT IMPLEMENTED/NOT VERIFIED**. This receipt is one Rust compiler cross-target proof, not independent compiler/backend parity.
+
 ## Required implementation sequence and evidence
 
 1. Shared canonical grammar, type/const AST, nominal identity and integer interval normalization (the shared spec/conformance target).
