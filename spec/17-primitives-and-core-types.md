@@ -24,7 +24,7 @@ Boolean logic uses the operators `&&` (short-circuit AND), `^^` (eager XOR) and 
 
 ## Numerical semantics v1 target (not yet verified)
 
-The new [numeric-semantics-v1 proposal](../language/numeric-semantics-v1.md) and [29-case reference registry](../contracts/numeric-semantics-v1.json) propose checked fixed-width integers, genuine bigint, explicit decimal contexts, fixed-point, deterministic vector kernels and dimensional types. The observations below remain historical backend evidence, **not** support claims. The proposed int/int truncating division and exact-until-context decimal division require reconciliation with existing Java numeric PRs before being normative.
+The new [numeric-semantics-v1 proposal](../language/numeric-semantics-v1.md) and [34-case reference registry](../contracts/numeric-semantics-v1.json) propose checked fixed-width integers, genuine bigint, explicit decimal contexts, fixed-point, deterministic vector kernels and dimensional types. The observations below remain historical backend evidence, **not** support claims. The proposed int/int truncating division and exact-until-context decimal division require reconciliation with existing Java numeric PRs before being normative.
 
 ## Integer rules
 
