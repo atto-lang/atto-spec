@@ -89,14 +89,14 @@ export function checkTrace(protocol, operations, options = {}) {
   const pending = new Map();
   // Closed ticket/handle names are never recycled: reject replay after settlement.
   const seenTickets = new Set(), seenHandles = new Set(["h0"]);
-  let generation = 1, completed = false, fenced = false;
+  let generation = 1, completed = false, fenced = false, terminalFailures = 0;
   for (const op of operations) {
     if (!op || typeof op !== "object") throw new TypeError("invalid operation");
     if (completed) throw new TypeError("operation after protocol completion");
     if (op.kind === "begin_call") {
       identifier(op.handle, "handle"); identifier(op.ticket, "ticket");
       if (!handles.has(op.handle)) throw new TypeError("consumed, absent or stale linear protocol handle");
-      if (handles.has(op.ticket) || seenTickets.has(op.ticket)) throw new TypeError("duplicate ticket");
+      if (seenHandles.has(op.ticket) || seenTickets.has(op.ticket)) throw new TypeError("duplicate ticket");
       const owned = handles.get(op.handle);
       if (owned.generation !== generation) throw new TypeError("stale protocol generation");
       const next = checkSend(p, owned.states, op.message);
@@ -108,7 +108,7 @@ export function checkTrace(protocol, operations, options = {}) {
       const waiting = pending.get(op.ticket);
       if (!waiting || waiting.generation !== generation) throw new TypeError("missing, duplicate or stale pending call");
       if (op.reply !== waiting.next.reply) throw new TypeError("missing or mismatched required reply");
-      if (seenHandles.has(op.next_handle) || pending.has(op.next_handle)) throw new TypeError("duplicate handle identity");
+      if (seenHandles.has(op.next_handle) || seenTickets.has(op.next_handle) || pending.has(op.next_handle)) throw new TypeError("duplicate handle identity");
       pending.delete(op.ticket);
       handles.set(op.next_handle, Object.freeze({states:waiting.next.next_states, generation}));
       seenHandles.add(op.next_handle);
@@ -118,7 +118,11 @@ export function checkTrace(protocol, operations, options = {}) {
         throw new TypeError("failure must carry an explicit terminal reason");
       if (!pending.has(op.ticket)) throw new TypeError("missing or settled pending call");
       pending.delete(op.ticket); // Ambiguous delivery never returns the consumed handle.
+      terminalFailures += 1;
     } else if (op.kind === "fence_restart") {
+      // Every revoked pending call receives a terminal Crash outcome.
+      // A restart can never silently turn unresolved work into success.
+      terminalFailures += pending.size;
       generation += 1;
       handles.clear(); pending.clear(); fenced = true;
     } else if (op.kind === "complete") {
@@ -133,5 +137,5 @@ export function checkTrace(protocol, operations, options = {}) {
     }
   }
   if (options.requireComplete !== false && !completed) throw new TypeError("protocol incomplete: no completed terminal proof");
-  return Object.freeze({completed, fenced, generation, live_handles:handles.size, pending_calls:pending.size});
+  return Object.freeze({completed, fenced, generation, live_handles:handles.size, pending_calls:pending.size, terminal_failures:terminalFailures});
 }
