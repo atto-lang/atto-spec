@@ -24,6 +24,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Trap-to-Result v1](language/trap-result-v1.md): caller-side `trap` preserves returned `Result`/`Option` layers and catches ordinary `throw` as `Err(original Error)`; unverified backends must fail closed rather than emit legacy Option results.
 
+- [Typed constant imports v1](language/constant-imports-v1.md): `import const a, b from "std.http"` statically selects exported immutable file/namespace constants; forbids mutable top-level bindings. Target contract only; compiler/linker and guest parity unverified.
+
 - [File/module `define const` v1](language/file-module-const-v1.md): unconditional static immutable bindings using `=` or `as`; constexpr folds at compile time, direct `os.read_env("KEY")` is evaluated exactly once at runtime initialization. **Proposal; backend guest execution not yet verified.**
 
 - [Tuple destructuring, mutability and aliasing v1](language/tuple-destructuring-v1.md): accepted target syntax for mixed per-element `let`/`val`/`const`/`mut` bindings, explicit binder lists and `as foo` root aliases; compiler/guest support not yet verified.
