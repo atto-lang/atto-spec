@@ -77,3 +77,226 @@ For each `atto-source.llvm`, `.java`, `.net`, `.wasm`, `.rs`, `.forge`, `.cranel
 - Atto HTTP/3+QUIC policy `atto-common-source#14` and backend `stdlib/net/*.atto` are protocol helpers, **not evidence** of `http.get`.
 
 **Release gate:** This proposal does not make the shown program run. The program is considered supported only after exact-head compiled guest execution with requested permissions and a real HTTP+FS roundtrip on that backend.
+
+
+## Full `std.fs` API target (2026-11-22 extension)
+
+Canonical import: `import * as fs from "std.fs";`. All functions use
+`snake_case`. `std.fs` is hosted and may have independent, backend-owned
+`.atto` implementations; user-facing signatures and error/lifetime rules
+remain compatible. This section **extends** the initial `read_text` /
+`write_text` subset. The signatures below are normative **targets**, not a
+statement that any Atto backend has a linked filesystem guest.
+
+### Types and representative signatures
+
+The following is an API declaration sketch, not a compilable extern file
+or permission-granting implementation. `Bytes` means an owned byte buffer.
+`PathLike` accepts `string | Path | PathBuf` with explicit, checked coercion.
+`Stream<Bytes>` describes a bounded, async backpressured byte stream.
+
+```atto
+import * as fs from "std.fs";
+
+type PathLike = string | Path | PathBuf;
+
+enum FsErrorKind {
+  not_found, already_exists, permission_denied, invalid_path,
+  not_file, not_directory, directory_not_empty, invalid_option,
+  invalid_utf8, closed, cancelled, resource_limit, busy,
+  unsupported, io_error, unknown_outcome
+}
+
+class FsError extends Error {
+  kind: FsErrorKind;
+  operation: string;
+  path: Option<Path>;
+}
+
+// Values are immutable; normalize is lexical, not physical symlink resolution.
+class Path {
+  string value;
+  join(component: PathLike): Path;
+  parent(): Option<Path>;
+  file_name(): Option<string>;
+  extension(): Option<string>;
+  normalize(): Path;
+}
+class PathBuf {
+  // Owned mutable builder; conversions and mutation remain validated.
+  to_path(): Path;
+  push(component: PathLike): void;
+  pop(): Option<string>;
+}
+fnc join(base: PathLike, child: PathLike): Path;
+fnc parent(path: PathLike): Option<Path>;
+fnc file_name(path: PathLike): Option<string>;
+fnc extension(path: PathLike): Option<string>;
+fnc normalize(path: PathLike): Path;
+
+struct OpenOptions {
+  read: bool;            // default false
+  write: bool;           // default false
+  append: bool;          // default false
+  create: bool;          // default false
+  create_new: bool;      // default false
+  truncate: bool;        // default false
+}
+
+struct Metadata {
+  is_file: bool;
+  is_dir: bool;
+  size: int;             // bytes, nonnegative
+  // mtime, permissions and inode are deliberately not portable in v1
+}
+
+class File {
+  susp read(max_bytes: int): Bytes;     // returns empty Bytes on EOF
+  susp write(bytes: Bytes): int;       // may write only a prefix
+  susp flush(): void;
+  susp close(): void;
+}
+class FileStream {
+  susp read_chunk(): Option<Bytes>;    // None at EOF
+  susp write_chunk(bytes: Bytes): void; // handles partial writes
+  susp flush(): void;
+  susp close(): void;
+}
+
+susp fnc open(path: PathLike, options: OpenOptions): File;
+susp fnc read_file(path: PathLike): Bytes;
+susp fnc write_file(path: PathLike, bytes: Bytes): void;
+susp fnc append_file(path: PathLike, bytes: Bytes): void;
+susp fnc copy_file(from: PathLike, to: PathLike): void;
+susp fnc rename(from: PathLike, to: PathLike): void;
+susp fnc remove_file(path: PathLike): void;
+susp fnc create_dir(path: PathLike): void;
+susp fnc create_dir_all(path: PathLike): void;
+susp fnc read_dir(path: PathLike): Array<DirEntry>;
+susp fnc remove_dir(path: PathLike): void;
+susp fnc remove_dir_all(path: PathLike): void;
+susp fnc metadata(path: PathLike): Metadata;
+susp fnc exists(path: PathLike): bool;
+susp fnc is_file(path: PathLike): bool;
+susp fnc is_dir(path: PathLike): bool;
+susp fnc file_size(path: PathLike): int;
+susp fnc read_stream(path: PathLike, chunk_bytes: int): FileStream;
+susp fnc write_stream(path: PathLike, options: OpenOptions): FileStream;
+
+// Existing v1 text helpers, implemented on top of strict UTF-8 and byte I/O.
+susp fnc read_text(path: PathLike): string;
+susp fnc write_text(path: PathLike, content: string): void;
+```
+
+`DirEntry` contains `name: string`, `path: Path`, and `kind:
+file | directory`; entry order from `read_dir` is guaranteed lexical by
+portable Unicode scalar comparison (not platform locale or inode order).
+All returned bytes, metadata records and entries are snapshots; the backing
+filesystem may change after the operation.
+
+### Failure and Result behavior
+
+Normal operations return the successful type above and throw **only**
+`FsError` for ordinary recoverable filesystem failures. The existing Atto
+`trap` operation is the standard way to obtain `Result<T, FsError>`:
+
+```atto
+import * as fs from "std.fs";
+pub susp fnc load(path: string): Result<Bytes, FsError> {
+  return trap await fs.read_file(path);
+}
+```
+
+This preserves the previous `await fs.read_text(path): string` contract and
+does not require every I/O caller to double-unwrap an additional Result.
+`trap` does **not** catch actor panic/raise, host crash or security trap.
+An explicitly cancelled task reports `CancelledError` per task semantics,
+not a fabricated successful I/O result. Error `path` must be tenant-relative,
+never a leaked absolute host path; no raw errno or host exception escapes.
+
+### File operations and options
+
+- `open` requires at least one of `read`/`write`/`append`, validates
+  `create`/`create_new`/`truncate` against write authority, and rejects
+  contradictory or unsupported combinations before touching the filesystem.
+  `append` atomically selects end-of-file offset for each write operation
+  within a handle; multiple writes are **not** a transaction.
+- `read_file` and `read_text` are bounded snapshot reads of regular files.
+  `write_file` overwrites/truncates or creates a regular file with bounded
+  bytes; `append_file` creates if absent and appends. Neither overwrite nor
+  append is guaranteed atomic, durable or automatically retried on an
+  uncertain outcome. Existing `write_text` retains its behavior.
+- `copy_file` requires source READ and destination WRITE. On a mid-operation
+  failure, the destination may be partial; no implicit rollback is promised.
+  `rename` requires WRITE authority over both source and destination, is
+  restricted to the same granted filesystem/root, and never crosses tenant
+  authority or device boundaries. Atomicity across targets is **not**
+  promised until an independently specified atomic variant is available.
+  Destination-exists behavior: fail `already_exists` rather than silently
+  overwrite.
+- `remove_file` only removes regular files. Missing paths fail
+  `not_found`; a directory fails `not_file`. All directory mutation
+  operations require separately authorized WRITE and directory-modification
+  capabilities; they cannot be used through a file-only grant.
+- `create_dir` creates exactly one missing directory; `create_dir_all`
+  creates missing parents under the granted root. `remove_dir` only succeeds
+  for an empty directory. `remove_dir_all` requires explicit recursive-delete
+  authority in addition to WRITE and may partially complete if interrupted.
+  The tenant root itself cannot be removed or renamed.
+- `exists` returns false **only** for `not_found`, not permission-denied,
+  invalid path or unsupported; similarly `is_file`/`is_dir` return false
+  for a present object of the other type or a missing entry, but propagate
+  authority errors. `file_size` requires a regular file.
+
+### Paths, handles, and streams
+
+- `join`, `parent`, `file_name`, `extension`, `normalize` are
+  *pure lexical* operations. They do not perform I/O, resolve symlinks or
+  authorize a subsequent open. Normalization removes redundant `.` and
+  `/` only where safe; it **must not** erase `..` traversal to bypass
+  root confinement. The host independently validates the canonical
+  tenant-relative path at each file operation.
+- The root path is a tenant-visible logical root, not an ambient CWD.
+  Absolute paths, drive letters, NUL, invalid UTF-8, `..` escaping the
+  grant, symlink/mount boundary escapes and device/FIFO/socket paths fail
+  closed. Unsafe OS resolution races require descriptor-relative
+  primitives or equivalently strong protection.
+- `File` and `FileStream` are affine actor/tenant-incarnation-scoped
+  resources. They cannot be serialized, copied, sent to unrelated actors
+  or used after `close`, actor restart, host revoke or tenant teardown.
+  `close` is idempotent for structured cleanup; post-close operations
+  fail `closed`. `write` may report short positive counts. A zero-byte
+  write of a nonempty buffer is a write-progress failure, not success.
+  `read` returns empty only for EOF or a requested max of zero. Invalid
+  negative/overlimit lengths fail before allocation.
+- `FileStream` requires **backpressure**, bounded chunk size, one
+  outstanding operation per stream and no eager unbounded buffering.
+  `write_chunk` loops over verified partial writes; `read_chunk`
+  returns `None` at EOF. Host I/O must not block guest carriers.
+  `flush` flushes adapter buffers but **does not** imply durability
+  (`fsync`); durability needs a separate API.
+- Admission must recheck tenant/actor generation, explicit READ/WRITE,
+  host and artifact ceilings and per-operation resource limits *before*
+  each side effect. Cancellation closes/revokes leases. Handle operations
+  must not rely on guessed or forged actor IDs from guest memory.
+
+### Implementation and test gates
+
+Portable path/type/error handling, option validation, chunk loops and
+stream composition should live in **backend-owned `.atto` files**.
+The privileged host adapter provides only bounded rooted open/read/write,
+directory operations, stat, close, and async completion. Built-in name
+resolution must be explicit, never a guest filesystem fallback or
+external `pkg` dependency.
+
+The conformance suite requires positive byte/text roundtrips,
+copy/rename/append, nested directory creation/removal, sorted listings,
+metadata, read/write/append handles, partial reads/writes, streaming
+EOF/flush/close, and error-to-Result wrapping. Negative tests include
+independent READ/WRITE/DELETE/recursive-delete denial, spoofed roots,
+traversal/symlink/rename races, actors and tenants crossing access
+boundaries, stale/forged/closed handles, byte and handle quotas, invalid
+UTF-8, cancellation, non-file objects and unknown outcomes. Every backend
+must report `PASS`, `FAIL`, `UNSUPPORTED`, or `NOT_EXECUTED`
+with exact compiled guest evidence; **host-only adapter tests are not
+compiled guest evidence**.
