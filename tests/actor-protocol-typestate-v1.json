@@ -186,7 +186,17 @@
     "duplicate_or_forged_transition_commit",
     "admission_reject_after_commit_denied",
     "committed_but_reply_lost_requires_resync",
-    "restart_between_commit_and_reply_fences_successor"
+    "restart_between_commit_and_reply_fences_successor",
+    "aot_descriptor_and_reachable_transition_table",
+    "actor_authority_nonce_generation_and_digest_validation",
+    "unauthorized_copy_share_serialize_and_cast_rejected",
+    "protocol_control_revision_vs_concurrent_receive",
+    "critical_write_cannot_suspend_during_protocol_commit",
+    "internal_timer_revokes_static_state_proof",
+    "durable_actor_commit_outbox_and_lost_reply",
+    "hot_upgrade_descriptor_mismatch_fails_closed",
+    "stop_during_committed_pending_reply_revokes_authority",
+    "full_guest_aot_no_runtime_reflection_or_interpreter_fallback"
   ],
   "expected_backend_status": {
     "java": "NOT_VERIFIED",
