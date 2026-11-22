@@ -71,7 +71,7 @@ val b = combine(1, second: 2)         // 12
 
 ## Effect types
 
-A callable can be annotated for potential `throws`, `raises`, `panics` or `suspends` effects. The compile-time effect set is an upper bound used for diagnostics and safe call admission; it is not a license to perform privileged operations. `trap` describes a non-throwing boundary for ordinary throw effects, but does not catch panics or cancellation. Precise declaration syntax and effect-polymorphic inference are still being reconciled.
+A callable can be annotated for potential `throws`, `raises`, `panics` or `suspends` effects. The compile-time effect set is an upper bound used for diagnostics and safe call admission; it is not a license to perform privileged operations. `trap` describes a non-throwing boundary for ordinary throw effects, but does not catch panics or cancellation. Precise declaration syntax and effect-polymorphic inference are still being reconciled. The [unified inferred-effects v1 target](../language/unified-inferred-effects-v1.md) defines transitive allocation, file/network/FFI, actor-state, ambient nondeterminism, separate runtime capabilities, and strict real-time profile checks; it is **not** compiler execution evidence.
 
 `async`/`suspend` callables may yield a Future or a Task; the declared carrier type matters. Awaiting a value must not turn a borrowed stack address into a dangling alias or monopolize an OS thread.
 
