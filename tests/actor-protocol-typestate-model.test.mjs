@@ -138,3 +138,19 @@ test("no protocol is proven complete merely because terminal is reachable", () =
     {kind:"resolve_reply",ticket:"t1",reply:"ConnectedAck",next_handle:"h1"}
   ]), /no completed terminal proof/);
 });
+
+test("previously settled tickets and handles cannot be recycled or replayed", () => {
+  const first = fixture.complete_trace.slice(0,2);
+  assert.throws(() => checkTrace(protocol, [
+    ...first,
+    {kind:"begin_call",handle:"h1",ticket:"t1",message:"Query"}
+  ]), /duplicate ticket/);
+  assert.throws(() => checkTrace(protocol, [
+    first[0], {...first[1], next_handle:"h0"}
+  ]), /duplicate handle identity/);
+  assert.throws(() => checkTrace(protocol, [
+    ...first,
+    {kind:"begin_call",handle:"h1",ticket:"t2",message:"Close"},
+    {kind:"resolve_reply",ticket:"t2",reply:"ClosedAck",next_handle:"h1"}
+  ]), /duplicate handle identity/);
+});
