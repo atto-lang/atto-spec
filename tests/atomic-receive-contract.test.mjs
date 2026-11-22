@@ -49,7 +49,10 @@ test("contract declares bounded target API and does not attest guest parity", ()
   assert.ok(!contract.memory_orders.store.includes("acquire"));
   assert.ok(!contract.memory_orders.cas_failure.includes("acq_rel"));
   assert.equal(contract.scheduling.serial_actor_receive, "one_live_invocation_including_suspension");
-  assert.equal(contract.scheduling.serial_actor_other_methods, "concurrent_not_gated_by_receive");
+  assert.equal(contract.scheduling.serial_actor_other_methods, "logically_independent_physical_max_one");
+  assert.equal(contract.scheduling.serial_actor_max_running_carriers, 1);
+  assert.equal(contract.scheduling.serial_actor_suspended_receive_releases_physical_lease, true);
+  assert.equal(contract.scheduling.serial_actor_pinned_migration_after_worker_retirement, true);
   for (const [backend, result] of Object.entries(contract.backends)) {
     assert.ok(["java", "llvm", "net", "wasm", "forge"].includes(backend));
     assert.equal(result.guest_status, "NOT_EXECUTED");
@@ -142,4 +145,24 @@ test("host worker-thread atomic increment has no lost updates (NOT guest parity)
   } finally {
     await Promise.all(workers.map(worker => worker.terminate()));
   }
+});
+
+test("serial physical worker model never overlaps a receive, method, or Task", async () => {
+  // Reference model only: logical receive admission is independently maintained.
+  // This MUST NOT be reported as source guest execution proof.
+  const receive = receiveGate(true);
+  let physicalRunning = 0, physicalPeak = 0;
+  const withCarrier = async callback => {
+    assert.equal(physicalRunning, 0, "serial actor must not run two guest segments");
+    physicalRunning++;
+    physicalPeak = Math.max(physicalPeak, physicalRunning);
+    try { return await callback(); } finally { physicalRunning--; }
+  };
+  const first = await receive.receive(async () => withCarrier(() => "begin"));
+  assert.equal(first, "begin");
+  const asyncMethod = await receive.method(() => withCarrier(() => "method"));
+  assert.equal(asyncMethod, "method");
+  const task = await withCarrier(() => "task");
+  assert.equal(task, "task");
+  assert.equal(physicalPeak, 1);
 });
