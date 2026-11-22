@@ -29,10 +29,38 @@ allows it. Named or dotted imports select statically declared *public exports*;
 they never destructure a runtime object's properties. The local binding for a
 dotted selector is its final component unless `as` explicitly renames it.
 
-## Source and built-in namespace import shorthand
+## Full namespace imports and selective module imports
 
-A single bare identifier followed immediately by `from` is a **static
-namespace alias**, not a named import. This includes compiler-owned `core`,
+Prefer the explicit, uniform `import * as alias from "identity";` for
+built-in `core`, `alloc` and `std` library namespace imports.
+The `*` denotes *all publicly accessible exports in one static namespace*,
+not permission to use private exports, an eager runtime object, or a request
+to grant capabilities. Selectively importing **named module declarations**
+uses `import module name1, name2 from "identity";`. These operations
+have different exported symbol contracts:
+
+```atto
+import * as http from "std.http";
+import * as time from "std.time";
+import * as json from "std.json";
+
+// Only when std.http explicitly exports public modules named http and http3:
+import module http, http3 from "std.http";
+// Not equivalent to the wildcard import. Names must exist and be public.
+```
+
+The `std.http` library may instead expose public file-root functions such
+as `get` and types such as `HttpResponse`; in that case,
+`import * as http from "std.http";` is valid and
+`import module http, http3 from "std.http";` is rejected unless those named
+modules are declared and exported. Importing an entire namespace is
+independent of whether the source declares `use namespace http;`.
+Future built-ins `std.time` and `std.json` must have registered,
+backend-owned implementations before imports of those identities are
+executable.
+
+As an optional compatibility spelling, a single bare identifier followed
+immediately by `from` is a **static namespace alias**, not a named import. This includes compiler-owned `core`,
 `alloc`, and `std` libraries and explicitly relative source files.
 
 ```atto
@@ -316,6 +344,17 @@ Do not claim successful compiled linking merely because the grammar accepts
 any of these forms.
 
 ## Conformance requirements
+
+- Verify `import * as http from "std.http";` exposes only the
+  validated public export table through a static alias; missing built-ins
+  and private members must fail closed.
+- Verify `import module http, http3 from "std.http";` binds **two
+  named exported modules**, not a namespace over arbitrary functions/classes;
+  require a missing-module diagnostic for a `std.http` implementation
+  without those module declarations.
+- Verify all three forms preserve distinct import AST semantics and
+  cannot be swapped by the formatter without semantic proof:
+  wildcard namespace, named-module selection, legacy compact alias.
 
 - Parse `import http from "std/http.atto";` as the **same static alias**
   binding as `import * as http from "std/http.atto";`, not a selected
