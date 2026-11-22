@@ -42,3 +42,5 @@ This README records the intended role of this repository; it is not a claim of f
 Keep canonical AttoLang (.atto) semantics consistent with the language specification, while treating Oreslang-named tooling and .ores as compatibility surfaces.
 
 Changes asserting compiler/runtime support must identify the exact source head, target, toolchain, executed positive and negative guest tests, and failure/unsupported status; an empty CI step list is **not executed**. Documentation records responsibility, **not** a claim of feature completion.
+
+- [AOT compile-time reflection, C layout and safe FFI v1 candidate](language/compile-time-reflection-ffi-layout-v1.md): bounded compile-time-only descriptors, static serializer generation, target-specific C ABI layout checks, explicit FFI ownership/effects and callback prohibition in v1. **Proposal / source-free tests only; no compiler or guest-AOT verification.**
