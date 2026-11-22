@@ -22,6 +22,10 @@ AttoLang has **no `null` value** and **no truthiness**. Absence is `Option<T>`, 
 
 Boolean logic uses the operators `&&` (short-circuit AND), `^^` (eager XOR) and `||` (short-circuit OR), whose operands must all be `bool`. The built-in `And`, `Or` and `Xor` functions, such as `And(true, true)`, remain available. See [chapter 16](16-lexical-and-grammar-reference.md#operators) for precedence and backend status. Inside conditions, `,` and `|` are still accepted as AND and OR.
 
+## Numerical semantics v1 target (not yet verified)
+
+The new [numeric-semantics-v1 proposal](../language/numeric-semantics-v1.md) and [29-case reference registry](../contracts/numeric-semantics-v1.json) propose checked fixed-width integers, genuine bigint, explicit decimal contexts, fixed-point, deterministic vector kernels and dimensional types. The observations below remain historical backend evidence, **not** support claims. The proposed int/int truncating division and exact-until-context decimal division require reconciliation with existing Java numeric PRs before being normative.
+
 ## Integer rules
 
 The chapter 02 rule is that no backend may rely on unchecked host overflow when the source specifies checked arithmetic. The backends do not agree on what happens today:
