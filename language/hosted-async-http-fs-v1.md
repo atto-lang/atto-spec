@@ -6,8 +6,8 @@ This is the target for `atto-source.*` compilers, `atto-common-source`, `atto-pl
 ## Canonical Atto example
 
 ```atto
-import * as http from pkg "std.http";
-import * as fs from pkg "std.fs";
+import * as http from "std.http";
+import * as fs from "std.fs";
 
 pub susp fnc main(): int {
   val response = await http.get("https://example.com/data");
@@ -18,11 +18,11 @@ pub susp fnc main(): int {
 }
 ```
 
-The two imports are **required**, not invisible prelude globals: a file without the imports must fail unresolved binding lookup unless it defines its own `http`/`fs` names. The `import * as … from pkg` form follows `language/unified-static-imports-v1.md`. No new `async` keyword is introduced; `susp` is canonical and `await` is the suspension operator. `saved.length` has the already-specified String length semantics; the I/O contract must not silently reinterpret it as UTF-8 byte length. The example needs granted network and file permissions and is **not** a deterministic integration test: its remote endpoint can return any status/body or fail.
+The two imports are **required**, not invisible prelude globals: a file without the imports must fail unresolved binding lookup unless it defines its own `http`/`fs` names. The `import * as … from "std.*"` form denotes built-in compiler-library modules without `pkg`, per the proposed built-in selector rules in `language/unified-static-imports-v1.md` ([import specification #150](https://github.com/atto-lang/atto-spec/pull/150)). Third-party dependencies still use `pkg`; importing a built-in does not grant permissions. No new `async` keyword is introduced; `susp` is canonical and `await` is the suspension operator. `saved.length` has the already-specified String length semantics; the I/O contract must not silently reinterpret it as UTF-8 byte length. The example needs granted network and file permissions and is **not** a deterministic integration test: its remote endpoint can return any status/body or fail.
 
 ## Layer and package contract
 
-- Both modules are **hosted `std`**, not freestanding `core` or allocator-only `alloc`. A bare-metal target must reject unresolved hosted I/O with a deterministic diagnostic, never link a no-op shim.
+- Both modules are **hosted `std`**, not freestanding `core` or allocator-only `alloc`. Their canonical selector is the reserved built-in name without `pkg`: `"std.http"` or `"std.fs"`. The resolver must dispatch only through a compiler-provided built-in table; never fall back to a local file or external dependency. A bare-metal target must reject unresolved hosted I/O with a deterministic diagnostic, never link a no-op shim.
 - `std.http` and `std.fs` are **portable native Atto `.atto` APIs** with the same public names, semantics, error taxonomy and source bytes across backends where possible. Implement protocol composition, typed responses, policy helpers, retries, UTF-8 validation and ownership handling in Atto wherever expressible.
 - The host boundary is restricted to capability-checked, actor/tenant-scoped primitives: socket/DNS/TLS I/O or secure descriptor-relative file operations; async completion; timers/cancellation. It must not export raw file descriptors, network handles, arbitrary paths, host `fetch` objects or ambient OS access to untrusted guest code.
 - No backend may emulate guest execution using a host-only test. Compiler, linked guest and actual target artifact must be distinguished.
@@ -56,7 +56,7 @@ Expose typed `HttpError`, `FsError`, `PermissionError`, `CancelledError`, `Resou
 
 Both modules are suspension-capable, not blocking APIs disguised by `await`. Network and filesystem completion must not pin the guest scheduler/carrier. If an OS lacks a native async filesystem primitive, a bounded I/O executor may be used **outside guest carriers**, with backpressure, deadlines and cancellation, without pretending an operation is physically cancellable after submission. Every completion resumes the owning actor/continuation at most once. No unbounded host thread pool or detached operation that survives actor shutdown without authority. Close/revocation and cancellation races must be deterministic and resource-safe. Per-request/body/file quotas must be enforced before allocation, while streaming, and after any decompression.
 
-The compiler/linker must preserve `susp` effects and ownership through `await`. Absent package resolver, stream runtime, socket/TLS broker, file grant, or effect lowering must yield a typed **no-artifact** diagnostic (`E_UNSUPPORTED`, `E_CAPABILITY_UNAVAILABLE`, or existing more specific diagnostic); **never** emit guest code that panics at runtime solely because support was claimed.
+The compiler/linker must preserve `susp` effects and ownership through `await`. Absent built-in module resolver, stream runtime, socket/TLS broker, file grant, or effect lowering must yield a typed **no-artifact** diagnostic (`E_UNSUPPORTED`, `E_CAPABILITY_UNAVAILABLE`, or existing more specific diagnostic); **never** emit guest code that panics at runtime solely because support was claimed.
 
 ## Acceptance and parity evidence
 
