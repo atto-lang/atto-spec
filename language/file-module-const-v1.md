@@ -32,6 +32,21 @@ Two kinds of **static immutable `const`** exist under the *same* declaration syn
 
 The initial supported runtime initializer shape is deliberately narrow: **direct `os.read_env` with exactly one compile-time-known string key, whose result type is `string`**. Key expressions may be a literal (including `""`) or an already proven constexpr string; a runtime-derived key is forbidden. Broader runtime-init expressions require separate effect and initialization admission rather than automatic arbitrary side effects.
 
+## Importing static constants and prohibiting top-level variables
+
+A file or namespace exports an eligible `define pub const` through a typed
+`import const name, other as alias from "std.http";` or
+`import const name from "./file.atto";`. This is **static symbol selection**,
+not copying mutable global storage or a call to a property getter. See
+[typed constant imports](constant-imports-v1.md) for visibility, alias,
+kind-checking, dotted package selectors and conformance requirements.
+
+At file/namespace scope, bindings must use the unconditional `define const`
+form. Top-level `let`, `val`, `var` and `const mut` declarations are
+invalid, including inside a namespace. Runtime-local `val` and `let`
+continue to exist inside callables. The permitted startup environment read
+does not relax the global immutability rule.
+
 ## `os.read_env` API contract
 
 `os.read_env(key: string): string` is a **total, non-throwing, non-raising** environment accessor for the supported host profile. It cannot propagate `throw` or `raise`, and does not return `Result`, `Option` or a nullable value. An ordinary permitted call always produces a valid AttoLang `string`. The static initializer does **not** have to catch or recover a missing variable.
