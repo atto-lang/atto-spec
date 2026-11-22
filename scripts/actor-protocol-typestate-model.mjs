@@ -90,6 +90,7 @@ export function checkTrace(protocol, operations, options = {}) {
   // Closed ticket/handle names are never recycled: reject replay after settlement.
   const seenTickets = new Set(), seenHandles = new Set(["h0"]);
   let generation = 1, completed = false, fenced = false, terminalFailures = 0;
+  let actorState = p.initial, actorRevision = 0; // Symbolic actor-side state, not caller-supplied authority.
   for (const op of operations) {
     if (!op || typeof op !== "object") throw new TypeError("invalid operation");
     if (completed) throw new TypeError("operation after protocol completion");
@@ -99,14 +100,41 @@ export function checkTrace(protocol, operations, options = {}) {
       if (seenHandles.has(op.ticket) || seenTickets.has(op.ticket)) throw new TypeError("duplicate ticket");
       const owned = handles.get(op.handle);
       if (owned.generation !== generation) throw new TypeError("stale protocol generation");
+      if (pending.size) throw new TypeError("overlapping state-changing protocol call");
+      if (!owned.states.includes(actorState)) throw new TypeError("actor state no longer matches protocol proof");
       const next = checkSend(p, owned.states, op.message);
       handles.delete(op.handle);
-      pending.set(op.ticket, {next, generation});
+      pending.set(op.ticket, {next, generation, phase:"prepared", message:op.message,
+        from:actorState, startingRevision:actorRevision});
       seenTickets.add(op.ticket);
+    } else if (op.kind === "admit_call") {
+      identifier(op.ticket, "ticket");
+      const waiting = pending.get(op.ticket);
+      if (!waiting || waiting.generation !== generation || waiting.phase !== "prepared")
+        throw new TypeError("call admission requires one prepared, current-generation ticket");
+      waiting.phase = "admitted"; // Bounded mailbox admission is not a reply or state commit.
+    } else if (op.kind === "commit_transition") {
+      identifier(op.ticket, "ticket");
+      const waiting = pending.get(op.ticket);
+      if (!waiting || waiting.generation !== generation || waiting.phase !== "admitted")
+        throw new TypeError("transition commit requires one admitted, current-generation ticket");
+      if (actorRevision !== waiting.startingRevision || actorState !== waiting.from)
+        throw new TypeError("actor state revision changed before protocol commit");
+      const rule = p.transitions.find(x => x.from === actorState && x.message === waiting.message);
+      if (!rule || op.from !== actorState || op.to !== rule.to)
+        throw new TypeError("transition does not match actor-side protocol state and declared successor");
+      actorState = rule.to;
+      actorRevision += 1;
+      waiting.phase = "committed";
+      waiting.committedRevision = actorRevision;
+      waiting.committedState = actorState;
     } else if (op.kind === "resolve_reply") {
       identifier(op.ticket, "ticket"); identifier(op.next_handle, "next_handle");
       const waiting = pending.get(op.ticket);
       if (!waiting || waiting.generation !== generation) throw new TypeError("missing, duplicate or stale pending call");
+      if (waiting.phase !== "committed" || waiting.committedRevision !== actorRevision ||
+          waiting.committedState !== actorState)
+        throw new TypeError("reply cannot mint state authority before an authenticated transition commit");
       if (op.reply !== waiting.next.reply) throw new TypeError("missing or mismatched required reply");
       if (seenHandles.has(op.next_handle) || seenTickets.has(op.next_handle) || pending.has(op.next_handle)) throw new TypeError("duplicate handle identity");
       pending.delete(op.ticket);
@@ -116,7 +144,10 @@ export function checkTrace(protocol, operations, options = {}) {
       identifier(op.ticket, "ticket");
       if (!["AdmissionRejected","Timeout","Cancelled","Crash","ProtocolViolation"].includes(op.reason))
         throw new TypeError("failure must carry an explicit terminal reason");
-      if (!pending.has(op.ticket)) throw new TypeError("missing or settled pending call");
+      const waiting = pending.get(op.ticket);
+      if (!waiting) throw new TypeError("missing or settled pending call");
+      if (op.reason === "AdmissionRejected" && waiting.phase !== "prepared")
+        throw new TypeError("admission rejection is impossible after mailbox admission");
       pending.delete(op.ticket); // Ambiguous delivery never returns the consumed handle.
       terminalFailures += 1;
     } else if (op.kind === "fence_restart") {
@@ -124,12 +155,15 @@ export function checkTrace(protocol, operations, options = {}) {
       // A restart can never silently turn unresolved work into success.
       terminalFailures += pending.size;
       generation += 1;
+      actorRevision += 1;
+      actorState = null; // Restart may restore durable state: never assume the initial typestate.
       handles.clear(); pending.clear(); fenced = true;
     } else if (op.kind === "complete") {
       identifier(op.handle, "handle");
       const owned = handles.get(op.handle);
       if (!owned || owned.generation !== generation) throw new TypeError("cannot complete without a live linear handle");
-      if (pending.size || handles.size !== 1 || owned.states.some(s=>!p.terminal_states.includes(s)))
+      if (pending.size || handles.size !== 1 || !p.terminal_states.includes(actorState) ||
+          owned.states.some(s=>!p.terminal_states.includes(s)))
         throw new TypeError("protocol incomplete: not terminal, pending reply or other live handle");
       handles.delete(op.handle); completed = true;
     } else {
