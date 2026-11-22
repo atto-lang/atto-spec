@@ -85,6 +85,28 @@ Java [atto-source.java PR #792](https://github.com/atto-lang/atto-source.java/pu
 
 Rust's value const-generics and Scala's opaque aliases inform the design, but AttoLang keeps its own `const` meaning, `define newtype` grammar, `try_from` discipline, `take!`/`borrow!` ownership rules, and actor isolation model.
 
+## First executed source-local newtype profile (Rust/browser, November 22, 2026)
+
+The Rust/browser compiler now has a **narrow executable subset**, not complete v1 support:
+
+~~~atto
+define newtype Port(i64)
+  where value gte 1 and value lte 65535;
+end
+fnc identity(Port value): Port { return value; }
+fnc as_integer(Port value): int { return value.to_base(); }
+pub fnc main(): int {
+  val Port port = Port.from_const(42);
+  return as_integer(identity(port));
+}
+~~~
+
+* File-private newtypes only; explicitly checked `from_const` literal construction, immutable local values and source-local nominally type-checked helper calls. `to_base()` is an explicit **same-module** representation read for this Copy-scalar subset, not a public cast or blanket generic conversion.
+* Before scalar code generation, the source is parsed through a bounded nominal checker, with every admitted local declaration, constructor, parameter, call and return validated. The generated code uses the **production** typed scalar checker and Wasm emitter. Each live newtype value occupies an i64 stack/register slot, with no guest object, per-instance tag or heap allocation.
+* Dynamic `try_from`, any public nominal ABI, checked mutable ownership, cross-file/module imports, wire formats, actors, FFI, runtime layout reflection and generic Array/Matrix allocation **still reject**. A declaration-only unused newtype does not authorize executable guest code.
+* Exact Rust source head `e2516cca2e4839614f3b0dc8c0d39fc097fbae0a` passed [alternate Actions 44969655932](https://github.com/zed-pkg-test/zed-pkg-e2e/actions/runs/44969655932): **77/77 Git source blobs verified**, actual production Rust browser compilation, **8/8 preflight integration**, **5/5 newtype guest integration**, **7/7 module** tests, plus **3/3 compiled Wasm guest executions** and **3/3 negative compiler/no-Wasm cases**. Guest module inspection confirmed **no host imports and no guest heap** in those three scalar programs. Carrier tests are a complete compiler crate snapshot, not a claim of whole-repository or cross-backend parity.
+* All other backend statuses and the combined v1 contract remain **NOT VERIFIED**, even though this focused Rust/browser subprofile has real guest execution. Never conflate scalar inline representation with general FFI/actor ABI certification.
+
 ## Required implementation sequence and evidence
 
 1. Shared canonical grammar, type/const AST, nominal identity and integer interval normalization (the shared spec/conformance target).
