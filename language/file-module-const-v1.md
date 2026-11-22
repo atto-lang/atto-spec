@@ -32,6 +32,14 @@ Two kinds of **static immutable `const`** exist under the *same* declaration syn
 - **Known-at-compile-time constant:** deterministic typed constexpr is folded into a literal/static value, with no runtime initializer.
 - **Runtime-initialized static constant:** a direct `std.env.read_env(...)` (or legacy `os.read_env(...)`) reads the *launch-time environment* once during process/module initialization, before user `main` or actor dispatch, then stores an immutable value. It is **not** compile-time evaluation, mutable global state, a lazy re-read, nor conditional/dynamic binding. The build environment must never be baked into an AOT artifact.
 
+The **once-only unit is the declared static field**, not an environment-key
+cache entry. Two distinct declarations that both call `read_env("KEY")`
+each initialize once and must observe the same launch-time environment
+snapshot; the runtime is not required to deduplicate those calls into one
+host API lookup. Importing one declaration through multiple aliases must
+not rerun its initializer. This precision avoids accidentally tying language
+semantics to a cache strategy.
+
 The initial supported runtime initializer shape is deliberately narrow: **direct `std.env.read_env` or legacy `os.read_env`, each with exactly one compile-time-known string key and a `string` result**. Key expressions may be a literal (including `""`) or an already proven constexpr string; a runtime-derived key is forbidden. Broader runtime-init expressions require separate effect and initialization admission rather than automatic arbitrary side effects.
 
 ## Importing static constants and prohibiting top-level variables
