@@ -55,7 +55,10 @@ function build(scenario) {
 function ready(s) {
   const choices = [];
   for (const [id,t] of Object.entries(s.tasks)) if (t.wake === null || t.wake <= s.clock) choices.push('step:'+id);
+  const queued = new Set();
   for (const m of s.mailbox) {
+    if (queued.has(m.to)) continue;
+    queued.add(m.to);
     const a = s.actors[m.to];
     const busy = Object.values(s.tasks).some(t => t.actor === m.to && t.generation === a.generation);
     if (a.generation === m.generation && (!a.serial || !busy)) choices.push('deliver:'+m.id);
@@ -159,7 +162,7 @@ function enqueue(s,to,tag) {
   demand(s.mailbox.length < MAX_MESSAGES, 'mailbox budget exceeded');
   s.mailbox.push({id:'m'+s.nextId++,to,tag,generation:s.actors[to].generation});
 }
-function rng(seed) {let x=seed>>>0;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return x>>>0;};}
+function rng(seed) {let x=(seed>>>0)||0x9e3779b9;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return x>>>0;};}
 /** Returns a source-free oracle trace. Replays are exact and fail closed on divergence. */
 export function schedule(scenarioInput,{seed=1,replay=null,prefix=[],maxSteps=MAX_STEPS}={}) {
   demand(safeInteger(seed) && seed<=0xffffffff, 'invalid seed');
