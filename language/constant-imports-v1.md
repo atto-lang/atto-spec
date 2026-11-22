@@ -40,6 +40,16 @@ For package identity, `from "std.http"` is an unambiguous dotted namespace selec
 3. A file/namespace `define const` has only the initializer classes already allowed by [file-module-const-v1](file-module-const-v1.md): pure typed constexpr and the explicitly admitted, environment-permission-checked startup-once `std.env.read_env("KEY")` (or legacy `os.read_env("KEY")`) form. Arbitrary effectful initializers, implicit re-evaluation and lazy mutable globals remain prohibited.
 4. Constants that expose references must provide a proven immutable/frozen view, not a mutable alias to transitive heap state; `import const` does not bypass borrow checking, actor state sealing, `Sendable`, or permissions. A `const` of a pointer/resource with unproven ownership must fail closed, not be assumed globally shareable.
 
+## Startup environment API boundary (normative)
+
+The two environment APIs **must not be silently unified**:
+
+- `std.env.read_env(KEY)` (and legacy `os.read_env(KEY)`) is a **trusted static initializer form only**. It is admitted only in a `define [pub] const string` initializer, with a compile-time string key (including a pure constexpr string binding). It is neither a general runtime `std_env.get` call nor a build-time constexpr value. A user-defined function with the same spelling is not trusted.
+- The startup accessor is **total** under the existing file/module-constant contract: missing, empty/invalid, denied and unavailable keys produce `""` without throwing or raising; the permission and validity gates must run **before host-value lookup**. A denied key may never be inspected, logged, or inferred from error differences. In particular, this does **not** grant ambient access to the process environment.
+- The runtime `std_env.get(KEY)` family has its own Option/Result and permission semantics: absence is distinct from an empty present value, and denial is an **error**, not fallback to absence. Refactoring static initialization through the runtime API must not accidentally change either contract.
+- A compiled AOT image contains only the initializer description and constant identity, not the build host's environment values. Runtime deployment supplies an authorized immutable launch snapshot; each declaration initializes once per launch, and imported aliases reuse the value. Each separate launch of the *same binary* must observe its own authorized snapshot.
+- A `pub const` is visible to authorized consumers. Exporting an environment-backed value that can contain a secret is a deliberate public-data decision and should be rejected by applicable package/security policy. Never embed the value into diagnostics, debug metadata, object files, or build artifacts.
+
 ## Static binding and linking
 
 - Build the owning file/namespace export table first and bind an imported constant by its **declaration identity**, type, visibility and initialized-value provenance; do not synthesize a mutable variable, run a getter on each access, or dynamically read object properties.
