@@ -20,7 +20,7 @@ import * as p from pkg "+/pkg";
 import * as local from "./relative-file.atto";
 import calculate, Config from "./relative-file.atto";
 import telemetry.span as span, telemetry.tracer as make_tracer from "core";
-import sleep from "std.time";
+import fnc sleep from "std.time";
 ```
 
 A full namespace import is **not** a request to eagerly link every export.
@@ -28,6 +28,57 @@ Only reachable symbols should enter the final output when side-effect analysis
 allows it. Named or dotted imports select statically declared *public exports*;
 they never destructure a runtime object's properties. The local binding for a
 dotted selector is its final component unless `as` explicitly renames it.
+
+## Source and built-in namespace import shorthand
+
+A single bare identifier followed immediately by `from` is a **static
+namespace alias**, not a named import. This includes compiler-owned `core`,
+`alloc`, and `std` libraries and explicitly relative source files.
+
+```atto
+import http from "std/http.atto";
+import web from "std/http.atto";
+import task from "std/task.atto";
+import util from "./util.atto";
+
+// Exactly equivalent to the corresponding `import * as alias from ...`.
+pub fnc is_healthy(): bool {
+  return http.status_valid(200);
+}
+```
+
+This is compile-time aliasing of an explicitly verified source/export table,
+**not** a first-class runtime namespace object, dependency injection, eager
+module evaluation, ambient import or capability grant. Imported public functions
+and types are accessed as `http.status_valid` and `http.ResponseMeta`.
+The local alias need not equal the source file's explicit namespace header;
+a source file may use `use namespace http;` or no namespace at all. An
+explicit source namespace affects the source's identity; the alias only
+affects the importing unit's local binding. Neither implies package aggregation
+across unrelated packages.
+
+Because an unqualified `import name from "source";` is now a namespace binding,
+**single-symbol imports must be unambiguous**: use a kind-qualified selector,
+such as `import fnc sleep from "std/time.atto";`, or an explicitly selective
+form already admitted by the compiler, rather than guessing whether `name`
+is an export or a namespace. The formatter must not silently reinterpret
+previously compiled single-name imports. An edition migration must check the
+resolved import kind before rewriting.
+
+The reserved source roots `core/`, `alloc/`, and `std/` with `.atto`
+suffixes are supported by compiler-owned legacy registries. A compiler may
+also support dotted canonical identities such as `std.http`; both spellings
+MUST resolve through a **closed registered built-in table**, without falling
+back to the filesystem, an external package or untrusted host language.
+Unknown paths and missing public exports fail closed. The current Java
+implementation resolves `std/http.atto` in its explicit hosted std registry;
+other compilers must prove that identity independently.
+
+Namespace imports must reject invalid identifiers, binding collisions,
+private or `pub[pkg]` export leakage and cross-tenant capability escalation.
+They preserve the same static visibility, effect, ownership, dead-code
+elimination and SCC semantics as `import * as alias from source`. In
+particular, HTTP imports never authorize network or DNS access.
 
 ## Package namespace shorthand
 
@@ -82,8 +133,9 @@ formatting proves executable linking.
 ## Grammar
 
 ```ebnf
-import_decl     = package_namespace_import | selective_import ;
+import_decl     = package_namespace_import | source_namespace_import | selective_import ;
 package_namespace_import = "import", "pkg", string, [ "as", identifier ], ";" ;
+source_namespace_import = "import", identifier, "from", [ "pkg" ], string, ";" ;
 selective_import = "import", import_clause, "from", [ "pkg" ], string, ";" ;
 import_clause   = "*", "as", identifier
                 | import_spec, { ",", import_spec } ;
@@ -118,7 +170,7 @@ import * as result from "core.result";
 import * as arena from "alloc.arena";
 import * as fs from "std.fs";
 import * as http from "std.http";
-import read_text from "std.fs";
+import fnc read_text from "std.fs";
 import * as util from "./util.atto";
 import * as vendor from pkg "vendor.files";
 ```
@@ -259,6 +311,14 @@ Do not claim successful compiled linking merely because the grammar accepts
 any of these forms.
 
 ## Conformance requirements
+
+- Parse `import http from "std/http.atto";` as the **same static alias**
+  binding as `import * as http from "std/http.atto";`, not a selected
+  symbol named `http`; verify actual guest lookup of public exports.
+- Reject malformed bare imports, alias collisions, private export selection
+  and unregistered builtin source identities. Test a file with
+  `use namespace http;` and with no explicit namespace header.
+
 
 - Parse zero or one explicit or folder-derived namespace header before imports
   and declarations; reject duplicates and declarations appearing after an import
