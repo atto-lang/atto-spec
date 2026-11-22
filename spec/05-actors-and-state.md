@@ -68,3 +68,9 @@ Shared, private/isolated and untrusted kinds select capacity, transport and poli
 `spawn A() pipe spawn B()` creates a typed, bounded actor data pipeline; a supervisor is not a data stage. Affinity, number of carrier threads, and mailbox size do not weaken supervision or sealed-state rules.
 
 The proposed `Actor.pipe(A(), B(), ...)` and zero-argument-type `Actor.pipe(A, B, ...)` are new-actor factory forms of that pipeline, while `Actor.connect(a_ref, b_ref)` connects existing actors without changing their supervisor. These must share the same post-start admission, ownership, capacity and DATA/CONTROL separation guarantees. The deferred factory proposal returns a single-use builder; only `.start()` attempts to create the new graph. Nested builders can define explicit child-supervisor scopes without changing the owning supervisor of already-running actors. See [chapter 14](14-actor-pipeline-factories.md) and [chapter 15](15-nested-actor-pipelines.md); all factory syntax remains **TARGET / NOT_VERIFIED**.
+
+## Stateful communication protocols (candidate v1)
+
+In addition to message types, an actor may declare a type-level protocol with state-specific legal messages, required replies and explicit terminal completion. This refines the **same actor kind** and never exposes its sealed mutable state. The static guarantee requires an affine, incarnation-fenced `ProtocolHandle` rather than an aliasable `ActorRef`; unproven or remotely mutable state must be checked dynamically or rejected. A successful state transition is proved only after a matched reply and runtime state commitment; `get_done()` still means physical completion, not merely terminal protocol state.
+
+See [actor protocol typestate v1](../language/actor-protocol-typestate-v1.md). **TARGET / NOT_VERIFIED**: the linked source-free checker and tests are not parser, formatter, backend or guest-execution evidence.
