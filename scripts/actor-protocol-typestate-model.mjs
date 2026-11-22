@@ -150,9 +150,9 @@ export function checkTrace(protocol, operations, options = {}) {
         throw new TypeError("admission rejection is impossible after mailbox admission");
       pending.delete(op.ticket); // Ambiguous delivery never returns the consumed handle.
       terminalFailures += 1;
-    } else if (op.kind === "fence_restart") {
-      // Every revoked pending call receives a terminal Crash outcome.
-      // A restart can never silently turn unresolved work into success.
+    } else if (["fence_restart", "fence_upgrade", "fence_stop"].includes(op.kind)) {
+      // Every revoked pending call receives an explicit terminal failure.
+      // Restart, code-generation replacement and stop never mint fresh authority.
       terminalFailures += pending.size;
       generation += 1;
       actorRevision += 1;
