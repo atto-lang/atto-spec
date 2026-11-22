@@ -133,6 +133,31 @@ function evaluate(c) {
     }
     return { kind: 'value', value: out };
   }
+  if (domain === 'matrix') {
+    assert.equal(op, 'matmul');
+    const [a, b] = args;
+    const rectangular = m => Array.isArray(m) && m.length > 0
+      && Array.isArray(m[0]) && m[0].length > 0
+      && m.every(row => Array.isArray(row) && row.length === m[0].length);
+    if (!rectangular(a) || !rectangular(b) || a[0].length !== b.length) return error('shape_mismatch');
+    const out = [];
+    for (let row = 0; row < a.length; row++) {
+      const dst = [];
+      for (let column = 0; column < b[0].length; column++) {
+        let sum = '0';
+        for (let inner = 0; inner < b.length; inner++) {
+          const product = bounded(c.type, 'mul', [a[row][inner], b[inner][column]]);
+          if (product.kind === 'error') return { ...product, row, column, inner };
+          const next = bounded(c.type, 'add', [sum, product.value]);
+          if (next.kind === 'error') return { ...next, row, column, inner };
+          sum = next.value;
+        }
+        dst.push(sum);
+      }
+      out.push(dst);
+    }
+    return { kind: 'value', value: out };
+  }
   if (domain === 'dimension') {
     if (op === 'add_points') return error('affine_point_addition');
     const a = c.left.unit, b = c.right.unit;
@@ -142,8 +167,17 @@ function evaluate(c) {
       const exponent = (a[key] ?? 0) + (op === 'divide' ? -(b[key] ?? 0) : 0);
       if (exponent) unit[key] = exponent;
     }
-    const value = op === 'divide' ? BigInt(c.left.value) / BigInt(c.right.value) : BigInt(c.left.value) + BigInt(c.right.value);
-    return { kind: 'value', unit, value: String(value) };
+    // Quantity values here use exact decimal representation, never BigInt truncation.
+    // Recurring quotients require a caller-supplied context rather than silent rounding.
+    const left = parseDecimal(c.left.value), right = parseDecimal(c.right.value);
+    if (op === 'divide') {
+      const quotient = exactDivide(left, right);
+      return quotient.kind === 'error' ? quotient : { kind: 'value', unit, value: quotient.value };
+    }
+    assert.equal(op, 'add');
+    const scale = Math.max(left.scale, right.scale);
+    const coeff = left.coeff * pow10(scale - left.scale) + right.coeff * pow10(scale - right.scale);
+    return { kind: 'value', unit, value: renderDecimal({ coeff, scale }) };
   }
   assert.fail(`unknown domain ${domain}`);
 }
@@ -171,4 +205,15 @@ test('checked width, exact decimal, rounding and deterministic vector failures a
   assert.equal(quantize(parseDecimal('-2.355'), 2, 'half_even'), '-2.36');
   assert.equal(renderDecimal(parseDecimal('100000000000000000000.1')), '100000000000000000000.1');
   assert.deepEqual(evaluate({ domain: 'vector', op: 'add', type: 'i8', args: [['127','127'],['1','1']] }), { kind: 'error', code: 'integer_overflow', index: 0 });
+});
+
+test('quantity division never truncates and matrix error coordinates follow logical row-major order', () => {
+  const byId = id => contract.cases.find(c => c.id === id);
+  for (const id of ['dimension-fractional-exact', 'dimension-nonterminating', 'dimension-zero-divisor',
+                    'dimension-decimal-add', 'matrix-checked-matmul', 'matrix-product-overflow',
+                    'matrix-accumulate-overflow', 'matrix-ragged-rejected', 'matrix-inner-mismatch']) {
+    assert.deepEqual(evaluate(byId(id)), byId(id).expected, id);
+  }
+  assert.equal(evaluate(byId('dimension-fractional-exact')).value, '1.5');
+  assert.deepEqual(evaluate(byId('matrix-accumulate-overflow')).inner, 1);
 });
