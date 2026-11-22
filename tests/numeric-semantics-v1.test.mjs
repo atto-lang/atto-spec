@@ -217,3 +217,31 @@ test('quantity division never truncates and matrix error coordinates follow logi
   assert.equal(evaluate(byId('dimension-fractional-exact')).value, '1.5');
   assert.deepEqual(evaluate(byId('matrix-accumulate-overflow')).inner, 1);
 });
+
+test('numeric ordinary errors are typed throws and trap produces Result without nesting', () => {
+  const contractErrors = contract.errorSemantics;
+  assert.equal(contractErrors.status, 'TARGET_NOT_GUEST_EXECUTED');
+  assert.deepEqual(contractErrors.typedOrdinaryThrows.integer_overflow, {
+    guestType: 'ArithmeticOverflowError',
+    parent: 'Error',
+    abiCode: 65537,
+    effect: 'throw',
+  });
+  assert.deepEqual(contractErrors.typedOrdinaryThrows.division_by_zero, {
+    guestType: 'DivisionByZeroError',
+    parent: 'Error',
+    abiCode: 65538,
+    effect: 'throw',
+  });
+  assert.equal(contractErrors.trap.catches, 'ordinary_typed_guest_throw_only');
+  assert.equal(contractErrors.trap.scalarSuccess, 'Result.Ok<T>');
+  assert.equal(contractErrors.trap.caughtError, 'Result.Err<Error>');
+  assert.equal(contractErrors.trap.preexistingResult, 'preserve_original_result_without_double_wrap');
+  assert.ok(contractErrors.trap.bypass.includes('panic'));
+  assert.ok(contractErrors.trap.bypass.includes('raise'));
+  assert.equal(contractErrors.unhandledActor.actorMayCatchFinalPanic, false);
+  assert.deepEqual(contractErrors.unhandledActor.escalation, [
+    'throw', 'raise', 'panic', 'supervisor_control_notice',
+  ]);
+  assert.equal(contractErrors.guestExecutionEvidence, 'not_executed');
+});
