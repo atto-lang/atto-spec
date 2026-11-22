@@ -138,8 +138,13 @@ package_namespace_import = "import", "pkg", string, [ "as", identifier ], ";" ;
 source_namespace_import = "import", identifier, "from", [ "pkg" ], string, ";" ;
 selective_import = "import", import_clause, "from", [ "pkg" ], string, ";" ;
 import_clause   = "*", "as", identifier
-                | import_spec, { ",", import_spec } ;
+                | import_kind, import_spec, { ",", import_spec }
+                | import_spec, ",", import_spec, { ",", import_spec }
+                | export_path, "as", identifier
+                | dotted_export_path ;
+import_kind     = "fnc" | "class" | "actor" | "type" | "trait" | "interface" | "module" ;
 import_spec     = export_path, [ "as", identifier ] ;
+dotted_export_path = identifier, ".", identifier, { ".", identifier } ;
 export_path     = identifier, { ".", identifier } ;
 ```
 
