@@ -32,7 +32,12 @@ fnc calculate(int n): int {
 The following forms are **normatively accepted target syntax**, including the
 optional leading `do` on an imperative `if`. A brace-style `if` closes
 with `}` and requires no `fi`; a `then`-style `if` closes with `fi`.
-Both forms return from the nearest lexical callable, not the `if` block.
+For legacy source compatibility, a standalone braced `if` may accept an
+additional terminal `fi`. However, a braced `if` nested inside a keyword
+`then ... fi` must **not** consume the *sole* `fi` that closes the outer
+conditional. When both inner and outer use explicit markers, `fi fi` closes
+the two statements in that order. Both forms return from the nearest lexical
+callable, not the `if` block.
 
 ```atto
 fnc bare() -> void {
