@@ -6,9 +6,10 @@ This document does not claim that the browser compiler currently links packages.
 
 ## One static import verb
 
-`import` names all static dependencies. Whether a dependency is a source file
-or a package is expressed by the source selector (`pkg`), **not** by using
-another keyword such as `use`. `using` is unchanged and continues to manage
+`import` names all static dependencies. A file or package is selected by
+its statically classified quoted source path (or explicit `pkg` marker), **not**
+by using another keyword such as `use`. `import const` is the typed subset
+that requires immutable exported constants; see [constant imports](constant-imports-v1.md). `using` is unchanged and continues to manage
 scoped resources and cleanup.
 
 ```atto
@@ -20,6 +21,7 @@ import * as local from "./relative-file.atto";
 import calculate, Config from "./relative-file.atto";
 import telemetry.span as span, telemetry.tracer as make_tracer from pkg "core";
 import sleep from pkg "std.time";
+import const status_valid, route_matches from "std.http";
 ```
 
 A full namespace import is **not** a request to eagerly link every export.
@@ -31,20 +33,25 @@ dotted selector is its final component unless `as` explicitly renames it.
 ## Grammar
 
 ```ebnf
-import_decl     = "import", import_clause, "from", [ "pkg" ], string, ";" ;
+import_decl     = "import", [ "const" ], import_clause, "from", [ "pkg" ], string, ";" ;
 import_clause   = "*", "as", identifier
                 | import_spec, { ",", import_spec } ;
 import_spec     = export_path, [ "as", identifier ] ;
 export_path     = identifier, { ".", identifier } ;
 ```
 
-The right-hand string denotes a source file without `pkg` and a package
-identity/rooted package reference with `pkg`. A project-rooted `+/...`
-selector is permitted with `pkg`. A file import normally uses a quoted
-relative path such as `"./a.atto"`. Dotted selectors traverse statically exported
+A quoted `./` or `../` path denotes a source file. The explicit `pkg`
+marker denotes a package identity or rooted reference. An unmarked dotted
+namespace identity such as `"std.http"` also denotes a package/namespace,
+not a host file path; a bare non-dotted package name still requires `pkg`.
+A project-rooted `+/...` selector is permitted with `pkg`. A file import
+normally uses a quoted relative path such as `"./a.atto"`. Dotted selectors traverse statically exported
 **module/namespace declarations**, not values or fields of a runtime object.
 No braces are required or accepted in the canonical grammar. The named-import
-list has no trailing comma.
+list has no trailing comma. `import const` requires one or more named selectors,
+not `* as`; the resolver checks that each selected export has constant kind,
+not callable/type kind. The full semantic contract is in
+[typed constant imports](constant-imports-v1.md).
 
 The declaration `use namespace name;` is a distinct **source namespace
 header**, not a dependency import, and must not be rewritten to
@@ -148,7 +155,8 @@ any of these forms.
   and declarations; reject duplicates and declarations appearing after an import
   or other declaration. Derivation is deterministic from a package-relative
   logical path; reject missing path, reserved components, invalid/deep depths.
-- Parse namespace and named imports with and without `pkg`.
+- Parse namespace and named imports with and without `pkg`, including typed
+  `import const x, y as alias from "std.http"` package selectors.
 - Parse comma-separated single and multiple names, aliases, and dotted
   static export paths such as `telemetry.span as span`.
 - Reject empty selections, leading/trailing commas, missing `from`, unquoted
