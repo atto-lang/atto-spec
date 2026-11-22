@@ -40,6 +40,75 @@ it has an outstanding conflicting loan, or copying untrusted external resource
 handles, must fail closed. These are separate static and backend obligations;
 reference tests alone do not establish implementation.
 
+## Copy expressions passed to calls (target call-boundary contract)
+
+An expression passed to a function is **not** automatically transferred to that
+function merely because the expression produced a new, owned value. Resolve the
+formal's ownership mode before checking the argument:
+
+- `inspect(copy! x)` evaluates `x` once, makes a new shallow root (when
+  Copyable is proven), then passes a **temporary read loan of that new root** to
+  the ordinary, non-owning class formal. The callee may not retain, return as an
+  owned value, move, or drop the root. On normal or exceptional completion,
+  the loan ends and the temporary owned root is cleaned up exactly once. If a
+  verified borrowed result keeps a loan alive, its owner and lifetime must
+  survive accordingly; no dangling temporary may escape.
+- `inspect(copy!! x)` has the same non-owning call-boundary rule, but first
+  deep-copies the mutable graph under a verified DeepCopyable witness.
+- `inspect(borrow! x)` **does not copy**. It borrows the original root. The
+  two forms must remain observably different for root identity and write
+  isolation; shallow nested child references may still be shared legally.
+- For a consuming formal `take! T`, the initial phase-1 profile requires an
+  explicit `take!` of a **named live owned place** at the call site. A copied
+  temporary must first be bound to an owned local and then explicitly moved.
+  Neither `consume(copy! x)` nor `consume(copy!! x)` can silently transfer
+  ownership; and `consume(take! (copy! x))` is not supported by the phase-1
+  named-place grammar. A future separately versioned rvalue-consume extension
+  may admit such syntax only with verified exactly-once move/drop semantics.
+- For intrinsic scalar Copy values, passing the result remains ordinary value
+  passing; it does not manufacture a heap pointer or identity-bearing root.
+
+~~~atto
+fnc inspect(Document doc): int { return doc.version; }
+fnc consume(take! Document owned): int { return owned.version; }
+
+val original = new Document();
+val version_a = inspect(borrow! original); // original root, no allocation
+val version_b = inspect(copy! original);   // fresh shallow root, loan for call
+val version_c = inspect(copy!! original);  // detached mutable graph, loan for call
+val owned_copy = copy!! original;
+val version_d = consume(take! owned_copy); // explicit ownership handoff
+// original is still valid; owned_copy is moved and unusable
+// consume(copy! original);                 // E_OWNERSHIP: no take! named place
+// consume(take! (copy! original));         // E_OWNERSHIP: phase-1 rejects rvalues
+~~~
+
+The backend may physically pass a pointer/reference to the **fresh copy** (as
+Java does for a clone), but it must never pass only a duplicate pointer to the
+original and call that `copy!`. Physical ABI references are not proof of
+logical aliasing, ownership, or callee retention rights. Copy mode and the
+callee's ownership mode must both survive typed IR, optimization, and AOT
+lowering. In particular, do not optimize away a copy merely because a
+read-only callee currently ignores the argument, without an established
+effects/identity observability and cleanup proof.
+
+**Required compiler-backed test targets (not claimed implemented):**
+`inspect(copy! x)` and `inspect(copy!! x)` preserve the caller's owner;
+the callee observes a different root identity; `inspect(borrow! x)` sees
+the original; shallow legal shared children retain identity while deep
+mutable children do not; `consume(take! copied)` consumes once; bare copy
+temporaries to consuming formals reject; `copy!` of a unique nested mutable
+child rejects with E_COPY_SHALLOW_ALIAS; failures, exceptions and cancellation
+run correct loan cleanup/drop; copied temporaries cannot escape as borrowed
+results; repeated arguments obey left-to-right evaluation and live-loan
+conflicts. Keep separate backend statuses and exact-head guest receipts.
+
+This rule is for the **versioned borrow-by-default profile** described by
+`language/implicit-argument-borrow-v1.md`. Legacy compiler editions that
+still implicitly move nonprimitive class formals must not silently claim this
+behavior; reject unsupported ownership modes or require explicit edition
+selection.
+
 ## Core object model and capabilities
 
 Illustrative source syntax (the root-class declaration form and the capability requirement clause are **semantic sketches**, not claims of parser support):
