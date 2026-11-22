@@ -135,6 +135,8 @@ test("no protocol is proven complete merely because terminal is reachable", () =
   assert.deepEqual(checkSend(protocol, "Connected", "Query").next_states, ["Connected"]);
   assert.throws(() => checkTrace(protocol, [
     {kind:"begin_call",handle:"h0",ticket:"t1",message:"Connect"},
+    {kind:"admit_call",ticket:"t1"},
+    {kind:"commit_transition",ticket:"t1",from:"Disconnected",to:"Connected"},
     {kind:"resolve_reply",ticket:"t1",reply:"ConnectedAck",next_handle:"h1"}
   ]), /no completed terminal proof/);
 });
@@ -151,6 +153,8 @@ test("previously settled tickets and handles cannot be recycled or replayed", ()
   assert.throws(() => checkTrace(protocol, [
     ...first,
     {kind:"begin_call",handle:"h1",ticket:"t2",message:"Close"},
+    {kind:"admit_call",ticket:"t2"},
+    {kind:"commit_transition",ticket:"t2",from:"Connected",to:"Closed"},
     {kind:"resolve_reply",ticket:"t2",reply:"ClosedAck",next_handle:"h1"}
   ]), /duplicate handle identity/);
 });
