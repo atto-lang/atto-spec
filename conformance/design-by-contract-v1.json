@@ -1,0 +1,230 @@
+{
+  "schema": "atto.design_by_contract.v1",
+  "version": 1,
+  "authority": "atto-lang/atto-spec/language/design-by-contract-v1.md",
+  "status": "proposal_only",
+  "generated_guest_evidence": false,
+  "guest_runtime_verified": false,
+  "backends": {
+    "rs": "not_executed",
+    "java": "not_executed",
+    "llvm": "not_executed",
+    "wasm": "not_executed",
+    "net": "not_executed",
+    "forge": "not_executed",
+    "cranelift": "not_executed",
+    "js": "not_executed",
+    "hdl": "not_executed"
+  },
+  "notes": "Illustrative source fragments are candidate compile/runtime scenarios, not standalone executable fixture files. Compiler-specific harnesses must wrap and typecheck them and record exact guest evidence independently.",
+  "cases": [
+    {
+      "id": "requires_positive",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- square(int x) requires x >= 0; :: return x * x; end",
+      "phase": "guest_positive",
+      "expected": "success",
+      "status": "not_executed"
+    },
+    {
+      "id": "ensures_result",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- double(int x) ensures |result| -> result eq x * 2; :: return x * 2; end",
+      "phase": "guest_positive",
+      "expected": "success",
+      "status": "not_executed"
+    },
+    {
+      "id": "caret_return",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- inc(int x) ensures |result| -> result > x; :: ^ x + 1; end",
+      "phase": "guest_positive",
+      "expected": "success",
+      "status": "not_executed"
+    },
+    {
+      "id": "bullet_header",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int • inc(int x) ensures |r| -> r > x; :: return x + 1; end",
+      "phase": "guest_positive",
+      "expected": "success",
+      "status": "not_executed"
+    },
+    {
+      "id": "effect_begin",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- checked(int x) raises DomainError requires x > 0; ensures |r| -> r > 0; begin return x; end",
+      "phase": "guest_positive",
+      "expected": "success",
+      "status": "not_executed"
+    },
+    {
+      "id": "conditional_return_edges",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- abs(int x) ensures |r| -> r >= 0; :: if x < 0 then return 0 - x; fi return x; end",
+      "phase": "guest_positive",
+      "expected": "success",
+      "status": "not_executed"
+    },
+    {
+      "id": "result_early_exit",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc Result<int, Error> <- foo(Result<int, Error> x) ensures |r| -> r is Result<int, Error>; :: return x?; end",
+      "phase": "guest_positive",
+      "expected": "both_Ok_and_Err_exits_checked",
+      "status": "not_executed"
+    },
+    {
+      "id": "class_invariant",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "define class Counter as private let int count = 0; invariant self.count >= 0; end",
+      "phase": "guest_positive",
+      "expected": "constructor_and_external_boundaries_checked",
+      "status": "not_executed"
+    },
+    {
+      "id": "sealed_state_invariant",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "define state on actor Counter as { let int count = 0; invariant |s| -> s.count >= 0; }",
+      "phase": "guest_positive",
+      "expected": "guarded_actor_state_checked",
+      "status": "not_executed"
+    },
+    {
+      "id": "stream_handle_scope",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc Stream<int> <- values() ensures |r| -> r is Stream<int>; :: return create_stream(); end",
+      "phase": "guest_positive",
+      "expected": "handle_only_not_future_items",
+      "status": "not_executed"
+    },
+    {
+      "id": "release_runtime_check",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f(int x) requires x > 0; :: return x; end",
+      "phase": "guest_negative_runtime",
+      "expected": "ContractViolationError",
+      "status": "not_executed"
+    },
+    {
+      "id": "postcondition_failure",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f(int x) ensures |r| -> r > 0; :: return 0; end",
+      "phase": "guest_negative_runtime",
+      "expected": "ContractViolationError",
+      "status": "not_executed"
+    },
+    {
+      "id": "invariant_failure",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "define class Counter as let int count = 0; invariant self.count >= 0; end",
+      "phase": "guest_negative_runtime",
+      "expected": "ContractViolationError_on_invalid_mutation",
+      "status": "not_executed"
+    },
+    {
+      "id": "actor_control_notice",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "define state on actor A as { let int count = 0; invariant |s| -> s.count >= 0; }",
+      "phase": "guest_negative_runtime",
+      "expected": "supervisor_priority_CONTROL_panic",
+      "status": "not_executed"
+    },
+    {
+      "id": "trap_cannot_intercept",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f(int x) requires x > 0; :: return x; end",
+      "phase": "guest_negative_runtime",
+      "expected": "trap_does_not_catch_contract_panic",
+      "status": "not_executed"
+    },
+    {
+      "id": "precondition_not_bool",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f(int x) requires x; :: return x; end",
+      "phase": "compile_negative",
+      "expected": "E_CONTRACT_NOT_BOOL",
+      "status": "not_executed"
+    },
+    {
+      "id": "postcondition_not_bool",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f() ensures |r| -> 42; :: return 1; end",
+      "phase": "compile_negative",
+      "expected": "E_CONTRACT_NOT_BOOL",
+      "status": "not_executed"
+    },
+    {
+      "id": "mutating_predicate",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f(let int x) requires (x += 1) > 0; :: return x; end",
+      "phase": "compile_negative",
+      "expected": "E_CONTRACT_EFFECT",
+      "status": "not_executed"
+    },
+    {
+      "id": "io_predicate",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f() requires os.read_env(\"X\") eq \"Y\"; :: return 1; end",
+      "phase": "compile_negative",
+      "expected": "E_CONTRACT_EFFECT",
+      "status": "not_executed"
+    },
+    {
+      "id": "await_in_contract",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f() requires await ready(); :: return 1; end",
+      "phase": "compile_negative",
+      "expected": "E_CONTRACT_EFFECT",
+      "status": "not_executed"
+    },
+    {
+      "id": "ownership_move_contract",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f(Foo x) requires take! x eq x; :: return 1; end",
+      "phase": "compile_negative",
+      "expected": "E_CONTRACT_OWNERSHIP",
+      "status": "not_executed"
+    },
+    {
+      "id": "actor_direct_state",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "define actor A as invariant self.state.count >= 0; end",
+      "phase": "compile_negative",
+      "expected": "E_ACTOR_STATE_ACCESS",
+      "status": "not_executed"
+    },
+    {
+      "id": "shadow_ensures_binder",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f(int result) ensures |result| -> result > 0; :: return result; end",
+      "phase": "compile_negative",
+      "expected": "E_CONTRACT_BINDER",
+      "status": "not_executed"
+    },
+    {
+      "id": "unbounded_embedded_predicate",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f(int x) requires costly_unbounded(x); :: return x; end",
+      "phase": "compile_negative",
+      "expected": "E_CONTRACT_BUDGET",
+      "status": "not_executed"
+    },
+    {
+      "id": "unsupported_compiler",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f(int x) requires x > 0; :: return x; end",
+      "phase": "compile_negative",
+      "expected": "E_CONTRACT_UNSUPPORTED",
+      "status": "not_executed"
+    },
+    {
+      "id": "guarantee_all_normal_edges",
+      "source_kind": "illustrative_fragment_not_runnable",
+      "snippet": "fnc int <- f(int x) ensures |r| -> r > 0; :: if x < 0 then return -1; fi return 1; end",
+      "phase": "guest_negative_runtime",
+      "expected": "ContractViolationError_on_negative_path",
+      "status": "not_executed"
+    }
+  ]
+}
