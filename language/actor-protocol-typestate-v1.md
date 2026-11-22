@@ -58,6 +58,32 @@ Call progression is two phase: `(Handle<S>, M) -> PendingCall<Reply, NextStates>
 - `Closed` is terminal and accepts no new DATA protocol events. No reply is silently dropped on close. CONTROL notices, panic escalation, `on_raise`, cancellation, state clean-up and the supervisor remain independent of protocol DATA admission.
 - Mutable internal timers, lifecycle hooks, hot-loading or other senders cannot invalidate a live static handle invisibly. They must either preserve its witnessed state, revoke/version-fence the handle before changing protocol state, or operate through an explicit dynamic checked state transition. Cross-tenant and cross-incarnation reuse is invalid. Hot upgrade requires a versioned migration proof or invalidates every old handle.
 
+### Commit-before-reply, mailbox admission and lost acknowledgements (v1 hardening)
+
+The bounded reference trace distinguishes **prepared** (the caller consumed its
+linear handle), **admitted** (the runtime committed bounded mailbox admission),
+**committed** (the actor checked its previous control state and revision and
+atomically committed the declared transition), and **replied** (a matching
+one-shot reply may mint the next typed capability). In particular, neither
+preparation nor admission alone permits a successful reply. Repeated,
+out-of-order or mismatched commit attempts are rejected; reply completion
+must match the committed actor generation and revision.
+
+An \`AdmissionRejected\` result applies **only before mailbox publication**;
+cancellation, timeout, or disconnection after admission, including after a
+committed transition but before reply delivery, destroys the old capability
+and gives **no successor proof**. Reconciliation requires an authenticated
+runtime resynchronization or generation-fenced restart, not a cast or an
+assumption that the message never executed. After restart the reference model
+marks the actor control state unknown because durable state may be restored.
+No typed handle is reminted without a trusted handshake.
+
+The model's \`admit_call\` and \`commit_transition\` events are **symbolic oracle
+observations**, not authenticated runtime proofs. A real guest implementation
+MUST derive them from runtime-owned mailbox, actor-state and reply authority.
+A caller-provided event, numeric generation, display name or host test passing
+cannot mint a guest protocol capability.
+
 ## Runtime mapping to Erlang/OTP gen_statem (29.1.1, stdlib 8.1)
 
 The runtime may implement a protocol using state-function or handle-event dispatch, transition actions, state-enter callbacks, postponed events and state timeouts, following [Erlang `gen_statem` documentation](https://www.erlang.org/docs/29/apps/stdlib/gen_statem.html). These are **runtime mechanisms**, not compile-time guarantees.
