@@ -59,6 +59,20 @@ function exactDivide(a, b) {
   const scale = Math.max(twos, fives);
   return ok(renderDecimal({ coeff: num * (2n ** BigInt(scale - twos)) * (5n ** BigInt(scale - fives)), scale }));
 }
+function divideRounded(a, b, targetScale, mode) {
+  if (b.coeff === 0n) return error('division_by_zero');
+  assert.equal(mode, 'half_even');
+  if (!Number.isSafeInteger(targetScale) || targetScale < 0 || targetScale > 128) throw Error('invalid test scale');
+  let numerator = a.coeff * pow10(b.scale + targetScale);
+  let denominator = b.coeff * pow10(a.scale);
+  const negative = (numerator < 0n) !== (denominator < 0n);
+  numerator = numerator < 0n ? -numerator : numerator;
+  denominator = denominator < 0n ? -denominator : denominator;
+  let quotient = numerator / denominator;
+  const remainder = numerator % denominator;
+  if (2n * remainder > denominator || (2n * remainder === denominator && quotient % 2n === 1n)) quotient++;
+  return { kind: 'value', value: renderDecimal({ coeff: negative ? -quotient : quotient, scale: targetScale }), inexact: remainder !== 0n };
+}
 function quantize(d, targetScale, mode) {
   assert.equal(mode, 'half_even');
   if (!Number.isSafeInteger(targetScale) || targetScale < 0 || targetScale > 128) throw Error('invalid test scale');
@@ -83,6 +97,7 @@ function evaluate(c) {
     const b = args[1] === undefined ? null : parseDecimal(args[1]);
     if (op === 'quantize') return ok(quantize(a, c.scale, c.rounding));
     if (op === 'div_exact') return exactDivide(a, b);
+    if (op === 'div_rounded') return divideRounded(a, b, c.scale, c.rounding);
     if (op === 'mul') return ok(renderDecimal({ coeff: a.coeff * b.coeff, scale: a.scale + b.scale }));
     const scale = Math.max(a.scale, b.scale);
     const lhs = a.coeff * pow10(scale - a.scale), rhs = b.coeff * pow10(scale - b.scale);
