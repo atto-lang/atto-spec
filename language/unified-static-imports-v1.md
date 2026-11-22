@@ -49,6 +49,34 @@ import module http, http3 from "std.http";
 // Not equivalent to the wildcard import. Names must exist and be public.
 ```
 
+Public module selection requires an **explicit public declaration** in
+the supplying Atto source:
+
+```atto
+// Inside a compiler-owned library's .atto source:
+define pub module http as
+  define pub fnc status_valid(int status): bool {
+    return status >= 100 && status <= 599;
+  }
+end
+
+define pub module http3 as
+  define pub fnc version(): int { return 3; }
+end
+
+// The consumer may then select exactly those public module exports:
+import module http, http3 from "std.http";
+```
+
+`define module hidden as ... end` is private by default and MUST NOT be
+selectable across source units using `import module hidden`. For compiler
+backends that cannot yet preserve public/private module visibility in AST,
+linker, ABI digests and runtime exports, public selective-module imports MUST
+fail closed rather than defaulting all modules to public. The source-format
+canonical spelling is `define pub module`; `pub define module` is tolerated
+as compatibility syntax only when it has identical parsed visibility and
+public-export behavior.
+
 The `std.http` library may instead expose public file-root functions such
 as `get` and types such as `HttpResponse`; in that case,
 `import * as http from "std.http";` is valid and
