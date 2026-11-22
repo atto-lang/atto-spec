@@ -41,6 +41,16 @@ Prelude inclusion never creates an allocation, clones an owning value, disables 
 
 An unavailable `alloc` prelude must produce a compile-time error for `List`/`Map`/`Box` rather than substituting a host list or allocating secretly. A target with no `std` may still compile core-only code. No compiler may mark an unsupported operation as executable merely because the source name resolved.
 
+## Compiler-enforced core borrow contracts
+
+The built-in `Option<T>` and `Result<T,E>` variant types have **payload-dependent** ownership. Their constructors are not ordinary, user-redefinable functions and cannot be reassigned to dynamic host references by import aliases. `Some(owned)`, `Ok(owned)`, and `Err(owned)` transfer ownership into the new carrier; `None` contains no payload. The inactive variant MUST never be read or dropped as if live.
+
+Source-defined `.atto` helpers in `core/option`, `core/result`, `core/convert`, and `core/fmt` do not bypass compiler MIR ownership admission. A read-only helper must declare a shared loan and cannot manufacture an owned affine `T`/ `E` from it. Consuming helpers (`flatten`, `transpose`, `map`, `and_then`, `map_err`, `zip_with`, `unwrap_or_else`) must prove a consuming source formal, unique carrier ownership, exact once-only movement or disposal of the active payload and rollback/drop correctness for exceptional returns. An unannotated generic parameter is not proof of consumption.
+
+The compiler MUST reject use-after-take, double-drop, shared-and-exclusive overlapping loans, reference escape, unpinned borrowed frames across `await`/suspension, and transfer of unsendable payloads across actors. For mutable collections, loans must also be fenced against reallocation, hash-table rehash, mutation, actor shutdown and arena reset. `Slice<T>` is a view tied to its source lifetime and never becomes owned storage merely through an implicit import.
+
+Until a backend proves those contracts, it MUST fail closed on the unsupported borrow/affine instantiation; parser-only rejection is not equivalent to implementation support. Scalar-only Copy or immutable-view profiles can be tested separately but cannot certify the affine profile. The compiler's checked owner/borrow facts, not a user-callable `cell` borrow-state counter or a TypeScript/Java host shim, are the source of memory authority.
+
 ## Conformance matrix
 
 Each backend should prove:
