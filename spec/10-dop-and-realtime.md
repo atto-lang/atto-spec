@@ -4,7 +4,7 @@
 
 ## Numerical semantics versus layout and vectorization
 
-See [numerical semantics v1](../language/numeric-semantics-v1.md) for the candidate exact scalar reference, first-failing-logical-index vector errors, checked dot/matrix evaluation order and explicit approximate fast modes. SIMD/SoA/AoSoA/GPU optimizations must not silently change numeric results or ownership, and reference or host-only tests do not establish guest AOT parity.
+See [numerical semantics v1](../language/numeric-semantics-v1.md) for the candidate exact scalar reference, first-failing-logical-index vector errors, checked dot/matrix evaluation order (including deterministic row/column/inner overflow locations), exact decimal quantity division without integer truncation, and explicit approximate fast modes. SIMD/SoA/AoSoA/GPU optimizations must not silently change numeric results or ownership, and reference or host-only tests do not establish guest AOT parity.
 
 ## Data-layout semantics
 
