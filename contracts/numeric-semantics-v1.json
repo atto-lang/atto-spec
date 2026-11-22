@@ -490,6 +490,88 @@
         "kind": "error",
         "code": "affine_point_addition"
       }
+    },
+    {
+      "id": "u64-max",
+      "domain": "integer",
+      "op": "literal",
+      "type": "uint",
+      "args": [
+        "18446744073709551615"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "18446744073709551615"
+      }
+    },
+    {
+      "id": "i64-min-division-negative-one",
+      "domain": "integer",
+      "op": "div",
+      "type": "i64",
+      "args": [
+        "-9223372036854775808",
+        "-1"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow"
+      }
+    },
+    {
+      "id": "decimal-zero-divisor",
+      "domain": "decimal",
+      "op": "div_exact",
+      "args": [
+        "1",
+        "0"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "division_by_zero"
+      }
+    },
+    {
+      "id": "fixed-out-of-range-rep",
+      "domain": "fixed",
+      "op": "add",
+      "rep": "i64",
+      "scale": 2,
+      "args": [
+        "9223372036854775808",
+        "0"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_literal_out_of_range"
+      }
+    },
+    {
+      "id": "dimension-commutative-unit-key-order",
+      "domain": "dimension",
+      "op": "add",
+      "left": {
+        "unit": {
+          "mass": 1,
+          "length": 2
+        },
+        "value": "3"
+      },
+      "right": {
+        "unit": {
+          "length": 2,
+          "mass": 1
+        },
+        "value": "4"
+      },
+      "expected": {
+        "kind": "value",
+        "unit": {
+          "mass": 1,
+          "length": 2
+        },
+        "value": "7"
+      }
     }
   ]
 }
