@@ -8,6 +8,12 @@
 
 `Option<T>` and `Result<T,E>` are **ordinary data**, not automatically exceptions. A failed `Result` is not a panic. `unwrap()` on absent/error data intentionally **panics** and cannot be made safe by wrapping it in ordinary `trap`.
 
+## Numerical failure classification (numeric v1 target)
+
+Checked signed/unsigned fixed-width arithmetic overflow is an **ordinary typed throw**, `ArithmeticOverflowError <: Error` (candidate numeric ABI code `65537`). Integer division or remainder by zero is a distinct ordinary typed throw, `DivisionByZeroError <: Error` (candidate ABI code `65538`). These failures are permitted in the closest matching `try/catch` and converted to `Err(Error)` by `trap`; `trap` never returns `None` for them. A successful scalar `trap` returns `Ok(value)`; `trap` of a `Result` must not nest it. The caught error is a bounded, sanitized guest `Error` value without host exception objects or traces. Host exceptions must not be silently reclassified as numerical `Error`s.
+
+Only **unhandled** ordinary arithmetic throws subsequently escalate through the existing throw → raise → panic rules. Once the failure reaches final actor panic, the failing actor cannot intercept it and the supervisor receives its normal CONTROL failure notice; the numeric operation itself does not directly bypass `catch` or `trap`. This decision does not certify current backend execution or imply the supervisor path is implemented uniformly.
+
 ## Exceptional control paths
 
 | Effect | Nearest permitted interception | If unhandled |
