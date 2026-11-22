@@ -1,0 +1,32 @@
+name: Namespaced Export Contract
+on:
+  pull_request:
+    paths:
+      - "language/namespaced-exports-v1.md"
+      - "language/declarative-exports.md"
+      - "conformance/namespaced-exports-v1.json"
+      - "tests/namespaced-export-contract.test.mjs"
+      - "tests/declarative-export-contract.test.mjs"
+      - ".github/workflows/namespaced-exports.yml"
+      - "conformance/visibility-linkage-final-v1.json"
+      - "language/visibility-linkage-and-final-v1.md"
+      - "tests/visibility-linkage-final-contract.test.mjs"
+  push:
+    branches: [main]
+    paths:
+      - "language/namespaced-exports-v1.md"
+      - "language/declarative-exports.md"
+      - "conformance/namespaced-exports-v1.json"
+      - "tests/namespaced-export-contract.test.mjs"
+      - "tests/declarative-export-contract.test.mjs"
+      - ".github/workflows/namespaced-exports.yml"
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run host-only contract consistency tests
+        run: node --test tests/declarative-export-contract.test.mjs tests/namespaced-export-contract.test.mjs tests/visibility-linkage-final-contract.test.mjs
