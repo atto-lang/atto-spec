@@ -39,8 +39,10 @@ class DurableModel {
     for(let i=0;i<outbox.length;i++) this.outbox.push({effect_id:scope+"/"+i,sequence:next,...this.clone(outbox[i]),acked:false,claim:null});
     return fault==="lost_receipt"?{status:"OUTCOME_UNKNOWN",operation}:receipt;
   }
-  reconcile({operation,producer="client",namespace="adjust",message}) {
-    const scope=[this.tenant,this.actor,producer,namespace,operation].join("|");
+  reconcile({tenant="t1",actor="account/A",epoch=this.epoch,operation,producer="client",namespace="adjust",message}) {
+    if(tenant!==this.tenant||actor!==this.actor)return {status:"REJECT_AUTHORITY"};
+    if(epoch!==this.epoch)return {status:"REJECT_STALE_EPOCH"};
+    const scope=[tenant,actor,producer,namespace,operation].join("|");
     const prior=this.operations.get(scope);
     if(!prior)return {status:"NOT_FOUND"};
     const digest=message.schema_id+"/"+message.schema_version+"/"+message.payload;
@@ -106,6 +108,8 @@ test('crash after local commit but before receipt reconciles original and never 
   assert.equal(m.submit({operation:'x',message,outbox:[intent],fault:'lost_receipt'}).status,'OUTCOME_UNKNOWN');
   assert.equal(m.recover().status,'RECOVERED');
   assert.equal(m.reconcile({operation:'x',message}).sequence,1);
+  assert.equal(m.reconcile({operation:'x',message,epoch:1}).status,'REJECT_STALE_EPOCH');
+  assert.equal(m.reconcile({operation:'x',message,tenant:'evil'}).status,'REJECT_AUTHORITY');
   assert.equal(m.submit({operation:'x',message}).replayed,true);
   assert.equal(m.sequence,1);assert.equal(m.outbox.length,1);
 });
@@ -133,6 +137,7 @@ test('expired lease and actor epoch fence stale outbox claim; duplicate delivery
   const m=new DurableModel();m.submit({operation:'x',message:msg(1),outbox:[intent]});
   const a=m.claim({now:0});const b=m.claim({now:10});
   assert.notEqual(a.token,b.token);
+  assert.equal(a.effect_id,b.effect_id,'redelivery retains the original effect identity');
   assert.equal(m.settle({effect_id:a.effect_id,token:a.token}).status,'REJECT_STALE_CLAIM');
   assert.equal(m.settle({effect_id:b.effect_id,token:b.token}).status,'ACKED');
   assert.equal(m.claim({now:20}).status,'NO_WORK');
