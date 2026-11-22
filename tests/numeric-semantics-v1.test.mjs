@@ -9,7 +9,7 @@ const pow10 = n => 10n ** BigInt(n);
 const minmax = type => {
   const alias = { int: 'i64', uint: 'u64' }[type] ?? type;
   const m = /^([iu])(8|16|32|64)$/.exec(alias);
-  assert.ok(m, \`unsupported integer type: \${type}\`);
+  assert.ok(m, `unsupported integer type: ${type}`);
   const bits = BigInt(m[2]);
   return m[1] === 'u' ? [0n, (1n << bits) - 1n] : [-(1n << (bits - 1n)), (1n << (bits - 1n)) - 1n];
 };
@@ -24,21 +24,21 @@ function bounded(type, op, args) {
     : op === 'sub' ? nums[0] - nums[1]
     : op === 'mul' ? nums[0] * nums[1]
     : op === 'div' ? nums[0] / nums[1]
-    : assert.fail(\`unknown op \${op}\`);
+    : assert.fail(`unknown op ${op}`);
   return value < low || value > high ? error('integer_overflow') : ok(value);
 }
 const decimalRe = /^(-?)(\d+)(?:\.(\d+))?$/;
 function parseDecimal(text) {
   const m = decimalRe.exec(text);
-  assert.ok(m, \`bad decimal: \${text}\`);
-  return { coeff: BigInt(\`\${m[1]}\${m[2]}\${m[3] ?? ''}\`), scale: (m[3] ?? '').length };
+  assert.ok(m, `bad decimal: ${text}`);
+  return { coeff: BigInt(`${m[1]}${m[2]}${m[3] ?? ''}`), scale: (m[3] ?? '').length };
 }
 function renderDecimal({ coeff, scale }) {
   if (coeff === 0n) return '0';
   const sign = coeff < 0n ? '-' : '';
   let digits = String(coeff < 0n ? -coeff : coeff);
   if (scale > 0) digits = digits.padStart(scale + 1, '0');
-  let value = scale ? \`\${digits.slice(0, -scale)}.\${digits.slice(-scale)}\` : digits;
+  let value = scale ? `${digits.slice(0, -scale)}.${digits.slice(-scale)}` : digits;
   value = value.replace(/\.?0+$/, '') || '0';
   // Never erase integer zeros: only trim fraction zeros.
   if (!value.includes('.') && scale === 0) value = digits;
@@ -129,7 +129,7 @@ function evaluate(c) {
     const value = op === 'divide' ? BigInt(c.left.value) / BigInt(c.right.value) : BigInt(c.left.value) + BigInt(c.right.value);
     return { kind: 'value', unit, value: String(value) };
   }
-  assert.fail(\`unknown domain \${domain}\`);
+  assert.fail(`unknown domain ${domain}`);
 }
 
 test('numeric v1 registry is a source-only, fail-closed proposal', () => {
