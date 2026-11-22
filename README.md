@@ -20,7 +20,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
-- [Numerical semantics v1](language/numeric-semantics-v1.md): TARGET / NOT GUEST-EXECUTED; checked widths and bigint, exact decimal with explicit context, statically specialized fixed point, reproducible vector kernels, compile-time dimensions and full guest AOT boundaries. [38 host-only reference cases](contracts/numeric-semantics-v1.json) cannot certify backend parity.
+- [Numerical semantics v1](language/numeric-semantics-v1.md): TARGET / NOT GUEST-EXECUTED; checked widths and bigint, exact decimal with explicit context, statically specialized fixed point, reproducible vector kernels, compile-time dimensions and full guest AOT boundaries. [51 host-only reference cases](contracts/numeric-semantics-v1.json) cannot certify backend parity.
 
 
 - [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^ ~`, `<<< >>> ashr`, compound updates, and typed-I/O `<< >>`, with context-sensitive caret/structural-tilde parsing; target semantics, not backend parity.
