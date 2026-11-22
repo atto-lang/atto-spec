@@ -87,3 +87,7 @@ The runtime, **not the source or CLI flag alone**, must mint a binding capabilit
 Production CLI permission parsing must use the canonical [flags-2-env](https://github.com/flags-2-env/flags-2-env) project and `.cli-flags.toml` contract, with precedence CLI > environment > declared defaults; a compiler flag for a *test-only static symbol* is not authorization to dynamically load a shared library. Full native AOT, no uncontrolled GC, and explicit host/guest isolation remain mandatory.
 
 Any CI receipt for M1 proves **only** its executable source-compiled i64 static C ABI case. The five-backend ABI v1 matrix remains NOT_EXECUTED until the real actor/runtime and error/lifetime checks are executed by each backend.
+
+## Compile-time reflection, generated serializers and explicit layouts (separate candidate)
+
+The [AOT compile-time reflection and C layout candidate](compile-time-reflection-ffi-layout-v1.md) specifies finite type metadata, derived **static** serializer code, explicit target-specific `@repr(C)` / `@align` contract candidates and safe foreign-handle/borrow/effect boundaries. It does **not** expand this v1 scalar-only foreign-call ABI to aggregates or callbacks, and its source-free JS layout model does **not** certify any compiler, C header or guest AOT artifact. The [record/struct layout proposal #72](https://github.com/atto-lang/atto-spec/pull/72) governs nominal versus structural storage; [serialization proposal #73](https://github.com/atto-lang/atto-spec/pull/73) owns wire encoding. All must be reconciled before aggregate FFI can be enabled.
