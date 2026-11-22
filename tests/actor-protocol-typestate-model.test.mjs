@@ -376,3 +376,36 @@ test("stream declarations must be typed and not mix with unary modes in a union"
   }
   assert.throws(()=>checkSend(d,["Disconnected","Connected"],"Close"),/ambiguous reply or stream item/);
 });
+
+test("stream terminal error preserves ordered buffered items but never a successor", () => {
+  const failed = [...streamOne,{kind:"stream_fail",ticket:"s1",reason:"ProducerError"}];
+  assert.throws(() => checkTrace(protocol, [...failed,
+    {kind:"stream_observe_error",ticket:"s1",reason:"ProducerError"}
+  ]), /after all buffered items/);
+  assert.throws(() => checkTrace(protocol, [...failed,
+    {kind:"stream_receive_item",ticket:"s1",sequence:0},
+    {kind:"stream_finish",ticket:"s1",next_handle:"h2"}]), /failed stream cannot mint/);
+  assert.throws(() => checkTrace(protocol, [...failed,
+    {kind:"stream_receive_item",ticket:"s1",sequence:0},
+    {kind:"stream_observe_error",ticket:"s1",reason:"RemoteError"}]), /mismatched stream terminal error/);
+  const observed = [...failed,
+    {kind:"stream_receive_item",ticket:"s1",sequence:0},
+    {kind:"stream_observe_error",ticket:"s1",reason:"ProducerError"}];
+  assert.deepEqual(checkTrace(protocol, observed, {requireComplete:false}), {
+    completed:false,fenced:false,generation:1,live_handles:0,pending_calls:0,terminal_failures:1
+  });
+  assert.throws(() => checkTrace(protocol, [...observed,streamFinish]),
+    /missing, duplicate or stale/);
+});
+
+test("stream terminal errors and EOF cannot be emitted twice or mixed", () => {
+  const error={kind:"stream_fail",ticket:"s1",reason:"RemoteError"};
+  assert.throws(()=>checkTrace(protocol,[...streamCommitted,error,error]),
+    /one active committed stream/);
+  assert.throws(()=>checkTrace(protocol,[...streamCommitted,streamClose,error]),
+    /one active committed stream/);
+  assert.throws(()=>checkTrace(protocol,[...streamCommitted,error,streamClose]),
+    /one active committed stream/);
+  assert.throws(()=>checkTrace(protocol,[...streamCommitted,
+    {kind:"stream_fail",ticket:"s1",reason:"FakeError"}]),/must be typed/);
+});
