@@ -237,3 +237,18 @@ test("restart between commit and reply revokes all protocol proofs", () => {
     {kind:"resolve_reply",ticket:"t1",reply:"ConnectedAck",next_handle:"h1"}
   ]), /missing, duplicate or stale/);
 });
+
+test("upgrade and stop revoke in-flight commitments without manufacturing completion", () => {
+  for (const kind of ["fence_upgrade", "fence_stop"]) {
+    const trace = [...committed,{kind}];
+    assert.deepEqual(checkTrace(protocol, trace, {requireComplete:false}), {
+      completed:false, fenced:true, generation:2, live_handles:0, pending_calls:0, terminal_failures:1
+    });
+    assert.throws(() => checkTrace(protocol, [
+      ...trace, {kind:"resolve_reply",ticket:"t1",reply:"ConnectedAck",next_handle:"h1"}
+    ]), /missing, duplicate or stale/);
+    assert.throws(() => checkTrace(protocol, [
+      ...trace, {kind:"complete",handle:"h0"}
+    ]), /live linear handle/);
+  }
+});
