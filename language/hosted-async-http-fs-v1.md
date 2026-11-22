@@ -151,8 +151,9 @@ struct Metadata {
 }
 
 class File {
-  susp read(max_bytes: int): Bytes;     // returns empty Bytes on EOF
-  susp write(bytes: Bytes): int;       // may write only a prefix
+  susp read(max_bytes: int): Bytes;    // reads from current cursor
+  susp write(bytes: Bytes): int;      // may write only a prefix
+  susp seek(offset: int): int;        // absolute byte offset from start
   susp flush(): void;
   susp close(): void;
 }
@@ -183,9 +184,16 @@ susp fnc file_size(path: PathLike): int;
 susp fnc read_stream(path: PathLike, chunk_bytes: int): FileStream;
 susp fnc write_stream(path: PathLike, options: OpenOptions): FileStream;
 
-// Existing v1 text helpers, implemented on top of strict UTF-8 and byte I/O.
+// Existing path-based helpers keep whole-file semantics.
 susp fnc read_text(path: PathLike): string;
 susp fnc write_text(path: PathLike, content: string): void;
+
+// File-instance overloads borrow the SAME affine handle; no FileStream,
+// implicit reopen, close, ownership transfer or path-based truncation.
+susp fnc read_text(file: File): string;
+susp fnc write_text(file: File, content: string): void;
+susp fnc read_file(file: File): Bytes;
+susp fnc write_file(file: File, bytes: Bytes): void;
 ```
 
 `DirEntry` contains `name: string`, `path: Path`, and `kind:
@@ -193,6 +201,94 @@ file | directory`; entry order from `read_dir` is guaranteed lexical by
 portable Unicode scalar comparison (not platform locale or inode order).
 All returned bytes, metadata records and entries are snapshots; the backing
 filesystem may change after the operation.
+
+
+### File-class instances as direct I/O arguments (not streams)
+
+`std.fs.File` is the **standard-library affine class** returned by
+`fs.open(...)`, not an arbitrary user-created path wrapper. A File instance
+may be passed directly into `fs.read_text(file)`,
+`fs.write_text(file, content)`, `fs.read_file(file)` or
+`fs.write_file(file, bytes)`. The argument is **borrowed for the duration
+of the suspended operation**; it is not cloned, serialized, consumed, sent to
+another actor or implicitly closed. `FileStream` is optional for *incremental*
+chunk consumption and is **not** required for these helpers.
+
+Complete example for the intended Atto `.atto` library surface:
+
+```atto
+import * as fs from "std.fs";
+
+// 'fs.File' is a public std.fs class, returned by open().
+// This function takes a File instance, NOT a FileStream or path.
+pub susp fnc load_text(fs.File file): string {
+    return await fs.read_text(file);
+}
+
+pub susp fnc file_instance_example(): int {
+    val options = fs.OpenOptions {
+        read: true,
+        write: true,
+        create: true,
+        truncate: true
+    };
+
+    val file: fs.File = await fs.open("data/message.txt", options);
+    await fs.write_text(file, "Hello from a File instance");
+
+    // Read helpers use the existing cursor. Rewind after writing.
+    await file.seek(0);
+    val contents = await load_text(file);
+
+    // The same instance can also be used for raw bytes:
+    await file.seek(0);
+    val bytes = await fs.read_file(file);
+
+    await file.flush();
+    await file.close();
+
+    if contents != "Hello from a File instance" then return 1; fi
+    return 42;
+}
+```
+
+This is the **intended typed guest API example**, not proof that a current
+compiler accepts the proposed `fs.OpenOptions` constructor or `fs.File`
+namespace type spelling. Conformance must compile and execute this fixture
+against the final compiler grammar before an implementation can claim PASS.
+
+File-instance overload semantics (different from path overloads):
+
+- `read_text(file)` / `read_file(file)` read **current byte cursor through
+  EOF**, advance the cursor, do not close and do not re-open the path. At EOF
+  they return an empty string or byte buffer. `read_text` is fatal-UTF-8
+  decoding; invalid encoding reports `FsErrorKind.invalid_utf8`. Cursor
+  advancement may persist on an invalid UTF-8 error.
+- `write_text(file, data)` and `write_file(file, bytes)` write all the
+  supplied data from the **current cursor**, respecting append mode and
+  permission checks; they must check short writes and zero-progress, keep
+  bounded intermediate buffers and enforce quotas. They do not truncate
+  unless `OpenOptions.truncate` did so at `open`, and they never close or
+  `fsync` implicitly. Incomplete writes on a real host can leave a prefix,
+  reported as an error; no implicit non-idempotent retry.
+- `file.seek(offset)` changes the *single File instance* cursor. The
+  portable v1 model permits byte positions from zero through the present
+  file size, inclusive; no sparse-file extension. `seek(0)` is the standard
+  rewind operation. A closed, revoked or stale file rejects further seeks.
+- A File may be opened read-only, write-only, append-only or with combined
+  rights. Overloads recheck both the **host actor/tenant capability** and
+  the File's per-handle mode at each call. A forged handle, wrong actor, wrong
+  tenant, stale generation, or use-after-close fails closed. The File is
+  bound to one actor incarnation. Duplicate references must not bypass
+  affine ownership or a future borrow checker.
+- Path-based `read_text(path)` still reads a whole-file snapshot.
+  Path-based `write_text(path, data)` still creates/truncates, in contrast
+  to writing through a File handle. Overload resolution is by the nominal
+  `File` type, **not** by coercing arbitrary objects or `FileStream`.
+  Generic streams are not interchangeable with File handles.
+- The memory-only Wasm/JS adapters currently have *trusted-host equivalents*
+  of these overloads using opaque File-object identity; they do not
+  constitute a compiled Atto `File` class, ABI or guest capability.
 
 ### Failure and Result behavior
 
