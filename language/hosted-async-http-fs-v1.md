@@ -23,7 +23,7 @@ The two imports are **required**, not invisible prelude globals: a file without 
 ## Layer and package contract
 
 - Both modules are **hosted `std`**, not freestanding `core` or allocator-only `alloc`. Their canonical selector is the reserved built-in name without `pkg`: `"std.http"` or `"std.fs"`. The resolver must dispatch only through a compiler-provided built-in table; never fall back to a local file or external dependency. A bare-metal target must reject unresolved hosted I/O with a deterministic diagnostic, never link a no-op shim.
-- `std.http` and `std.fs` are **portable native Atto `.atto` APIs** with the same public names, semantics, error taxonomy and source bytes across backends where possible. Implement protocol composition, typed responses, policy helpers, retries, UTF-8 validation and ownership handling in Atto wherever expressible.
+- `std.http` and `std.fs` are **portable native Atto `.atto` APIs** with compatible public names, semantics and error taxonomy. Each compiler may own an independently maintained `.atto` implementation; source files need not have identical bytes. Implement protocol composition, typed responses, policy helpers, retries, UTF-8 validation and ownership handling in Atto wherever expressible.
 - The host boundary is restricted to capability-checked, actor/tenant-scoped primitives: socket/DNS/TLS I/O or secure descriptor-relative file operations; async completion; timers/cancellation. It must not export raw file descriptors, network handles, arbitrary paths, host `fetch` objects or ambient OS access to untrusted guest code.
 - No backend may emulate guest execution using a host-only test. Compiler, linked guest and actual target artifact must be distinguished.
 
@@ -257,6 +257,14 @@ never a leaked absolute host path; no raw errno or host exception escapes.
   root confinement. The host independently validates the canonical
   tenant-relative path at each file operation.
 - The root path is a tenant-visible logical root, not an ambient CWD.
+  `Path(".")` and `PathBuf(".")` represent that root; `join(".", "a")`
+  yields `Path("a")`, `parent("a")` returns `Some(Path("."))`,
+  `parent(".")`, `file_name(".")`, and `extension(".")` return `None`.
+  The root may be listed with READ and inspected with `metadata`, but
+  cannot be deleted, renamed, opened as a file or overwritten.
+  `PathBuf.pop()` on a one-component path leaves the builder at `Path(".")`.
+  `normalize` may collapse lexical `.` and redundant separators but must
+  reject unsafe parent traversal instead of hiding it.
   Absolute paths, drive letters, NUL, invalid UTF-8, `..` escaping the
   grant, symlink/mount boundary escapes and device/FIFO/socket paths fail
   closed. Unsafe OS resolution races require descriptor-relative
