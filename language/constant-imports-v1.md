@@ -10,6 +10,7 @@ use namespace std.http;
 
 define pub const int status_valid = 200;
 define pub const int status_not_found as 404;
+define pub const string status_from_env = std.env.read_env("status_valid");
 define const string internal_key = "not-exported";
 
 // app.atto
@@ -36,7 +37,7 @@ For package identity, `from "std.http"` is an unambiguous dotted namespace selec
 
 1. A file or declared namespace can contain unconditional top-level `define const T name = expression;` (or `as expression;`), and `define pub const T name = expression;`. `define pub` is canonical ordering. The normal `pub[pkg]` visibility boundary is preserved where that visibility spelling is admitted.
 2. Top-level mutable or runtime-local bindings are forbidden, including top-level `let`, `let mut`, `val`, `val mut`, `var`, and `const mut`. `val` remains valid in local scopes but is not an alternative to a static declaration. Existing top-level callable/type declarations remain valid.
-3. A file/namespace `define const` has only the initializer classes already allowed by [file-module-const-v1](file-module-const-v1.md): pure typed constexpr and the explicitly admitted, environment-permission-checked startup-once `os.read_env` form. Arbitrary effectful initializers, implicit re-evaluation and lazy mutable globals remain prohibited.
+3. A file/namespace `define const` has only the initializer classes already allowed by [file-module-const-v1](file-module-const-v1.md): pure typed constexpr and the explicitly admitted, environment-permission-checked startup-once `std.env.read_env("KEY")` (or legacy `os.read_env("KEY")`) form. Arbitrary effectful initializers, implicit re-evaluation and lazy mutable globals remain prohibited.
 4. Constants that expose references must provide a proven immutable/frozen view, not a mutable alias to transitive heap state; `import const` does not bypass borrow checking, actor state sealing, `Sendable`, or permissions. A `const` of a pointer/resource with unproven ownership must fail closed, not be assumed globally shareable.
 
 ## Static binding and linking
@@ -45,7 +46,7 @@ For package identity, `from "std.http"` is an unambiguous dotted namespace selec
 - `import const x as y` introduces a **read-only local alias** `y` for the exported constant `x`. Assignment (`y = ...`, `y += ...`, mutable borrow, or a write through an unsafe alias) is rejected. Aliases do not re-export the constant and never change its owning package identity.
 - A target must be a declared constant. A function/class/module/actor named `x` is rejected by `import const x` with `E_IMPORT_KIND`; an absent symbol with `E_UNBOUND`; inaccessible visibility with `E_PRIVATE`; colliding/duplicate local aliases with `E_DUPLICATE`.
 - Compile-time constants are folded by the typed evaluator and may be referenced by dependent constexpr declarations across files/packages, preserving checked arithmetic/overflow, cycles and visibility. A runtime-once constant is *not* constexpr merely because the binding is immutable; using it in a constexpr-required expression fails.
-- A startup-once environment-backed constant is initialized once per program instance/isolated deployment unit in dependency order, before reads and actor dispatch. Importing it twice never duplicates initialization. Importing does not grant `os.read_env` capabilities to a denied module. No constant is baked from the build host environment into an AOT binary.
+- A startup-once environment-backed constant is initialized once per program instance/isolated deployment unit in dependency order, before reads and actor dispatch. Importing it twice never duplicates initialization. Importing does not grant `std.env.read_env` or `os.read_env` capabilities to a denied module. No constant is baked from the build host environment into an AOT binary. The `std.env` path is resolved to the reserved standard namespace identity; user-defined lookalike functions do not gain static-initializer permission. A public environment-backed const is visible to authorized importers, so secrets should normally remain private.
 - Reject dependency/initializer cycles (`E_CONST_CYCLE`) and unresolved selectors; keep any import side-effect accounting explicit for tree shaking. The package resolver may share already-initialized immutable values between authorized imports but must not expose mutable storage or leak secrets via diagnostics.
 - The filename/namespace header rule remains: a `use namespace ...;` header, if present, precedes every `import`, including `import const`, and all other top-level declarations. Imports must precede ordinary declarations in v1.
 
@@ -67,7 +68,10 @@ A declarative `export pub const x;` or inferred `export pub x;` may expose an ex
 | `import const * as ns`, empty list, trailing comma or missing `from` | `E_SYNTAX` |
 | Two-import startup-once env const, in multiple actors | Exactly one authorized runtime snapshot per program instance |
 | Cross-file constexpr dependence, type mismatch, overflow, or cycle | Correct fold or deterministic compile error |
-| Denied/missing env access | Existing total `os.read_env` behavior; no value leak |
+| Fully-qualified `std.env.read_env("status_valid")` in a namespace file, imported elsewhere | One startup snapshot; immutable exported string |
+| Same artifact launched under different environments | Independent startup snapshots, no build-time value baked into executable |
+| Denied/missing env access | Same total empty-string behavior as legacy `os.read_env`; no value leak |
+| Runtime-derived key, wrong initializer return type or lookalike user function | `E_CONST` / `E_CONST_TYPE`; no implicit runtime call |
 | Imported constant points to mutable or unproven shared storage | Ownership/type admission rejection |
 
 **Evidence boundary:** A parser-only acceptance test is not a linked package or guest result. Backend implementations must separately demonstrate exact-SHA, executed positive and negative compiled-guest tests (native and browser as applicable), preserving the `passed/failed/unsupported/not executed` distinction. Implementations are independently owned by their `atto-source.*` repos; shared public semantics do not require identical library sources.
