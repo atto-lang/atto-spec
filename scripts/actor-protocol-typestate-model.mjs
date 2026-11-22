@@ -200,6 +200,27 @@ export function checkTrace(protocol, operations, options = {}) {
         throw new TypeError("stream close requires one active committed stream");
       waiting.stream.closed = true;
       waiting.stream.credits = 0; // Terminal EOF refunds unused demand; buffered items remain ordered.
+    } else if (op.kind === "stream_fail") {
+      identifier(op.ticket, "ticket");
+      const waiting = pending.get(op.ticket);
+      if (!waiting || !waiting.stream || waiting.generation !== generation ||
+          waiting.phase !== "committed" || waiting.stream.closed)
+        throw new TypeError("stream failure requires one active committed stream");
+      if (!["ProducerError", "RemoteError"].includes(op.reason))
+        throw new TypeError("stream terminal error must be typed");
+      waiting.stream.closed = true;
+      waiting.stream.error = op.reason;
+      waiting.stream.credits = 0;
+    } else if (op.kind === "stream_observe_error") {
+      identifier(op.ticket, "ticket");
+      const waiting = pending.get(op.ticket);
+      if (!waiting || !waiting.stream || waiting.generation !== generation ||
+          !waiting.stream.error || waiting.stream.buffered !== 0)
+        throw new TypeError("stream terminal error must follow all buffered items");
+      if (op.reason !== waiting.stream.error)
+        throw new TypeError("mismatched stream terminal error");
+      pending.delete(op.ticket); // Terminal Err never mints a successor state proof.
+      terminalFailures += 1;
     } else if (op.kind === "stream_finish") {
       identifier(op.ticket, "ticket"); identifier(op.next_handle, "next_handle");
       const waiting = pending.get(op.ticket);
@@ -208,6 +229,8 @@ export function checkTrace(protocol, operations, options = {}) {
       if (waiting.phase !== "committed" || waiting.committedRevision !== actorRevision ||
           waiting.committedState !== actorState)
         throw new TypeError("stream cannot mint state authority before committed transition");
+      if (waiting.stream.error)
+        throw new TypeError("failed stream cannot mint successful successor");
       if (!waiting.stream.closed || waiting.stream.buffered !== 0)
         throw new TypeError("stream not finished: EOF and all buffered items required");
       if (seenHandles.has(op.next_handle) || seenTickets.has(op.next_handle) || pending.has(op.next_handle))
