@@ -15,6 +15,7 @@ on:
       - 'src/compile-time-abi-reference.mjs'
       - 'tests/compile-time-reflection-ffi-layout.test.mjs'
       - '.github/workflows/compile-time-reflection-ffi-layout.yml'
+      - 'tests/compile-time-ffi-c-layout-v1.c'
   workflow_dispatch:
 permissions:
   contents: read
