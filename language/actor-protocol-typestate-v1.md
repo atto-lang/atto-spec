@@ -26,6 +26,8 @@ define actor Connection implements ConnectionProtocol as
 end
 ```
 
+This proposal is **additive** to [typed `receives`/`sends` (#28)](https://github.com/atto-lang/atto-spec/pull/28) and [unary/stream reply contracts (#40)](https://github.com/atto-lang/atto-spec/pull/40): existing `ActorRef<T>` and one-shot `UnaryRequest<T>` authority remain the transport/reply primitives. A protocol adds legal control-state/message pairs and checked successor authority; it does not define a competing reply transport or alter stream semantics. Any final API spellings must be reconciled with those drafts.
+
 `define protocol` is a **type-level contract**, not an actor declaration. Its grammar, parser, formatter and actor `implements` binding require explicit acceptance in every backend. Do not infer runtime support from the reference model. The protocol state (`Connected`) is a proof index, distinct from the actor's sealed data (`socket`). The actor implementation MUST establish a correspondence between the declared control state and the sealed storage invariants without exposing raw state pointers.
 
 ## Static handle and call rules
