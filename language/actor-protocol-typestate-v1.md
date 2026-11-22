@@ -69,7 +69,7 @@ preparation nor admission alone permits a successful reply. Repeated,
 out-of-order or mismatched commit attempts are rejected; reply completion
 must match the committed actor generation and revision.
 
-An \`AdmissionRejected\` result applies **only before mailbox publication**;
+An `AdmissionRejected` result applies **only before mailbox publication**;
 cancellation, timeout, or disconnection after admission, including after a
 committed transition but before reply delivery, destroys the old capability
 and gives **no successor proof**. Reconciliation requires an authenticated
@@ -78,11 +78,62 @@ assumption that the message never executed. After restart the reference model
 marks the actor control state unknown because durable state may be restored.
 No typed handle is reminted without a trusted handshake.
 
-The model's \`admit_call\` and \`commit_transition\` events are **symbolic oracle
+The model's `admit_call` and `commit_transition` events are **symbolic oracle
 observations**, not authenticated runtime proofs. A real guest implementation
 MUST derive them from runtime-owned mailbox, actor-state and reply authority.
 A caller-provided event, numeric generation, display name or host test passing
 cannot mint a guest protocol capability.
+
+## Full guest-AOT descriptor and runtime authority contract (target)
+
+A compiler must lower a successfully checked protocol declaration into a
+**closed-world, immutable protocol descriptor**, rooted as a reachable AOT
+artifact. Its identity contains the resolved nominal module identity, protocol
+version, canonical checked transition/reply/effect table and a deterministic
+descriptor digest. The linker must retain every reachable transition handler,
+reply codec, failure edge and version-admitted migration. User-provided
+name strings or shape-compatible records cannot spoof that identity. No
+runtime guest source evaluation, host reflection fallback, code emitter or
+JIT-only generic specialization is permitted in a sealed full-guest-AOT build.
+
+A runtime-issued protocol authority is an **opaque, affine capability** that
+binds actor instance identity, incarnation/generation, descriptor digest,
+authority revision/epoch and a single-use anti-replay nonce. The holder sees
+only a compiler-indexed handle; mutable authority metadata remains
+runtime-owned. This does not widen the actor-local Ref32 representation or
+serialize a native pointer. It may be moved only through an authorized handoff;
+ordinary actor DATA mail, pub/sub, tenant boundary crossing, copying,
+borrowing, sharing, reflection, FFI or JSON/MessagePack serialization must
+not mint or duplicate it. A plain ActorRef still cannot claim a protocol
+state.
+
+The actual transition must be checked against **runtime-owned state** while
+holding the actor's authorized exclusive state-commit boundary; check the
+expected generation, descriptor, state and revision, then commit protocol
+state and the corresponding sealed actor data consistently. The state
+revision advances once. Do not suspend or execute arbitrary user callbacks
+while holding a critical-write loan. The success reply is emitted only
+after the commit, through the correlated, one-shot reply path. If durable
+state is involved, the durable transaction/outbox contract must establish
+its own atomicity; an in-memory state write is not proof of durable commit.
+No message-admission Ack constitutes a state-commit Ack.
+
+An externally retained protocol proof must be invalidated before any
+supervisor action, timer, hot upgrade, state-enter action, concurrent actor
+turn or alternate sender can change its state without consuming that
+proof. Concurrent DATA receive turns may exist for the actor, but **protocol
+commit admission is serialized** at the capability/revision boundary.
+Mismatches cause typed failure and revocation, never silent fallback to a
+dynamic call. Stop, restart, uncertain delivery and hot upgrade retire
+pending tickets and revoke old authority; upgrade may reissue authority
+only through an authenticated, version-checked migration handshake.
+Terminal logical completion remains distinct from physical get_done().
+
+**Static and runtime proof obligations are separate:** the compiler proves
+state-set legality, affine use, effects and source-level ownership before
+native IR; the runtime authenticates real actor identities and commit/reply
+events. Neither source-free model events nor passing JavaScript tests can
+substitute for the runtime's authority checks.
 
 ## Runtime mapping to Erlang/OTP gen_statem (29.1.1, stdlib 8.1)
 
