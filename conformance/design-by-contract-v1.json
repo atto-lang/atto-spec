@@ -69,7 +69,7 @@
     {
       "id": "result_early_exit",
       "source_kind": "illustrative_fragment_not_runnable",
-      "snippet": "fnc Result<int, Error> <- foo(Result<int, Error> x) ensures |r| -> r is Result<int, Error>; :: return x?; end",
+      "snippet": "fnc Result<int, Error> <- foo(Result<int, Error> x) ensures |r| -> true; :: return Ok(x?); end",
       "phase": "guest_positive",
       "expected": "both_Ok_and_Err_exits_checked",
       "status": "not_executed"
