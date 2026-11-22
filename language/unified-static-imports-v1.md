@@ -6,20 +6,21 @@ This document does not claim that the browser compiler currently links packages.
 
 ## One static import verb
 
-`import` names all static dependencies. Whether a dependency is a source file
-or a package is expressed by the source selector (`pkg`), **not** by using
-another keyword such as `use`. `using` is unchanged and continues to manage
-scoped resources and cleanup.
+`import` names all static dependencies. Quoted names beginning with the reserved
+`core.`, `alloc.`, or `std.` roots denote **built-in compiler libraries**
+without `pkg`; relative strings denote local source files; the explicit `pkg`
+selector denotes declared third-party packages. `using` is unchanged and
+continues to manage scoped resources and cleanup.
 
 ```atto
-import * as telemetry from pkg "core.telemetry";
-import span, tracer as create_tracer from pkg "core.telemetry";
+import * as telemetry from "core.telemetry";
+import span, tracer as create_tracer from "core.telemetry";
 import foo, bar as baz from pkg "+/pkg";
 import * as p from pkg "+/pkg";
 import * as local from "./relative-file.atto";
 import calculate, Config from "./relative-file.atto";
-import telemetry.span as span, telemetry.tracer as make_tracer from pkg "core";
-import sleep from pkg "std.time";
+import telemetry.span as span, telemetry.tracer as make_tracer from "core";
+import sleep from "std.time";
 ```
 
 A full namespace import is **not** a request to eagerly link every export.
@@ -39,7 +40,7 @@ into the importing scope.
 ```atto
 import pkg 'z';                   // local namespace z
 import pkg 'z' as zed;            // local namespace zed
-import pkg 'core.telemetry';      // local namespace telemetry
+import pkg 'vendor.telemetry';    // local namespace telemetry
 import pkg '@scope/math' as math; // explicit alias required
 import module math from pkg 'utils';
 import * as helpers from './helpers.atto';
@@ -90,10 +91,12 @@ import_spec     = export_path, [ "as", identifier ] ;
 export_path     = identifier, { ".", identifier } ;
 ```
 
-The right-hand string denotes a source file without `pkg` and a package
-identity/rooted package reference with `pkg`. A project-rooted `+/...`
-selector is permitted with `pkg`. A file import normally uses a quoted
-relative path such as `"./a.atto"`. Dotted selectors traverse statically exported
+The right-hand string denotes (1) a built-in module identity under reserved
+`core`, `alloc`, or `std` roots, (2) an explicitly relative source file such
+as `"./a.atto"` or `"../a.atto"`, or (3) a third-party package identity
+or rooted package reference when preceded by `pkg`. The `+/...` selector is
+permitted with `pkg`. These are mutually exclusive resolver categories.
+Dotted selectors traverse statically exported
 **module/namespace declarations**, not values or fields of a runtime object.
 No braces are required or accepted in the canonical grammar. The named-import
 list has no trailing comma.
@@ -103,6 +106,63 @@ header**, not a dependency import, and must not be rewritten to
 `import namespace name;`. The `use namespace` spelling remains canonical
 for source identity. Likewise, `using`, `with`, trait/inherited-member
 aliasing, and ordinary uses of the English verb "use" are not import directives.
+
+## Built-in library selector and isolation
+
+The built-in library roots `core`, `alloc`, and `std` are reserved by the
+language and use **no** `pkg` selector. Both namespace and named exports use the
+same static import grammar:
+
+```atto
+import * as result from "core.result";
+import * as arena from "alloc.arena";
+import * as fs from "std.fs";
+import * as http from "std.http";
+import read_text from "std.fs";
+import * as util from "./util.atto";
+import * as vendor from pkg "vendor.files";
+```
+
+A quoted bare `"std.fs"` is a reserved compiler-library identity, **not** a
+search for `./std.fs`, a filesystem path, or a package from a third-party
+manifest. Compile-time resolution uses the target/compiler's explicitly
+registered built-in module table, which may point to backend-owned native
+`.atto` sources and adapters. The public API and security contract is shared
+where specified; implementation bytes need not be identical across backends.
+
+No fallback to project-relative files, current working directory,
+`ORES_PATHS`, implicit package installation or third-party registries is
+permitted for reserved names. If the compiler does not provide the named
+built-in module, it must issue a deterministic unsupported/unresolved diagnostic
+without creating an output artifact; do not silently resolve to a dependency
+named `std.fs`. A built-in module is not automatically imported into scope:
+explicit imports are still required.
+
+For `pkg` imports, package identities beginning with a reserved root
+(`core.`, `alloc.`, `std.`) cannot masquerade as built-ins. Existing source
+may be migrated by the formatter after **verified built-in identity** only;
+avoid changing external package semantics. Project-root `+/...` and scoped
+third-party package forms retain their existing explicit `pkg` rules.
+
+The `core -> alloc -> std` layering applies regardless of spelling.
+Importing `std.fs` does not grant filesystem read/write rights, native file
+handles, path-root authority or async runtime support. Permission admission
+happens independently at the privileged host boundary.
+
+### Required conformance
+
+- Accept built-in wildcard and named imports for all three roots, with
+  static public-export lookup, aliasing and duplicate-binding checks.
+- Accept relative source imports and explicit third-party `pkg` imports
+  without treating either as a built-in.
+- Reject an unregistered `std.missing`, spoofed local `std.fs`, and
+  forged package names colliding with reserved roots; no fallback or
+  host filesystem read on a denied reserved import.
+- Ensure non-hosted targets reject `std.fs` with a deterministic no-artifact
+  error, while permitted compiler backends resolve only their own registered
+  module and still enforce permissions at runtime.
+- Formatter must output `import * as fs from "std.fs";` as canonical and
+  preserve `pkg` for third-party imports.
 
 ## File-level namespace placement
 
@@ -137,7 +197,7 @@ Valid:
 // Optional license header
 use namespace storefront;
 import module math from "./math.atto";
-import sleep from pkg "std.time";
+import sleep from "std.time";
 
 pub fnc main(): int { return 0; }
 ```
@@ -184,9 +244,12 @@ or an executable package import.
 
 ## Migration and compatibility
 
-The former package-import spelling `use core.telemetry;` should be
-canonicalized to `import pkg "core.telemetry";` when its implicit binding is
-valid, or to `import pkg "core.telemetry" as telemetry;` otherwise.
+The former built-in import `use core.telemetry;` should be canonicalized to
+`import * as telemetry from "core.telemetry";`. Old spellings using
+`from pkg "core.telemetry"` or `from pkg "std.fs"` must not be introduced in
+new source; a transition formatter may rewrite them only when their resolved
+identity is already proven to be the reserved built-in module, never from a
+third-party dependency with a coincidentally similar name.
 The former `import pkg p from "+/pkg1";` may remain a temporary compatibility
 spelling; format it as `import * as p from pkg "+/pkg1";`.
 
