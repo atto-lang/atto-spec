@@ -4,7 +4,7 @@ Status: **proposed normative syntax**, pending resolution of the body-mode compa
 
 ## One return operation, two sequence spellings
 
-`^` is **exactly** a statement-position alias of `return`. It does not introduce a new value category, implicit return, nonlocal lambda return, or exponent/XOR operator.
+`^` is **exactly** a statement-position alias of `return`. It does not introduce a new value category, implicit return, nonlocal lambda return, or exponent/XOR operator. In a `void` callable, `^`, `^;`, `^ void`, `^ void;`, `return;` and `return void;` are equivalent valueless exits. Here `void` is a contextual **no-value return marker**, not an expression or value of type `void`. The usual return type checker rejects `^ void` and `return void` in every non-void callable.
 
 ```atto
 fnc square(int x): int { ^ x * x; }
@@ -26,6 +26,47 @@ fnc calculate(int n): int {
         b + 5;
 }
 ```
+
+### Explicit and implicit void early returns
+
+The following forms are **normatively accepted target syntax**, including the
+optional leading `do` on an imperative `if`. A brace-style `if` closes
+with `}` and requires no `fi`; a `then`-style `if` closes with `fi`.
+Both forms return from the nearest lexical callable, not the `if` block.
+
+```atto
+fnc bare() -> void {
+    if true {
+        ^
+    }
+}
+fnc explicit() -> void {
+    if true {
+        ^ void;
+    }
+}
+fnc procedural() -> void
+    do if true then ^ fi
+end
+fnc procedural_explicit() -> void
+    do if true then ^ void fi
+end
+```
+
+All four lower to an ordinary no-value return, equivalent to `return;`.
+Likewise `return void;` is an explicit spelling of the same operation.
+No user expression is evaluated for the `void` marker, and neither the
+caret nor the `do` wrapper changes defer/recover behavior, guaranteed
+cleanup, ownership, borrow checking or return type checking. A `void`
+marker is not allowed as a standalone expression, an initializer, a
+payload in a non-void return, or part of an arithmetic expression.
+`^ void + 1` must be rejected rather than silently returning early.
+
+This clause describes the canonical language target. Companion Rust
+parser/compiler tests are proposed on atto-source.rs #330; actual guest
+execution, exact-head CI and cross-backend parity require independent
+evidence. The dedicated `conformance/void-early-return-v1.json` vectors
+are separate from the existing SHA-pinned caret/sequence corpus.
 
 ### Comma-only `seq` expression syntax (2026-11-17 refinement)
 
@@ -146,7 +187,7 @@ or compiler parity should be inferred from the document change.
 
 ```ebnf
 return_stmt        = ("return" | "^"), [return_operand], statement_terminator ;
-return_operand     = expression | return_sequence ;
+return_operand     = "void" | expression | return_sequence ; (* void is a no-value marker, only in void callables *)
 return_sequence    = "seq", sequence_items ; (* same terminating ';' as return *)
 sequence_stmt      = "seq", sequence_items, statement_terminator ;
 paren_sequence     = "(>", sequence_items, ")" ;
@@ -170,7 +211,7 @@ The parser must distinguish the special `(>` opening from ordinary `(expression)
 
 1. Evaluate sequence steps once in source order. Every binding becomes visible to subsequent steps only, including in nested sequences; it does not escape the sequence. A nested sequence can read outer bindings but cannot leak its own locals. Duplicates in one lexical scope are errors; normal nested shadowing rules apply.
 2. The final expression's type determines the sequence type. No tuple construction, implicit flattening, truthiness, implicit `await`, or transformation into fire-and-forget I/O occurs. Evaluation/effect order is preserved.
-3. `^ e;` exits the **nearest lexical callable** (free `fnc`, `routine`, method or lambda), not the enclosing sequence, block, match, actor supervisor or outer function. This differs deliberately from Smalltalk-style nonlocal block returns. `^;` is valid only for `void`-compatible returns, with the same generator restrictions as `return;`.
+3. `^ e;` exits the **nearest lexical callable** (free `fnc`, `routine`, method or lambda), not the enclosing sequence, block, match, actor supervisor or outer function. This differs deliberately from Smalltalk-style nonlocal block returns. Bare `^` and `^;` are valid only for `void`-compatible returns. In that same context `^ void` and `return void` are explicit synonyms for valueless return, not value expressions, with the same generator restrictions as `return;`.
 4. All regular checks—return type, definite assignment, move/borrow validity, `suspends`, `throws`, `raises`, `panics`, critical-state rules, cleanup and `defer`—are **identical** to the expanded `return` and `begin` equivalents. `^` never bypasses any of them.
 5. `^` is valid in ordinary callable statement positions, including conditional branches, loops, match arm blocks, nested braces, and statement-bodied lambdas. It is not a member/field initializer, pattern, default argument, type-level expression, or free-standing top-level statement. `^ match` must use the same exhaustive/typed value-match rules as `return match`.
 6. `seq` without `^` evaluates its steps as a statement and discards the final value when no consuming context exists. It **never implicitly returns** from the current function. By contrast, `^ seq` and `^ (> ... )` do.
