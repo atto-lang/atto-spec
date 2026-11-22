@@ -92,6 +92,7 @@ function evaluate(c) {
     const [a, b] = args.map(BigInt);
     const value = op === 'add' ? a + b : op === 'mul' ? a * b : assert.fail('fixed op');
     const [lo, hi] = minmax(c.rep);
+    if (a < lo || a > hi || b < lo || b > hi) return error('integer_literal_out_of_range');
     if (op === 'add' && (value < lo || value > hi)) return error('integer_overflow');
     return { kind: 'value', coefficient: String(value), scale: op === 'mul' ? c.scale * 2 : c.scale };
   }
@@ -120,7 +121,7 @@ function evaluate(c) {
   if (domain === 'dimension') {
     if (op === 'add_points') return error('affine_point_addition');
     const a = c.left.unit, b = c.right.unit;
-    if (op === 'add' && JSON.stringify(a) !== JSON.stringify(b)) return error('dimension_mismatch');
+    if (op === 'add' && [...new Set([...Object.keys(a), ...Object.keys(b)])].some(key => (a[key] ?? 0) !== (b[key] ?? 0))) return error('dimension_mismatch');
     const unit = {};
     for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
       const exponent = (a[key] ?? 0) + (op === 'divide' ? -(b[key] ?? 0) : 0);
