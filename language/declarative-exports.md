@@ -42,8 +42,14 @@ fnc compute(int value): int {
 ```ebnf
 export_decl = "export", export_visibility, [ export_kind ], identifier, ";" ;
 export_visibility = "pub", [ "[", "pkg", "]" ] ;
-export_kind = "class" | "fnc" | "actor" | "enum" ;
+export_kind = "class" | "fnc" | "actor" | "enum" | "const" ;
 ```
+
+The `const` kind refers specifically to an unconditional file/namespace
+`define const` declaration, including `define pub const`. Exported constants
+may be selected with `import const name from "std.http";`, subject to the
+[constant-import contract](constant-imports-v1.md). Neither an export nor an
+import creates mutable top-level storage.
 
 Other declaration kinds (for example `struct`, `record`, `trait`,
 `interface`, or `type`) can join the `export_kind` set only when supported
