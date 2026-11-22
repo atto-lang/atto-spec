@@ -572,6 +572,70 @@
         },
         "value": "7"
       }
+    },
+    {
+      "id": "decimal-rounded-third",
+      "domain": "decimal",
+      "op": "div_rounded",
+      "args": [
+        "1",
+        "3"
+      ],
+      "scale": 2,
+      "rounding": "half_even",
+      "expected": {
+        "kind": "value",
+        "value": "0.33",
+        "inexact": true
+      }
+    },
+    {
+      "id": "decimal-rounded-tie-to-even-low",
+      "domain": "decimal",
+      "op": "div_rounded",
+      "args": [
+        "1",
+        "8"
+      ],
+      "scale": 2,
+      "rounding": "half_even",
+      "expected": {
+        "kind": "value",
+        "value": "0.12",
+        "inexact": true
+      }
+    },
+    {
+      "id": "decimal-rounded-tie-to-even-high",
+      "domain": "decimal",
+      "op": "div_rounded",
+      "args": [
+        "3",
+        "8"
+      ],
+      "scale": 2,
+      "rounding": "half_even",
+      "expected": {
+        "kind": "value",
+        "value": "0.38",
+        "inexact": true
+      }
+    },
+    {
+      "id": "decimal-rounded-exact",
+      "domain": "decimal",
+      "op": "div_rounded",
+      "args": [
+        "1",
+        "4"
+      ],
+      "scale": 2,
+      "rounding": "half_even",
+      "expected": {
+        "kind": "value",
+        "value": "0.25",
+        "inexact": false
+      }
     }
   ]
 }
