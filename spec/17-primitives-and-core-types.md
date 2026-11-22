@@ -41,7 +41,7 @@ The chapter 02 rule is that no backend may rely on unchecked host overflow when 
 | `5 % 0` | Fails with a host `ArithmeticException` | Rejected unless the divisor is a nonzero literal |
 | `1 eq 1.0` | True | Rejected: operands must have the same scalar type |
 
-**TARGET (decided):** integer arithmetic is checked. Overflow is a panic, so it fails the actor, which is then restarted under [chapter 18](18-runtime-guarantees.md). It never wraps silently. Wrapping happens only through explicitly named operations, whose names are not chosen yet.
+**TARGET (decided for numerical v1):** fixed-width integer arithmetic is checked. A dynamic overflow raises the ordinary typed `ArithmeticOverflowError <: Error` (candidate ABI code `65537`), and division or remainder by zero raises the distinct ordinary `DivisionByZeroError <: Error` (candidate ABI code `65538`). Either failure is catchable by a matching `try/catch` and convertible into `Err(Error)` by `trap`; it is **not intrinsically an uncatchable panic**. If unhandled inside an actor, it escalates through the standard throw → raise → panic supervision path, and the actor cannot intercept that final panic. Explicit wrapping arithmetic requires a separately specified named operation; host-language wrapping is never implicit. See [chapter 07](07-errors-and-failure.md) and the [numerical v1 contract](../language/numeric-semantics-v1.md).
 
 This has a direct consequence: sized types must be real types with enforced ranges, not aliases of `int`, or `i8` could never overflow.
 
@@ -53,9 +53,9 @@ Java needs real changes to meet this, and LLVM's trap needs to become an actor-l
 2. `bigint` is either truly arbitrary precision or rejected. It must not silently act as 64-bit.
 3. Division by zero is a language-level failure with a defined class, never a host exception.
 
-Outside an actor, an overflow panic ends the root invocation as described in [chapter 07](07-errors-and-failure.md).
+Outside an actor, an **unhandled** ordinary arithmetic error ends the root invocation with a non-success result and typed diagnostic under [chapter 07](07-errors-and-failure.md). A caught arithmetic error or `trap`-produced `Err` remains ordinary guest control/data.
 
-Whether `int / int` gives a `float` or an integer is a separate decision (S-25). Java's current behavior surprises anyone coming from C, Rust or Java itself.
+**TARGET (S-25 resolved for numeric v1):** `int / int` returns `int/i64` and truncates toward zero, with `MIN / -1` overflow checked. `%` retains the dividend's sign, including `MIN % -1 == 0`. Explicit floating operands yield binary floating division. Historical observations in the table above are not target semantics.
 
 ## Equality and identity
 
