@@ -29,7 +29,8 @@ test("the protocol is one actor, not a new actor kind", () => {
 test("legal sends have statically known replies and next states", () => {
   for (const valid of fixture.allowed) {
     assert.deepEqual(checkSend(protocol, valid.state, valid.message),
-      {reply:valid.reply, next_states:valid.next_states});
+      valid.kind === "stream" ? {kind:"stream",item:valid.item,next_states:valid.next_states}
+                              : {reply:valid.reply,next_states:valid.next_states});
   }
 });
 
@@ -116,7 +117,7 @@ const invalidSchemas = [
   ["undeclared target", p => {p.transitions[0].to = "Missing";}, /unknown state/],
   ["ambiguous rule", p => {p.transitions.push({...p.transitions[0]});}, /nondeterministic/],
   ["terminal accepts a call", p => {p.transitions.push({from:"Closed",to:"Closed",message:"Query",reply:"QueryReply",kind:"call"});}, /terminal states/],
-  ["missing call reply", p => {delete p.transitions[0].reply;}, /identifier/],
+  ["missing call reply", p => {delete p.transitions[0].reply;}, /unary call requires/],
   ["untyped cast", p => {p.transitions[0].kind="cast";}, /requires a call/],
   ["no path to terminal", p => {p.transitions = p.transitions.filter(x => x.message !== "Close"); p.states = ["Disconnected","Connected"]; p.terminal_states = ["Connected"];}, /terminal states|initial state|path to protocol completion/],
   ["initial is terminal", p => {p.initial="Closed";}, /must not be terminal/],
