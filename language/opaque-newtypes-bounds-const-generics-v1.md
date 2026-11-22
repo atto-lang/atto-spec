@@ -103,9 +103,38 @@ pub fnc main(): int {
 
 * File-private newtypes only; explicitly checked `from_const` literal construction, immutable local values and source-local nominally type-checked helper calls. `to_base()` is an explicit **same-module** representation read for this Copy-scalar subset, not a public cast or blanket generic conversion.
 * Before scalar code generation, the source is parsed through a bounded nominal checker, with every admitted local declaration, constructor, parameter, call and return validated. Positional const dimensions never intercept existing named AoS/SoA/AoSoA generic-layout arguments; full library regression tests proved their established checker and diagnostics remain intact. The generated code uses the **production** typed scalar checker and Wasm emitter. Each live newtype value occupies an i64 stack/register slot, with no guest object, per-instance tag or heap allocation.
-* Dynamic `try_from`, any public nominal ABI, checked mutable ownership, cross-file/module imports, wire formats, actors, FFI, runtime layout reflection and generic Array/Matrix allocation **still reject**. A declaration-only unused newtype does not authorize executable guest code.
+* The **static-only profile** still rejects dynamic `try_from`. A separately checked, source-local runtime-result subset is described below; public nominal ABI, checked mutable ownership, cross-file/module imports, wire formats, actors, FFI, runtime layout reflection and generic Array/Matrix allocation **still reject**. A declaration-only unused newtype does not authorize executable guest code.
 * Exact Rust source head `ffcb86945c380b8e177408b1fc196c14b55df3bc` passed [alternate Actions 44970145702](https://github.com/zed-pkg-test/zed-pkg-e2e/actions/runs/44970145702): **78/78 Git source blobs verified**, actual production Rust browser compilation, **8/8 preflight integration**, **5/5 newtype guest integration**, **66/66 library** tests (79/79 total), plus **3/3 compiled Wasm guest executions** and **3/3 negative compiler/no-Wasm cases**. Guest module inspection confirmed **no host imports and no guest heap** in those three scalar programs. Carrier tests cover the complete executable compiler crate, new source test files and updated source CI workflow, not a claim of whole-repository or cross-backend parity. The source CI workflow now includes real compiled-newtype guest execution, but source-org runs remain zero-step runner failures; an authorized private carrier provided stepful evidence.
 * All other backend statuses and the combined v1 contract remain **NOT VERIFIED**, even though this focused Rust/browser subprofile has real guest execution. Never conflate scalar inline representation with general FFI/actor ABI certification.
+
+## First executed runtime-checked Result newtype profile (Rust/browser, November 22, 2026)
+
+A second, deliberately bounded compiler profile admits a **private** Result success type that is nominally distinct from the signed-i64 representation:
+
+~~~atto
+define newtype Port(i64) where value gte 1 and value lte 65535; end
+
+fnc create_port(int value): Result<Port,RangeError> {
+  return Port.try_from(value);
+}
+
+pub fnc main(): int {
+  val int input = 8080;
+  val Result<Port,RangeError> checked = create_port(input);
+  match checked over
+    on Ok(port) -> { return port.to_base(); }
+    on Err(reason) -> { return 0; }
+  end
+}
+~~~
+
+The success and failure path execute in **real compiled Wasm**, with signed 64-bit comparisons, single evaluation of the input and recoverable `Err` on out-of-range values. A closed nominal typing stage retains `I64`, `Nominal(name)`, and `Checked(name)` identities for source-local constructor arguments, typed helper results, bindings, `Ok` payloads, and explicit `to_base()` before any representation lowering. It refuses raw-to-newtype implicit conversions, `Result<Port,RangeError>` versus `Result<Other,RangeError>`, non-exhaustive or malformed matches, and public/cross-module interfaces.
+
+**Representation boundary:** This is **not yet** general `Result<Port,RangeError>` or `RangeError extends Error` support in the production AST. Inside this restricted *inaccessible, non-public* ABI, the checked nominal `Result` lowers to the already implemented guest `Result<int,string>` tagged-ADT representation, using a private stable `"RangeError"` marker for failed range checks. The source cannot inspect the marker, expose the Result through public functions, treat it as an Error object, perform FFI, serialize it, or use arbitrary Result methods. A Result record currently uses the existing guest ADT allocation; the successful Port scalar itself remains an unboxed i64. Full first-class Error identity, shared general typed IR, and public Result ABI **remain outstanding**.
+
+**Verified receipt:** Exact source head `ab108dc996f5a781e3ddb24923c0fecf01efb89a` passed [alternate private Actions run 44973367883](https://github.com/zed-pkg-test/zed-pkg-e2e/actions/runs/44973367883), after **81/81 exact compiler-crate/test/source-workflow Git blob SHA matches**. Actual Rust tests passed: **66/66 complete library**, **8/8 admission integration**, **5/5 static guest integration**, **11/11 runtime guest integration** (90/90). Native `attoc` compiled and executed **3 static + 10 runtime** Wasm guests, including valid 1/42/65535, out-of-range Err, direct `try_from`, and signed i64 extremes on an unbounded newtype; **3+4 invalid/no-artifact cases** passed. Runtime guests used zero host imports and returned no panic. New Rust source and test passed rustfmt, and **strict Clippy passed on the source CI's pinned Rust 1.85.1**. The source repository run [44973351794](https://github.com/atto-lang/atto-source.rs/actions/runs/44973351794) failed with **zero executed steps** and is an infrastructure failure, never a compiler test result. The complete repository fixture corpus and other backends remain **NOT VERIFIED**.
+
+**Still gated:** General expression-form `return match` for checked Result, arbitrary borrowing and escaping of checked Results, real `RangeError` class values, public exports, actor/FFI/wire interfaces, const-generic Array/Matrix physical storage, and independent compiler parity. Do not promote full v1 conformance from this source-local proof.
 
 ## Required implementation sequence and evidence
 
