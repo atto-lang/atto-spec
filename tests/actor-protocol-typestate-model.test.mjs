@@ -381,7 +381,7 @@ test("stream terminal error preserves ordered buffered items but never a success
   const failed = [...streamOne,{kind:"stream_fail",ticket:"s1",reason:"ProducerError"}];
   assert.throws(() => checkTrace(protocol, [...failed,
     {kind:"stream_observe_error",ticket:"s1",reason:"ProducerError"}
-  ]), /after all buffered items/);
+  ]), /follow all buffered items/);
   assert.throws(() => checkTrace(protocol, [...failed,
     {kind:"stream_receive_item",ticket:"s1",sequence:0},
     {kind:"stream_finish",ticket:"s1",next_handle:"h2"}]), /failed stream cannot mint/);
