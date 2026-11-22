@@ -87,6 +87,8 @@ export function checkTrace(protocol, operations, options = {}) {
   if (!Array.isArray(operations) || operations.length > 512) throw new TypeError("invalid operation budget");
   const handles = new Map([["h0", Object.freeze({states:Object.freeze([p.initial]), generation:1})]]);
   const pending = new Map();
+  // Closed ticket/handle names are never recycled: reject replay after settlement.
+  const seenTickets = new Set(), seenHandles = new Set(["h0"]);
   let generation = 1, completed = false, fenced = false;
   for (const op of operations) {
     if (!op || typeof op !== "object") throw new TypeError("invalid operation");
@@ -94,20 +96,22 @@ export function checkTrace(protocol, operations, options = {}) {
     if (op.kind === "begin_call") {
       identifier(op.handle, "handle"); identifier(op.ticket, "ticket");
       if (!handles.has(op.handle)) throw new TypeError("consumed, absent or stale linear protocol handle");
-      if (handles.has(op.ticket) || pending.has(op.ticket)) throw new TypeError("duplicate ticket");
+      if (handles.has(op.ticket) || seenTickets.has(op.ticket)) throw new TypeError("duplicate ticket");
       const owned = handles.get(op.handle);
       if (owned.generation !== generation) throw new TypeError("stale protocol generation");
       const next = checkSend(p, owned.states, op.message);
       handles.delete(op.handle);
       pending.set(op.ticket, {next, generation});
+      seenTickets.add(op.ticket);
     } else if (op.kind === "resolve_reply") {
       identifier(op.ticket, "ticket"); identifier(op.next_handle, "next_handle");
       const waiting = pending.get(op.ticket);
       if (!waiting || waiting.generation !== generation) throw new TypeError("missing, duplicate or stale pending call");
       if (op.reply !== waiting.next.reply) throw new TypeError("missing or mismatched required reply");
-      if (handles.has(op.next_handle) || pending.has(op.next_handle)) throw new TypeError("duplicate handle identity");
+      if (seenHandles.has(op.next_handle) || pending.has(op.next_handle)) throw new TypeError("duplicate handle identity");
       pending.delete(op.ticket);
       handles.set(op.next_handle, Object.freeze({states:waiting.next.next_states, generation}));
+      seenHandles.add(op.next_handle);
     } else if (op.kind === "fail_call") {
       identifier(op.ticket, "ticket");
       if (!["AdmissionRejected","Timeout","Cancelled","Crash","ProtocolViolation"].includes(op.reason))
