@@ -6,8 +6,8 @@ This is the target for `atto-source.*` compilers, `atto-common-source`, `atto-pl
 ## Canonical Atto example
 
 ```atto
-import * as http from "std.http";
-import * as fs from "std.fs";
+import http from "std.http";
+import fs from "std.fs";
 
 pub susp fnc main(): int {
   val response = await http.get("https://example.com/data");
@@ -18,7 +18,7 @@ pub susp fnc main(): int {
 }
 ```
 
-The two imports are **required**, not invisible prelude globals: a file without the imports must fail unresolved binding lookup unless it defines its own `http`/`fs` names. The `import * as … from "std.*"` form denotes built-in compiler-library modules without `pkg`, per the proposed built-in selector rules in `language/unified-static-imports-v1.md` ([import specification #150](https://github.com/atto-lang/atto-spec/pull/150)). Third-party dependencies still use `pkg`; importing a built-in does not grant permissions. No new `async` keyword is introduced; `susp` is canonical and `await` is the suspension operator. `saved.length` has the already-specified String length semantics; the I/O contract must not silently reinterpret it as UTF-8 byte length. The example needs granted network and file permissions and is **not** a deterministic integration test: its remote endpoint can return any status/body or fail.
+The two imports are **required**, not invisible prelude globals: a file without the imports must fail unresolved binding lookup unless it defines its own `http`/`fs` names. The `import alias from "std.*"` form is a static namespace shorthand for `import * as alias from "std.*"` and denotes built-in compiler-library modules without `pkg`, per the proposed built-in selector rules in `language/unified-static-imports-v1.md` ([import specification #150](https://github.com/atto-lang/atto-spec/pull/150)). Third-party dependencies still use `pkg`; importing a built-in does not grant permissions. No new `async` keyword is introduced; `susp` is canonical and `await` is the suspension operator. `saved.length` has the already-specified String length semantics; the I/O contract must not silently reinterpret it as UTF-8 byte length. The example needs granted network and file permissions and is **not** a deterministic integration test: its remote endpoint can return any status/body or fail.
 
 ## Layer and package contract
 
@@ -308,3 +308,15 @@ UTF-8, cancellation, non-file objects and unknown outcomes. Every backend
 must report `PASS`, `FAIL`, `UNSUPPORTED`, or `NOT_EXECUTED`
 with exact compiled guest evidence; **host-only adapter tests are not
 compiled guest evidence**.
+
+## Native stdlib static namespace spelling (2026-11-22)
+
+The preferred client-side spelling is `import http from "std.http";`,
+which binds the public HTTP API as a static alias rather than a runtime object.
+The independently maintained Java implementation currently registers
+`"std/http.atto"` and defines `use namespace http;` inside its native
+`.atto` file. Those forms must not be conflated with a third-party `pkg`
+or filesystem import. Compiler-specific aliases are admitted only via
+explicit, verified built-in registries. This spelling change does not
+by itself implement `await http.get`, TLS, streaming bodies, network grants
+or an actor-safe async host bridge.
