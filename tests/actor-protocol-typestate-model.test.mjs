@@ -49,7 +49,7 @@ test("union state cannot invent a shared reply type", () => {
 
 test("a complete connection / query / close trace is accepted", () => {
   assert.deepEqual(checkTrace(protocol, fixture.complete_trace), {
-    completed:true, fenced:false, generation:1, live_handles:0, pending_calls:0
+    completed:true, fenced:false, generation:1, live_handles:0, pending_calls:0, terminal_failures:0
   });
 });
 
@@ -84,7 +84,7 @@ test("an uncertain timeout never reintroduces a consumed handle", () => {
     {kind:"fail_call",ticket:"t1",reason:"Timeout"}
   ];
   assert.deepEqual(checkTrace(protocol, failed, {requireComplete:false}), {
-    completed:false, fenced:false, generation:1, live_handles:0, pending_calls:0
+    completed:false, fenced:false, generation:1, live_handles:0, pending_calls:0, terminal_failures:1
   });
   assert.throws(() => checkTrace(protocol, [...failed, {kind:"complete",handle:"h0"}]), /live linear handle/);
   assert.throws(() => checkTrace(protocol, [...failed, {kind:"fail_call",ticket:"t1",reason:"Timeout"}]), /missing or settled/);
@@ -152,5 +152,24 @@ test("previously settled tickets and handles cannot be recycled or replayed", ()
     ...first,
     {kind:"begin_call",handle:"h1",ticket:"t2",message:"Close"},
     {kind:"resolve_reply",ticket:"t2",reply:"ClosedAck",next_handle:"h1"}
+  ]), /duplicate handle identity/);
+});
+
+test("restart reports terminal failures for every pending call rather than silently discarding it", () => {
+  assert.deepEqual(checkTrace(protocol, [
+    {kind:"begin_call",handle:"h0",ticket:"t1",message:"Connect"},
+    {kind:"fence_restart"}
+  ], {requireComplete:false}), {
+    completed:false, fenced:true, generation:2, live_handles:0, pending_calls:0, terminal_failures:1
+  });
+});
+
+test("ticket identifiers and handle identifiers share an unforgeable linear namespace", () => {
+  const first = fixture.complete_trace.slice(0,2);
+  assert.throws(() => checkTrace(protocol, [
+    ...first, {kind:"begin_call",handle:"h1",ticket:"h0",message:"Query"}
+  ]), /duplicate ticket/);
+  assert.throws(() => checkTrace(protocol, [
+    first[0], {...first[1],next_handle:"t1"}
   ]), /duplicate handle identity/);
 });
