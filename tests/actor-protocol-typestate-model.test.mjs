@@ -252,3 +252,126 @@ test("upgrade and stop revoke in-flight commitments without manufacturing comple
     ]), /live linear handle/);
   }
 });
+
+const streamCommitted = fixture.stream_complete_trace.slice(0,7);
+const streamDemand = [...streamCommitted, {kind:"stream_demand",ticket:"s1",credits:2}];
+const streamOne = [...streamDemand,{kind:"stream_emit",ticket:"s1",item:"DataEvent",sequence:0}];
+const streamFinish = {kind:"stream_finish",ticket:"s1",next_handle:"h2"};
+const streamClose = {kind:"stream_close",ticket:"s1"};
+
+test("stream mode preserves item type and does not become a unary reply", () => {
+  assert.deepEqual(checkSend(protocol, "Connected", "Subscribe"), {
+    kind:"stream", item:"DataEvent", next_states:["Connected"]
+  });
+  assert.throws(() => checkSend(protocol,"Disconnected","Subscribe"), /illegal/);
+  assert.throws(() => checkTrace(protocol, [...streamCommitted,
+    {kind:"resolve_reply",ticket:"s1",reply:"DataEvent",next_handle:"h2"}
+  ]), /cannot resolve as unary reply/);
+});
+
+test("the full streaming protocol trace delivers items then terminal next-state proof", () => {
+  assert.deepEqual(checkTrace(protocol, fixture.stream_complete_trace), {
+    completed:true, fenced:false, generation:1,
+    live_handles:0, pending_calls:0, terminal_failures:0
+  });
+});
+
+test("zero-item stream can close and return its successor only at EOF", () => {
+  const tail = fixture.stream_complete_trace.slice(14);
+  assert.deepEqual(checkTrace(protocol, [...streamCommitted,streamClose,streamFinish,...tail]), {
+    completed:true, fenced:false, generation:1,
+    live_handles:0, pending_calls:0, terminal_failures:0
+  });
+});
+
+test("stream cannot emit without bounded demand or before transition commit", () => {
+  const item = {kind:"stream_emit",ticket:"s1",item:"DataEvent",sequence:0};
+  assert.throws(() => checkTrace(protocol, [...streamCommitted,item]), /backpressure/);
+  assert.throws(() => checkTrace(protocol, [...streamCommitted.slice(0,-1),
+    {kind:"stream_demand",ticket:"s1",credits:1}]), /active committed stream/);
+  assert.throws(() => checkTrace(protocol, [...streamCommitted.slice(0,-1),item]), /active committed stream/);
+  assert.throws(() => checkTrace(protocol, [...streamCommitted,
+    {kind:"stream_demand",ticket:"s1",credits:9}]), /credit budget/);
+  assert.throws(() => checkTrace(protocol, [...streamCommitted,
+    {kind:"stream_demand",ticket:"s1",credits:0}]), /credit budget/);
+  assert.throws(() => checkTrace(protocol, [...streamCommitted,
+    {kind:"stream_demand",ticket:"s1",credits:8},
+    {kind:"stream_demand",ticket:"s1",credits:1}]), /credit budget/);
+});
+
+test("stream item type and ordered sequence are checked independently of EOF", () => {
+  assert.throws(() => checkTrace(protocol, [...streamDemand,
+    {kind:"stream_emit",ticket:"s1",item:"Wrong",sequence:0}]), /item type/);
+  assert.throws(() => checkTrace(protocol, [...streamDemand,
+    {kind:"stream_emit",ticket:"s1",item:"DataEvent",sequence:1}]), /monotonic/);
+  assert.throws(() => checkTrace(protocol, [...streamOne,
+    {kind:"stream_emit",ticket:"s1",item:"DataEvent",sequence:0}]), /monotonic/);
+  assert.throws(() => checkTrace(protocol, [...streamOne,
+    {kind:"stream_receive_item",ticket:"s1",sequence:1}]), /sequence order/);
+  assert.throws(() => checkTrace(protocol, [...streamDemand,
+    {kind:"stream_receive_item",ticket:"s1",sequence:0}]), /unavailable/);
+});
+
+test("stream close is once-only, no items after close, and buffer drains before EOF", () => {
+  assert.throws(() => checkTrace(protocol, [...streamCommitted,streamFinish]),
+    /EOF and all buffered items/);
+  assert.throws(() => checkTrace(protocol, [...streamOne,streamClose,streamFinish]),
+    /EOF and all buffered items/);
+  assert.throws(() => checkTrace(protocol, [...streamCommitted,streamClose,streamClose]),
+    /one active committed stream/);
+  assert.throws(() => checkTrace(protocol, [...streamOne,streamClose,
+    {kind:"stream_emit",ticket:"s1",item:"DataEvent",sequence:1}]), /active committed stream/);
+  assert.throws(() => checkTrace(protocol, [...streamCommitted,streamClose,
+    {kind:"stream_demand",ticket:"s1",credits:1}]), /active committed stream/);
+  assert.throws(() => checkTrace(protocol, [...streamCommitted,streamClose,streamFinish,streamFinish]),
+    /missing, duplicate or stale/);
+});
+
+test("a stream cannot release typestate while prior frames are still live", () => {
+  assert.throws(() => checkTrace(protocol, [
+    ...streamOne, {kind:"begin_call",handle:"h1",ticket:"t2",message:"Close"}
+  ]), /consumed, absent or stale/);
+  assert.throws(() => checkTrace(protocol,[...streamCommitted,
+    {kind:"complete",handle:"h1"}]), /live linear handle/);
+});
+
+test("stream cancellation after a committed item revokes state proof and late EOF", () => {
+  for (const reason of ["Cancelled","Timeout","Crash","ProtocolViolation"]) {
+    const failed = [...streamOne,{kind:"fail_call",ticket:"s1",reason}];
+    assert.deepEqual(checkTrace(protocol,failed,{requireComplete:false}), {
+      completed:false,fenced:false,generation:1,live_handles:0,pending_calls:0,terminal_failures:1
+    });
+    assert.throws(() => checkTrace(protocol,[...failed,streamClose]),
+      /one active committed stream/);
+    assert.throws(() => checkTrace(protocol,[...failed,streamFinish]),
+      /missing, duplicate or stale/);
+  }
+});
+
+test("stream stop/restart/upgrade invalidates data and successor authority", () => {
+  for (const kind of ["fence_restart","fence_upgrade","fence_stop"]) {
+    const revoked = [...streamOne,{kind}];
+    assert.deepEqual(checkTrace(protocol,revoked,{requireComplete:false}), {
+      completed:false,fenced:true,generation:2,live_handles:0,pending_calls:0,terminal_failures:1
+    });
+    assert.throws(() => checkTrace(protocol,[...revoked,
+      {kind:"stream_receive_item",ticket:"s1",sequence:0}]), /unavailable/);
+    assert.throws(() => checkTrace(protocol,[...revoked,streamFinish]),
+      /missing, duplicate or stale/);
+  }
+});
+
+test("stream declarations must be typed and not mix with unary modes in a union", () => {
+  const a=clone(protocol); a.transitions.find(x=>x.message==="Subscribe").reply="Wrong";
+  assert.throws(()=>validateProtocol(a),/without a unary reply/);
+  const b=clone(protocol); delete b.transitions.find(x=>x.message==="Subscribe").item;
+  assert.throws(()=>validateProtocol(b),/stream requires item/);
+  const c=clone(protocol);const left=c.transitions.find(x=>x.from==="Disconnected"&&x.message==="Close");
+  delete left.reply;left.kind="stream";left.item="ClosedEvent";
+  assert.throws(()=>checkSend(c,["Disconnected","Connected"],"Close"),/ambiguous response mode/);
+  const d=clone(protocol);
+  for (const x of d.transitions.filter(x=>x.message==="Close")) {
+    delete x.reply; x.kind="stream";x.item=x.from==="Disconnected"?"A":"B";
+  }
+  assert.throws(()=>checkSend(d,["Disconnected","Connected"],"Close"),/ambiguous reply or stream item/);
+});
