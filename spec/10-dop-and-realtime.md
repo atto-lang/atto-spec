@@ -2,6 +2,10 @@
 
 **Status: DRAFT; largely an optimization/profile target, not universal runtime evidence.**
 
+## Numerical semantics versus layout and vectorization
+
+See [numerical semantics v1](../language/numeric-semantics-v1.md) for the candidate exact scalar reference, first-failing-logical-index vector errors, checked dot/matrix evaluation order and explicit approximate fast modes. SIMD/SoA/AoSoA/GPU optimizations must not silently change numeric results or ownership, and reference or host-only tests do not establish guest AOT parity.
+
 ## Data-layout semantics
 
 AttoLang targets efficient arrays/records and explicit or compiler-selected AoS, SoA, AoSoA, and SoAoS layouts. Inverted classes, field-column storage and ECS-like iteration are performance representations. They MUST preserve declared value/ownership semantics, including identity, deterministic drop, bounds checking, mutation rights and actor state isolation.
