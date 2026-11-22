@@ -6,8 +6,8 @@ This is the target for `atto-source.*` compilers, `atto-common-source`, `atto-pl
 ## Canonical Atto example
 
 ```atto
-import http from "std.http";
-import fs from "std.fs";
+import * as http from "std.http";
+import * as fs from "std.fs";
 
 pub susp fnc main(): int {
   val response = await http.get("https://example.com/data");
@@ -18,7 +18,7 @@ pub susp fnc main(): int {
 }
 ```
 
-The two imports are **required**, not invisible prelude globals: a file without the imports must fail unresolved binding lookup unless it defines its own `http`/`fs` names. The `import alias from "std.*"` form is a static namespace shorthand for `import * as alias from "std.*"` and denotes built-in compiler-library modules without `pkg`, per the proposed built-in selector rules in `language/unified-static-imports-v1.md` ([import specification #150](https://github.com/atto-lang/atto-spec/pull/150)). Third-party dependencies still use `pkg`; importing a built-in does not grant permissions. No new `async` keyword is introduced; `susp` is canonical and `await` is the suspension operator. `saved.length` has the already-specified String length semantics; the I/O contract must not silently reinterpret it as UTF-8 byte length. The example needs granted network and file permissions and is **not** a deterministic integration test: its remote endpoint can return any status/body or fail.
+The two imports are **required**, not invisible prelude globals: a file without the imports must fail unresolved binding lookup unless it defines its own `http`/`fs` names. The explicit `import * as alias from "std.*"` form creates a static namespace alias for a built-in compiler library without `pkg`, per the proposed built-in selector rules in `language/unified-static-imports-v1.md` ([import specification #150](https://github.com/atto-lang/atto-spec/pull/150)). Third-party dependencies still use `pkg`; importing a built-in does not grant permissions. No new `async` keyword is introduced; `susp` is canonical and `await` is the suspension operator. `saved.length` has the already-specified String length semantics; the I/O contract must not silently reinterpret it as UTF-8 byte length. The example needs granted network and file permissions and is **not** a deterministic integration test: its remote endpoint can return any status/body or fail.
 
 ## Layer and package contract
 
@@ -416,3 +416,21 @@ or filesystem import. Compiler-specific aliases are admitted only via
 explicit, verified built-in registries. This spelling change does not
 by itself implement `await http.get`, TLS, streaming bodies, network grants
 or an actor-safe async host bridge.
+
+## Canonical wildcard and selective module import distinction (2026-11-22)
+
+Use `import * as http from "std.http";` and
+`import * as fs from "std.fs";` in normative examples.
+The shorthand `import http from "std.http";` may be accepted as
+compatibility syntax but is not necessary for the canonical language.
+
+`import module http, http3 from "std.http";` is **not** a
+synonym: it selects actual exported module declarations named `http`
+and `http3`. This API currently specifies a file/library namespace
+with exported HTTP functions and classes, not two guaranteed nested
+modules. If the implementation has no such module declarations, the
+linker must fail with a missing-export diagnostic rather than manufacturing
+a namespace object or silently selecting the whole HTTP library.
+
+Neither import spelling grants network authority. No real async
+HTTP+TLS guest execution is certified by this spec change.
