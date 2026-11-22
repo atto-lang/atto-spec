@@ -227,7 +227,12 @@
     "stream_consumer_drop_cancels_and_fences",
     "stream_midflight_timeout_restart_stop_upgrade",
     "stream_item_Sendable_and_remote_Serializable",
-    "stream_receiver_borrow_and_critical_suspend_rejected"
+    "stream_receiver_borrow_and_critical_suspend_rejected",
+    "stateful_stream_terminal_error_after_buffered_items",
+    "stream_cancelled_before_egress_close_no_successor",
+    "stateful_client_streaming_input_contract_TARGET_NOT_MODELED",
+    "stateful_duplex_independent_half_close_TARGET_NOT_MODELED",
+    "actor_pipe_continuous_flow_no_typestate_forgery_TARGET_NOT_MODELED"
   ],
   "expected_backend_status": {
     "java": "NOT_VERIFIED",
