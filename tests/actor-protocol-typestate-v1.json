@@ -41,6 +41,13 @@
         "kind": "call",
         "reply": "ClosedAck",
         "to": "Closed"
+      },
+      {
+        "from": "Connected",
+        "message": "Subscribe",
+        "kind": "stream",
+        "item": "DataEvent",
+        "to": "Connected"
       }
     ]
   },
@@ -71,6 +78,15 @@
       "next_states": [
         "Closed"
       ]
+    },
+    {
+      "state": "Connected",
+      "message": "Subscribe",
+      "kind": "stream",
+      "item": "DataEvent",
+      "next_states": [
+        "Connected"
+      ]
     }
   ],
   "rejected": [
@@ -88,6 +104,10 @@
     {
       "state": "Closed",
       "message": "Close"
+    },
+    {
+      "state": "Disconnected",
+      "message": "Subscribe"
     }
   ],
   "complete_trace": [
@@ -196,7 +216,18 @@
     "durable_actor_commit_outbox_and_lost_reply",
     "hot_upgrade_descriptor_mismatch_fails_closed",
     "stop_during_committed_pending_reply_revokes_authority",
-    "full_guest_aot_no_runtime_reflection_or_interpreter_fallback"
+    "full_guest_aot_no_runtime_reflection_or_interpreter_fallback",
+    "stateful_stream_request_response_type_matches_StreamRequest_T",
+    "stream_zero_items_then_EOF_releases_successor",
+    "stream_ordered_items_and_bounded_backpressure",
+    "stream_credit_budget_and_release",
+    "stream_writer_close_once_and_no_late_item",
+    "stream_drained_EOF_required_before_affine_next_state",
+    "stream_unary_mode_mismatch_rejected",
+    "stream_consumer_drop_cancels_and_fences",
+    "stream_midflight_timeout_restart_stop_upgrade",
+    "stream_item_Sendable_and_remote_Serializable",
+    "stream_receiver_borrow_and_critical_suspend_rejected"
   ],
   "expected_backend_status": {
     "java": "NOT_VERIFIED",
@@ -208,5 +239,107 @@
     "js": "NOT_VERIFIED",
     "cranelift": "NOT_VERIFIED",
     "hdl": "NOT_VERIFIED"
-  }
+  },
+  "stream_complete_trace": [
+    {
+      "kind": "begin_call",
+      "handle": "h0",
+      "ticket": "t1",
+      "message": "Connect"
+    },
+    {
+      "kind": "admit_call",
+      "ticket": "t1"
+    },
+    {
+      "kind": "commit_transition",
+      "ticket": "t1",
+      "from": "Disconnected",
+      "to": "Connected"
+    },
+    {
+      "kind": "resolve_reply",
+      "ticket": "t1",
+      "reply": "ConnectedAck",
+      "next_handle": "h1"
+    },
+    {
+      "kind": "begin_call",
+      "handle": "h1",
+      "ticket": "s1",
+      "message": "Subscribe"
+    },
+    {
+      "kind": "admit_call",
+      "ticket": "s1"
+    },
+    {
+      "kind": "commit_transition",
+      "ticket": "s1",
+      "from": "Connected",
+      "to": "Connected"
+    },
+    {
+      "kind": "stream_demand",
+      "ticket": "s1",
+      "credits": 2
+    },
+    {
+      "kind": "stream_emit",
+      "ticket": "s1",
+      "item": "DataEvent",
+      "sequence": 0
+    },
+    {
+      "kind": "stream_emit",
+      "ticket": "s1",
+      "item": "DataEvent",
+      "sequence": 1
+    },
+    {
+      "kind": "stream_close",
+      "ticket": "s1"
+    },
+    {
+      "kind": "stream_receive_item",
+      "ticket": "s1",
+      "sequence": 0
+    },
+    {
+      "kind": "stream_receive_item",
+      "ticket": "s1",
+      "sequence": 1
+    },
+    {
+      "kind": "stream_finish",
+      "ticket": "s1",
+      "next_handle": "h2"
+    },
+    {
+      "kind": "begin_call",
+      "handle": "h2",
+      "ticket": "t2",
+      "message": "Close"
+    },
+    {
+      "kind": "admit_call",
+      "ticket": "t2"
+    },
+    {
+      "kind": "commit_transition",
+      "ticket": "t2",
+      "from": "Connected",
+      "to": "Closed"
+    },
+    {
+      "kind": "resolve_reply",
+      "ticket": "t2",
+      "reply": "ClosedAck",
+      "next_handle": "h3"
+    },
+    {
+      "kind": "complete",
+      "handle": "h3"
+    }
+  ]
 }
