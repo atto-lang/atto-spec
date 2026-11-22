@@ -39,7 +39,7 @@ No implicit device fallback may change observable effects or bypass permission c
 
 The Java/GraalVM runtime seeks **soft real-time** behavior and near-zero managed allocation on critical paths. Native LLVM seeks a qualified **hard-real-time profile** using ownership-based drop, preallocated memory, bounded queues, nonparking synchronization, predictable admission, and carefully controlled effects.
 
-A hard-real-time claim requires a bounded worst-case execution-time argument, target-specific compiler/OS/configuration, no hidden allocations, bounded preemption/interrupt latency, and measured worst-case end-to-end completion under load. Zero tracing GC alone does not prove hard real time. General-purpose Wasm browsers, unmanaged JIT, or dynamically sized actor pools cannot inherit that qualification by name.
+A hard-real-time claim requires a bounded worst-case execution-time argument, target-specific compiler/OS/configuration, no hidden allocations, bounded preemption/interrupt latency, and measured worst-case end-to-end completion under load. Zero tracing GC alone does not prove hard real time. The [unified inferred-effects v1 target](../language/unified-inferred-effects-v1.md) proposes a transitive no-allocation/no-host-I/O/no-unknown-operations screen; acceptance by a source-free effect oracle is never target WCET or native runtime proof. General-purpose Wasm browsers, unmanaged JIT, or dynamically sized actor pools cannot inherit that qualification by name.
 
 ## Measurements and contracts
 
