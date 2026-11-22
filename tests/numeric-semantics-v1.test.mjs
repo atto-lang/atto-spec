@@ -185,7 +185,7 @@ function evaluate(c) {
 test('numeric v1 registry is a source-only, fail-closed proposal', () => {
   assert.equal(contract.schemaVersion, 1);
   assert.equal(contract.status, 'TARGET_NOT_GUEST_EXECUTED');
-  assert.ok(contract.cases.length >= 25);
+  assert.equal(contract.cases.length, 51);
   assert.equal(new Set(contract.cases.map(c => c.id)).size, contract.cases.length);
   assert.deepEqual(Object.keys(contract.backendResults).sort(), [...contract.requiredBackends].sort());
   for (const state of Object.values(contract.backendResults)) assert.equal(state, 'not_executed');
