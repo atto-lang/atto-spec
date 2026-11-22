@@ -43,6 +43,10 @@ Every admitted numerical API must be compilable into a **complete guest AOT arti
 
 The checked-in Node reference test uses JavaScript BigInt for exact mathematical oracle calculations. It does **not** compile AttoLang or certify execution, native image, portability, or permission for private-source mirroring.
 
+## Current-main Java checked-i64 integration draft
+
+[Java draft #1736](https://github.com/atto-lang/atto-source.java/pull/1736) is the **current-main-based, narrow** numerical implementation candidate. It ports checked i64 arithmetic, typed overflow/division-by-zero errors (65537/65538) and exact-int comparator protections while **preserving main's newer Result-based trap and async lowering**. Older [Java #1329](https://github.com/atto-lang/atto-source.java/pull/1329) is an unresolved broader/stale branch and must not be merged wholesale. Source-org [CI run 44968407111](https://github.com/atto-lang/atto-source.java/actions/runs/44968407111) has zero executed job steps, so no guest test, full guest AOT or actor supervisor parity is certified. Cross-org source export remains denied by the live source security policy.
+
 ## Java checked division implementation handoff (2026-11-21)
 
 The existing [Java numerical implementation PR #1329](https://github.com/atto-lang/atto-source.java/pull/1329) is the canonical first implementation branch for the int/i64 `/` and `%` lane, not a new competing PR. Java historically widened `int/int` to Double; the staged branch change now types the quotient as int/i64 and uses checked truncation-toward-zero. Expected examples: `-7 / 3 = -2`, `-7 % 3 = -1`, `i64.MIN % -1 = 0`, `i64.MIN / -1` fails overflow, and `7 / 0` or `7 % 0` fails division_by_zero. Floating operands retain IEEE binary floating division. The branch introduces a *candidate* guest error ABI `DivisionByZeroError = 65538 (0x00010002)`, distinct from `ArithmeticOverflowError = 65537`. Neither error ABI nor execution is cross-backend certified yet.
