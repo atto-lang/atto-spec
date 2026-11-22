@@ -933,5 +933,45 @@
         "code": "shape_mismatch"
       }
     }
-  ]
+  ],
+  "errorSemantics": {
+    "status": "TARGET_NOT_GUEST_EXECUTED",
+    "typedOrdinaryThrows": {
+      "integer_overflow": {
+        "guestType": "ArithmeticOverflowError",
+        "parent": "Error",
+        "abiCode": 65537,
+        "effect": "throw"
+      },
+      "division_by_zero": {
+        "guestType": "DivisionByZeroError",
+        "parent": "Error",
+        "abiCode": 65538,
+        "effect": "throw"
+      }
+    },
+    "trap": {
+      "catches": "ordinary_typed_guest_throw_only",
+      "scalarSuccess": "Result.Ok<T>",
+      "caughtError": "Result.Err<Error>",
+      "preexistingResult": "preserve_original_result_without_double_wrap",
+      "bypass": [
+        "raise",
+        "panic",
+        "cancellation",
+        "host_fatal"
+      ]
+    },
+    "unhandledActor": {
+      "escalation": [
+        "throw",
+        "raise",
+        "panic",
+        "supervisor_control_notice"
+      ],
+      "actorMayCatchFinalPanic": false
+    },
+    "nonActorUnhandled": "root_invocation_non_success",
+    "guestExecutionEvidence": "not_executed"
+  }
 }
