@@ -53,9 +53,12 @@
     "default_actor_receive": "concurrent_bounded",
     "default_actor_methods": "concurrent_bounded",
     "serial_actor_receive": "one_live_invocation_including_suspension",
-    "serial_actor_other_methods": "concurrent_not_gated_by_receive",
+    "serial_actor_other_methods": "logically_independent_physical_max_one",
     "state": "compiler_verified_critical_readers_exclusive_writer",
-    "stack": "one_stack_per_independent_invocation"
+    "stack": "one_stack_per_independent_invocation",
+    "serial_actor_max_running_carriers": 1,
+    "serial_actor_suspended_receive_releases_physical_lease": true,
+    "serial_actor_pinned_migration_after_worker_retirement": true
   },
   "fixtures": [
     {
@@ -86,7 +89,9 @@
       "required_observations": [
         "one_live_receive_through_await",
         "independent_method_runs_while_receive_suspended",
-        "critical_loans_arbitrate_state"
+        "critical_loans_arbitrate_state",
+        "serial_max_one_running_guest_carrier",
+        "method_interleaves_during_suspended_receive_no_overlap"
       ],
       "status": "NOT_EXECUTED"
     }
