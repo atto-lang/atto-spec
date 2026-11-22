@@ -137,10 +137,29 @@ Independent `task<T>` / `await task<T>` / `do task<T>` lower to typed `TaskSpawn
 
 The formatter MUST preserve `sync task<T> { B }` and `do sync task<void> { B }` (or omitted type parameter for inferred void) as inline execution constructs. It must not silently retype `do sync task<int>` into void, which is a syntax/type error. It MUST NOT rewrite `do sync task` to `do task`, `sync task` to `await task`, or erase `sync`. It MUST NOT rewrite `block` into `do task`, change the generic payload, drop `await`, or alter source maps, comments and effects. Canonical formatting must remain idempotent and parse/effect equivalent. Release-level equivalence requires compiled guest comparison.
 
+## Awaiting inline results and runtime binding forms (2026-11-21 hardening)
+
+`await` is **type-directed**: it requires its operand's **static type** to be `Future<U>` and consumes exactly one Future layer. It does not inspect the source spelling and does not add an implicit join to a value. Thus `await task<T> { B }` is valid and yields T after independently spawning a child, whereas `await sync task<int> { return 42; }` is **E_AWAIT_TYPE** (the inline expression already has type `int`, not `Future<int>`). Treating the latter as a redundant, silently ignored `await` would mask incorrect typing and effect checks. The compiler must reject it before guest code generation.
+
+**Exception (not redundant):** `await sync task<Future<int>> { return task<int> { return 42; }; }` is valid in a `susp` caller, and yields `int`: the inline body returns a **real spawned child Future**; the outer `await` joins that Future. No implicit flattening occurs. `sync task<Future<int>>` alone yields `Future<int>`, not `int`. If an inline body's transitive operations suspend, it suspends its caller and requires `susp`, regardless of whether the result type is Future.
+
+The local declaration qualifier is orthogonal. Under `local-binding-mutability-v1.md` and `compile-time-constants-v1.md`, a local `const` initializer MUST be evaluable at compile time. Creating an asynchronous `task<T>`, awaiting it, or executing `sync task<T>` is a runtime computation and cannot satisfy `const` even when the body simply returns a literal. Use runtime-immutable `val Future<T>` / `val T` (or `let` when rebinding is intended). Neither the literal-returning scalar backend subset nor whole-program full AOT makes a runtime task a constexpr initializer. Compilers must reject `const Future<int> x = task<int> { return 42; };` and `const int x = sync task<int> { return 42; };` as non-constexpr initializers, without silently changing `const` into `val`.
+
+An empty `task<int> {}` or `sync task<int> {}` cannot return an `int` and is **E_TASK_RETURN_TYPE** on the missing non-void return path. Empty `task<void> {}`, `do task<void> {}`, `sync task<void> {}` in a void value context, and `do sync task<void> {}` are void bodies. In **standalone statement position**, the void inline form still needs `do`. The `do task<void>` statement has no observable Future result, but **still spawns a structured, supervised child**, and scope-exit cancellation/physical retirement remain mandatory; an unsupported backend may not implement it as a no-op.
+
+The compiler must retain the distinct typed MIR shapes: `TaskSpawn` (+ `TaskJoin` for `await`, discard registration for `do`) versus `InlineTaskEnter/Exit` (no child). For an `await sync task<Future<T>>`, MIR contains inline entry/exit, then `TaskJoin` of the **returned** Future, never an invented Future for the inline body. Missing async runtime or effect/ownership proof must fail closed.
+
 ## Positive and negative matrix (target)
 
 | Source form | Expected |
 | --- | --- |
+| `val int x = await sync task<int> { return 42; };` | E_AWAIT_TYPE; awaited operand is int, no guest artifact |
+| `val int x = await sync task<Future<int>> { return task<int> { return 42; }; };` | int, join returned Future only, susp caller |
+| `const Future<int> x = task<int> { return 42; };` | E_CONST (non-constexpr runtime initializer), no guest artifact |
+| `const int x = sync task<int> { return 42; };` | E_CONST (non-constexpr runtime initializer), no guest artifact |
+| `val Future<int> x = task<int> {};` | E_TASK_RETURN_TYPE, missing non-void return, no artifact |
+| `val int x = sync task<int> {};` | E_TASK_RETURN_TYPE, missing non-void return, no artifact |
+| `do task<void> {};` | void statement; structured child spawn with TaskScope lifecycle |
 | `val Future<int> x = task<int> { return 42; };` | Future<int> |
 | `val int x = await task<int> { return 42; };` | int, susp context |
 | `val int x = sync task<int> { return 42; };` | int, inline; no independent spawn; pure body can run in non-susp caller |
