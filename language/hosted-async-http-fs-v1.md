@@ -102,7 +102,7 @@ type PathLike = string | Path | PathBuf;
 
 enum FsErrorKind {
   not_found, already_exists, permission_denied, invalid_path,
-  not_file, not_directory, directory_not_empty, invalid_option,
+  invalid_handle, not_file, not_directory, directory_not_empty, invalid_option,
   invalid_utf8, closed, cancelled, resource_limit, busy,
   unsupported, io_error, unknown_outcome
 }
@@ -289,6 +289,56 @@ File-instance overload semantics (different from path overloads):
 - The memory-only Wasm/JS adapters currently have *trusted-host equivalents*
   of these overloads using opaque File-object identity; they do not
   constitute a compiled Atto `File` class, ABI or guest capability.
+
+
+### Actor-scoped File handle host port — candidate ABI v1
+
+An optional **trusted host bridge** may lower an Atto `fs.File` instance
+to a bounded numeric handle, but a numeric handle alone never grants
+authority. The host must authenticate the actual actor incarnation from
+the runtime dispatcher, not a guest-provided actor ID, generation,
+capability mask or `File` object. It resolves the numeric value in a
+**per-actor private handle table**, which stores the real host-side File
+instance and its permissions. Handle IDs are strictly positive safe
+integers, monotonically issued, never reused within the actor port,
+and bounded independently from concurrently open File slots.
+
+The initial non-guest implementations are
+`runtime/fs-file-handle-port-v1.mjs` in Wasm and JS compiler repositories.
+They expose a *trusted host-only* `ActorFileHandlePortV1` with
+`open/read/write/seek/flush/close/read_file/write_file/read_text/write_text`.
+They do not install Wasm import symbols or lower Atto `susp` and
+`await`. The numeric ID is a **candidate internal representation**, not
+the public File type, an OS file descriptor or a transferable capability.
+
+Security and lifecycle requirements:
+
+- Create a port **only from an authenticated host-issued actor ticket**.
+  Do not expose its JS object or capture/serialize its ticket in untrusted
+  guest memory. Each privileged operation rechecks actor incarnation,
+  tenant isolation, read/write permission, mode and live handle.
+- Reject forged, non-integer and unissued handle IDs with
+  `FsErrorKind.invalid_handle`; an issued but closed handle reports
+  `FsErrorKind.closed`. Handle retirement is monotonic, including failed
+  open reservations; never revive a closed handle using the same ID.
+- Maintain independent **active handle** and **issued-ID** budgets.
+  Reserve admission slots *before* asynchronous open completion.
+  Reject concurrent operations against one File with `FsErrorKind.busy`
+  to prevent cursor reordering and double-close. `close_all` must wait
+  for pending opens and in-flight operations, clean up host objects,
+  and never publish a late success after port teardown. Mutation might
+  already have occurred before cancellation: no rollback is implied.
+- `read_text(File)` and `read_file(File)` consume bytes from current
+  cursor through EOF, but do not close the File; `seek(0)` rewinds.
+  Text is strictly UTF-8. `write_text(File)` and
+  `write_file(File)` preserve cursor and mode semantics; failure cannot
+  be retried automatically if a write outcome is uncertain.
+- The compiler must lower nominal `File` methods and overloads to a
+  versioned asynchronous, non-parking actor scheduler ABI. Typed
+  `FsError`/ `Result` lowering, resource destruction and complete
+  guest-conformance checks are **not implemented by this host bridge**.
+  If any part is unsupported, fail closed before emitting an executable
+  that claims full filesystem functionality.
 
 ### Failure and Result behavior
 
