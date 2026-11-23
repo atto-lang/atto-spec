@@ -26,6 +26,8 @@ test("new binding contract is versioned, independent and explicitly unverified",
   assert.equal(contract.rules.global_const_mut, "reject");
   assert.equal(contract.rules.contextual_const, "runtime_immutable_binding_not_compile_time");
   assert.equal(contract.rules.fields, "out_of_scope");
+  assert.equal(contract.rules.initialization_policy, "spec_chapter_28_explicit_initialization_no_implicit_defaults");
+  assert.equal(contract.rules.local_without_initializer, "reject_even_if_assigned_later");
 });
 
 test("fixtures have unique paths and never claim guest execution", () => {
