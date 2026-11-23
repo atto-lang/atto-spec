@@ -41,6 +41,8 @@ The design preserves three separate axes: binding reassignment, mutation permiss
 
 A `val` binding remains the ordinary choice for a runtime-owned immutable name pointing to a potentially mutable object. The point of `const mut` is a compile-time supplied *initial value* with fresh mutable per-scope storage, not a second spelling for `val`.
 
+The universal explicit-initialization rule is specified in [chapter 28](28-explicit-initialization-no-implicit-defaults.md): no local may omit its initializer, and no field or aggregate may acquire a silent zero/default value. Constructor assignment is permitted only under the separate exactly-once definite-initialization proof there.
+
 ## Grammar and context boundaries
 
 Proposed local productions (illustrative, not a complete parser grammar):
