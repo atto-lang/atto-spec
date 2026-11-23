@@ -33,15 +33,24 @@ An entry appearing in two rows is intentional: this is a set of *explanatory* fa
 
 `blocking` in an API name such as `read_blocking` is **not** thereby a standalone keyword. `suspends` is the documented effect modifier; do not silently substitute a hypothetical `suspend` keyword. Likewise, `pipe` is a target/contextual actor connection word in chapter 01, not a documented reserved Java keyword; `|>` remains a separate operator. An ordinary hyphenated word is not an identifier: only grammar-enumerated compound spellings may include ASCII `-`.
 
-## New contextual ownership operators (TARGET)
+## Contextual ownership prefix operators
 
-`freeze!`, `weak!`, and `pin!` are prefix **operator forms**,
-distinct from the ordinary identifiers `freeze`, `weak` and `pin`.
-The lexer may emit an identifier followed by `!`; the parser must recognize
-the pair only in a valid expression position. Tooling SHOULD highlight the
-whole parsed operator as an ownership operation. Do **not** add the three
-bare words to the historical Java reserved-keyword inventory or infer that
-every backend has implemented these capabilities.
+The preferred source spelling for ownership operations uses contextual
+prefix operators with an immediately adjacent `!`: `borrow!`, `take!`,
+`share!`, `copy!`, `copy!!`, `freeze!`, `weak!`, `pin!` and `drop!`.
+The long-form lifetime binder `lt!` is type-level syntax, not a runtime
+ownership expression. The lexer may emit an identifier plus punctuation;
+the parser recognizes the combined operation only in a valid prefix,
+parameter-ownership or type-binder context. Tooling SHOULD highlight the
+whole parsed operator. These forms do **not** add their bare identifier words
+to the historical Java reserved-keyword inventory.
+
+For `take!`, `copy!`, `borrow!`, `borrow! mut` and `share!`, the older
+`rt take/copy/borrow/share` forms are compatibility spellings only. They
+must have identical ownership checking, typed events, diagnostics and
+lowering; formatters emit the bang forms. This does not invent `ref!`,
+`deref!` or `unref!`; those remain separate `rt` checked-handle operations
+until separately specified.
 
 `freeze!` is consuming deep immutability, `weak!` constructs non-owning
 generation-fenced handles, and `pin!` pins pointee storage rather than OS
@@ -77,7 +86,7 @@ These are **proposed descriptive scopes**, not mandatory colors and not a replac
 | Visibility and binding qualifiers | `pub`, `private`, `static`, `const`, `mut`, TARGET `sealed`/`final` | `storage.modifier.atto` |
 | Control and structure | `if`, `match`, `select`, `return`, `fi`, `end` | `keyword.control.atto` |
 | Concurrency and scheduling | `spawn`, `await`, `suspends`, `nb-select` | `keyword.concurrency.atto` |
-| Ownership operations | `rt` with context-proven ownership constructs such as `borrow` or `take` | `keyword.ownership.atto` |
+| Ownership operations | Contextual operators `borrow!`, `take!`, `share!`, `copy!`, `copy!!`, `freeze!`, `weak!`, `pin!`, `drop!`; legacy `rt take/copy/borrow/share` | `keyword.ownership.atto` |
 | Effects and failure | `trap`, `throw`, `raise`, `panic`, `recover` | `keyword.effect.atto` |
 | Grammar connectives | `as`, `then`, `over`, `from` | `keyword.grammar.atto` |
 | Literal tokens | `true`, `false` | `constant.language.atto` |
@@ -139,7 +148,7 @@ The following are **tooling acceptance criteria**, not claims of currently passi
 3. Recognize only enumerated ASCII hyphen compounds; `a-b` remains subtraction, and Unicode dashes are not substitutes. Test `nb-select` separately from `critical-read`/`critical-write` because their documented lexer/parser handling differs.
 4. Do not highlight keyword-like text inside comments, ordinary strings, raw template text or quoted Symbols. Highlight interpolation based on a parsed interpolation grammar, not a blanket regex.
 5. Preserve callable-name contexts where reserved spellings are legal (`worker.stop()` and `stop()`) rather than assuming every such spelling is an entity keyword; see chapter 16.
-6. Keep ownership/effect distinctions clear: `rt` is documented; `borrow`/`take`/`copy`/`share` require grammar-context evidence; `suspends` is not interchangeable with `suspend`.
+6. Keep ownership/effect distinctions clear: bang ownership forms are canonical contextual operators; `rt take/copy/borrow/share` are legacy compatibility forms, while `rt ref/deref/unref` remain separate checked-handle operations. Do not reserve the bare operation words; `suspends` is not interchangeable with `suspend`.
 7. For each required compiler backend, compare token classification and parser admission at exact immutable revisions; maintain positive, negative, formatter round-trip, and LSP semantic-token fixtures. Read-only/editor validation is not a substitute for executable guest conformance.
 
 **Status boundary:** The catalog, documentation-drift tests, test-only lexical model, reference fixtures, and CI workflow are authored as staged tooling artifacts. They do not establish actual parser admission, language-server semantic-token correctness, editor behavior, compiler execution, or cross-backend parity.
