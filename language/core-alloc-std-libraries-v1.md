@@ -32,22 +32,25 @@ not redefine the types.
 
 ## 2. Selectors
 
-The canonical selector for a library unit is
+The canonical selector for a library unit uses the AttoLang name:
 
 ```
-"<layer>/<unit>"      e.g. "core/num", "alloc/arena", "std/path"
+"atto.<layer>/<unit>"      e.g. "atto.core/num", "atto.alloc/arena", "atto.std/path"
 ```
 
 * `<layer>` is `core`, `alloc` or `std`; `<unit>` is one lowercase identifier
   (`[a-z][a-z0-9_]*`, at most 64 bytes). Units are flat: no nesting, dots,
   `..`, `.` or uppercase.
-* Equivalent spellings, all naming the same unit identity:
-  `"atto.<layer>/<unit>"` (long form) and an optional `.atto` suffix.
-  Formatters print the canonical short form.
-* Migration aliases: `"ores.core/<unit>"`, `"ores.std/<unit>"` and the legacy
-  `"std/<unit>.ores"` forms remain accepted where a compiler already accepted
-  them. New code must not use them.
-* The roots `core/`, `alloc/` and `std/` are **reserved**. They never fall
+* Shorthand: `"<layer>/<unit>"` (e.g. `"std/io"`) names the same unit
+  identity, and an optional `.atto` suffix is accepted. Formatters print the
+  canonical `atto.` form.
+* **No `ores.*` spellings.** The project was renamed from Oreslang to AttoLang:
+  `"ores.core/<unit>"` and `"ores.std/<unit>"` are not library selectors and
+  must fail closed for every v1 unit. Pre-v1 legacy modules that a compiler
+  still serves under `ores.*` are deprecated and must not gain new units; their
+  replacements use `atto.*`. Diagnostics name the `atto.*` layer.
+* The roots `atto.core/`, `atto.alloc/`, `atto.std/` and their shorthands
+  `core/`, `alloc/`, `std/` are **reserved**. They never fall
   through to the filesystem, `ATTOLANG_PATH`, `+/` project roots or packages.
   An unknown unit is a compile-time error (`unknown compiler-owned <layer>
   module '<selector>'`). To import a project file in a folder called `core`,
@@ -68,9 +71,9 @@ Namespaces and modules are both used, at different levels:
 Every compiler must accept the module form:
 
 ```atto
-import module num from "core/num";
-import module arena from "alloc/arena";
-import module path from "std/path";
+import module num from "atto.core/num";
+import module arena from "atto.alloc/arena";
+import module path from "atto.std/path";
 
 pub fnc main(): int {
   return num.clamp(arena.remaining(16, 64), 0, 42);
@@ -81,8 +84,8 @@ Compilers that implement namespace aliases and selective imports (Java today)
 also accept:
 
 ```atto
-import * as num from "core/num";          // alias of the unit's public exports
-import fnc checked_add, saturating_add from "core/num";
+import * as num from "atto.core/num";          // alias of the unit's public exports
+import fnc checked_add, saturating_add from "atto.core/num";
 ```
 
 All forms bind statically declared `pub` exports only. A private function is
@@ -142,5 +145,5 @@ The shared guest corpus lives in
 `// expect-exit:`, `// expect-stdout-json:`, `// expect-error:` and `// flags:`
 headers). A backend claims a unit only after it compiles, links and runs the
 positive guests and rejects the negative ones. Required negatives: unknown
-unit, traversal (`core/../x`), nested unit (`alloc/x/y`), private export,
+unit, an `ores.*` selector for a v1 unit, traversal (`core/../x`), nested unit (`alloc/x/y`), private export,
 `std/*` on a freestanding target, and a layer violation inside a library unit.
