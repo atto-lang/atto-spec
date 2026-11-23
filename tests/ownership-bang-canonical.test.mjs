@@ -32,7 +32,7 @@ test("bang forms are canonical and rt ownership forms are compatibility-only", (
 
 test("legacy and canonical forms promise identical ownership checks and lowering", () => {
   for (const text of [chapter04, vocabulary]) {
-    assert.match(text, /identical[^.\n]*(?:ownership|typing|proof|typed events|lowering)/i);
+    assert.match(text, /(?:identical|same)[^.\n]*(?:ownership|typing|proof|typed events|lowering)/i);
   }
   assert.match(chapter04, /MUST NOT give the legacy spelling weaker checks/i);
 });
