@@ -31,7 +31,9 @@
     "global_const_mut": "reject",
     "contextual_const": "runtime_immutable_binding_not_compile_time",
     "typed_colon_const": "const_name_colon_type_equivalent_to_const_type_name",
-    "bare_mut": "reject_missing_binding_qualifier_no_implicit_const_mut"
+    "bare_mut": "reject_missing_binding_qualifier_no_implicit_const_mut",
+    "initialization_policy": "spec_chapter_28_explicit_initialization_no_implicit_defaults",
+    "local_without_initializer": "reject_even_if_assigned_later"
   },
   "fixtures": [
     {
