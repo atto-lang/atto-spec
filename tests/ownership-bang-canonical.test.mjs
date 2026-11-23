@@ -39,7 +39,7 @@ test("legacy and canonical forms promise identical ownership checks and lowering
 
 test("bang forms remain contextual operators, not invented reserved words", () => {
   assert.match(chapter16, /contextual \*\*operator forms\*\*/i);
-  assert.match(chapter23, /not add their bare identifier words/i);
+  assert.match(chapter23, /do \*\*not\*\* add their bare identifier words/i);
   assert.match(chapter23, /legacy/);
   assert.match(chapter16, /deep-copy operator/);
 });
