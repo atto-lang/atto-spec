@@ -7,8 +7,8 @@ This document does not claim that the browser compiler currently links packages.
 > **Library selectors finalized (2026-11-22):** imports of the compiler-owned
 > `core`, `alloc` and `std` libraries are governed by
 > [core-alloc-std-libraries-v1.md](core-alloc-std-libraries-v1.md):
-> canonical `import module num from "core/num";`, reserved `core/`, `alloc/`,
-> `std/` roots, no `pkg` and no dotted `"std.fs"` selectors for builtins. The
+> canonical `import module num from "atto.core/num";` (shorthand `"core/num"`, never `ores.*`),
+> reserved `atto.core/`, `atto.alloc/`, `atto.std/` roots, no `pkg` and no dotted `"std.fs"` selectors for builtins. The
 > builtin-selector addenda at the end of this document are superseded by it.
 
 ## One static import verb
