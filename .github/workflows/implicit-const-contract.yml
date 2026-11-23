@@ -3,6 +3,9 @@ on:
   push:
     paths:
       - 'contracts/implicit-const-v1/**'
+      - 'contracts/explicit-initialization-v1/**'
+      - 'spec/28-explicit-initialization-no-implicit-defaults.md'
+      - 'tests/explicit-initialization-contract.test.mjs'
       - 'spec/27-implicit-const-and-const-mut.md'
       - 'spec/01-source-and-syntax.md'
       - 'spec/02-types-and-patterns.md'
@@ -15,6 +18,9 @@ on:
   pull_request:
     paths:
       - 'contracts/implicit-const-v1/**'
+      - 'contracts/explicit-initialization-v1/**'
+      - 'spec/28-explicit-initialization-no-implicit-defaults.md'
+      - 'tests/explicit-initialization-contract.test.mjs'
       - 'spec/27-implicit-const-and-const-mut.md'
       - 'spec/01-source-and-syntax.md'
       - 'spec/02-types-and-patterns.md'
@@ -36,4 +42,4 @@ jobs:
         with:
           persist-credentials: false
       - name: Validate proposed contract (source-only, not guest parity)
-        run: node --test tests/implicit-const-contract.test.mjs
+        run: node --test tests/implicit-const-contract.test.mjs tests/explicit-initialization-contract.test.mjs
