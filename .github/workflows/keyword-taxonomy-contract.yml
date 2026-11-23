@@ -3,7 +3,11 @@ on:
   push:
     paths:
       - 'contracts/keyword-taxonomy-v1/**'
+      - 'spec/04-ownership-and-memory.md'
       - 'spec/16-lexical-and-grammar-reference.md'
+      - 'spec/23-keyword-taxonomy-and-highlighting.md'
+      - 'language/ownership-vocabulary-v1.md'
+      - 'tests/ownership-bang-canonical.test.mjs'
       - 'spec/23-keyword-taxonomy-and-highlighting.md'
       - 'tests/keyword-taxonomy-contract.test.mjs'
       - 'tests/keyword-taxonomy-lexical-model.test.mjs'
@@ -13,7 +17,11 @@ on:
   pull_request:
     paths:
       - 'contracts/keyword-taxonomy-v1/**'
+      - 'spec/04-ownership-and-memory.md'
       - 'spec/16-lexical-and-grammar-reference.md'
+      - 'spec/23-keyword-taxonomy-and-highlighting.md'
+      - 'language/ownership-vocabulary-v1.md'
+      - 'tests/ownership-bang-canonical.test.mjs'
       - 'spec/23-keyword-taxonomy-and-highlighting.md'
       - 'tests/keyword-taxonomy-contract.test.mjs'
       - 'tests/keyword-taxonomy-lexical-model.test.mjs'
@@ -32,4 +40,4 @@ jobs:
         with:
           persist-credentials: false
       - name: Validate staged taxonomy metadata (source-only, not backend parity)
-        run: node --test tests/keyword-taxonomy-contract.test.mjs tests/keyword-taxonomy-lexical-model.test.mjs
+        run: node --test tests/keyword-taxonomy-contract.test.mjs tests/keyword-taxonomy-lexical-model.test.mjs tests/ownership-bang-canonical.test.mjs
