@@ -36,6 +36,33 @@ Some of these are narrower than the table suggests:
 - `critical-read`, `critical-write` and `transform-pipe` are recognized by the parser only in declaration context, so `a-b` stays subtraction. Only `nb-select` is handled by the lexer.
 - These words are not reserved by the Java lexer: `enum`, `supervisor`, `state`, `pipe`, `final`, `on`, `when`, `case`, `first`, `infer`, `record` and `tuple`. Some have contextual meaning in the grammar, and others are target features that compilers reject with a diagnostic.
 
+## Contextual ownership prefix operators
+
+The preferred spelling for new source is the contextual prefix form with an
+immediately adjacent exclamation mark:
+
+| Operation | Canonical spelling | Legacy compatibility spelling |
+| --- | --- | --- |
+| Unique ownership transfer | `take! value` | `rt take value` |
+| Shallow/value copy | `copy! value` | `rt copy value` |
+| Shared read loan | `borrow! value` | `rt borrow value` |
+| Exclusive mutable loan | `borrow! mut value` | `rt borrow mut value` |
+| Shared ownership | `share! value` | `rt share value` |
+
+These are parser-contextual **operator forms**, not new reserved words. The
+bare identifiers `take`, `copy`, `borrow` and `share` remain distinct
+from the ownership operators. The lexer may emit an identifier followed by
+`!`; the parser must recognize the adjacent pair as an ownership operator
+only in a valid prefix-expression or parameter-ownership context. Whitespace
+between the word and `!` is not permitted. The formatter emits the bang form.
+
+`copy!! value` is one deep-copy operator with two adjacent bangs; it must not
+be parsed as `copy! !value`. Existing `rt take/copy/borrow/share` forms are
+accepted only as compatibility spellings with identical ownership checking,
+typed events, diagnostics and lowering. Do not add `ref!`, `deref!` or
+`unref!`: `rt ref`, `rt deref` and `rt unref` remain distinct checked-handle
+operations pending a separate decision.
+
 ## Linguistic keyword roles and editor highlighting
 
 Keywords may also be described linguistically as nouns (e.g. `actor`), relational verbs (e.g. `implements`), adjectives (e.g. `pub`), or execution qualifiers (e.g. `suspends`). These analogies are for readers and editor tooling, not additional syntax rules. The proposed taxonomy, semantic scopes, reserved-versus-contextual distinctions, and conformance gates appear in [chapter 23](23-keyword-taxonomy-and-highlighting.md).
