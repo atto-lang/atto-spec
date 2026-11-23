@@ -38,6 +38,7 @@ This repository is the **language-level specification**, not the proof that a pa
 | [24 — AOT, zero-GC and controlled dynamism](spec/24-aot-zero-gc-controlled-dynamism.md) | Strict profiles, static proxies/reflection, ownership and backend evidence |
 | [26 — Bytes and async TCP v1](spec/26-bytes-and-async-tcp.md) | Move-only immutable Bytes, Bytes-keyed Map, nonblocking listener/connection API and affine connection transfer |
 | [27 — Type-first implicit `const` and explicit `const mut`](spec/27-implicit-const-and-const-mut.md) | Proposed compile-time constant shorthand, scoped mutable instances, diagnostics and parity gates |
+| [28 — Explicit initialization and no implicit default values](spec/28-explicit-initialization-no-implicit-defaults.md) | No implicit zero/null/default values; explicit locals and fully initialized objects, aggregates and collections |
 
 ## Specification interpretation
 
