@@ -54,11 +54,11 @@ import namespace utils from './utils.atto';
 import * as legacy from "std.http";  // compatibility only
 ```
 
-Examples show alternative forms, not a single conflict-free file. Typed selectors must match public declarations of the indicated kind; named modules must exist, and must not be synthesized from a namespace. No braces or trailing commas. A bare single dotted selector followed by `from` is namespace shorthand in v2, not a selective value import. Existing untyped comma-separated selectors remain compatibility forms; migration of older single/dotted selectors requires semantic proof.
+Examples show alternative forms, not a single conflict-free file. Typed selectors must match public declarations of the indicated kind; named modules must exist, and must not be synthesized from a namespace. No braces or trailing commas in unbracketed from-lists; sections 2.1–2.2 define separate bracket and import-tree forms. A bare single dotted selector followed by `from` is namespace shorthand in v2, not a selective value import. Existing untyped comma-separated selectors remain compatibility forms; migration of older single/dotted selectors requires semantic proof.
 
 ```ebnf
 import_decl = "import", ( package_import | namespace_import |
-              typed_import | compatibility_import ), ";" ;
+              typed_import | mixed_import | direct_import | compatibility_import ), ";" ;
 package_import = "pkg", string, [ "as", qualified_name ] ;
 namespace_import = [ "namespace" ], namespace_spec,
                    { ",", namespace_spec }, "from", source
@@ -75,6 +75,99 @@ builtin_name = ("core" | "alloc" | "std"), ".", identifier ;
 ```
 
 Disambiguation: a comma-separated namespace list requires the explicit `namespace` keyword; untyped comma lists are legacy selective imports. A bare single namespace selector can be dotted. Compatibility star-as always binds a source's public export view. Strings are static literals, no interpolation or computed imports. Semicolons follow existing source grammar. Built-in units remain flat in this amendment; nested exported namespaces inside a unit are not new library units. `use namespace` and `use default namespace` remain distinct optional first source headers; `using` is a resource scope, not import.
+
+### 2.1 Mixed-kind selectors
+
+Square brackets introduce an explicit heterogeneous selection list, not a runtime array or destructuring pattern.
+
+```atto
+import [class C, fnc f, module x, y, z] from pkg '@foo/bar/baz';
+import [class HashMap, trait Readable, fnc create, const DEFAULT_SIZE]
+    from std.collections;
+import [namespace http, class Request, fnc get as fetch]
+    from pkg '@foo/network/http';
+```
+
+In a bracket list, an explicit kind starts a run and applies to subsequent comma-separated unmarked selectors until another kind is written. Thus the first example binds class C, function f, and modules x, y, z, and is equivalent to three declarations:
+
+```atto
+import class C from pkg '@foo/bar/baz';
+import fnc f from pkg '@foo/bar/baz';
+import module x, y, z from pkg '@foo/bar/baz';
+```
+
+The kind is never inferred for an unmarked selector following a kind; an accidental kind mismatch fails. The first selector must specify a kind. Namespace runs use the namespace-selection and binding rules in section 3; other runs select actual public declarations of the specified kind. Aliases are per selector, never carried into subsequent selectors. A new kind resets the run. Empty lists, leading commas and missing kinds at the beginning are errors. A single trailing comma is accepted within the bracketed list, but not the older unbracketed from-list. Quoted, bare builtin, local and pkg sources all follow section 1. Resolve the source once, check the whole selection and introduce all bindings atomically; no partial import on error.
+
+```ebnf
+mixed_import = "[", mixed_run, { ",", mixed_run }, [ "," ], "]",
+               "from", source ;
+mixed_run = mixed_kind, export_spec, { ",", export_spec } ;
+mixed_kind = import_kind | "namespace" ;
+```
+
+For a namespace run use namespace_spec instead of export_spec. A kind token after a comma starts the next run (not an export name). Formatter may retain grouped kinds or repeat them for clarity but must preserve kind semantics and alias choices. Unbracketed same-kind lists remain canonical and valid.
+
+### 2.2 Direct qualified paths and Rust-style import trees
+
+Use import rather than use and a single dot rather than Rust's double colon. These forms are complementary to from-imports and lower to the same static typed binding IR.
+
+```atto
+import std.collections.HashMap;
+import std.collections as col;
+import class std.collections.HashMap;
+import fnc std.time.sleep;
+import const core.math.PI;
+import namespace std.collections;
+
+import std.{
+    collections.{HashMap, HashSet},
+    io.{Read, Write},
+};
+
+import std.{
+    collections.{class HashMap, class HashSet as Set},
+    io.{trait Read, trait Write},
+    time.{fnc sleep, fnc now},
+};
+
+import std.collections.{self as col, HashMap, HashSet};
+```
+
+Examples are alternatives, not one scope. An untyped direct leaf selects a unique static public declaration, inferring its kind from the authenticated export table, not the runtime type of an expression. A typed leaf asserts its declaration kind. Ordinary leaves bind the final component or an explicit alias; the previously specified special form import namespace std.collections; preserves its exact qualified binding. A direct unaliased builtin namespace leaf may expose its natural and full name as in section 5. The self leaf binds the current group prefix itself (natural final name or explicit alias), not a runtime receiver. A group expands recursively into explicit leaves, with no implicit import of every other member or automatic runtime initialization. Each leaf kind is independent in a brace tree (unlike square-bracket kind runs). Nonempty nested brace groups permit one trailing comma. Braces are only import-tree syntax after a dotted prefix, never destructuring in a from-list. No new flattened wildcard import (import std.collections.*;) in this draft; retain legacy star-as namespace compatibility only.
+
+```atto
+use namespace network.http;
+
+import pkg.network.http;    // current package's logical export hierarchy
+import pkg.config;
+import super.config;        // parent namespace
+import super.super.config;  // grandparent
+import self.utils;          // current namespace
+```
+
+The contextual roots pkg, self and super are namespace paths only in this import grammar; pkg followed by a string remains the external dependency selector. Root paths use the pinned current package's declared namespace graph, not a physical directory walk. They do not modify the separate pkg:: / imports:: callable lookup semantics. self/super require an explicit or derived source namespace; no invented implicit namespace for headerless units. Reject traversal above package root. Apply existing same-package and private visibility rules; no access to another package via super. Do not treat a group self leaf as a lexical self root.
+
+```atto
+import pkg '@atto-lang/network/http';
+import http.HttpClient;
+import atto_lang.network.http.{HttpRequest, HttpResponse};
+```
+
+A direct path may start with an already admitted dependency or alias, subject to the same suffix ambiguity and collision rules; no external dependency discovery or installation from a bare path. Establish explicit source/package imports before resolving dependent direct paths (independent of textual ordering), reject cyclic alias resolution, and do not let a member's existence disambiguate an ambiguous package prefix. Builtin root paths resolve through the registered builtin catalog and target admission when not explicitly rebound; lexical rebinding never authenticates a compiler-owned symbol. Group imports are all-or-error. The syntax does not grant capabilities or bypass effects, ownership, visibility or AOT reachability.
+
+```ebnf
+direct_import = [ mixed_kind ], direct_tree ;
+direct_tree = direct_path, [ "as", qualified_name ]
+            | direct_path, ".", import_group ;
+direct_path = import_root, { ".", identifier } ;
+import_root = identifier | "pkg" | "self" | "super" ;
+import_group = "{", group_leaf, { ",", group_leaf }, [ "," ], "}" ;
+group_leaf = [ mixed_kind ], ( direct_tree | "self", [ "as", identifier ] ) ;
+```
+
+This is a target grammar sketch: parser must distinguish a terminal dot followed by a group from a dotted identifier; repeated super components are contextual only at the root, and self as a group leaf is special. Typed group prefixes are not required: specify kinds on individual leaves. Reject use as the import verb and :: as an import-path separator. Validate all new names before publishing bindings; duplicate explicit declarations and ambiguous automatic candidates follow sections 5–6.
+
+Additional NOT_EXECUTED acceptance cases: mixed runs (including x/y/z module inheritance, reset, alias and wrong-kind negatives), all source domains, duplicate names and no partial binding; direct leaf inferred/typed kind, nested group expansion, self leaf aliases, current/parent/grandparent lookup, root escape and headerless negative, external suffix ambiguity and no discovery, cyclic alias graph, private exports, invalid/empty groups, trailing comma behavior, and flattened-star denial. Compare equivalent from/direct/group/mixed guests and formatter round-trips at exact compiler heads.
 
 ## 3. Packages, manifests and subpaths
 
