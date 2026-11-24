@@ -1,5 +1,7 @@
 # File/module `define const` v1: constexpr and non-throwing environment-backed constants
 
+> **2026-11-24 draft amendment:** [Static imports v2](static-imports-v2.md#7-compile-time-namespace-constants) adds untyped compile-time namespace aliases to `define const`; existing typed constexpr and env-backed constant rules remain unchanged. This is a target, not executable evidence.
+
 Status: **User-approved target semantics; backend implementation and executed conformance pending.** Supersedes the old file/module compile-time-only `define const` interpretation. Local function-scope `const` still requires compile-time evaluation; this extension is deliberately scoped to file and module declarations.
 
 ## Syntax and constant classes
