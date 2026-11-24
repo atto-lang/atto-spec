@@ -11,7 +11,7 @@ Applies to hosted actor runtimes. Freestanding targets may explicitly reject OS 
 | `isolated` | **Distinct private pool per isolated actor** | Workers created lazily on first admitted work; aggregate global cap | Dedicated scheduling domain, not by itself a memory/security domain |
 | `untrusted` | **Distinct pool and TenantVM per account/tenant generation** | Workers created only after verified sandbox admission | Enforced process/isolate sandbox, quotas and independent termination |
 
-Actors in the same untrusted tenant may share the tenant pool; separate tenants may **never** share its threads or pointers. An actor changes class only by a quiescent, authorized transition with a new incarnation. A suspended actor resumes only on an authorized carrier in its original execution domain. Actor DATA receives are concurrent by default, with separately authenticated per-invocation identity, stack ownership and state-loan arbitration; only `define serial actor` retains a one-live-receive gate. Effective physical parallelism and affinity obey [Actor scheduling policy v1](actor-scheduling-policy-v1.md).
+Actors in the same untrusted tenant may share the tenant pool; separate tenants may **never** share its threads or pointers. An actor changes class only by a quiescent, authorized transition with a new incarnation. A suspended actor resumes only on an authorized carrier in its original execution domain. Actor DATA admission defaults to one live receive, held across suspension. Only ordinary actors may explicitly raise the logical limit, with separate authenticated invocation identity, stack ownership and state-loan arbitration. Effective physical parallelism and affinity obey [Actor scheduling policy v1](actor-scheduling-policy-v1.md).
 
 A global worker budget covers all three pool classes; ready queues are bounded. Failure to start a worker, exhausted global capacity or saturated queues rejects admission atomically. No automatic promotion or fallback of private/tenant work onto the shared pool. Do not allocate one thread per supervisor, socket, mailbox or actor by default.
 
@@ -71,7 +71,7 @@ context-switch validation, and tenant-specific lifecycle accounting.
 - A frame belongs to one immutable tuple
   `(tenant_id, tenant_generation, actor_id, actor_incarnation, frame_slot, frame_generation)`.
   Identifiers supplied by a guest are *requests*, never scheduling authority.
-  The trusted host authenticates the tuple, checks actor/continuation dispatch admission and any applicable serial receive gate,
+  The trusted host authenticates the tuple, checks actor/continuation dispatch admission and the logical receive gate,
   the current capability epoch and resource budget, and rejects stale,
   foreign, forged or already-consumed resumes *before* any guest state access.
 - A continuation's data, program counter and stack-like spill slots MUST live
