@@ -78,42 +78,46 @@ Disambiguation: a comma-separated namespace list requires the explicit `namespac
 
 ### 2.1 Mixed-kind selectors with explicit parenthesized groups
 
-An outer pair of parentheses introduces a heterogeneous selection list; square brackets are an equivalent alternative. Neither spelling constructs a runtime tuple, array or destructuring pattern. Inner parentheses group multiple selectors of the same declaration kind; kind inheritance is confined to that inner group. Prefer the parentheses-only form for new examples.
+An outer pair of parentheses or square brackets may introduce a heterogeneous selection list. An outer delimiter is not required when every top-level item specifies its kind. Same-kind groups may use either kind-first spelling, such as `class (C, D)`, or the earlier kind-inside spelling, such as `(class C, D)`. All are static syntax, not runtime tuple, array, call or destructuring expressions.
 
 ```atto
+import class (C, D), fnc (f, g), module m, namespace (z) from pkg '@a/b/c';
 import (class C, fnc f, (module x, y, z)) from pkg '@foo/bar/baz';
-import ((class HashMap, HashSet), trait Readable, fnc create, const DEFAULT_SIZE)
-    from std.collections;
-import (namespace http, class Request, (fnc get as fetch, post))
-    from pkg '@foo/network/http';
-// Equivalent alternative outer delimiter:
 import [class C, fnc f, (module x, y, z)] from pkg '@foo/bar/baz';
+import (class (C, D), fnc (f, g), module m, namespace (z)) from pkg '@a/b/c';
+import class C, fnc f, module m from pkg '@a/b/c';
 ```
 
-The first example binds class C, function f, and modules x, y, z, and is equivalent to three declarations:
+The first example selects two classes, two functions, one module and one namespace. It is equivalent to:
 
 ```atto
-import class C from pkg '@foo/bar/baz';
-import fnc f from pkg '@foo/bar/baz';
-import module x, y, z from pkg '@foo/bar/baz';
+import class C, D from pkg '@a/b/c';
+import fnc f, g from pkg '@a/b/c';
+import module m from pkg '@a/b/c';
+import namespace z from pkg '@a/b/c';
 ```
 
-Every outer-list item must be either a kind-qualified single selector or a parenthesized same-kind group. The kind at the start of a group applies to every selector inside that group only. No implicit kind inheritance across top-level commas. Consequently both `import (class C, fnc f, module x, y, z) from pkg '@foo/bar/baz';` and its square-bracket equivalent are rejected; use the parenthesized module group or repeat the kind for each item. An inner same-kind group cannot change kinds or contain further nested groups; the outer parenthesized list may contain these inner groups. Namespace items use namespace_spec and section 3; other kinds use export_spec and select actual public declarations of that kind. Aliases apply to individual selectors only. Empty lists/groups, missing kinds, leading commas and double commas are errors. A single trailing comma is allowed in either outer-list delimiter form; the inner same-kind group has at least two selectors and no trailing comma (draft grammar detail). Older unbracketed same-kind from-lists remain valid. All source domains follow section 1. Resolve the source once, check the entire selection and introduce bindings atomically; no partial import on error.
+Every mixed-list item is either a kind-qualified single selector or an explicitly parenthesized same-kind group. Kind inheritance is confined to the group and never crosses a top-level comma. Both group spellings permit a single selector: `namespace (z)` and `(namespace z)` introduce exactly the same binding as `namespace z`. Empty groups, kind changes within a group, further inner nesting, missing kinds, mismatched delimiters and leading/double commas are errors. A single trailing comma is allowed in an outer delimited list only; no trailing comma inside a same-kind group or an undelimited list.
+
+The pre-existing unbracketed homogeneous shorthand `import class C, D from source;` remains valid. If an undelimited list contains a new kind or an explicit group, it is a mixed list and every item must satisfy the mixed-item grammar. In particular `import class C, fnc f, module x, y, z from source;` is invalid; use `module (x, y, z)`, `(module x, y, z)` or repeat the kind. Namespace selections use namespace_spec and section 3; other kinds select actual public declarations of that kind. Aliases apply individually. Resolve the source once, check all selections and introduce bindings atomically. All source domains follow section 1.
 
 ```ebnf
-mixed_import = ( "(", mixed_items, ")" | "[", mixed_items, "]" ),
-               "from", source ;
-mixed_items = mixed_item, { ",", mixed_item }, [ "," ] ;
+mixed_import = ( "(", mixed_items, [ "," ], ")"
+               | "[", mixed_items, [ "," ], "]"
+               | mixed_items ), "from", source ;
+mixed_items = mixed_item, { ",", mixed_item } ;
 mixed_item = import_kind, export_spec
            | "namespace", namespace_spec
-           | "(", import_kind, export_spec, ",", export_spec,
-                { ",", export_spec }, ")"
-           | "(", "namespace", namespace_spec, ",", namespace_spec,
-                { ",", namespace_spec }, ")" ;
+           | import_kind, "(", export_list, ")"
+           | "namespace", "(", namespace_list, ")"
+           | "(", import_kind, export_list, ")"
+           | "(", "namespace", namespace_list, ")" ;
+export_list = export_spec, { ",", export_spec } ;
+namespace_list = namespace_spec, { ",", namespace_spec } ;
 mixed_kind = import_kind | "namespace" ;
 ```
 
-Formatter preserves the outer delimiter choice, explicit inner parenthesized kind-group boundaries and aliases, or may expand to individually kind-qualified items if semantically proven. It must never introduce the rejected cross-item implicit inheritance spelling.
+Disambiguate an initial parenthesis containing a kind followed by an unmarked comma-separated name list as a single kind-inside group when the complete clause matches that form; otherwise parse as an outer mixed list. Thus `import (class C, D) from source;` is a single class group, whereas `import (class C, fnc f) from source;` is an outer mixed list. Existing homogeneous lists and direct-path imports keep their semantics. Formatter preserves delimiter and group placement, including singleton parentheses, and aliases; any semantic rewrite requires proven equivalent bindings.
 
 ### 2.2 Direct qualified paths and Rust-style import trees
 
@@ -175,7 +179,7 @@ group_leaf = [ mixed_kind ], ( direct_tree | "self", [ "as", identifier ] ) ;
 
 This is a target grammar sketch: parser must distinguish a terminal dot followed by a group from a dotted identifier; repeated super components are contextual only at the root, and self as a group leaf is special. Typed group prefixes are not required: specify kinds on individual leaves. Reject use as the import verb and :: as an import-path separator. Validate all new names before publishing bindings; duplicate explicit declarations and ambiguous automatic candidates follow sections 5–6.
 
-Additional NOT_EXECUTED acceptance cases: mixed lists (equivalent outer parentheses and brackets, parenthesized x/y/z module group, explicit repeated kinds, no cross-item inheritance, aliases, wrong-kind, mismatched delimiters, malformed and excessive-nesting negatives), all source domains, duplicate names and no partial binding; direct leaf inferred/typed kind, nested group expansion, self leaf aliases, current/parent/grandparent lookup, root escape and headerless negative, external suffix ambiguity and no discovery, cyclic alias graph, private exports, invalid/empty groups, trailing comma behavior, and flattened-star denial. Compare equivalent from/direct/group/mixed guests and formatter round-trips at exact compiler heads.
+Additional NOT_EXECUTED acceptance cases: mixed lists (equivalent outer parentheses, brackets and explicit undelimited lists, kind-first and kind-inside groups, singleton groups, parenthesized x/y/z module group, explicit repeated kinds, no cross-item inheritance, aliases, wrong-kind, mismatched delimiters, malformed and excessive-nesting negatives), all source domains, duplicate names and no partial binding; direct leaf inferred/typed kind, nested group expansion, self leaf aliases, current/parent/grandparent lookup, root escape and headerless negative, external suffix ambiguity and no discovery, cyclic alias graph, private exports, invalid/empty groups, trailing comma behavior, and flattened-star denial. Compare equivalent from/direct/group/mixed guests and formatter round-trips at exact compiler heads.
 
 ## 3. Packages, manifests and subpaths
 
