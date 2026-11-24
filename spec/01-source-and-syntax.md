@@ -82,7 +82,11 @@ The **target** early-exit spelling is `guard condition { terminal_failure_path }
 
 An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.
 
-`match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. In **both** `match ... over` and `do match ... over`, every arm starts with the contextual keyword `on`, including `on Ok(ack)`, `on Err(err)` and catch-all `on _`; a bare `Ok(ack) ->` arm and `default`/`else` match arms are invalid in the canonical grammar. An arm body can use `-> { ... }` as shown in the examples. The `case`/`default` keywords belong to `switch`, not `match`. An expression-form `return match ...` must infer its enclosing return type where admitted. Typed variants such as `match<int>` and `select<int>` constrain arm results. Duplicate and unreachable arms should be compile errors; exhaustive/disjoint-vs-priority matching is still subject to [open questions](12-open-questions.md).
+`match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. Every `match` and `do match` arm starts with the contextual keyword `on`. Use `on Ok(ack)`, `on Err(err)` or `on _` as appropriate. The `case` and `default` keywords belong to `switch`. Bare patterns and `default` or `else` arms are errors in an `over` match.
+
+A value `match` produces the selected arm's value. In a block arm, `return value;` and `^ value;` complete the arm. An explicit `return match ... end;` or `^ match ... end;` returns that value from the enclosing callable. An annotation such as `match<int>` constrains the common arm type. In `do match`, an arm may fall through or exit locally with `return;`, `return void;` or `^ void;`. A value return in a `do match` arm is a type error. Execution continues after the match when the arm completes normally.
+
+Evaluate the subject once and try arms in source order. Evaluate a `when` guard after binding the matching payload. A false guard advances to the next arm and does not prove exhaustiveness. Require unconditional coverage of the subject domain and report unreachable arms.
 
 ## Call syntax and operators
 

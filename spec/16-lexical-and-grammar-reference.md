@@ -95,11 +95,13 @@ Ternary conditions must have static type `bool`. AttoLang has no truthiness conv
 **TARGET:** After `over`, every `match` arm MUST start with the **contextual** word `on`. This applies equally to `match value over`, `do match value over`, typed match variants, ADT payload bindings, guards, and wildcard fallback. `on` is contextual (not a blanket globally reserved identifier). The normal arm arrow is `->`, not `=>`.
 
 ```atto
-match outcome over
+do match outcome over
   on Ok(ack) -> { mark_admitted(ack); }
   on Err(err) -> { handle_send_error(err); }
 end
 ```
+
+Use value `match` when the arm supplies a value. Use `do match` for effects. A `return` or `^` inside `do match` completes the arm with void. See [control flow](01-source-and-syntax.md) for return targets and exhaustiveness.
 
 A compiler MUST reject bare `Ok(ack) ->` or `Err(err) ->` **in an `over` match**, and `else`, `default` or `on default` are not catch-all aliases in this canonical form; use `on _`. Preserve a separately documented legacy `match value` without `over` only if that mode is explicitly selected. A formatter MUST preserve `on` and variant names, must not rewrite a `match` into a `switch` or turn `on _` into `default`, and must not silently make bare invalid arms valid when formatting a canonical source.
 

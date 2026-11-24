@@ -45,13 +45,13 @@ define enum Status as
   Failed
 end
 
-fnc describe(Status status) -> string ::
+fnc describe(Status status): string {
   return match status over
-    on Status.Pending -> "pending"
-    on Status.Ready   -> "ready"
-    on Status.Failed  -> "failed"
-  end
-end
+    on Status.Pending -> { return "pending"; }
+    on Status.Ready   -> { return "ready"; }
+    on Status.Failed  -> { return "failed"; }
+  end;
+}
 ```
 
 This is an intended idiom, **not** an assertion that each enum and match spelling already executes in every backend.

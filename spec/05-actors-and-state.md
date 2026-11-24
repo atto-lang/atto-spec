@@ -36,7 +36,7 @@ At most one effective persistent guest state schema belongs to one actor. Direct
 - **critical-read:** immutable ephemeral loan; concurrent readers may be admitted if the actor/profile supports them.
 - **critical-write:** exclusive mutation; any writer excludes conflicting readers/writers.
 - No state loan may escape its callback, be serialized, be captured by a child task, or cross a suspension without an explicit proven and runtime-enforced safe exception.
-- Ordinary actors are concurrent by default. `define serial actor Name as ... end` opts into at most one active guest turn at a time. Concurrent admission never permits conflicting state access: compatible `critical-read` loans may overlap, while `critical-write` excludes readers and writers of the same protected region. Backend scheduling capacity does not replace these proofs.
+- Ordinary actors are reentrant by default. Another receive may start while the first is suspended, within the actor's logical receive limit. `define serial actor Name as ... end` keeps one live receive across suspension. Compatible `critical-read` loans may overlap where admitted, and `critical-write` excludes readers and writers of the same protected region.
 - Serial actors retain the same sealed-state and borrow rules; serialization is not permission to leak mutable references into tasks, pipes, singletons or other actors. See the [concurrency and shared-memory amendment](22-concurrency-and-shared-ownership.md) for migration and execution gates.
 
 ## Mailboxes and sends
@@ -46,8 +46,8 @@ An actor has a bounded DATA inbox. Sending has a **linearization point**: either
 **Canonical target:** synchronous mailbox admission `send(message)` returns `Result<Ack, SendError>`; an explicitly asynchronous admission API may return a `Future<Result<Ack, SendError>>` subject to its own separate contract. `Ack` is a typed indication that the message was admitted into the bounded mailbox, **not** that the receiver processed it, persisted it, or completed `get_done()`. An absent result, `void`, or `Result<void, SendError>` is a *transitional backend-only profile*, not the finalized portable signature; the typed `Ack` value must not be treated as a capability for other actors or tenants. `SendError` is a typed admission failure carrying an appropriate failure reason (e.g. full, closed, stale generation, unauthorized), not an implicit trap or panic. No backend may claim canonical typed-send parity until its source compiler and actual guest execution both prove these semantics. The canonical `match` syntax for a send outcome has **`on` before every arm**, including both variants:
 
 ```atto
-val result = worker.send(42)
-match result over
+val result = worker.send(42);
+do match result over
   on Ok(ack) -> {
     // Admitted to the mailbox; not necessarily processed.
   }
@@ -59,7 +59,7 @@ end
 
 The snippet is a **language target**, not evidence that any backend already returns the typed value or lowers the guest program. `Ack` is an admission acknowledgment only. A bare `Ok(ack) ->`, bare `Err(err) ->`, `else` or `default` must not be accepted as canonical `match ... over` arms. Existing backend APIs may expose different aliases, and must be reconciled before finalizing the signature. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
 
-A receiver is serialized with other conflicting turns. Messages may be rejected due to full/closed inbox, stale actor generation, invalid payload, cancelled sender or missing authority. No backend may silently drop a message while returning success.
+Conflicting state loans obey the state confinement rules during receives. Messages may be rejected due to a full or closed inbox, stale actor generation, invalid payload, cancelled sender or missing authority. No backend may silently drop a message while returning success.
 
 ## Lifecycle
 
