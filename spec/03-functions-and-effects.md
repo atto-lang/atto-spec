@@ -38,6 +38,10 @@ end
 
 This `-> T :: ... end` style is one of the valid [function forms](16-lexical-and-grammar-reference.md#function-forms). Backend support differs until grammar parity is proved.
 
+## Parameter binding and reassignment (v1 target)
+
+Under default argument borrowing, each function or method parameter has a fixed local binding. `mut Foo f` permits writes through a checked mutable loan, including writes to fields declared `let`. To permit local assignment explicitly, declare `rebind mut Foo f`. The caller keeps ownership of the borrowed input when the callee assigns a newly owned object to `f`. Calls and interface signatures continue to use the underlying borrow or ownership mode. See [explicit parameter rebinding](../language/implicit-argument-borrow-v1.md#explicit-parameter-rebinding-v1) for the grammar, lifetime checks and zero-GC lowering.
+
 ## Named function, method and constructor arguments (v1 target)
 
 Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.

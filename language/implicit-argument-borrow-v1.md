@@ -41,6 +41,51 @@ The compiler must analyze the callee body and the **transitive**, statically res
 
 `mut` on the argument requests exclusive access; it does not rebind the caller's name or grant mutation of `final` fields, readonly referents, sealed actor state, other actors' heaps or foreign capabilities. The caller must possess writable referent permission and there may be no incompatible active loan. The callee cannot move or retain the borrowed object.
 
+## Explicit parameter rebinding v1
+
+**Status: TARGET.** Parameter bindings are fixed by default in the borrow-default profile. A function or method implementation can opt an individual parameter into local assignment with `rebind`. `mut` governs writes through the binding. `take!` independently governs ownership transfer at entry.
+
+```atto
+define class Foo as
+  pub let int foo = 5;
+end
+
+fnc handle_foo(rebind mut Foo f): void {
+  block {
+    val z = borrow! mut f;
+    z.foo = 8;
+  }
+  f.foo = 6;
+  f = new Foo();
+  f.foo = 9;
+}
+
+pub fnc main(): int {
+  val mut Foo foo = new Foo();
+  handle_foo(mut foo);
+  return foo.foo; // 6
+}
+```
+
+- **Syntax.** `rebind` is contextual in a named formal with a body. The canonical type-first form is `rebind mut Foo f`. The equivalent name-first form is `rebind f: mut Foo` where name-first formals are supported. A copied scalar can use `rebind int n`. Parse a single marker before the existing formal and preserve it through formatting. Existing identifiers spelled `rebind` remain valid. An implicit receiver and bodyless signature have no local parameter binding eligible for this modifier.
+- **Call contract.** The call ABI, argument evaluation, parameter label, and entry ownership and access mode follow the ordinary formal rules. `rebind` belongs to the implementation and does not participate in overload selection, interface matching, or override compatibility. An effect inferred from the body must still reflect actual access to the incoming argument. A write proven to target only a locally owned replacement does not imply a write to that argument.
+- **Assignment.** The binding keeps its declared type and access permissions. A scalar assignment replaces the local copy. A reference-backed binding may receive a compatible, lifetime-checked loan or an owned value under the usual ownership rules. In particular, `new Foo()` produces a locally owned replacement. Assigning a loan cannot promote the borrowed object to ownership. A formal explicitly typed `Borrow<T>` still accepts only values assignable to `Borrow<T>`. Reassigning any fixed parameter is a compile error, independent of field-write permission.
+- **Loan checking.** Track the current value's origin, access and ownership across assignments and control-flow joins. A reassignment that invalidates a live loan or reborrow is illegal. A replacement loan must outlive its uses. A consuming use requires ownership on every reaching path. Borrowed results and captures use the actual current origin, so an owned replacement cannot escape as a borrow tied to the original argument. Existing cross-actor, suspension and cancellation checks apply to both the incoming value and the replacement.
+
+### Zero-GC lowering and cleanup
+
+Evaluate the right-hand side once using normal checked assignment order. Keep the old binding in force until the right-hand side succeeds. On replacement, end access through the old binding, release its loan when permitted by liveness, or retire the previous value exactly once if the binding owned it. If evaluation fails, unwind using the current ownership state and ordinary temporary cleanup. A live owned replacement must be moved onward or cleaned up exactly once on normal exit, unwind, or supported cancellation. Releasing the incoming loan never destroys the caller's object.
+
+Use compile-time ownership and drop facts where a path is known. At control-flow joins that need a runtime distinction, a frame-local drop flag or equivalent control flow is sufficient. The binding itself must introduce no heap box, reference-count operation, or tracing requirement. `new Foo()` retains its ordinary allocation semantics. On a [zero-GC target](../spec/24-aot-zero-gc-controlled-dynamism.md), admit this form only when allocation provenance and destruction or reclamation are proven under the target's ownership and region rules. A backend with unproven cleanup or lifetime tracking must reject the affected case before artifact emission.
+
+### Conformance cases
+
+- Compile and execute the example for both a free function and a method. Verify that the caller still holds the same object with field value `6` and that writing through the replacement affects only that replacement. Check scalar reassignment and type-first/name-first formatter round trips.
+- Reject assignment to a formal without `rebind`, writes through a read-only current value, an invalidated live reborrow, a dangling replacement loan, consuming a borrowed value, and returning a replacement as a borrow tied to the incoming argument. Reject overloads distinguished only by `rebind`.
+- Execute both arms of a borrowed/owned join, repeated replacement, RHS failure, and all admitted exits including unwind and cancellation. Instrument guest allocations and cleanup to verify that the original survives, owned replacements retire exactly once, and repeated calls reclaim their storage under the target's region rules. Inspect lowered IR for the absence of boxing, tracing and reference counting introduced by the rebinding operation. Run the same semantic cases across admitted backends and record compiler, target, exact revision, and executed results.
+
+Rust separates reassignment of a local binding from writes through a mutable reference. Kotlin fixes parameter bindings while allowing mutable object fields to be updated. C# demonstrates local reassignment of a class-reference parameter to a newly constructed object. Swift removed its former `var` parameter after confusion with `inout` write-back. The Atto rule combines explicit local reassignment with checked ownership of the replacement. [Rust variables](https://doc.rust-lang.org/reference/variables.html), [Rust mutable references](https://doc.rust-lang.org/std/keyword.mut.html), [Kotlin functions](https://kotlinlang.org/docs/functions.html), [C# method parameters](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/method-parameters), [Swift Evolution SE-0003](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0003-remove-var-parameters.md).
+
 ## Resolution, inferred loans and explicit ambiguity
 
 1. Resolve receiver/callee, overload, generic instantiation, named-argument binding and checked parameter modes **before** selecting an ownership action. Prefer no ownership-sensitive overload selection: an owned vs borrowed variant with identical nominal signature must not silently dispatch differently.
@@ -48,7 +93,7 @@ The compiler must analyze the callee body and the **transitive**, statically res
 3. Materialize borrow operations with the **same typed loan/provenance and CFG facts** as explicit `borrow!`: exact place/root, origin, allocation domain, exclusivity, lifetime and exceptional cleanup. Every use, move, mutation, reborrow and drop edge must be accounted for, including branches, exceptions, cancellation and closures. No `Borrow<T>` to owned-`T` erasure that grants drop/move authority.
 4. Reject and require explicit ownership/lifetime clarification when provenance is ambiguous, e.g. unverified aliases, borrowed-return relationships, escaping references, temporary aggregate projections, multiple unresolved candidate owners, borrowed generic substitutions, FFI/dynamic calls or uncertain effect summaries. **An explicit `borrow!` documents intent but cannot bypass a missing proof.**
 5. Loan checks must be at least as strong as the existing explicit-borrow checker: shared readers coexist, exclusive writers exclude all other access, owners cannot be moved while loaned, no dangling return/capture or unproven `await`/select/actor-boundary escape. Failure must happen before artifact emission.
-6. A proven ordinary loan needs no heap allocation, deep copy, reference-count increase or new long-lived owner. Borrowed formals have no destructor/drop/transfer authority.
+6. A proven ordinary loan needs no heap allocation, deep copy, reference-count increase or new long-lived owner. A borrowed value carries no destructor, drop, or transfer authority. An owned replacement assigned under `rebind` has its own independent authority.
 
 ## Explicit ownership actions remain explicit
 
@@ -117,7 +162,7 @@ This specification does not assert general Java/LLVM/.NET/Forge parity or full l
 
 Ordinary nonprimitive `fnc inspect(Foo foo)` or `class M { read(Foo foo) }` inputs have an **inferred lifetime tied to the actual caller owner**, just as `Borrow<Foo>` would. The default hides *notation*, never lifetime constraints.
 
-1. **Ordinary synchronous nonescaping call:** infer a short read loan for each argument. Track its origin, exclusivity, full argument-evaluation window, body last use, cleanup and NLL end. The formal remains permanently tagged `borrowed` even after its active loan ends; expiry does not grant drop/move authority.
+1. **Ordinary synchronous nonescaping call:** infer a short read loan for each argument. Track its origin, exclusivity, full argument-evaluation window, body last use, cleanup and NLL end. The incoming value retains borrowed provenance even after its active loan ends. Expiry grants no drop or move authority.
 2. **Borrowed result, single input:** require return type `Borrow<Child>` (to distinguish from an owned `Child`). If every returned view is provably rooted in the sole borrowed parameter or method `self`, elide the result lifetime by associating it with that input. On return the *input's* loan survives as needed for all caller uses; callee's stack cannot be the owner.
 3. **Borrowed result, multiple inputs:** require an explicit owner-to-result lifetime relation when it cannot be independently and unambiguously proven from the exported signature. Canonical `lt! a` binder and `lt=a` named reference; `lifetime! a` is a source alias. Never accept Rust apostrophes or positional lifetime arguments. `Borrow<T>` remains available for such formal annotations.
 4. **Stored/escaping borrows:** require a containing type/closure/task lifetime contract and a proven outlives relationship. Without it, return, field-store, callback capture, FFI export, `await`, actor messaging, or detached task escape rejects with no output artifact. `borrow!` cannot override this.
