@@ -78,6 +78,8 @@ Whether `int / int` gives a `float` or an integer is a separate decision (S-25).
 
 ## Option and Result
 
+The unqualified `Option`, `Result`, `Some`, `None`, `Ok` and `Err` names belong to the **automatic core prelude**; users need not explicitly import them. This is a compile-time source binding, not a process-global value. For the profile boundaries and the rules for `String`, collections, ownership, name collisions and cross-backend conformance, see [automatic prelude v1](../language/automatic-prelude-v1.md).
+
 Both are ordinary data, not exceptions. `Result` always takes two type arguments.
 
 | Operation | `Option<T>` | `Result<T,E>` |
