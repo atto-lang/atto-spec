@@ -1,5 +1,7 @@
 # core, alloc and std libraries: imports, layering and platforms (v1)
 
+> **2026-11-24 draft amendment:** [Static imports v2](static-imports-v2.md) supersedes this chapter's conflicting selector, namespace/import spelling, automatic qualification and collision rules if adopted. Dotted built-in identifiers (bare or quoted), explicit `import namespace`, scoped package identities and URL imports are the new target. Unchanged layer, visibility, source-header, initialization and target restrictions still apply. No implementation parity implied.
+
 **Status: NORMATIVE (finalized 2026-11-22).** This document settles how the
 compiler-owned libraries are named, imported and layered. It supersedes the
 competing library-selector addenda in `unified-static-imports-v1.md`
