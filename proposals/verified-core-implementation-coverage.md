@@ -19,4 +19,14 @@ The local mailbox execution record for 2026-11-23 covers the three compiler prof
 - LLVM arm64 macOS executed 21 receipt checks and 24 stop races in both the regular native build and the build with the host and runtime instrumented by ASan and UBSan. [Compiler source](https://github.com/atto-lang/atto-source.llvm/tree/7274801eeea0702162cbc8f65056974525499dce)
 - .NET NativeAOT on macOS arm64 executed 20 receipt checks and 24 stop races. [Compiler source](https://github.com/atto-lang/atto-source.net/tree/fc99b5bc75df5faec903403351076fc36de31411)
 
+The origin LLVM and conformance jobs stopped at billing admission with zero executed steps. The private carrier verified the three immutable Git trees and built LLVM with Clang 19 on x86-64 Linux. It passed all 106 shared compiler cases, 21 live receipt checks and 24 stop races, and repeated the mailbox checks with ASan and UBSan. The fallback leaves the origin checks in force. [Origin LLVM job](https://github.com/atto-lang/atto-source.llvm/actions/runs/45311285875/job/138167356485), [Origin conformance job](https://github.com/atto-lang/atto-platform-conformance/actions/runs/45311279049/job/138167334920), [Private carrier run](https://github.com/oresoftware-test/atto-ci/actions/runs/45312164143)
+
+| Carrier input | Origin commit | Origin tree |
+| --- | --- | --- |
+| LLVM compiler and runtime | `7274801eeea0702162cbc8f65056974525499dce` | `34c5b939ee22be7a3f9d844a1faad7e69e7ffe4e` |
+| Platform conformance | `d60da7beff81ea674da35101ca1371740405b37d` | `1f6c4fe0d3a94140f7fc4aba668bc87fb23213f4` |
+| Common source reference | `b6429578c32f51e4ccb237f3244a81391f751409` | `2a81c97ce5316e11ef9c6b11d0fdd17a3c19de34` |
+
+The mirrored snapshot is commit `6c8cd63a8341c3398e2d6c5930b5c8963a73bda0` and tree `b2ecc9911c16334dabf5c456afd21acbf7783cbf`. The evidence artifact includes per-profile logs, source and fixture identity, and compiler and executable digests. Artifact SHA-256 is `a89d7843f9239cd42334484fd62be5d6ab430740ff022ef2e526ac95a3e68753`. [Mirror job](https://github.com/oresoftware-test/atto-ci/actions/runs/45312164143/job/138170286764), [Build and execution job](https://github.com/oresoftware-test/atto-ci/actions/runs/45312164143/job/138170366081), [Evidence artifact](https://github.com/oresoftware-test/atto-ci/actions/runs/45312164143/artifacts/14884045423)
+
 The next implementation slice combines typed guest mailbox operations with staged actor fields, an invariant over a refined quantity, and join and stop behavior that discharges the ownership settlement obligations. Proof evidence for that slice can then use the shared verifier and exercise strict admission before broader proof-language, dependent index, parametricity, and temporal extensions. Completion requires the evidence in every row of the table.
