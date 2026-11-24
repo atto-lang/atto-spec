@@ -1,0 +1,26 @@
+name: AttoLang TextMate lexical fallback contract
+on:
+  push:
+    paths:
+      - 'editors/**'
+      - 'tests/keyword-textmate-contract.test.mjs'
+      - 'contracts/keyword-taxonomy-v1/catalog.json'
+      - '.github/workflows/keyword-textmate-contract.yml'
+  pull_request:
+    paths:
+      - 'editors/**'
+      - 'tests/keyword-textmate-contract.test.mjs'
+      - 'contracts/keyword-taxonomy-v1/catalog.json'
+      - '.github/workflows/keyword-textmate-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source_only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node --test tests/keyword-textmate-contract.test.mjs
