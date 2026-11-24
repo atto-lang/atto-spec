@@ -35,7 +35,7 @@ test('core reconciled spec examples are present', () => {
  assert.ok(read('spec/16-lexical-and-grammar-reference.md').includes('Integer bitwise XOR'));
  assert.ok(read('spec/07-errors-and-failure.md').includes('caller-trap-parity/v1'));
  assert.ok(read('spec/09-modules-and-aot.md').includes('import * as math from "+/lib/math";'));
- assert.ok(read('spec/17-primitives-and-core-types.md').includes('Integer.div_trunc'));
+ assert.ok(read('spec/17-primitives-and-core-types.md').includes('`int / int` truncates toward zero'));
  assert.ok(read('language/bitwise-and-stream-operators-v1.md').includes('checked failure (invalid shift distance)'));
 });
 
@@ -54,6 +54,7 @@ test('operator contract does not regress to the superseded caret, Boolean XOR or
  ]) assert.ok(decisions.includes(phrase),phrase);
  assert.ok(index.includes('int-only `& | ^^ ~`'));
  assert.ok(decisions.includes('bitwise-backend-status-snapshot-2026-11-20.md'));
+ assert.ok(decisions.includes('Superseded by the [November 23 truncating division contract]'));
  assert.ok(read('language/bitwise-backend-status-snapshot-2026-11-20.md').includes('Historical status report'));
  assert.ok(!index.includes('int-only `& | ^ ~`'));
  assert.ok(!rules.includes('The effective shift count is the low six bits'));

@@ -37,11 +37,11 @@ The chapter 02 rule is that no backend may rely on unchecked host overflow when 
 | `5 % 0` | Fails with a host `ArithmeticException` | Rejected unless the divisor is a nonzero literal |
 | `1 eq 1.0` | True | Rejected: operands must have the same scalar type |
 
-**TARGET (decided):** integer arithmetic is checked. Overflow is a panic, so it fails the actor, which is then restarted under [chapter 18](18-runtime-guarantees.md). It never wraps silently. Wrapping happens only through explicitly named operations, whose names are not chosen yet.
+**TARGET (decided):** integer arithmetic is checked. Dynamic overflow raises an ordinary `ArithmeticOverflowError` that can be caught or captured as a Result. Unhandled actor errors follow [chapter 07](07-errors-and-failure.md) and [chapter 18](18-runtime-guarantees.md). Integer arithmetic never wraps silently.
 
 This has a direct consequence: sized types must be real types with enforced ranges, not aliases of `int`, or `i8` could never overflow.
 
-Java needs real changes to meet this, and LLVM's trap needs to become an actor-level failure. Checks add some cost to arithmetic.
+Backends must emit the checked guest-error path or reject operations whose safety they cannot establish.
 
 **PROPOSED** (S-24):
 
@@ -49,9 +49,9 @@ Java needs real changes to meet this, and LLVM's trap needs to become an actor-l
 2. `bigint` is either truly arbitrary precision or rejected. It must not silently act as 64-bit.
 3. Division by zero is a language-level failure with a defined class, never a host exception.
 
-Outside an actor, an overflow panic ends the root invocation as described in [chapter 07](07-errors-and-failure.md).
+Outside an actor, unhandled overflow ends the root invocation as described in [chapter 07](07-errors-and-failure.md).
 
-**DECIDED (2026-11-20):** source `int / int` produces a floating-point result. Explicit checked truncating integer division is a distinct named operation such as `Integer.div_trunc(a,b)` (final standard-library spelling and failure taxonomy pending a versioned API contract). The checked-i64 oracle's abstract `div_trunc` operation does not prove that source `/` truncates.
+**DECIDED (2026-11-23):** source `int / int` truncates toward zero and returns an `int`. Explicit floating operands select floating division. Division by zero and signed minimum divided by minus one produce distinct ordinary guest errors. See [the reconciliation contract](../language/cross-backend-semantics-reconciliation-v1.md#numeric-semantics).
 
 ## Equality and identity
 

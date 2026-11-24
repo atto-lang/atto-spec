@@ -20,6 +20,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Cross-backend semantics reconciliation v1](language/cross-backend-semantics-reconciliation-v1.md) records the November 23 language decisions and their backend admission boundaries.
+
 - [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^^ ~`, `<<< >>> ashr`, compound updates, statement-return `^ value;`, `Math.pow(...)` (exponentiation API), and typed read/write `<< >>` on channel/stream/trait endpoints; proposed semantics, not backend parity.
 
 - [Trap-to-Result v1](language/trap-result-v1.md): caller-side `trap` preserves returned `Result`/`Option` layers and catches ordinary `throw` as `Err(original Error)`; unverified backends must fail closed rather than emit legacy Option results.
