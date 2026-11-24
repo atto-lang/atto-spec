@@ -57,6 +57,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Freestanding core / alloc / std v1](language/freestanding-library-layers-v1.md): proposed three-layer dependency and bare-metal link contract; **not compiled-guest verified**.
 
+- [Identity-free value classes v1](language/value-classes-v1.md): **proposed** nominal value types, immutable construction, equality/copying, AOT and fail-closed gates. No backend guest conformance is verified. See [conformance PR #57](https://github.com/atto-lang/atto-platform-conformance/pull/57).
+
 ## Validation
 
 Validation should rely on checked-in tests and exact-commit CI results. When reporting parity, distinguish **passed**, **failed**, **unsupported**, and **not executed**. Avoid inferring guest-runtime support from host-only tests.
