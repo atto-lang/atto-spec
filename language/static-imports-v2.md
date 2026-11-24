@@ -192,6 +192,23 @@ This is a target grammar sketch: parser must distinguish a terminal dot followed
 
 Additional NOT_EXECUTED acceptance cases: mixed lists (equivalent outer parentheses, brackets and explicit undelimited lists, kind-first and kind-inside groups using either delimiter independently, mixed delimiters, singleton groups, parenthesized x/y/z module group, explicit repeated kinds, no cross-item inheritance, aliases, wrong-kind, mismatched delimiters, malformed and excessive-nesting negatives), all source domains, duplicate names and no partial binding; direct leaf inferred/typed kind, nested group expansion, self leaf aliases, current/parent/grandparent lookup, root escape and headerless negative, external suffix ambiguity and no discovery, cyclic alias graph, private exports, invalid/empty groups, trailing comma behavior, and flattened-star denial. Compare equivalent from/direct/group/mixed guests and formatter round-trips at exact compiler heads.
 
+### 2.3 Equivalent built-in namespace spellings and exact binding sets
+
+The following are independent alternatives, not a single source file:
+
+| Declaration | Static namespace bindings |
+| --- | --- |
+| `import namespace num from core.num;` | `num`, `core.num` |
+| `import num from core.num;` | `num`, `core.num` |
+| `import core.num from core.num;` | `core.num` only |
+| `import core.num as num;` | `num` only |
+| `import core.num as core.num;` | `core.num` only |
+| `import core.num;` | `num`, `core.num` |
+
+All resolve the same registered compiler-owned identity; aliases do not change identity or acquire new privileges. Explicit `as` replaces automatic candidate names even when the alias equals a natural or canonical name. `import namespace core.num;` is the explicit qualified-only namespace form. The natural/full binding pair is automatic for unaliased short-from and direct namespace imports. Quoting the builtin source after from does not change semantics. The full static export graph determines collision and shadowing behavior under sections 5–6. No first-class namespace values, runtime reflection or implicit alias leakage from lowering are permitted. Legacy module syntax retains its distinct module-kind semantics.
+
+Acceptance tests must prove both allowed and denied binding paths for every form, plus duplicate/ambiguous imports, alias conflicts with lexical declarations, private/missing members, wrong kinds and identical nominal identities across equivalent spellings. For executable direct calls, compile real guests and check results, not only token acceptance. Bounded backend subsets must reject unresolved cases without generating artifacts.
+
 ## 3. Packages, manifests and subpaths
 
 New registry publication identity: `@org/project/package`. Each component is a nonempty registry-validated name. `@org` is an organization scope, project is a product/project family and package is the independently versioned unit. Additional slash components denote a public exported subpath, never another inferred package root. Existing unscoped or two-component identities may retain edition-gated legacy resolution; no silent identity migration. The `pkg` keyword selects the external resolver.
