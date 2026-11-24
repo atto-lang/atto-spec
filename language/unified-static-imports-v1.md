@@ -1,5 +1,7 @@
 # Unified static imports (v1)
 
+> **2026-11-24 draft amendment:** [Static imports v2](static-imports-v2.md) supersedes this chapter's conflicting selector, namespace/import spelling, automatic qualification and collision rules if adopted. Dotted built-in identifiers (bare or quoted), explicit `import namespace`, scoped package identities and URL imports are the new target. Unchanged layer, visibility, source-header, initialization and target restrictions still apply. No implementation parity implied.
+
 **Status:** Proposed normative AttoLang grammar. Syntax acceptance, cross-file
 linking, runtime execution and cross-backend parity are separate milestones.
 This document does not claim that the browser compiler currently links packages.
