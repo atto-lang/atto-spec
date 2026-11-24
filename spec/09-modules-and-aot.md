@@ -113,13 +113,39 @@ timestamps. Deopt, recompilation, exporter backlog and dynamic filters
 are bounded; actor supervisor CONTROL, borrowing and data-plane
 nonblocking invariants remain unchanged.
 
-This does not conflict with the first-class
-[`using` scoped-resource construct](03-functions-and-effects.md#existing-using-keyword-deterministic-scoped-resources-v1-target):
-an explicitly requested span can be created in any profile that admits
-`ores.std.telemetry`; automatic call coverage depends on the compiled
-probe/JIT capabilities, and both use identical context semantics.
+An explicitly requested [`using` span](03-functions-and-effects.md#existing-using-keyword-deterministic-scoped-resources-v1-target)
+can be created in any profile that admits `ores.std.telemetry`. Its source
+spelling and cleanup rules are the same across execution profiles.
 
-**Status:** target architecture only, not a present runtime feature.
-Implementers need real exact-head .atto compiler and guest tests, separate
+| Deployment | Scoped span behavior |
+| --- | --- |
+| Full AOT | Lower explicit and macro-generated `using` scopes before linking. The sealed artifact can record at the sites it includes when the host enables them. |
+| JIT instrumentation | A supported host can add automatic call probes to checked code with retained instrumentation metadata. Explicit `using` still has its ordinary lexical meaning. |
+| Hybrid | Keep an independently executable AOT baseline and permit governed JIT call probes. Both paths use the same logical trace context and the same identity for each lexical site. |
+
+When a backend admits statement macros, a macro may emit a `using` span
+scope and its binding. Expression macros may supply operands accepted by
+the backend's span scope, such as a compile-time name. Recheck expanded
+code for the same resource provenance, effects, ownership, and cleanup as
+handwritten code. Preserve expansion provenance when assigning lexical
+site identities. The macro expansion is complete before guest execution
+in AOT, JIT, and hybrid deployments.
+
+In a hybrid version, one entry into a lexical `using` site produces at
+most one recorded span for that site. An automatic call probe may create a
+distinct parent or child span with its own site identity. A scope admitted
+for recording keeps its cleanup obligation through policy changes,
+detachment, and code-generation changes. New recording policy applies to
+subsequent admissions.
+
+Verify AOT and live JIT independently for `atto-source.java`,
+`atto-source.llvm`, `atto-source.net`, `atto-source.rs`,
+`atto-source.cranelift`, and `atto-source.forge`. Each backend needs a real
+guest built and run with its runtime compiler disabled or absent for AOT
+credit. JIT credit requires execution of newly instrumented code, and
+hybrid credit requires both paths in the same workload with parentage and
+exactly-once cleanup verified.
+
+Release evidence requires real exact-head .atto compiler and guest tests, separate
 `none/off/on` measurements, actor cancellation/hot-reload traces and
 independent per-backend evidence.
