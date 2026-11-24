@@ -60,3 +60,25 @@ test('operator contract does not regress to the superseded caret, Boolean XOR or
  assert.ok(!rules.includes('The effective shift count is the low six bits'));
  assert.ok(!rules.includes('`bool ^^ bool` support'));
 });
+
+test('current reconciliation preserves independent actor, task and error contracts', () => {
+ const spec=read('language/cross-backend-semantics-reconciliation-v1.md');
+ for (const phrase of [
+   'Ordinary actors permit reentrant DATA receives by default',
+   'A `serial` actor keeps exactly one live DATA receive across suspension',
+   'Physical capacity, logical receive capacity and actor-state loans remain independently enforced',
+   'bounded reserved capacity independent of DATA',
+   'A FIFO-head rule for internal receipts cannot delay an authenticated terminal supervisor notification behind DATA',
+   '`Array.get_copy()` returns an owned `Option<T>`',
+   'temporary read loan through index validation and copying',
+   'Mutation after the call cannot change the returned copy',
+   'A legal `rt cooperate` checkpoint may yield and resume on the same caller thread',
+   'without a proven same-thread continuation must be rejected with `E_SYNC_TASK_SUSPEND`',
+   'Do not park a carrier to simulate this guarantee',
+   '`task<T> { ... }` returns `Future<T>`',
+   'An existing `Result` passes through with no extra nesting',
+   'Raise, panic, cancellation and host-fatal errors bypass the boundary',
+   'Signed `int / int` produces an `int` truncated toward zero'
+ ]) assert.ok(spec.includes(phrase), phrase);
+ assert.ok(!spec.includes('Reject bodies that can suspend.'));
+});
