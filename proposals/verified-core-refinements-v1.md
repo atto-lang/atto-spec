@@ -54,4 +54,4 @@ This dialect slice uses earlier-only calls and keeps helpers private so a caller
 
 ## Next integration boundaries
 
-The target includes further sized carriers, mutable refinement invalidation, branch facts, independent proof receipts, checked ingress at typed import and deserialization boundaries, typed exports, and protocols. Those need their own semantic and execution evidence. This version covers file-local type and contract checking, including explicit checked casts.
+The target includes further sized carriers, mutable refinement invalidation, branch facts, independent proof receipts, checked ingress at typed import and deserialization boundaries, and typed exports. [Protocol declarations](verified-core-protocol-declarations-v1.md) use this profile's resolved scalar types for message payloads. Actor dispatch and ownership settlement require separate execution evidence.
