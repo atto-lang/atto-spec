@@ -31,6 +31,10 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Result/Option payload discard patterns v1](language/adt-payload-discard-patterns-v1.md): `Ok()` / `Err()` / `Some()` and `(_)` wildcard patterns discard payloads without inventing bindings, with guarded/exhaustive matching and AOT verification requirements. **Proposal only**; no universal backend parity claimed.
+
+- [Typed match/switch arms v1](language/typed-match-switch-arms-v1.md): candidate `case Pattern : Type -> body` and `on Pattern : Type -> body` grammar, switch defaults, no implicit fallthrough, and async/error typing. **Proposal only**; guest implementation and parity are tracked separately.
+
 - [Immutable `with` copy-and-update v1](language/with-copy-update-v1.md): candidate Record field addition/type change and nominal Struct same-type reconstruction with strict ownership gates. Guest and backend parity are not yet verified.
 
 - [Inline collections and nominal Entry/Map mutation (candidate)](language/inline-collection-literals-v1.md): `key => value` Entry literal, `{key => value}` Map literal, checked mutable upserts, `get(): Option<V>`; target only, not guest-certified ([conformance #99](https://github.com/atto-lang/atto-platform-conformance/pull/99)).
