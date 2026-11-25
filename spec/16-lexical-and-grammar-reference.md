@@ -177,6 +177,10 @@ Only the first two forms run on free functions today. See [chapter 19](19-observ
 
 See [negated conditionals](ifnot-unless.md) and the [machine-readable contract](../contracts/ifnot-unless-v1.json). The value form requires `else` and `fi`; the `do` imperative form permits optional `else` and closes with `fi`; the brace form permits optional `else` and closes with matching braces only. The boolean head is evaluated once and inverted; `elif` predicates are positive. Invalid non-boolean predicates and unsafe negated binding heads are rejected. This is not evidence of compiler execution.
 
+## Candidate binding type-query annotation
+
+See [static binding type queries](../language/return-binding-type-query-target-v1.md). The proposed `typeof name` and `typeof(name)` forms are not additions to the verified accepted-spelling table; the existing callable-signature production and contextual `infer` remain distinct.
+
 ## Typed local constant syntax (target)
 
 `T name = expression;` and `const T name = expression;` are equivalent typed local constants; `const name: T = expression;` is the type-right form. A runtime initializer cannot silently become `val`. `const mut` is explicit, and bare `mut T name` is rejected in this local grammar. Fields and contextual pattern bindings are separate. See [chapter 27](27-implicit-const-and-const-mut.md).
