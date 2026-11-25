@@ -1,0 +1,26 @@
+name: Structural pattern contract (host only)
+on:
+  pull_request:
+    paths:
+      - 'language/sequence-pattern-matching-v1.md'
+      - 'tests/sequence-pattern-contract.test.mjs'
+      - '.github/workflows/sequence-pattern-contract.yml'
+  push:
+    paths:
+      - 'language/sequence-pattern-matching-v1.md'
+      - 'tests/sequence-pattern-contract.test.mjs'
+      - '.github/workflows/sequence-pattern-contract.yml'
+permissions:
+  contents: read
+jobs:
+  reference-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Run independent host-only contract tests (NOT compiler conformance)
+        run: |
+          node --version
+          node --test tests/sequence-pattern-contract.test.mjs
