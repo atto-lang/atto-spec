@@ -106,9 +106,74 @@ A polymorphic actor or helper may send `T` to `ActorRef<T>` if both the handle t
 
 Implement parser/formatter acceptance, typed HIR/MIR, flow-sensitive effect checking, actor reference capability typing, mailbox admission, and supervisor CONTROL separation independently in the Java, LLVM, .NET, Wasm and Forge backends (plus other supported compilers). Maintain shared positive/negative `.atto` fixtures; retain `.ores` compatibility checks where supported. Use Rust-based test infrastructure where tests are newly introduced; do not use Python. A backend can be marked supported only with exact HEAD/commit provenance, observed compiler execution, positive/negative guest fixtures, and runtime tests for CONTROL isolation. Untested and unsupported are **not** passed.
 
+## Compiler data-flow hardening requirement
+
+The explicit `sends never` effect must be a distinct sum-case in the
+syntax/typed representation (`Never`), **never** an alias for the `void`
+return type. The typed checker must reject a forged
+`Payload(void)` AST even when a parser would not produce one.
+
+For each actor, audit every reachable **application DATA** send in:
+its receive handler, all actor methods, transitive statically resolved
+helpers and all actor field initializer expressions **and helper calls from
+those initializers**. A cycle in the static call graph must terminate the
+audit without granting new authority; an unresolved or erased call target
+cannot silently become an allowed effect. The runtime's authenticated
+supervisor CONTROL channel remains outside this application send graph.
+Source-level omission of `sends` is an independent inference mode: it
+must not be implemented as `Never` or unrestricted `Any`.
+
+The Rust/Wasm and LLVM-repository Rust frontends carry a byte-identical,
+pure Rust reference effect-graph implementation (Git blob
+`16b475542987066097e4ce66a06e18603d16f796`) and compiler-scope
+regression tests in draft PRs
+[atto-source.rs#406](https://github.com/atto-lang/atto-source.rs/pull/406)
+and [atto-source.llvm#46](https://github.com/atto-lang/atto-source.llvm/pull/46).
+The source is not yet promoted as tested compiler support: external
+runner attempts in three independent private organizations had **zero
+executed steps**. See
+[atto-platform-conformance#33](https://github.com/atto-lang/atto-platform-conformance/pull/33)
+for SHA-pinned `NOT_EXECUTED` evidence. The LLVM-repository Rust frontend
+emits Wasm, not independent native LLVM/C++ actor code.
+
+## Bounded v1 header semantics and diagnostic alignment
+
+For all conforming compiler frontends, `sends never` denotes an empty
+application-DATA send effect: the actor may not perform any application
+`target.send(value)` operation, including via statically reachable helper
+calls. It **does not** suppress authenticated runtime supervisor CONTROL.
+`sends void` is invalid: `void` is a return type, **not** the spelling of
+an empty message effect. An absent `sends` clause remains inferred; it does
+not implicitly grant the `Any` effect.
+
+The following diagnostic codes are canonical for the **bounded actor-header
+subset**, including legacy `ActorMail<T>` handler compatibility:
+
+| Code | Invalid program |
+| --- | --- |
+| `E_ACTOR_RECEIVES` | Declared `receives T` disagrees with the attached `receive(ActorMail<U>)` payload, or that required handler is missing |
+| `E_ACTOR_SEND_CONTRACT` | Invalid `sends void` or an application-send effect outside the declared `sends` bound |
+| `E_ACTOR_CONTRACT` | Duplicate or out-of-order `receives` / `sends` header clause |
+
+Implementations MUST preserve their existing strict unsupported-feature
+diagnostics for constructs they do not lower; an unsupported string wire
+error is not proof that a compiler implements string actor messaging.
+`receives never` and actor lifecycle-only support remain separately gated
+by the authenticated CONTROL contract.
+
+One shared source target is
+[`actor-bool-never-parity-v1.atto`](https://github.com/atto-lang/atto-platform-conformance/blob/feat/typed-actor-receives-sends-v1/fixtures/typed-actor-bool-v1/actor-bool-never-parity-v1.atto)
+(Git blob `a103999dd9b047e24ae79fedd88398374bc10590`).
+This target uses `receives bool sends never`, an actual
+`receive(ActorMail<bool>)` handler, and a no-outbound actor body. Backends
+must compile it without treating `sends` as a count. The JavaScript
+bounded backend has an executable generated-JS test; native LLVM and
+Rust/Wasm independent compiler acceptance remain conditional on executed
+exact-head build/test receipts.
+
 ## Open implementation details
 
 - Exact grammar for sum types and whether an explicitly declared `sends` effect can be parameterized.
 - Whether an explicit `receives never` actor is allowed for timer-only/CONTROL-only actors (recommended: yes).
-- Precise error names and diagnostics, plus the canonical `send` return type.
+- Non-header error taxonomy and the canonical `send` return/admission type.
 - Whether inferred effects become part of public actor interface metadata (recommended: yes, with deterministic generation IDs).
