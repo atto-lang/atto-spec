@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Type tests, conversion and scoped using](language/type-tests-casts-and-using-v1.md): candidate explicit type predicates, branch-local capture and checked conversion; no universal execution claim.
+
 - [Adversarial sequence conformance](language/seq-adversarial-conformance-v1.md) and [void return vectors](conformance/void-early-return-v1.json): target tests, not portable execution certification.
 
 - [Field-sensitive borrowing and projected actor-state receivers v1](language/field-sensitive-borrow-effects-v1.md): target typed disjoint places/NLL, authenticated method effects, and projected receiver write ceilings; not guest-certified.
