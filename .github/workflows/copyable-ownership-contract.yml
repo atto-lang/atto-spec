@@ -1,0 +1,45 @@
+name: Copyable ownership contract (host-only)
+on:
+  pull_request:
+    paths:
+      - 'language/copyable-ownership-v1.md'
+      - 'tests/copyable-ownership-contract.test.mjs'
+      - 'tests/copy-shallow-deep-v2.test.mjs'
+      - 'tests/copy-actor-aot-v1.test.mjs'
+      - 'language/fresh-return-types-v1.md'
+      - 'tests/fresh-return-contract.test.mjs'
+      - '.github/workflows/copyable-ownership-contract.yml'
+  push:
+    paths:
+      - 'language/copyable-ownership-v1.md'
+      - 'tests/copyable-ownership-contract.test.mjs'
+      - 'tests/copy-shallow-deep-v2.test.mjs'
+      - 'tests/copy-actor-aot-v1.test.mjs'
+      - 'language/fresh-return-types-v1.md'
+      - 'tests/fresh-return-contract.test.mjs'
+      - '.github/workflows/copyable-ownership-contract.yml'
+permissions:
+  contents: read
+jobs:
+  host-copy-oracle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Prove checked out head and execute HOST-ONLY test oracle
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          echo "HOST_ONLY_COPY_ORACLE_SHA=$EXPECTED_SHA"
+          echo "HOST_ONLY_COPY_ORACLE_TREE=$(git rev-parse 'HEAD^{tree}')"
+          node --version
+          node --check tests/copyable-ownership-contract.test.mjs
+          node --check tests/copy-shallow-deep-v2.test.mjs
+          node --check tests/copy-actor-aot-v1.test.mjs
+          node --test tests/copyable-ownership-contract.test.mjs tests/copy-shallow-deep-v2.test.mjs tests/copy-actor-aot-v1.test.mjs tests/fresh-return-contract.test.mjs

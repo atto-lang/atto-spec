@@ -5,7 +5,7 @@
 ## Canonical source form
 
 ```atto
-import module assert from pkg "std.assert";
+import namespace assert from std.assert;
 
 pub fnc test_mailbox(): void {
     assert.true(1 eq 1);
@@ -15,9 +15,9 @@ pub fnc test_mailbox(): void {
 }
 ```
 
-The canonical assertion interface is **`assert.<method>(...)`**, not a global `assert(condition)` function, statement, keyword, or compiler magic. `assert` is an ordinary statically bound **module** import alias. The `import module` spelling is the preferred explicit namespace form. `import * as assert from pkg "std.assert";` remains an accepted equivalent when static namespace imports are supported; neither form creates a runtime object or a class. There is no automatic prelude injection of a global `assert`; an independently declared user function named `assert` is governed by normal language naming/scope rules, but must not be mistaken for the standard module. A formatter must retain module qualification and must never rewrite `assert.true(x)` to bare `assert(x)`.
+The canonical assertion interface is **`assert.<method>(...)`**, not a global `assert(condition)` function, statement, keyword, or compiler magic. `assert` is an ordinary statically bound **module** import alias. The `import namespace` spelling is the preferred explicit namespace form under static imports v2. `import module` selects a declared public module, not a synthesized namespace. Reserved built-in `std.assert` uses no `pkg` selector. `import * as assert from "std.assert";` remains an accepted equivalent when static namespace imports are supported; neither form creates a runtime object or a class. There is no automatic prelude injection of a global `assert`; an independently declared user function named `assert` is governed by normal language naming/scope rules, but must not be mistaken for the standard module. A formatter must retain module qualification and must never rewrite `assert.true(x)` to bare `assert(x)`.
 
-`std.assert` is a normal audited package/module, not a runtime mutable class instance or a reflection-backed object. Its public exports are resolved at compile/link time and can be tree-shaken according to ordinary reachability and effect rules. No host-only builtin import or arbitrary FFI is implied. Import names and module symbols must respect the static import contract in `language/unified-static-imports-v1.md`.
+`std.assert` is a normal audited package/module, not a runtime mutable class instance or a reflection-backed object. Its public exports are resolved at compile/link time and can be tree-shaken according to ordinary reachability and effect rules. No host-only builtin import or arbitrary FFI is implied. Import names and module symbols must respect the current [static imports v2](static-imports-v2.md) contract, which supersedes conflicting v1 namespace rules.
 
 ## Required public API (v1)
 
@@ -42,7 +42,7 @@ Implementation may represent the public `true`/`false` exports through a declara
 
 ## Mandatory validation and compatibility
 
-1. **Syntax and binding:** parse `import module assert from pkg "std.assert";` and each dotted call; reject unbound modules/members, invalid arity, reserved bare `true` identifiers, and attempts to call a mutable runtime object as the `std.assert` namespace. Reject `assert.true` as a bare value if it is not a first-class callable export in that backend.
+1. **Syntax and binding:** parse `import namespace assert from std.assert;` and each dotted call; reject unbound modules/members, invalid arity, reserved bare `true` identifiers, and attempts to call a mutable runtime object as the `std.assert` namespace. Reject `assert.true` as a bare value if it is not a first-class callable export in that backend.
 2. **Type/effect checks:** boolean-only predicates, homogeneous generic `Eq` comparisons, independent expected/actual evaluation **exactly once in left-to-right order**, and compile-time failure on unsupported equality. Assert failure is typed `AssertionError`, not panic.
 3. **Execution:** invoke compiled `.atto` code in both success and failure cases; verify failure does not stop unrelated actors. Repeat under optimizations and Native AOT; verify assertions are not erased.
 4. **Negative controls:** false conditions fail; unequal values fail; mixed numeric types cannot silently coerce; forbidden keyword members fail; an unimported `assert` must not be invented.
