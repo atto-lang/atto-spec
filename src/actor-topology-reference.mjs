@@ -131,7 +131,7 @@ export class TopologyModel {
         staged.push({id, constructed});
       }
       this.#check(cap, 'create', type, purpose);
-      if (slots.some((s,i)=>this.#actors.get(s) !== prior[i]))
+      if (slots.some((s,i)=>(this.#actors.get(s) ?? null) !== prior[i]))
         throw new Error('CONFLICT');
       for (const {id} of staged) {
         const actor=Object.freeze({
