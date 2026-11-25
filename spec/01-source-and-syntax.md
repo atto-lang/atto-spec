@@ -102,6 +102,8 @@ An `if expression as const/let name` binding tests **presence**, not truthiness.
 
 ## Call syntax and operators
 
+The target Boolean forms are `&&`, `||` and `Xor(bool,bool)` with strict bool typing; `^^` is integer XOR. See [Boolean contract](../docs/CANONICAL_BOOLEAN_OPERATORS_V1.md) and [source fixture registry](../contracts/logical-punctuation-v1/contract.json). Historical word/comma/pipe operators are not canonical; effect-preserving migration is required.
+
 Arithmetic, checked comparison, assignment, function call, lambdas and generic arguments have distinct grammar slots. `|>` is the *value/function* pipeline operator. The keyword `pipe` is reserved for actor pipeline connections; neither is a synonym for bitwise `|`. `?` has context-dependent uses (optional type, parameter omission, postfix propagation, and ternary form) and must not be parsed with a global text replacement.
 
 ## Rejection requirements

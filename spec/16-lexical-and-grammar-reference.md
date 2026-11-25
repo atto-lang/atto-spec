@@ -95,6 +95,8 @@ All three body families are supported for return-first declarations: `{ ... }`, 
 
 See [normative return-first contract](https://github.com/atto-lang/atto-spec/blob/main/language/return-first-and-begin-callables-v1.md). Backend support and tests require independent evidence.
 
+The [logical punctuation fixture registry](../contracts/logical-punctuation-v1/contract.json) follows the current target, not the historical v0.6 table. `Xor` is an eager call, not an infix precedence tier; `&&` binds more tightly than `||`.
+
 ## Function forms
 
 **TARGET (decided):** `: T` and `-> T` are both valid return spellings, and `::` may be included or omitted. No one form is the only correct one.
