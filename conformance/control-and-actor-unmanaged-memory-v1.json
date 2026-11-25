@@ -1,0 +1,411 @@
+{
+  "schemaVersion": 1,
+  "language": "AttoLang",
+  "feature": "control-and-actor-unmanaged-memory-v1",
+  "contract": "language/control-and-actor-unmanaged-memory-v1.md",
+  "status": "TARGET_ONLY_NOT_EXECUTED",
+  "referenceAbis": [
+    "offset8_plus_one",
+    "generation20_slot12",
+    "generation16_slot16",
+    "segmented_handle32"
+  ],
+  "notes": [
+    "Design-only acceptance targets: NO compiled Atto guest or JVM/.NET zero-managed-allocation proof is claimed.",
+    "Host runtime GC remains separately accounted; offheap guest ownership is not whole-process zero GC."
+  ],
+  "backendStatus": {
+    "atto-source.atto": "NOT_EXECUTED",
+    "atto-source.net": "NOT_EXECUTED",
+    "atto-source.hdl": "NOT_EXECUTED",
+    "atto-source.java": "NOT_EXECUTED",
+    "atto-source.realtime": "NOT_EXECUTED",
+    "atto-source.rs": "NOT_EXECUTED",
+    "atto-source.llvm": "NOT_EXECUTED",
+    "atto-source.js": "NOT_EXECUTED",
+    "atto-source.forge": "NOT_EXECUTED",
+    "atto-source.wasm": "NOT_EXECUTED",
+    "atto-source.cranelift": "NOT_EXECUTED"
+  },
+  "cases": [
+    {
+      "id": "CM01",
+      "name": "actor-and-control-u32-locators",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "Both actor and control domains use separate four-byte logical ref fields, without exposing native addresses",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM02",
+      "name": "i64-scalar-in-ref32-object",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "64-bit scalar field round-trips in object addressed by four-byte ref",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM03",
+      "name": "i128-scalar-gated",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "Supported i128 profile stores sixteen byte value, otherwise explicit unsupported diagnostic",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM04",
+      "name": "simd128-gated",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "Supported SIMD128 profile retains 128-bit lanes without widening object references",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM05",
+      "name": "control-actor-collision",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "Same numeric word from actor and control heap never authorizes cross-domain dereference",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM06",
+      "name": "same-token-cross-actor-collision",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "Actor A ref cannot alias actor B even when identical numeric word and generation",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM07",
+      "name": "mismatched-abi-id",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "Runtime rejects offset8_plus_one versus generation20_slot12 or generation16_slot16 before admission",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM08",
+      "name": "forged-control-ref",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "Guest integers and actor message fields cannot forge control domain reference or priority control ticket",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM09",
+      "name": "stale-generation-and-wakeup",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "Stale slot/wakeup identity rejected on recycle restart and generation wrap",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM10",
+      "name": "unsigned-offset-end-bound",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "Malformed high-bit offset, misalignment, overflow, and one-past-end denied without partial mutation",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM11",
+      "name": "bounded-control-metadata",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "Control descriptors and queues consume explicit bounded native or prefunded resources",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM12",
+      "name": "quota-failure-atomic",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "OOM or control queue saturation cannot partially enqueue, consume sender ownership or corrupt other domains",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM13",
+      "name": "quiescent-independent-teardown",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "Actor STOP leaves control heap and sibling actors intact; runtime STOP releases each domain once after pins quiesce",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM14",
+      "name": "concurrent-wakeup-publish",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "Concurrent control queue publication is linearizable with correct release/acquire ordering",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM15",
+      "name": "jvm-allocation-free-hotpath",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "JDK25 compiled guest and carrier measured zero managed allocation per warmed audited turn/send; host GC separately reported",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM16",
+      "name": "dotnet-allocation-free-hotpath",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "NativeAOT compiled guest and carrier measured zero managed allocation per warmed audited turn/send; CLR GC separately reported",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM17",
+      "name": "no-host-gc-certification-shortcut",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "Quiet host GC or an offheap host-unit test alone cannot certify whole process zero-GC or compiler guest parity",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "CM18",
+      "name": "source-execution-provenance",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "Zero-step CI, absent artifact hashes and target-only fixture cannot be promoted to PASS",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "atto-source.atto": "NOT_EXECUTED",
+        "atto-source.net": "NOT_EXECUTED",
+        "atto-source.hdl": "NOT_EXECUTED",
+        "atto-source.java": "NOT_EXECUTED",
+        "atto-source.realtime": "NOT_EXECUTED",
+        "atto-source.rs": "NOT_EXECUTED",
+        "atto-source.llvm": "NOT_EXECUTED",
+        "atto-source.js": "NOT_EXECUTED",
+        "atto-source.forge": "NOT_EXECUTED",
+        "atto-source.wasm": "NOT_EXECUTED",
+        "atto-source.cranelift": "NOT_EXECUTED"
+      }
+    }
+  ],
+  "controlPlaneAbiId": "control_generation12_slot20_v1"
+}
