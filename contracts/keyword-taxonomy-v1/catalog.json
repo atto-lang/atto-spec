@@ -3,9 +3,13 @@
   "status": "DRAFT_TOOLING_METADATA_NOT_COMPILER_VERIFIED",
   "basis": {
     "source": "spec/16-lexical-and-grammar-reference.md",
-    "scope": "documented Java lexer inventory at chapter 16 cited revisions, not a live lexer extraction",
+    "scope": "Historical chapter-16 documented Java inventory plus explicitly staged target additions; not a live lexer extraction",
     "backend_parity": "NOT_TESTED",
-    "guest_executions": 0
+    "guest_executions": 0,
+    "target_only_additions": [
+      "ifnot",
+      "unless"
+    ]
   },
   "reserved_groups": [
     {

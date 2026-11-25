@@ -1,0 +1,28 @@
+name: Implicit receiver and qualified calls (host-only oracle)
+on:
+  pull_request:
+    paths:
+      - 'language/implicit-receiver-qualified-calls-v1.md'
+      - 'conformance/implicit-receiver-qualified-calls-v1.json'
+      - 'tests/implicit-receiver-qualified-calls.test.mjs'
+      - '.github/workflows/implicit-receiver-qualified-calls.yml'
+  push:
+    paths:
+      - 'language/implicit-receiver-qualified-calls-v1.md'
+      - 'conformance/implicit-receiver-qualified-calls-v1.json'
+      - 'tests/implicit-receiver-qualified-calls.test.mjs'
+      - '.github/workflows/implicit-receiver-qualified-calls.yml'
+permissions:
+  contents: read
+jobs:
+  reference-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate host-only reference oracle (NOT guest execution)
+        run: |
+          node --version
+          node --test tests/implicit-receiver-qualified-calls.test.mjs

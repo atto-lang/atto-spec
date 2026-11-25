@@ -1,0 +1,10 @@
+// Candidate negative fixture: a writer cannot coexist with an active reader.
+define class Box as
+  pub let int value = 42;
+end
+pub fnc main(): int {
+  let Box owner = new Box();
+  val read = borrow! owner;
+  val write = borrow! mut owner;
+  return read.value + write.value;
+}

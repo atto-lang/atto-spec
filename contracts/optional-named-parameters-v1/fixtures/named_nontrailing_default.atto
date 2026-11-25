@@ -1,0 +1,7 @@
+fnc total(int start? = 40, int finish): int {
+  return start + finish;
+}
+
+pub fnc main(): int {
+  return total(finish: 2);
+}

@@ -28,13 +28,13 @@ For either keyword, `true` **does not** execute the first arm; `false` **does**.
 | `do if/ifnot/unless condition then ... [else ...] fi` | Statement | No value | `fi` |
 | `if/ifnot/unless condition { ... } [else { ... }]` | Statement | No value | Matching braces only |
 
-Expression-form `if` requires a boolean condition and compatible static value types on both arms. Evaluate its condition exactly once, evaluate only the selected arm, and honor ownership/move/borrow checks when joining branch results. The initial portable implementation supports a single expression per value arm. A future block-valued extension must specify tail-expression rules explicitly rather than treating an imperative block as a value.
+Expression-form `if` requires a boolean condition and compatible static value types on both arms. Evaluate its condition exactly once, evaluate only the selected arm, and honor ownership/move/borrow checks when joining branch results. The initial portable implementation supports a single expression per value arm. The separately gated [v2 arm-block contract](27-conditional-expression-modes.md) specifies tail-expression and final arm-local return rules; this base profile does not automatically admit those extensions.
 
 There is no implicit conversion from statement `if` to expression `if`, and no implicit fallback for a keyword-delimited `if` without `do`. The `else` of a value `if` is mandatory; the `else` of a statement `if` is optional.
 
 ## Control transfers are not values
 
-A bare `break`, `continue`, or `return` cannot serve as the result of an `if` expression, even when a backend models unreachable paths using a bottom/never type. No implicit coercion of a control-transfer statement into a value expression is admitted. Such transfers are permitted in a `do if` or brace-style conditional when the enclosing lexical context allows them.
+A bare `break`, `continue`, or `return` cannot serve as the result of a single-expression `if` arm, even when a backend models unreachable paths using a bottom/never type. No implicit coercion of a control-transfer statement into a value expression is admitted. Such transfers are permitted in a `do if` or brace-style conditional when the enclosing lexical context allows them.
 
 ```atto
 // OK: a typed conditional value.

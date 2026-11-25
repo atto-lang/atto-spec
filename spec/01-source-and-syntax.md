@@ -42,9 +42,11 @@ The samples use one of several valid function forms: `: T` and `-> T` are both r
 - `define supervisor Name as ... end` declares a distinct runtime-owned nominal supervisor (TARGET), not a class or actor. Supervisor **instances** may supervise instances of other supervisors; declarations are not lexically nested. See [supervisor hierarchy](13-supervisor-hierarchies.md).
 - `define macro` is an intended compile-time feature; expansion timing, hygiene, capabilities and backend admission remain PROPOSED rather than assumed.
 
+**Target initialization rule:** [chapter 27](27-implicit-const-and-const-mut.md) defines `T x = e` as a compile-time typed local constant; explicit `val`/`let` permit runtime initializers. [Chapter 28](28-explicit-initialization-no-implicit-defaults.md) requires an explicit initializer for every local and proved complete construction before object publication. Neither changes implicit `val` ordinary class-field binding rules.
+
 ## Bindings and fields
 
-`val` declares an immutable binding, `let` a mutable binding, and `const` requires a compile-time constant. A `final` class field is single-assignment; a compile-time constant final initializer can be canonicalized from `final const` to `final` when proven constant. Instance field declarations default to immutable value slots unless explicit mutation is declared; the exact implicit-`val` grammar is a migration target.
+`val` declares an immutable binding, `let` a mutable binding, and `const` requires a compile-time constant. A `final` class field is single-assignment; a compile-time constant final initializer can be canonicalized from `final const` to `final` when proven constant. Unqualified ordinary class fields default to **`val`**, independent of type. Explicit `let` permits rebinding, and `mut` independently requests referent-write authority. Historical implicit-`let` is migration-only.
 
 ```atto
 val answer = 42
@@ -52,7 +54,7 @@ let counter = 0
 const max_retries = 3
 
 define class Session as
-  int id: 7             // implicit immutable field (target)
+  int id: 7             // implicit val: fixed binding
   let int attempts: 0   // explicitly mutable field
   final int epoch: 1    // assigned exactly once
 end
@@ -63,23 +65,15 @@ A local binding and class field are distinct syntactic contexts. No implicit ass
 ## Control flow
 
 ```atto
-// Keyword-delimited imperative conditionals explicitly start with do.
 do if ready then
   consume()
 else
   retry()
 fi
 
-// Braces are imperative and do not need fi.
-if ready {
-  consume()
-} else {
-  retry()
-}
-
-// Keyword-delimited if without do must produce a value.
-val int priority = if ready then 10 else 20 fi;
-val int alternate = ready ? 10 : 20;
+do if load_optional() as const item then
+  use(item)
+fi
 
 while should_continue() do
   rt cooperate
@@ -102,18 +96,21 @@ unless should_stop {
 val int selected = unless ready then 5 else 6 fi;
 ```
 
+Canonical keyword-delimited statement conditionals require `do`; historical bare statement `if` is migration-only. Value conditionals require `else` and a compatible result, and brace statements require no `fi`. See [the base conditional target](27-value-conditionals-and-do-if.md) and [the separately gated v2 arm blocks](27-conditional-expression-modes.md). Preserve positive presence-binding semantics and all guard rules.
 
-A bare `if ... then ... fi` is not a statement in the canonical AttoLang grammar; it requires an `else` value and value-producing arms. `do if ... then ... fi` and `if ... { ... } else { ... }` are imperative statements. Inside a loop, use `do if condition then break; fi`, **not** `if condition then break; fi`. `break`, `continue`, and `return` are control transfers, not conditional expression values. See [value conditionals and do-if](27-value-conditionals-and-do-if.md).
+The **target** early-exit syntax admits both `guard condition { terminal_failure_path }` and `guard condition else terminal_failure_path end`. The guard condition expresses what must hold to continue; a failing condition runs the failure path, which MUST explicitly return from the enclosing function on every possible path (`return value` or `return;` for void; verified lexical `^` is equivalent). `throw`, `raise`, `panic`, `break`, and `continue` cannot discharge this return requirement. The two forms must lower identically, and the formatter preserves the authored block style. A comma-separated guard list checks each clause once, left to right. The brace form has no owned `else`; the keyword form owns `else ... end`, never `fi`. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
 
-The **target** early-exit spelling is `guard condition { terminal_failure_path }` with **no `else` or `fi`**. A comma-separated guard list checks each clause once, left to right. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
+An `if expression as const/let name` binding tests **presence**, not truthiness. Contextual `const` binds the runtime value immutably, without a compile-time evaluation requirement; `let` permits rebinding within ordinary ownership rules. `final` is not a conditional-binding keyword.
 
-An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.
+`match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. Every `match ... over` arm requires contextual `on`, including `on Ok(ack)`, `on Err(err)` and `on _`; bare patterns, `else`, `default` and `on default` are invalid match arms. `default` belongs to `switch`. An expression-form `return match ...` must infer its enclosing return type where admitted. Typed variants such as `match<int>` and `select<int>` constrain arm results. Duplicate and unreachable arms should be compile errors; exhaustive/disjoint-vs-priority matching is still subject to [open questions](12-open-questions.md).
 
-`match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. An expression-form `return match ...` must infer its enclosing return type where admitted. Typed variants such as `match<int>` and `select<int>` constrain arm results. Duplicate and unreachable arms should be compile errors; exhaustive/disjoint-vs-priority matching is still subject to [open questions](12-open-questions.md).
+A value `match` yields its selected arm's value. Inside a block arm, `return value;` or `^ value;` targets the arm join, not the enclosing callable. Only an explicit outer `return match ... end;` or `^ match ... end;` returns from the enclosing callable. `do match` is imperative: fallthrough, `return;`, `return void;` and `^ void;` complete the arm locally; value returns are rejected. Evaluate the subject once, try patterns in source order, bind before evaluating `when`, continue after a false guard, and require unguarded exhaustive coverage for value matches. Reject unreachable arms. See [the November 23 decision](../language/cross-backend-semantics-reconciliation-v1.md#control-flow).
 
 ## Call syntax and operators
 
-Arithmetic, checked comparison, assignment, function call, lambdas and generic arguments have distinct grammar slots. `|>` is the *value/function* pipeline operator. The keyword `pipe` is reserved for actor pipeline connections; neither is a synonym for bitwise `|`. `?` has context-dependent uses (optional type, parameter omission, postfix propagation, and ternary form) and must not be parsed with a global text replacement.
+The target Boolean forms are `&&`, `||` and `Xor(bool,bool)` with strict bool typing; `^^` is integer XOR. See [Boolean contract](../docs/CANONICAL_BOOLEAN_OPERATORS_V1.md) and [source fixture registry](../contracts/logical-punctuation-v1/contract.json). Historical word/comma/pipe operators are not canonical; effect-preserving migration is required.
+
+Arithmetic, checked comparison, assignment, function call, lambdas and generic arguments have distinct grammar slots. `|>` is the *value/function* pipeline operator. The keyword `pipe` is reserved for actor pipeline connections; neither is a synonym for bitwise `|`. The staged [bang-suffixed alias contract](../language/bang-pipeline-and-stop-aliases-v1.md) defines `pipe!`/`rpipe!`/`stop!` as context-checked semantic aliases of `pipe`/`rpipe`/`stop`, without changing direction, lifecycle effects or stop capabilities; `rpipe` itself is pending the directional pipeline proposal. `?` has context-dependent uses (optional type, parameter omission, postfix propagation, and ternary form) and must not be parsed with a global text replacement.
 
 ## Rejection requirements
 
