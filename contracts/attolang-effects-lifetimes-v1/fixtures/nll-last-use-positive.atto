@@ -1,0 +1,11 @@
+// Candidate positive fixture: non-lexical read loan ends at its last use.
+define class Box as
+  pub let int value = 42;
+end
+pub fnc main(): int {
+  let Box owner = new Box();
+  val view = borrow! owner;
+  val snapshot = view.value;
+  val moved = take! owner;
+  return snapshot;
+}

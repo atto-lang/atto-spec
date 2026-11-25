@@ -11,7 +11,7 @@
 | `Observable<T>` | Push; cold/hot semantics explicitly defined | Bounded RELIABLE/LATEST/LOSSY strategy, owned subscription |
 | `Flow<T>` / `Subscription<T>` | Push with `request(n)` demand credits | No NEXT without credit; finite outstanding credits and in-flight budget |
 | `Channel<T>` | Typed unicast transfer; `readch`/`writech` | Capacity 0 rendezvous, or finite FIFO buffer and waiter quota |
-| `Future<T>`, `Task<T>`, `TaskStep<T>` | One result, eager structured task, lazy single-use task | Distinct from streaming and one another |
+| `Future<T>`, `TaskFuture<T>`, `TaskStep<T>` | One result, independently scheduled structured task control and receipt, candidate lazy single-use step | Distinct from streaming and one another |
 
 `Flow` is a proposed library interface name, not a new keyword or a certified runtime type. Functional `|>` and actor `pipe` retain separate meanings. Methods use `snake_case` (`try_send`, `from_ch`, `map_err`) and must allow full AOT without JIT-only dynamic dispatch.
 
@@ -20,7 +20,7 @@ Multiple readers of one channel are work-sharing, never implicit broadcast. `Obs
 ## Required invariants
 
 1. **Linear ownership admission.** Successful `try_send` transfers exactly one owned `T`. Failed full/closed/quota/cancel-before-commit/stale-generation admission returns the same owned `T` inside a typed failure, with no implicit copy/drop. Once admitted, cancellation cannot revoke a committed envelope. Admission ACK is not handler completion, I/O flush, remote receipt or physical retirement.
-2. **Borrow and capability safety.** `rt take` moves; `rt copy` requires Copy; `rt share` requires validated shared/frozen rights. Stack loans, actor-state loans, callbacks and `rt borrow mut` cannot escape lazy closures, suspension, isolated actors or lifetimes without proven pinning/alias safety. `Sendable` does not imply `Serializable`. Reject unsupported effects before emitting IR.
+2. **Borrow and capability safety.** `take!` moves; `copy!` requires Copy; `share!` requires validated shared/frozen rights. Stack loans, actor-state loans, callbacks and `borrow! mut` cannot escape lazy closures, suspension, isolated actors or lifetimes without proven pinning/alias safety. `Sendable` does not imply `Serializable`. Reject unsupported effects before emitting IR.
 3. **Whole-graph bounded memory.** Account slots, bytes, checked-out/unacknowledged payloads, in-flight continuations, producer/consumer/select waiters, serialization/copy buffers, callback queues and multicast fanout. Before pulling upstream or retaining a producer waiter, reserve downstream capacity. A bounded queue with unbounded pending Tasks is not bounded memory.
 4. **Finite demand.** `request(n)` rejects zero/negative/fractional/overflow/over-quota requests without changing state. NEXT consumes exactly one credit; terminal signals do not. Credits are per subscription and distinct from the actor's DATA/CONTROL reservations. Zero-capacity channel means a committed rendezvous, not a hidden capacity-one queue.
 5. **Terminal and cancellation order.** Preserve the four-way consumer signal `Result<Option<T>, Option<E>>`: `Ok(Some(value))` NEXT, `Ok(None)` COMPLETE, `Err(None)` CANCELLED, `Err(Some(error))` ERROR. Nested Option/Result payloads remain ordinary data. Graceful close drains committed FIFO values; ERROR/CANCELLED settle undelivered queued values exactly once. Physical loans stay charged until acknowledged/retired; no double refund or stale-generation resurrection. Terminal publication is a one-winner linearization: once COMPLETE is committed, later cancellation MUST NOT turn it into CANCELLED or discard its committed FIFO payloads; once CANCELLED wins, later COMPLETE MUST NOT resurrect the stream. A terminal producer decision is distinct from consumer acknowledgement, so existing checked-out payload loans remain charged until physical ACK.
@@ -29,7 +29,7 @@ Multiple readers of one channel are work-sharing, never implicit broadcast. `Obs
 
 ## Conformance gates
 
-- **Parser/formatter/borrow checking:** same-source positive and negative `.atto` cases for iterator types, `|>` vs actor `pipe`, loan escape, use-after-take, illegal `rt copy/share`, missing effects, sealed actor state.
+- **Parser/formatter/borrow checking:** same-source positive and negative `.atto` cases for iterator types, `|>` vs actor `pipe`, loan escape, use-after-take, illegal `copy!` / `share!`, missing effects, sealed actor state.
 - **Pull/lazy:** 0/1/N/infinite lazy sources, early exit, nested Option/Result and typed `collect` memory/drop behavior.
 - **Channels:** capacity 0/1/N, FIFO, waiting producers, bounded slots/bytes, max waiters, atomic select winner/loser, failed sends retaining ownership and close races.
 - **Push/demand:** zero/invalid/overflow requests, no unsolicited NEXT, hot/cold semantics, finite overflow policy, exclusive single reader, explicit work-sharing and broadcast, slow-subscriber isolation.
@@ -42,7 +42,7 @@ The [bounded source-free reference model](https://github.com/atto-lang/atto-rx-c
 
 ## Toolchain support tiers and honest conformance
 
-The `oreslang-source.*` namespace contains **nine** separate source toolchains.
+The historical nine-toolchain reactive registry covers a subset of the current `atto-source.*` ecosystem. New backends require explicit evidence rather than inherited status.
 The primary full-runtime parity targets are Java/GraalVM, LLVM, Wasm, Forge,
 and .NET Native AOT. JavaScript is a separate browser/Node worker-adapter
 target. The Rust and Cranelift scalar subsets currently **must reject**
@@ -57,5 +57,8 @@ support claim must identify exactly which layer passed: syntax rejection,
 type-checking, host channel, compiled AttoLang guest, worker transport,
 Native AOT, or measured memory profile. Compiled guest results require an
 authenticated exact-head receipt for the real compiler and fixture.
-All nine toolchains are tracked separately in
+The historical nine toolchains are tracked separately in
 `atto-lang/atto-platform-conformance/contracts/pull-push-admission-v1.json`.
+
+
+The [TaskFuture contract](../language/task-future-control-v1.md) governs the unique result receipt and child control surface; a subscription is not a task-control capability. [Checked directional I/O](../language/io-direction-shorthand-v1.md) performs a single operation, not automatic stream conversion. No new grammar or compiled parity follows from this chapter.

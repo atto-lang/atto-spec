@@ -1,0 +1,6 @@
+define class Point as
+    constructor(int x) { return; }
+    constructor(string x) { return; }
+end
+
+pub fnc main(): int { return 0; }

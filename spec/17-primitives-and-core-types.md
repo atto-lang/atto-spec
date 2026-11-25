@@ -20,11 +20,17 @@
 
 AttoLang has **no `null` value** and **no truthiness**. Absence is `Option<T>`, and conditions must have type `bool`.
 
-The grammar has no `&&` or `||`. Besides `,` and `|` in conditions, boolean logic uses the built-in `And`, `Or` and `Xor` functions, such as `And(true, true)`.
+Boolean logic uses `&&` and `||` with strict `bool` operands and short-circuit evaluation. Boolean exclusive OR uses `Xor(bool,bool)`, not `^^`, which is reserved for integer bitwise XOR. The built-in `And`, `Or` and `Xor` functions remain available; historical condition-only comma/pipe forms require explicit migration and must not be silently rewritten if effects differ. See [operator contract](../language/bitwise-and-stream-operators-v1.md).
+
+## Bitwise integers (target)
+
+The signed 64-bit `int` operations `& | ^^ ~ <<< >>> ashr` act on two's-complement bit patterns. Left shift discards high bits, logical right shift zero-fills, and arithmetic right shift sign-extends. Counts outside `0..63` are checked language failures, not masked. Examples: `12 & 10` gives 8, `12 ^^ 10` gives 6, `-1 >>> 1` gives 9223372036854775807, `-8 ashr 1` gives -4, and `1 <<< 63` gives -9223372036854775808. These are bit operations, not arithmetic overflow or type coercion. Single `^` means return in statement position, `Xor` is Boolean XOR, and `<<`/`>>` are typed I/O. See [chapter 16](16-lexical-and-grammar-reference.md#current-target-bitwise-precedence-and-token-boundaries) and the [operator contract](../language/bitwise-and-stream-operators-v1.md). Backend execution remains separately verified.
+
+The [numerical semantics v1 target](../language/numeric-semantics-v1.md) extends the decided checked-integer and truncating division rules to exact decimal contexts, fixed-point, vector kernels and dimensions. Host reference tests do not establish guest support.
 
 ## Integer rules
 
-The chapter 02 rule is that no backend may rely on unchecked host overflow when the source specifies checked arithmetic. The backends do not agree on what happens today:
+The chapter 02 rule is that no backend may rely on unchecked host overflow when the source specifies checked arithmetic. The following table is historical observation, not current language semantics:
 
 | Program | Java | LLVM |
 | --- | --- | --- |
@@ -37,11 +43,11 @@ The chapter 02 rule is that no backend may rely on unchecked host overflow when 
 | `5 % 0` | Fails with a host `ArithmeticException` | Rejected unless the divisor is a nonzero literal |
 | `1 eq 1.0` | True | Rejected: operands must have the same scalar type |
 
-**TARGET (decided):** integer arithmetic is checked. Overflow is a panic, so it fails the actor, which is then restarted under [chapter 18](18-runtime-guarantees.md). It never wraps silently. Wrapping happens only through explicitly named operations, whose names are not chosen yet.
+**TARGET (decided 2026-11-23):** integer arithmetic is checked. Dynamic overflow produces an ordinary thrown `ArithmeticOverflowError`, caught by ordinary catch or `trap!`, not source raise/panic. Unhandled errors follow [chapter 07](07-errors-and-failure.md) and [chapter 18](18-runtime-guarantees.md). No silent wrapping.
 
 This has a direct consequence: sized types must be real types with enforced ranges, not aliases of `int`, or `i8` could never overflow.
 
-Java needs real changes to meet this, and LLVM's trap needs to become an actor-level failure. Checks add some cost to arithmetic.
+Backends must emit the checked guest-error path or reject operations whose safety cannot be established.
 
 **PROPOSED** (S-24):
 
@@ -49,9 +55,9 @@ Java needs real changes to meet this, and LLVM's trap needs to become an actor-l
 2. `bigint` is either truly arbitrary precision or rejected. It must not silently act as 64-bit.
 3. Division by zero is a language-level failure with a defined class, never a host exception.
 
-Outside an actor, an overflow panic ends the root invocation as described in [chapter 07](07-errors-and-failure.md).
+Outside an actor, unhandled overflow ends the root invocation as described in [chapter 07](07-errors-and-failure.md).
 
-Whether `int / int` gives a `float` or an integer is a separate decision (S-25). Java's current behavior surprises anyone coming from C, Rust or Java itself.
+**DECIDED (2026-11-23):** `int / int` truncates toward zero and returns an `int`. Explicit floating operands select floating division. Zero division and signed minimum divided by minus one are distinct ordinary guest errors; see the [numeric reconciliation](../language/cross-backend-semantics-reconciliation-v1.md#numeric-semantics).
 
 ## Equality and identity
 
@@ -76,7 +82,13 @@ Whether `int / int` gives a `float` or an integer is a separate decision (S-25).
 - `ArrayList` is not a core sequence type on Java `main`. Chapter 02 uses it only as a conditional example.
 - On Java, an out-of-bounds index fails with a host `IllegalArgumentException`. **TARGET:** it becomes a language-level panic with a defined class.
 
+## Collection factory spelling (target)
+
+See the [canonical named collection-factory spelling proposal](../language/collection-factory-spelling-target-v1.md). Structural type shorthand is not a collection value factory; existing bitwise complement and separately specified collection literals are unaffected. Constructor admission, ownership and exact guest evidence remain independently gated.
+
 ## Option and Result
+
+The unqualified `Option`, `Result`, `Some`, `None`, `Ok` and `Err` names belong to the **automatic core prelude**; users need not explicitly import them. This is a compile-time source binding, not a process-global value. For the profile boundaries and the rules for `String`, collections, ownership, name collisions and cross-backend conformance, see [automatic prelude v1](../language/automatic-prelude-v1.md).
 
 Both are ordinary data, not exceptions. `Result` always takes two type arguments.
 

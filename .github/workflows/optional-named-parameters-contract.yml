@@ -1,0 +1,31 @@
+name: Optional and named parameter reference contract
+on:
+  push:
+    paths:
+      - 'contracts/optional-named-parameters-v1/**'
+      - 'tests/optional-named-guest-fixtures.test.mjs'
+      - 'tests/optional-named-parameters-contract.test.mjs'
+      - 'tests/helpers/optional-named-binder-reference.mjs'
+      - '.github/workflows/optional-named-parameters-contract.yml'
+      - 'spec/27-optional-and-named-arguments.md'
+  pull_request:
+    paths:
+      - 'contracts/optional-named-parameters-v1/**'
+      - 'tests/optional-named-guest-fixtures.test.mjs'
+      - 'tests/optional-named-parameters-contract.test.mjs'
+      - 'tests/helpers/optional-named-binder-reference.mjs'
+      - '.github/workflows/optional-named-parameters-contract.yml'
+      - 'spec/27-optional-and-named-arguments.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-free-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate source-free reference shape (not guest tests)
+        run: node --test tests/optional-named-parameters-contract.test.mjs tests/optional-named-guest-fixtures.test.mjs
