@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "contract_id": "attolang-effects-lifetimes-v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "canonical_extension": ".atto",
+  "required_backends": [
+    "llvm",
+    "java",
+    "wasm",
+    "dotnet",
+    "forge",
+    "cranelift"
+  ],
+  "model": {
+    "ownership": "SINGLE_OWNER_WITH_COMPATIBLE_LOANS",
+    "lifetime": "TYPED_CFG_NLL_PLUS_ACTOR_TASK_REGION_AND_EPOCH",
+    "effect_rows": "TRANSITIVE_UPPER_BOUNDS_NOT_CAPABILITIES",
+    "unknown_target_in_strict_profile": "REJECT",
+    "latent_effects": "PRESERVE_THROUGH_CALLBACK_TASK_FUTURE",
+    "pure": "OBSERVATIONAL_NOT_NO_ALLOC_OR_NO_THROW",
+    "trap_discharge": [
+      "throw"
+    ],
+    "trap_never_discharges": [
+      "raise",
+      "panic",
+      "cancellation",
+      "io"
+    ],
+    "readers_writer": "MULTIPLE_READERS_OR_ONE_WRITER_FAIR_NONPARKING",
+    "move_while_borrowed": "REJECT",
+    "alias_incompatible": "REJECT",
+    "cross_suspend_loan": "REJECT_UNLESS_PINNED_NONINTERFERING_AND_GENERATION_FENCED",
+    "owner_transfer": "ATOMIC_INVALIDATE_PREVIOUS_AUTHORITY",
+    "retirement": "PHYSICAL_QUIESCENCE_REQUIRED_AFTER_LOGICAL_COMPLETION",
+    "syntax_policy": "SEMANTICS_FIRST_EFFECT_CLAUSE_SPELLING_UNSETTLED"
+  },
+  "evidence": {
+    "baseline": "NOT_EXECUTED",
+    "eligible_tier": "ORES_GUEST_EXECUTED",
+    "required_fields": [
+      "source_commit",
+      "source_tree",
+      "fixture_blob",
+      "compiler_commit",
+      "workflow_blob",
+      "run_id",
+      "run_attempt",
+      "job_id",
+      "runner_id",
+      "executed_non_housekeeping_steps",
+      "observed_result",
+      "artifact_sha256"
+    ],
+    "rejected_as_proof": [
+      "zero_step_job",
+      "host_only_test",
+      "parser_only_test",
+      "generic_parse_error",
+      "source_free_canary",
+      "unverified_cross_org_mirror"
+    ]
+  },
+  "cases": [
+    {
+      "id": "move-while-borrowed-reject",
+      "kind": "compile_reject",
+      "diagnostic": "move_while_borrowed",
+      "path": "contracts/attolang-effects-lifetimes-v1/fixtures/move-while-borrowed-reject.atto",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "read-write-alias-reject",
+      "kind": "compile_reject",
+      "diagnostic": "incompatible_borrow",
+      "path": "contracts/attolang-effects-lifetimes-v1/fixtures/read-write-alias-reject.atto",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "borrow-across-suspension-reject",
+      "kind": "compile_reject",
+      "diagnostic": "borrow_across_suspension",
+      "path": "contracts/attolang-effects-lifetimes-v1/fixtures/borrow-across-suspension-reject.atto",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "nll-last-use-positive",
+      "kind": "compile_and_execute",
+      "expected_exit": 42,
+      "diagnostic": null,
+      "path": "contracts/attolang-effects-lifetimes-v1/fixtures/nll-last-use-positive.atto",
+      "status": "AUTHORED_NOT_EXECUTED"
+    }
+  ]
+}

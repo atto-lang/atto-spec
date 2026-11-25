@@ -1,0 +1,437 @@
+{
+  "schema": "attolang.aot-patterns-and-overloads.v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "source_extension": ".atto",
+  "note": "Source-level target corpus and reference checks; not compiled guest evidence.",
+  "require_all_backends": [
+    "java-graal-aot",
+    "llvm-native-aot",
+    "wasm-aot",
+    "forge-aot",
+    "dotnet-nativeaot"
+  ],
+  "cases": [
+    {
+      "id": "symbol_hash_identity",
+      "feature": "symbols",
+      "kind": "accept",
+      "source": "val status: Symbol = #ready; val txt = \"#ready\";",
+      "expect": "symbol_not_string"
+    },
+    {
+      "id": "fnc_arity_overload",
+      "feature": "overload",
+      "kind": "accept",
+      "source": "fnc sum(int a): int { return a; } fnc sum(int a, int b): int { return a + b; } pub fnc main(): int { return sum(20, 22); }",
+      "expect": 42
+    },
+    {
+      "id": "method_receiver_arity",
+      "feature": "overload",
+      "kind": "accept",
+      "source": "declare class Count; mtd (Count self) read(): int { return 42; } mtd (Count self) read(int offset): int { return offset; }",
+      "expect": "two_slots"
+    },
+    {
+      "id": "ctor_arity",
+      "feature": "constructor",
+      "kind": "accept",
+      "source": "define class Pair as constructor(int a) { } constructor(int a, int b) { } end",
+      "expect": "two_slots"
+    },
+    {
+      "id": "nested_structural",
+      "feature": "destructure",
+      "kind": "accept",
+      "source": "match data over on ~ {user: ~ {id: int} as user} as root -> { return user.id; } on _ -> { return -1; } end",
+      "expect": "nested_static_capture"
+    },
+    {
+      "id": "list_head_tail",
+      "feature": "destructure",
+      "kind": "accept",
+      "source": "match values over on [head | tail] -> { use_tail(head, tail); } on _ -> {} end",
+      "expect": "head_tail"
+    },
+    {
+      "id": "list_multi_head_tail",
+      "feature": "destructure",
+      "kind": "accept",
+      "source": "match values over on [a, b | rest] -> { use_tail(a, rest); } on _ -> {} end",
+      "expect": "two_head_rest"
+    },
+    {
+      "id": "binary_be_length",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on binary {version: u8, length: u16be, payload: bytes[length], ..rest} -> { process_payload(payload); } on _ -> {} end",
+      "expect": "parse_be"
+    },
+    {
+      "id": "packet_be_length",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on packet {version: u8, length: u16be, payload: bytes[length], ..rest} as frame -> { process_payload(frame.payload); } on _ -> {} end",
+      "expect": "parse_be"
+    },
+    {
+      "id": "binary_bitfields",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on binary {flags: bits[3], kind: bits[5], ..rest} -> { return kind; } on _ -> { return 0; } end",
+      "expect": "bit_widths"
+    },
+    {
+      "id": "binary_le",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on binary {value: u32le} -> { return value; } on _ -> { return 0; } end",
+      "expect": "little_endian"
+    },
+    {
+      "id": "overload_same_primitive_arity",
+      "feature": "overload",
+      "kind": "reject",
+      "source": "fnc read(int x): int { return 1; } fnc read(string x): int { return 2; }",
+      "diagnostic": "E_OVERLOAD_SAME_ARITY_NONNOMINAL"
+    },
+    {
+      "id": "overload_return_only",
+      "feature": "overload",
+      "kind": "reject",
+      "source": "fnc read(int x): int { return x; } fnc read(int x): string { return \"x\"; }",
+      "diagnostic": "E_OVERLOAD_DUPLICATE_SIGNATURE"
+    },
+    {
+      "id": "overload_label_not_discriminator",
+      "feature": "overload",
+      "kind": "reject",
+      "source": "fnc go(int left): int { return left; } fnc go(int right): int { return right; }",
+      "diagnostic": "E_OVERLOAD_DUPLICATE_SIGNATURE"
+    },
+    {
+      "id": "ctor_duplicate_arity",
+      "feature": "constructor",
+      "kind": "reject",
+      "source": "define class Point as constructor(int a) {} constructor(int b) {} end",
+      "diagnostic": "E_CONSTRUCTOR_OVERLAP"
+    },
+    {
+      "id": "actor_ctor",
+      "feature": "constructor",
+      "kind": "reject",
+      "source": "declare actor Worker; constructor(int value) {}",
+      "diagnostic": "E_ACTOR_CONSTRUCTOR_FORBIDDEN"
+    },
+    {
+      "id": "actor_new",
+      "feature": "constructor",
+      "kind": "reject",
+      "source": "declare actor Worker; val w = new Worker(1);",
+      "diagnostic": "E_ACTOR_CONSTRUCTOR_FORBIDDEN"
+    },
+    {
+      "id": "list_two_bars",
+      "feature": "destructure",
+      "kind": "reject",
+      "source": "match xs over on [a | b | c] -> {} end",
+      "diagnostic": "E_PATTERN_TAIL_POSITION"
+    },
+    {
+      "id": "list_empty_prefix",
+      "feature": "destructure",
+      "kind": "reject",
+      "source": "match xs over on [| rest] -> {} end",
+      "diagnostic": "E_PATTERN_TAIL_POSITION"
+    },
+    {
+      "id": "list_duplicate_binding",
+      "feature": "destructure",
+      "kind": "reject",
+      "source": "match xs over on [x | x] -> {} end",
+      "diagnostic": "E_PATTERN_DUPLICATE_BINDING"
+    },
+    {
+      "id": "binary_non_final_rest",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on binary {..rest, field: u8} -> {} end",
+      "diagnostic": "E_BINARY_REST_NOT_FINAL"
+    },
+    {
+      "id": "binary_forward_length",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on packet {payload: bytes[length], length: u16be} -> {} end",
+      "diagnostic": "E_BINARY_FORWARD_LENGTH"
+    },
+    {
+      "id": "binary_implicit_endian",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on packet {length: u16} -> {} end",
+      "diagnostic": "E_BINARY_IMPLICIT_ENDIAN"
+    },
+    {
+      "id": "binary_unaligned_bytes",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on binary {flag: bits[1], payload: bytes[2]} -> {} end",
+      "diagnostic": "E_BINARY_UNALIGNED_BYTES"
+    },
+    {
+      "id": "binary_negative_bits",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on binary {flag: bits[-1]} -> {} end",
+      "diagnostic": "E_BINARY_WIDTH"
+    },
+    {
+      "id": "ctor_nominal_same_arity",
+      "feature": "constructor",
+      "kind": "reject",
+      "source": "define class Mode as constructor(Color a) {} constructor(State b) {} end",
+      "diagnostic": "E_CONSTRUCTOR_OVERLAP"
+    },
+    {
+      "id": "byte_literal_prefix",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bytes[71, 69, 84 | rest] -> { process_bytes(rest); } on _ -> {} end",
+      "expect": "prefix_and_byte_view"
+    },
+    {
+      "id": "byte_exact_match",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bytes[1, 2, 3] -> { return 42; } on _ -> { return 0; } end",
+      "expect": "exact_three_bytes"
+    },
+    {
+      "id": "byte_zero_length",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bytes[] -> { return 42; } on _ -> { return 0; } end",
+      "expect": "empty_bytes_only"
+    },
+    {
+      "id": "byte_capture_and_ignore",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bytes[first, _, third | rest] -> { use_bytes(first, third, rest); } on _ -> {} end",
+      "expect": "u8_captures_and_tail"
+    },
+    {
+      "id": "byte_single_numeric_literal",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bytes[3] -> { return 42; } on _ -> { return 0; } end",
+      "expect": "exact_one_byte_value_3"
+    },
+    {
+      "id": "bit_prefix_tail",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bits[1, 0, 1 | rest] -> { handle_bits(rest); } on _ -> {} end",
+      "expect": "bitview_unaligned_tail"
+    },
+    {
+      "id": "bit_exact",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bits[1, 0, 1, 0, 0, 1, 0, 1] -> { return 42; } on _ -> { return 0; } end",
+      "expect": "exact_one_byte"
+    },
+    {
+      "id": "bit_capture",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bits[flag, _, 1 | rest] -> { handle_flag(flag, rest); } on _ -> {} end",
+      "expect": "bool_capture"
+    },
+    {
+      "id": "bit_no_tail_nonmatch",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bits[1] -> { return 1; } on _ -> { return 42; } end",
+      "expect": "one_byte_input_does_not_equal_one_bit"
+    },
+    {
+      "id": "bit_zero_length",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on bits[] -> { return 42; } on _ -> { return 0; } end",
+      "expect": "empty_bits_only"
+    },
+    {
+      "id": "binary_width_vs_byte_sequence",
+      "feature": "binary",
+      "kind": "accept",
+      "source": "match data over on packet {payload: bytes[3]} -> { match payload over on bytes[1, 2, 3] -> { return 42; } on _ -> { return 0; } end; } on _ -> { return 0; } end",
+      "expect": "segment_length_vs_literal_pattern"
+    },
+    {
+      "id": "byte_out_of_range",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[256 | rest] -> {} end",
+      "diagnostic": "E_BYTES_LITERAL_RANGE"
+    },
+    {
+      "id": "byte_negative",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[-1 | rest] -> {} end",
+      "diagnostic": "E_BYTES_LITERAL_RANGE"
+    },
+    {
+      "id": "bit_out_of_range",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bits[2 | rest] -> {} end",
+      "diagnostic": "E_BITS_LITERAL_RANGE"
+    },
+    {
+      "id": "bit_boolean_not_literal",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bits[true | rest] -> {} end",
+      "diagnostic": "E_BITS_LITERAL_RANGE"
+    },
+    {
+      "id": "byte_empty_prefix_tail",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[| rest] -> {} end",
+      "diagnostic": "E_PATTERN_TAIL_POSITION"
+    },
+    {
+      "id": "bit_duplicate_tail",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bits[1 | rest | second] -> {} end",
+      "diagnostic": "E_PATTERN_TAIL_POSITION"
+    },
+    {
+      "id": "byte_tail_nonfinal",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[1 | rest, 2] -> {} end",
+      "diagnostic": "E_PATTERN_TAIL_POSITION"
+    },
+    {
+      "id": "byte_duplicate_binding",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[x, x | rest] -> {} end",
+      "diagnostic": "E_PATTERN_DUPLICATE_BINDING"
+    },
+    {
+      "id": "byte_dotdot_rest",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on bytes[1, ..rest] -> {} end",
+      "diagnostic": "E_PATTERN_REST_SYNTAX"
+    },
+    {
+      "id": "byte_segment_syntax_mixed",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on packet {payload: bytes[1 | rest]} -> {} end",
+      "diagnostic": "E_BINARY_SEGMENT_TYPE"
+    },
+    {
+      "id": "bit_segment_syntax_mixed",
+      "feature": "binary",
+      "kind": "reject",
+      "source": "match data over on packet {flags: bits[1, 0]} -> {} end",
+      "diagnostic": "E_BINARY_SEGMENT_TYPE"
+    }
+  ],
+  "fixtures": [
+    {
+      "path": "valid-arity-overloads.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "413d033f24766a36da1346a21f0245172d3fb738"
+    },
+    {
+      "path": "valid-head-tail.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "9ccae5039573c4caaffe7623464ad34848c2bdfa"
+    },
+    {
+      "path": "valid-packet.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "5368a2674234723b193275db1643c1f7409c5e40"
+    },
+    {
+      "path": "reject-actor-constructor.atto",
+      "kind": "reject",
+      "diagnostic": "E_ACTOR_CONSTRUCTOR_FORBIDDEN",
+      "blob_sha": "cc017be6c402a5a2ed0f62fe5e2c5faee6560221"
+    },
+    {
+      "path": "reject-duplicate-constructors.atto",
+      "kind": "reject",
+      "diagnostic": "E_CONSTRUCTOR_OVERLAP",
+      "blob_sha": "d9b9138254195e691cd92603e6a28fe0ba2a6701"
+    },
+    {
+      "path": "reject-forward-packet-length.atto",
+      "kind": "reject",
+      "diagnostic": "E_BINARY_FORWARD_LENGTH",
+      "blob_sha": "d42e1462bebc1a5db6cb024c3e0b1162560284fb"
+    },
+    {
+      "path": "valid-bytes-prefix.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "e3597d0a8a0175aaa3c41d6930340d2235776d5c"
+    },
+    {
+      "path": "valid-bytes-exact.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "bcad5ade2d16af03d89d9fb219ac1b2acac455ea"
+    },
+    {
+      "path": "valid-bits-prefix.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "cbdb569e91f9c465f1d0ad4885c2d7ddd15a9f66"
+    },
+    {
+      "path": "valid-bits-exact.atto",
+      "kind": "accept",
+      "expected_exit": 42,
+      "blob_sha": "3991a4671a1fc157fe4de599525b490941f3c5eb"
+    },
+    {
+      "path": "reject-bytes-range.atto",
+      "kind": "reject",
+      "diagnostic": "E_BYTES_LITERAL_RANGE",
+      "blob_sha": "707436ce61af923c24a72e4fe4c8d292e7edd661"
+    },
+    {
+      "path": "reject-bits-range.atto",
+      "kind": "reject",
+      "diagnostic": "E_BITS_LITERAL_RANGE",
+      "blob_sha": "1601212aa3c78cd13bb03d443e085412310e8f46"
+    },
+    {
+      "path": "reject-bits-double-tail.atto",
+      "kind": "reject",
+      "diagnostic": "E_PATTERN_TAIL_POSITION",
+      "blob_sha": "824980f5727c542a0f23ba27c6df7aa271d183a5"
+    },
+    {
+      "path": "reject-bytes-empty-tail-prefix.atto",
+      "kind": "reject",
+      "diagnostic": "E_PATTERN_TAIL_POSITION",
+      "blob_sha": "f7d40f92fd734229030268a3cc643690fbf6684a"
+    }
+  ]
+}

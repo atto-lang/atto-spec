@@ -1,0 +1,7 @@
+// Target guest fixture, NOT executed as backend evidence.
+fnc calculate(x: int, y?: int = 10, z?: int?): int {
+  return x + y;
+}
+pub fnc main(): int {
+  return calculate(x: 20);
+}
