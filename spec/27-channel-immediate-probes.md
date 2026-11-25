@@ -29,7 +29,7 @@ TryWriteResult<T> =
 The payload of Full/Closed MUST be the same owned value, not an implicit deep copy, discarded resource, stale alias, or independently destructible duplicate. The sender does not retain a second owner through the original binding. The runtime may use an optimized unboxed representation as long as these semantics hold.
 
 ```atto
-val result = try writech ch, rt take message;
+val result = try writech ch, take! message;
 
 match result over
   on Accepted -> {
@@ -44,7 +44,7 @@ match result over
 end
 ```
 
-Here `rt take` invalidates its original source binding when evaluated. The write result becomes the single owner, and pattern matching transfers that owner to the selected arm. On Accepted it has no payload. On Full/Closed the caller can retry, drop, close or move the recovered payload. Static diagnostics must reject use-after-move, discarded move-only result, double-drop, and a borrow escaping through the channel.
+Here `take!` invalidates its original source binding when evaluated. The write result becomes the single owner, and pattern matching transfers that owner to the selected arm. On Accepted it has no payload. On Full/Closed the caller can retry, drop, close or move the recovered payload. Static diagnostics must reject use-after-move, discarded move-only result, double-drop, and a borrow escaping through the channel.
 
 For Copy values, a source expression such as `try writech ch, 42` is also valid. Implementations may copy its operand under the ordinary Copy contract. No new permission to transport an actor-private pointer, MutexGuard, borrowed reference, non-Sendable capability or cross-isolate alias is implied by this operation.
 

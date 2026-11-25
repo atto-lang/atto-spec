@@ -83,13 +83,13 @@
     {
       "id": "CIW-009",
       "name": "explicit_take_accepted",
-      "assertion": "rt take source is invalid after Accepted; channel has one owner",
+      "assertion": "take! source is invalid after Accepted; channel has one owner",
       "verification_status": "NOT_EXECUTED"
     },
     {
       "id": "CIW-010",
       "name": "explicit_take_rejected",
-      "assertion": "rt take source remains invalid after Full/Closed, recovered value exists only in result",
+      "assertion": "take! source remains invalid after Full/Closed, recovered value exists only in result",
       "verification_status": "NOT_EXECUTED"
     },
     {
