@@ -1,8 +1,8 @@
-# 22 — Safe collection access, Option and static borrow checking
+# Safe collection access, Option and static borrow checking
 
-**Status: normative target / NOT yet a claim of compiler support.**
-This chapter refines chapters [02](02-types-and-patterns.md),
-[04](04-ownership-and-memory.md) and [05](05-actors-and-state.md).
+**Status: staged candidate / NOT a claim of compiler support.** The compatibility section governs activation; the table below is the proposed future API, not a change to deployed `get`. The accepted November 23 [semantics reconciliation](cross-backend-semantics-reconciliation-v1.md) governs current owned `get_copy` and actor-projection rules.
+This chapter refines chapters [02](../spec/02-types-and-patterns.md),
+[04](../spec/04-ownership-and-memory.md) and [05](../spec/05-actors-and-state.md).
 The proposed method names are **candidate APIs** pending standard-library
 signature and backend admission; do not infer syntax acceptance from examples.
 AttoLang should emulate the *safety properties* of Rust's ownership and
@@ -19,11 +19,11 @@ borrow model, not adopt Rust's pointer syntax or runtime implementation.
    their entire collection root until proven disjoint. Never infer disjoint
    index or field ownership from different syntactic indices alone.
 3. The compiler owns loan lifetimes and root provenance. Only a source
-   operation such as `rt borrow collection` / `rt mut borrow collection`
+   operation such as `borrow! collection` / `borrow! mut collection`
    or a compiler-recognized access method may mint a loan. The types
    `ReadLoan<T>` and `WriteLoan<T>` below denote **intrinsic, non-owning
    capabilities**, not user-constructible structs or serializable values.
-4. A projected loan cannot outlive its owner, be used after `rt take`,
+4. A projected loan cannot outlive its owner, be used after `take!`,
    escape through a nested `Option`, `Result`, closure, tuple or field, or
    cross an actor, task, thread, FFI or durable-state boundary without an
    independently verified ownership/lifetime protocol. No implicit
@@ -45,7 +45,7 @@ borrow model, not adopt Rust's pointer syntax or runtime implementation.
 | `collection.get(index)` | `Option<ReadLoan<T>>` | Bounds-safe, creates a rooted READ loan only on `Some`. |
 | `collection.get_mut(index)` | `Option<WriteLoan<T>>` | Bounds-safe, exclusive WRITE loan; no overlapping READ/WRITE. |
 | `collection.get_copy(index)` | `Option<T>` where `T: Copy` | Explicitly materialized owned copy; not allowed for move-only values. |
-| `collection[index]` | `T` projection with checked access | Invalid index is a contained, typed bounds trap for the current actor; NEVER unchecked UB. Prefer `get` for recoverable paths. |
+| `collection[index]` | `T` projection with checked access | Invalid index is a contained, typed bounds trap for the current actor; NEVER unchecked UB. Prefer an admitted checked accessor for recoverable paths. |
 | `vector.pop()` / `list.remove(index)` | `Option<T>` | Moves owned element out after exclusive access; empty/out-of-range is `None`. |
 | `map.get(key)` | `Option<ReadLoan<V>>` | Rooted map-entry loan; mutation/rehash while borrowed denied. |
 | `map.get_mut(key)` | `Option<WriteLoan<V>>` | Exclusive entry loan; conservative whole-map exclusion. |
@@ -59,7 +59,7 @@ their ABI/layout or ownership distinctions. `FixedArray` cannot remove an
 element unless the type permits a hole or explicit replacement; a tuple is
 not a generic resizable vector.
 
-For signed `int` indexing, negative indices and indices `>= len` yield
+For the proposed optional-access API, signed `int` indexing uses the following rules: negative indices and indices `>= len` yield
 `None` for `get`/removal rather than wrapping through an unsigned
 conversion. An index operator may panic (within the actor) on the same
 failure. Narrowing to the 32-bit dense offset must be checked using
@@ -99,7 +99,7 @@ not overloads differentiated solely by expected return type.
 ## Explicit Option semantics
 
 `Some(v)` and `None` are discriminated values. An empty collection has
-`pop() == None`; a present element that itself contains `None` is still
+`pop() eq None`; a present element that itself contains `None` is still
 `Some(None)`. `Option<Option<T>>` never flattens automatically.
 `map` preserves the outer Option layer; `and_then` is an explicit
 operation. `unwrap()` is an explicit potentially panicking assertion;
@@ -151,7 +151,7 @@ Required checks:
   `critical` guard must be non-suspending and guarded views cannot escape
   its scope; a mutex protects a referent, not an implicit compound
   transaction across multiple calls.
-- Borrowed views cannot enter `rt share`, messages, pub-sub, channels,
+- Borrowed views cannot enter `share!`, messages, pub-sub, channels,
   actor heap migration, durable serialization or task/closure captures
   by being hidden inside `Option`, `Result`, ADTs or nominal wrappers.
 - No runtime borrow checker or tracing-GC fallback may substitute for the
@@ -160,7 +160,7 @@ Required checks:
 
 ## Containment, concurrency and native layout
 
-A failed dynamic index or quota may trap **the offending actor**, without
+A failed dynamic index or quota must follow the admitted typed guest failure and containment policy, without
 freeing another actor's arena or corrupting unrelated stacks. Exception
 and cancellation cleanup must release the actor's owned resources exactly
 once and observe supervisor quiescence before heap teardown. Mutable
@@ -188,7 +188,7 @@ boundary, not silently wrap.
 | `E_SHARE_NOT_FROZEN` | View used as proof of deep immutable Share |
 | `E_COPY_REQUIRED` | Materializing a move-only element as an implicit copy |
 
-The [candidate conformance contract](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/tree/main/contracts/v1/safe-collection-access-v1)
+The historical [candidate conformance contract](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/tree/main/contracts/v1/safe-collection-access-v1)
 has source-free READ/WRITE/Option/actor-boundary checks and proposed
 positive/negative `.atto` fixtures. Neither that model nor a backend
 which rejects the grammar with `E_UNSUPPORTED` constitutes implementation

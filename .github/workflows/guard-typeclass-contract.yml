@@ -1,0 +1,37 @@
+name: Guard and typeclass proposal model (not compiled guest execution)
+on:
+  pull_request:
+    paths:
+      - 'src/guard-else-free-reference.mjs'
+      - 'src/typeclass-witness-reference.mjs'
+      - 'contracts/guard-else-free-v1.json'
+      - 'contracts/typeclass-witness-v1.json'
+      - 'tests/guard-else-free.test.mjs'
+      - 'tests/typeclass-witness.test.mjs'
+      - 'proposals/guard-else-free-v1.md'
+      - 'proposals/typeclass-witness-v1.md'
+      - '.github/workflows/guard-typeclass-contract.yml'
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  source-free-model:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify source commit and root tree
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git rev-parse HEAD
+          git rev-parse HEAD^{tree}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Run guard and typeclass proposal model cases
+        run: node --test tests/guard-else-free.test.mjs tests/typeclass-witness.test.mjs

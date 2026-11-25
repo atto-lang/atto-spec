@@ -1,0 +1,6 @@
+fnc main() -> int ::
+  int shorthand = 10;
+  const int explicit_type_first = 20;
+  const explicit_type_right: int = 12;
+  return shorthand + explicit_type_first + explicit_type_right;
+end

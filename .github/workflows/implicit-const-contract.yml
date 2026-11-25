@@ -1,0 +1,45 @@
+name: AttoLang implicit-const design contract
+on:
+  push:
+    paths:
+      - 'contracts/implicit-const-v1/**'
+      - 'contracts/explicit-initialization-v1/**'
+      - 'spec/28-explicit-initialization-no-implicit-defaults.md'
+      - 'tests/explicit-initialization-contract.test.mjs'
+      - 'spec/27-implicit-const-and-const-mut.md'
+      - 'spec/01-source-and-syntax.md'
+      - 'spec/02-types-and-patterns.md'
+      - 'spec/04-ownership-and-memory.md'
+      - 'spec/12-open-questions.md'
+      - 'spec/16-lexical-and-grammar-reference.md'
+      - 'spec/21-semantic-floor-and-parity.md'
+      - 'tests/implicit-const-contract.test.mjs'
+      - '.github/workflows/implicit-const-contract.yml'
+  pull_request:
+    paths:
+      - 'contracts/implicit-const-v1/**'
+      - 'contracts/explicit-initialization-v1/**'
+      - 'spec/28-explicit-initialization-no-implicit-defaults.md'
+      - 'tests/explicit-initialization-contract.test.mjs'
+      - 'spec/27-implicit-const-and-const-mut.md'
+      - 'spec/01-source-and-syntax.md'
+      - 'spec/02-types-and-patterns.md'
+      - 'spec/04-ownership-and-memory.md'
+      - 'spec/12-open-questions.md'
+      - 'spec/16-lexical-and-grammar-reference.md'
+      - 'spec/21-semantic-floor-and-parity.md'
+      - 'tests/implicit-const-contract.test.mjs'
+      - '.github/workflows/implicit-const-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  design-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate proposed contract (source-only, not guest parity)
+        run: node --test tests/implicit-const-contract.test.mjs tests/explicit-initialization-contract.test.mjs
