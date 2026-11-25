@@ -1,0 +1,91 @@
+{
+  "schema": "atto.actor.event-sourced-target.v1",
+  "status": "DESIGN_CONTRACT_HOST_ONLY_NOT_COMPILER_EXECUTED",
+  "storageModes": {
+    "durable": "runtime-managed disk",
+    "persistent": "developer-provided load/save hooks",
+    "ordinary": "volatile"
+  },
+  "policies": [
+    "#none",
+    "#snapshot",
+    "#event_sourced"
+  ],
+  "transport": "#batched_sidecar",
+  "noNewKeyword": "event actor",
+  "invariants": [
+    "ES01",
+    "ES02",
+    "ES03",
+    "ES04",
+    "ES05",
+    "ES06",
+    "ES07",
+    "ES08",
+    "ES09",
+    "ES10",
+    "ES11",
+    "ES12"
+  ],
+  "acceptance": [
+    {
+      "id": "fenced-epoch-before-dedupe",
+      "kind": "host-model",
+      "expected": "reject_stale_epoch"
+    },
+    {
+      "id": "append-batch-atomically",
+      "kind": "host-model",
+      "expected": "commit"
+    },
+    {
+      "id": "same-op-same-payload",
+      "kind": "host-model",
+      "expected": "original_receipt_no_reappend"
+    },
+    {
+      "id": "same-op-different-payload",
+      "kind": "host-model",
+      "expected": "reject_payload_mismatch"
+    },
+    {
+      "id": "expected-version-cas",
+      "kind": "host-model",
+      "expected": "reject_conflict"
+    },
+    {
+      "id": "lost-acknowledgement",
+      "kind": "host-model",
+      "expected": "reconcile_original"
+    },
+    {
+      "id": "commit-before-publish",
+      "kind": "host-model",
+      "expected": "not_visible_until_commit"
+    },
+    {
+      "id": "contiguous-replay",
+      "kind": "host-model",
+      "expected": "recover"
+    },
+    {
+      "id": "missing-sequence",
+      "kind": "host-model",
+      "expected": "reject_corruption"
+    },
+    {
+      "id": "identity-tenant-fence",
+      "kind": "host-model",
+      "expected": "reject_cross_tenant"
+    }
+  ],
+  "parserTargetFixture": "conformance/actor-event-sourced-declaration-v1.atto",
+  "backendStatus": {
+    "rs": "NOT_EXECUTED",
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED"
+  }
+}

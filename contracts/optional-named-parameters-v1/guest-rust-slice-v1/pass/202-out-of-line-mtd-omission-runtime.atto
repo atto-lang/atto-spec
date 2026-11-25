@@ -1,0 +1,13 @@
+// expect-exit: 42
+// java: rejects
+define class Foo as end
+pub mtd (Foo self) run(x?: int?): int {
+  match x over
+    on None -> { return 42; }
+    on Some(n) -> { return n; }
+  end
+}
+pub fnc main(): int {
+  val f = new Foo();
+  return f.run();
+}
