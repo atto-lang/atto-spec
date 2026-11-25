@@ -71,29 +71,9 @@ across a channel suspension. Callers must have a checked suspension effect or
 a verified resumable task path; a legacy direct evaluator that cannot resume
 must fail closed rather than park an actor worker.
 
-### Channel shift-operator shorthand (TARGET, NOT IMPLEMENTED)
+### Directional channel shorthand (target)
 
-`<<` and `>>` are **already integer shift operators** in the Java source
-compiler. Channel overloading must therefore be type-directed, never an
-unconditional parser rewrite or an accidental bitwise fallback.
-
-Proposed contextually typed statement aliases (pending separate compiler
-implementation and executable conformance fixtures):
-
-```atto
-output << payload;       // writech output, payload; may suspend
-input >> mutable_slot;   // readch input, then assign into a writable lvalue
-```
-
-Only a statically known `Channel<T>` (or a specifically admitted directional
-channel capability) on the left qualifies. `<<` requires a `T`-compatible
-payload. `>>` requires an addressable, mutable, `T`-compatible lvalue on the
-right; do not evaluate it as an arbitrary value expression or mutate it before
-the read commits. Numeric operands retain ordinary integer-shift semantics.
-Invalid or ambiguous operand combinations must fail at compile time. Both
-channel aliases inherit the same suspension, closure, cleanup and ownership
-rules as plain `writech`/`readch`, not `nb` or `try`. Until this lowering
-is verified, use the explicit channel keywords.
+The historical Java numeric double-angle shift and existing-local assignment forms are migration-only observations. The current [directional I/O contract](../language/io-direction-shorthand-v1.md) governs: source >> val item and val item << source bind one checked read, and sink << value performs one checked write. Integer shifts use the separately specified triple-angle operators. Keep read/write checked outcomes, capability, suspension and ownership checks; do not infer a continuous pipe or unchecked reassignment. See [prefix/postfix read contracts](../language/postfix-channel-read-expression-v1.md). Backend-specific lowering still needs compiled evidence.
 
 ### Conformance gates
 
@@ -107,7 +87,7 @@ is verified, use the explicit channel keywords.
 - Cancellation versus admission, closing/teardown versus resume, quota
   exhaustion and fairness under adversarial schedules
 - Reject `do nb` silent Future discard and suspend-across-critical-loan;
-  preserve integer `<<`/`>>` until type-directed channel lowering is proven
+  preserve legacy integer-shift behavior only in its explicitly selected migration profile
 - Record backend-specific fixture and CI run links; parser-only acceptance
   never counts as runtime parity
 
