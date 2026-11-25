@@ -194,3 +194,40 @@ This candidate only specifies and tests the envelope and storage
 primitives. Compiler stage witnesses, key provisioning, independent
 cryptographic/filesystem review, real cross-process compilation and
 guest execution remain mandatory before activating cache reuse.
+
+#### Target and key lifecycle admission
+
+A synchronous build MUST pin its effective target and semantic configuration
+across graph preparation, key derivation and cold compilation. Reading a
+mutable process default at multiple stages is not a valid cache witness.
+The bounded Wasm candidate uses an explicit per-build target OS scope;
+it must restore nested scopes on errors and must not leak configuration
+between concurrent builds. The canonical source witness commits to the
+trusted lock digest; the binding witness commits to deterministic linked
+source. These are conservative whole-package witnesses, not per-unit
+typed-IR reuse. The host must independently attest the actual compiler,
+embedded libraries and toolchain identity; a caller's version string
+is not proof.
+
+For a local trusted-ledger deployment, a candidate tenant-derived receipt
+key is HMAC-SHA256(master, ASCII atto.compiler.local-receipt-key.v1, zero
+byte, unsigned 32-bit big-endian scope length, scope bytes, unsigned
+64-bit big-endian epoch). Scope is 1–512 nonspace printable ASCII bytes;
+epoch is positive. Master is a protected random 32-byte host key.
+An active-key policy must reject backwards or equal epochs, avoid
+reusing a master at rotation, and accept only receipts authenticated by
+the active derived key. Old receipts become invalid. Tenant scope
+separation is not a substitute for isolation of the key holder.
+The authoritative active epoch and key must survive restart in an
+independently protected, rollback-resistant host ledger. An in-memory
+policy cannot prevent a privileged caller from reconstructing an old
+epoch after restart; do not claim durable revocation until that ledger
+and its failure/concurrency cases are tested. No secrets in diagnostics,
+cache files, source fixtures used outside tests, or guest APIs.
+
+Report cold and warm graph admission, frontend/code generation,
+receipt verification/read, publication/fsync, process start and actual
+guest execution separately where possible. A tiny debug fixture with
+hot OS page cache is a smoke measurement, not a representative speedup
+or an acceptance threshold. Include compiler identity attestation cost
+and describe any amortization.
