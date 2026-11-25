@@ -1,0 +1,90 @@
+{
+  "schema": "atto.guard.else-free.proposal.v1",
+  "status": "PROPOSED_SOURCE_FREE_ONLY",
+  "cases": [
+    {
+      "id": "bool-true",
+      "source": "fnc classify(bool ok) -> int { guard ok { return 7; } return 42; }",
+      "input": true,
+      "expected": "ACCEPT",
+      "value": 42
+    },
+    {
+      "id": "bool-false",
+      "source": "fnc classify(bool ok) -> int { guard ok { return 7; } return 42; }",
+      "input": false,
+      "expected": "ACCEPT",
+      "value": 7
+    },
+    {
+      "id": "literal-true",
+      "source": "fnc classify(bool ok) -> int { guard true { return 7; } return 42; }",
+      "input": false,
+      "expected": "ACCEPT",
+      "value": 42
+    },
+    {
+      "id": "literal-false",
+      "source": "fnc classify(bool ok) -> int { guard false { return 7; } return 42; }",
+      "input": true,
+      "expected": "ACCEPT",
+      "value": 7
+    },
+    {
+      "id": "int-compare-positive",
+      "source": "fnc classify(int x) -> int { guard x > 0 { return 7; } return 42; }",
+      "input": 1,
+      "expected": "ACCEPT",
+      "value": 42
+    },
+    {
+      "id": "int-compare-zero",
+      "source": "fnc classify(int x) -> int { guard x > 0 { return 7; } return 42; }",
+      "input": 0,
+      "expected": "ACCEPT",
+      "value": 7
+    },
+    {
+      "id": "int-not-bool",
+      "source": "fnc classify(int x) -> int { guard x { return 7; } return 42; }",
+      "expected": "REJECT",
+      "code": "E_GUARD_BOOL_REQUIRED"
+    },
+    {
+      "id": "bool-not-int",
+      "source": "fnc classify(bool ok) -> int { guard ok > 0 { return 7; } return 42; }",
+      "expected": "REJECT",
+      "code": "E_GUARD_BOOL_REQUIRED"
+    },
+    {
+      "id": "missing-early-exit",
+      "source": "fnc classify(bool ok) -> int { guard ok { 7; } return 42; }",
+      "expected": "REJECT",
+      "code": "E_GUARD_UNSUPPORTED_SHAPE"
+    },
+    {
+      "id": "legacy-else",
+      "source": "fnc classify(bool ok) -> int { guard ok else { return 7; } return 42; }",
+      "expected": "REJECT",
+      "code": "E_GUARD_ELSE_NOT_REQUIRED"
+    },
+    {
+      "id": "nonterminal-guard",
+      "source": "fnc classify(bool ok) -> int { guard ok { return 7; print(3); } return 42; }",
+      "expected": "REJECT",
+      "code": "E_GUARD_UNSUPPORTED_SHAPE"
+    },
+    {
+      "id": "fallthrough-implicit-return",
+      "source": "fnc classify(bool ok) -> int { guard ok { return 7; } 42; }",
+      "expected": "REJECT",
+      "code": "E_GUARD_UNSUPPORTED_SHAPE"
+    },
+    {
+      "id": "unchecked-overflow-literal",
+      "source": "fnc classify(bool ok) -> int { guard ok { return 9007199254740992; } return 42; }",
+      "expected": "REJECT",
+      "code": "E_GUARD_UNSAFE_INTEGER"
+    }
+  ]
+}

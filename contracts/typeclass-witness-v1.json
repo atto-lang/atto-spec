@@ -1,0 +1,157 @@
+{
+  "schema": "atto.typeclass.witness.contract.v1",
+  "status": "PROPOSED_SOURCE_FREE_ONLY",
+  "catalog": {
+    "schema": "atto.typeclass.witness.v1",
+    "closedWorld": true,
+    "runtimeReflection": false,
+    "types": [
+      {
+        "name": "math.Vector",
+        "owner": "math"
+      },
+      {
+        "name": "text.Label",
+        "owner": "text"
+      }
+    ],
+    "typeclasses": [
+      {
+        "name": "ops.Show",
+        "owner": "ops",
+        "methods": [
+          "render"
+        ]
+      },
+      {
+        "name": "ops.Sum",
+        "owner": "ops",
+        "methods": [
+          "combine",
+          "zero"
+        ]
+      }
+    ],
+    "implementations": [
+      {
+        "module": "math",
+        "typeclass": "ops.Show",
+        "forType": "math.Vector",
+        "bindings": [
+          {
+            "method": "render",
+            "symbol": "math.render_vector"
+          }
+        ]
+      },
+      {
+        "module": "math",
+        "typeclass": "ops.Sum",
+        "forType": "math.Vector",
+        "bindings": [
+          {
+            "method": "combine",
+            "symbol": "math.combine_vector"
+          },
+          {
+            "method": "zero",
+            "symbol": "math.zero_vector"
+          }
+        ]
+      },
+      {
+        "module": "text",
+        "typeclass": "ops.Show",
+        "forType": "text.Label",
+        "bindings": [
+          {
+            "method": "render",
+            "symbol": "text.render_label"
+          }
+        ]
+      }
+    ]
+  },
+  "positive": [
+    {
+      "id": "resolve-vector-show",
+      "request": {
+        "typeclass": "ops.Show",
+        "nominalType": "math.Vector",
+        "visibleModules": [
+          "math"
+        ]
+      },
+      "provider": "math",
+      "render": "math.render_vector"
+    },
+    {
+      "id": "resolve-text-show",
+      "request": {
+        "typeclass": "ops.Show",
+        "nominalType": "text.Label",
+        "visibleModules": [
+          "text"
+        ]
+      },
+      "provider": "text",
+      "render": "text.render_label"
+    },
+    {
+      "id": "resolve-vector-sum",
+      "request": {
+        "typeclass": "ops.Sum",
+        "nominalType": "math.Vector",
+        "visibleModules": [
+          "math"
+        ]
+      },
+      "provider": "math",
+      "render": null
+    }
+  ],
+  "negative": [
+    {
+      "id": "missing-import",
+      "request": {
+        "typeclass": "ops.Show",
+        "nominalType": "math.Vector",
+        "visibleModules": []
+      },
+      "error": "E_WITNESS_MISSING"
+    },
+    {
+      "id": "missing-impl",
+      "request": {
+        "typeclass": "ops.Sum",
+        "nominalType": "text.Label",
+        "visibleModules": [
+          "text"
+        ]
+      },
+      "error": "E_WITNESS_MISSING"
+    },
+    {
+      "id": "unknown-type",
+      "request": {
+        "typeclass": "ops.Show",
+        "nominalType": "math.Unknown",
+        "visibleModules": [
+          "math"
+        ]
+      },
+      "error": "E_WITNESS_UNKNOWN_DECLARATION"
+    },
+    {
+      "id": "unknown-class",
+      "request": {
+        "typeclass": "ops.Unknown",
+        "nominalType": "math.Vector",
+        "visibleModules": [
+          "math"
+        ]
+      },
+      "error": "E_WITNESS_UNKNOWN_DECLARATION"
+    }
+  ]
+}
