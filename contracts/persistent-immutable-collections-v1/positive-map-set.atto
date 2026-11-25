@@ -1,0 +1,8 @@
+// TARGET only — NOT_EXECUTED. Distinct persistent Map and Set semantics.
+fnc main() -> int {
+  val Map<string,int> original = {"a" => 1};
+  val Map<string,int> next = original.updated("b", 42);
+  val Set<int> s = Set.of(1, 2);
+  val Set<int> t = s.inserted(3);
+  return next.get("b").unwrap(); // 42
+}
