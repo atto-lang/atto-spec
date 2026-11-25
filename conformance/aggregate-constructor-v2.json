@@ -1,0 +1,205 @@
+{
+  "schema": "atto.aggregate-constructor-v2",
+  "status": "TARGET_NOT_EXECUTED",
+  "notes": "Independent source fragments; accepted import assumes matching authenticated provider. Outcomes are target expectations, not compiler evidence. Reject profile is v2.",
+  "vectors": [
+    {
+      "id": "record-single",
+      "kind": "accept",
+      "source": "let Record r = (a=5);",
+      "expect": "closed Record a:int"
+    },
+    {
+      "id": "record-pair",
+      "kind": "accept",
+      "source": "let Record r = Record.of(Pair.of(\"a\",5), Pair.of(\"b\",true));",
+      "expect": "closed heterogeneous Record"
+    },
+    {
+      "id": "record-constant-alias",
+      "kind": "accept",
+      "source": "const string key = \"a\"; let Record r = Record.of(Pair.of(key,5));",
+      "expect": "field a"
+    },
+    {
+      "id": "record-case-distinct",
+      "kind": "accept",
+      "source": "let Record r = Record.of(Pair.of(\"a\",5), Pair.of(\"A\",6));",
+      "expect": "two case-sensitive fields"
+    },
+    {
+      "id": "record-nested",
+      "kind": "accept",
+      "source": "let Record r = (a=(5,6,true));",
+      "expect": "field a is arity-three Tuple"
+    },
+    {
+      "id": "record-dynamic-val",
+      "kind": "reject",
+      "source": "fnc f(string key): void { let Record r = Record.of(Pair.of(key,5)); }",
+      "expect": "unproved static name"
+    },
+    {
+      "id": "record-empty-name",
+      "kind": "reject",
+      "source": "let Record r = Record.of(Pair.of(\"\",5));",
+      "expect": "invalid identifier"
+    },
+    {
+      "id": "record-space",
+      "kind": "reject",
+      "source": "let Record r = Record.of(Pair.of(\" a\",5));",
+      "expect": "no trimming"
+    },
+    {
+      "id": "record-hyphen",
+      "kind": "reject",
+      "source": "let Record r = Record.of(Pair.of(\"a-b\",5));",
+      "expect": "invalid identifier"
+    },
+    {
+      "id": "record-reserved",
+      "kind": "reject",
+      "source": "let Record r = Record.of(Pair.of(\"return\",5));",
+      "expect": "reserved identifier"
+    },
+    {
+      "id": "record-numeric",
+      "kind": "reject",
+      "source": "let Record r = Record.of(Pair.of(7,5));",
+      "expect": "non-string name"
+    },
+    {
+      "id": "record-nul",
+      "kind": "reject",
+      "source": "let Record r = Record.of(Pair.of(\"a\\u{0}\",5));",
+      "expect": "NUL is not identifier"
+    },
+    {
+      "id": "record-escape-duplicate",
+      "kind": "reject",
+      "source": "let Record r = Record.of(Pair.of(\"a\",5), Pair.of(\"\\u{61}\",6));",
+      "expect": "duplicate decoded field name"
+    },
+    {
+      "id": "record-entry",
+      "kind": "reject",
+      "source": "let Record r = Record.of(Entry.of(\"a\",5));",
+      "expect": "Entry is not Pair"
+    },
+    {
+      "id": "record-arrow",
+      "kind": "reject",
+      "source": "const string a = \"x\"; let Record r = Record.of(a => 5);",
+      "expect": "Entry is not field descriptor"
+    },
+    {
+      "id": "map-pair",
+      "kind": "reject",
+      "source": "let Map m = Map.of(Pair.of(\"a\",5));",
+      "expect": "Pair is not Entry"
+    },
+    {
+      "id": "map-flat-v2",
+      "kind": "reject",
+      "source": "let Map m = Map.of(\"a\",5);",
+      "expect": "legacy-only overload"
+    },
+    {
+      "id": "map-arrow-variable",
+      "kind": "accept",
+      "source": "let string a = \"x\"; let Map m = Map.of(a => 5);",
+      "expect": "evaluated key x"
+    },
+    {
+      "id": "entry-nonmap-key",
+      "kind": "accept",
+      "source": "let e = Entry.of([1,2],5);",
+      "expect": "no Map Hash/Eq restriction at Entry creation"
+    },
+    {
+      "id": "map-unproved-key",
+      "kind": "reject",
+      "source": "let m = Map.of(Entry.of([1,2],5));",
+      "expect": "no proven stable Hash/Eq"
+    },
+    {
+      "id": "tuple-group",
+      "kind": "accept",
+      "source": "let x = (5);",
+      "expect": "scalar int"
+    },
+    {
+      "id": "tuple-single",
+      "kind": "accept",
+      "source": "let t = (5,);",
+      "expect": "arity one"
+    },
+    {
+      "id": "tuple-zero",
+      "kind": "accept",
+      "source": "let t = Tuple.of();",
+      "expect": "arity zero"
+    },
+    {
+      "id": "tuple-nested",
+      "kind": "accept",
+      "source": "let t = ((5,6),true);",
+      "expect": "arity two, not flattened"
+    },
+    {
+      "id": "tuple-mixed",
+      "kind": "reject",
+      "source": "let t = (5,b=6);",
+      "expect": "mixed positional and named"
+    },
+    {
+      "id": "tuple-crossed",
+      "kind": "reject",
+      "source": "let t = (5,[6),7];",
+      "expect": "mismatched delimiter"
+    },
+    {
+      "id": "tuple-double-comma",
+      "kind": "reject",
+      "source": "let t = (5,,6);",
+      "expect": "empty item"
+    },
+    {
+      "id": "entry-nonassociative",
+      "kind": "reject",
+      "source": "let e = 1 => 2 => 3;",
+      "expect": "arrow must be grouped"
+    },
+    {
+      "id": "entry-nested",
+      "kind": "accept",
+      "source": "let e = 1 => (2 => 3);",
+      "expect": "nested Entry"
+    },
+    {
+      "id": "import-group",
+      "kind": "accept",
+      "source": "import (class C, fnc f) from pkg 'x';",
+      "expect": "static selectors with authenticated provider"
+    },
+    {
+      "id": "import-trailing-inner",
+      "kind": "reject",
+      "source": "import class (C,) from pkg 'x';",
+      "expect": "invalid inner trailing comma"
+    },
+    {
+      "id": "import-expression",
+      "kind": "reject",
+      "source": "import (5,6) from pkg 'x';",
+      "expect": "no expression import"
+    },
+    {
+      "id": "import-crossed",
+      "kind": "reject",
+      "source": "import (class C] from pkg 'x';",
+      "expect": "mismatched delimiter"
+    }
+  ]
+}
