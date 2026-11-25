@@ -24,7 +24,7 @@ stdio.out << stdio.in;
 ```
 
 The keyword `pipe` constructs one directed connection: **left producer →
-right consumer**. There is no reverse `pipe` spelling. If both endpoints
+right consumer**. The separate `rpipe` form reverses written endpoint order, not DATA flow. See [the directed graph contract](directed-rpipe-and-stream-capture-v1.md). If both endpoints
 are statically `Readable<T>` and `Writable<T>`, respectively, the checked
 operation is `PipeConnect(source, sink)`, with a bounded data pump.
 If one end is an actor, the compiler must instead use a typed actor
@@ -54,7 +54,7 @@ exist. Recognizing the syntax is not permission to emit a guest module.
 The left endpoint must expose a typed outbound stream of messages `T`,
 and the right endpoint must accept messages of a compatible `T`. Streams
 and channels use nominal `Readable<T>` / `Writable<T>` contracts.
-Actors require proven `sends` / `receives` message contracts (including
+Actors require proven `emits` / `receives` pipeline contracts (ordinary `sends` is separate) (including
 message encoding/ownership/isolation) or declared adapters. Do not use
 duck-typing, name heuristics or runtime coercion. Distinguish transport
 `Serializable` from local actor `Sendable`. Non-matching directions,
@@ -118,9 +118,7 @@ while not cancelled:
   effects; it is not legal in pure or unsuspending code.
 - The checked outcome must preserve the number of admitted elements,
   the terminal failure kind (read/write/closed/quota/cancelled), and ownership
-  of any uncommitted element. Model it as `Result<PipeReceipt, PipeError<T>>`
-  or a library-equivalent typed contract; the exact type names remain to
-  be standardized. No implicit `?`, drop, or fire-and-forget on an
+  of any uncommitted element. The later [checked pipeline lifecycle](pipeline-failure-effects-v1.md) defines separate setup `Result<PipeHandle,PipeSetupError>` and completion `Result<PipeStats,PipeError>`; retain uncommitted ownership and partial progress. No implicit `?`, drop, or fire-and-forget on an
   unhandled result.
 - On cancellation or close-versus-commit races, a single linearization
   point decides whether the item committed or remains owned. Repeated
@@ -164,3 +162,8 @@ runtime exists. Earlier pure JS and Rust reference models may be reused
 for operational conformance; they do not establish executable guest I/O.
 See [atto-source.rs #197](https://github.com/atto-lang/atto-source.rs/pull/197)
 for the separate identity-await Future pipeline slice.
+
+
+## Reconciled actor and reverse graph contracts
+
+The later [mixed endpoint contract](mixed-endpoint-pipe-v1.md), [declared actor ingress witness](declared-actor-pipe-signatures-v1.md) and [directed rpipe contract](directed-rpipe-and-stream-capture-v1.md) control role proofs and lifecycle. The detailed one-pair reference behavior above remains a bounded transport target, not a certification of longer graphs. The `pipe`/`rpipe` grammar never changes the single-operation meaning of `<<` or `>>`.
