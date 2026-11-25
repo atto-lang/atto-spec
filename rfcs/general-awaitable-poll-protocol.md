@@ -42,3 +42,6 @@ Positive guest execution: immediate/pending Future, TaskFuture, ActorFuture, dir
 
 ## Rollout
 Canonical spec here; independent core/async .atto implementations with minimal native primitives in Java, Rust, LLVM, .NET, Wasm, Forge, Cranelift and JS; shared conformance in atto-compilers-parity-testing. Audit existing Java #515, #574, #1224, common-source #82 and parity #51 for compatibility. Preserve public semantics while allowing backend-specific representations. Report unsupported cases explicitly. Require exact-head executable CI and native/AOT where applicable before implementation promotion; zero-step jobs are not passes. Any alternate private CI carrier must be authorized by repository policy and exact-tree verified.
+
+## Abstract model evidence
+Run `node tests/awaitable-protocol-model.mjs` for deterministic sequential interleaving scenarios covering wake/park, generation fencing, affine delivery, cancellation, retirement and non-destructive selection. This is a host-level reference oracle, not proof of concurrent implementation, memory ordering or guest execution. The full acceptance matrix remains mandatory.
