@@ -1,0 +1,347 @@
+{
+  "schema": "atto.structural-tilde-collection-factories.v1",
+  "status": "SOURCE_EXPECTATIONS_ONLY",
+  "backends": [
+    "java",
+    "llvm",
+    "wasm",
+    "forge",
+    "net",
+    "cranelift",
+    "rs",
+    "js",
+    "hdl",
+    "atto",
+    "realtime"
+  ],
+  "cases": [
+    {
+      "id": "map-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val v = Map.of<string,int>(\"a\" => 1);"
+    },
+    {
+      "id": "map-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val v = ~map<string,int>(\"a\" => 1);"
+    },
+    {
+      "id": "entry-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val v = Entry.of(\"a\", 1);"
+    },
+    {
+      "id": "entry-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val v = ~entry(\"a\", 1);"
+    },
+    {
+      "id": "pair-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val v = Pair.of(\"a\", 1);"
+    },
+    {
+      "id": "pair-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val v = ~pair(\"a\", 1);"
+    },
+    {
+      "id": "tuple-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val v = Tuple.of(1, true);"
+    },
+    {
+      "id": "tuple-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val v = ~tuple(1, true);"
+    },
+    {
+      "id": "array-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val v = Array.of(1, 2);"
+    },
+    {
+      "id": "array-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val v = ~array(1, 2);"
+    },
+    {
+      "id": "list-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val v = List.of(1, 2);"
+    },
+    {
+      "id": "list-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val v = ~list(1, 2);"
+    },
+    {
+      "id": "vector-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val v = Vector.of(1, 2);"
+    },
+    {
+      "id": "vector-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val v = ~vector(1, 2);"
+    },
+    {
+      "id": "set-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val v = Set.of(1, 2);"
+    },
+    {
+      "id": "set-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val v = ~set(1, 2);"
+    },
+    {
+      "id": "record-of",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val v = Record.of(ready: true);"
+    },
+    {
+      "id": "record-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val v = ~record(ready: true);"
+    },
+    {
+      "id": "typed-empty-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val m = ~<Map<string,int>>();"
+    },
+    {
+      "id": "empty-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val m = ~();"
+    },
+    {
+      "id": "structural-param",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "fnc accept(~Point p) -> void { }"
+    },
+    {
+      "id": "structural-is-match",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "match v over on is ~Point as val p -> { use(p); } on _ -> { } end"
+    },
+    {
+      "id": "legacy-array-literal",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val a = [1, 2];"
+    },
+    {
+      "id": "legacy-tuple-literal",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val t = (1, true);"
+    },
+    {
+      "id": "bare-map-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val m = ~(\"a\" => 1);"
+    },
+    {
+      "id": "bare-record-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val r = ~(ready: true);"
+    },
+    {
+      "id": "spaced-map-tilde-removed",
+      "expected": "REJECT",
+      "phase": "parser",
+      "source": "val m = ~ map(\"a\" => 1);"
+    },
+    {
+      "id": "spaced-structural-param",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "fnc accept(~ Point p) -> void { }"
+    },
+    {
+      "id": "spaced-structural-is-match",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "match v over on is ~ Point as val p -> { use(p); } on _ -> { } end"
+    },
+    {
+      "id": "factory-smoke-return-21",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "pub fnc main(): int { val pair = Tuple.of(10,20); val values = Array.of(1,2,3); val names = List.of(\"Atto\",\"Lima\"); val scores = Map.of(\"a\",10,\"b\",20); val item = Record.of(name=\"Atto\",count=3); return values[0] + pair[1]; }",
+      "expected_exit": 21
+    },
+    {
+      "id": "record-of-named-infer",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val item = Record.of(name=\"Atto\", count=3);"
+    },
+    {
+      "id": "record-of-static-quoted",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val headers = Record.of(\"content-type\": \"text/plain\", status=200);"
+    },
+    {
+      "id": "record-of-empty",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val empty = Record.of();"
+    },
+    {
+      "id": "record-of-explicit-shape",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val Record<{name: string, count: int}> item = Record.of(name=\"Atto\", count=3);"
+    },
+    {
+      "id": "record-of-type-parameter",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "fnc wrap<T>(T x): Record<{value: T}> { return Record.of(value=x); }"
+    },
+    {
+      "id": "record-generic-open-row",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "fnc read_name<R: Record<{name: string, ...}>>(R r): string { return r.name; }"
+    },
+    {
+      "id": "map-of-flat-pairs",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "val scores = Map.of(\"a\", 10, \"b\", 20);"
+    },
+    {
+      "id": "map-of-explicit-empty",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val Map<string,int> m = Map.of();"
+    },
+    {
+      "id": "array-of-explicit-empty",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val Array<int> x = Array.of();"
+    },
+    {
+      "id": "tuple-of-zero",
+      "expected": "ACCEPT",
+      "phase": "type",
+      "source": "val x = Tuple.of();"
+    },
+    {
+      "id": "record-of-duplicate-fields",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val r = Record.of(name=1, \"name\": 2);",
+      "code": "E_DUPLICATE"
+    },
+    {
+      "id": "record-of-computed-key",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val key = \"name\"; val r = Record.of(key => 1);",
+      "code": "E_UNSUPPORTED"
+    },
+    {
+      "id": "record-of-shape-mismatch",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val Record<{name: string}> r = Record.of(name=3);",
+      "code": "E_TYPE"
+    },
+    {
+      "id": "record-of-missing-generic-field",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "fnc f<R: Record<{name: string, ...}>>(R r): int { return r.age; }",
+      "code": "E_NO_FIELD"
+    },
+    {
+      "id": "map-of-odd-positional-arity",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val m = Map.of(\"a\", 1, \"b\");",
+      "code": "E_FACTORY_ARITY"
+    },
+    {
+      "id": "map-of-mixed-entry-and-flat",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val m = Map.of(\"a\" => 1, \"b\", 2);",
+      "code": "E_FACTORY_ARITY"
+    },
+    {
+      "id": "map-of-duplicate-constant-keys",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val m = Map.of(\"a\", 1, \"a\", 2);",
+      "code": "E_DUPLICATE"
+    },
+    {
+      "id": "list-of-uninferred-empty",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val values = List.of();",
+      "code": "E_TYPE_INFERENCE"
+    },
+    {
+      "id": "array-of-nonunifiable-items",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val xs = Array.of(1, \"two\");",
+      "code": "E_TYPE_INFERENCE"
+    },
+    {
+      "id": "record-of-untyped-spread",
+      "expected": "REJECT",
+      "phase": "type",
+      "source": "val props = Map.of(\"a\",1); val r = Record.of(...props);",
+      "code": "E_UNSUPPORTED"
+    },
+    {
+      "id": "map-of-duplicate-runtime-keys",
+      "expected": "REJECT",
+      "phase": "guest",
+      "source": "val key = get_key(); val m = Map.of(key => 1, key => 2);",
+      "code": "E_DUPLICATE",
+      "note": "Runtime rejection must publish no partial collection."
+    },
+    {
+      "id": "integer-bitwise-complement-preserved",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "pub fnc main() -> int { return ~(0); }",
+      "note": "i64 result -1; exit status 255 on POSIX only",
+      "expected_result": -1
+    }
+  ],
+  "notes": "SOURCE EXPECTATIONS ONLY. New Record.of field=... and type-level Record<{...}> syntax are target-only, not current compiler passes. All backends require independently verified exact-head compiled guest tests. Flat Map and Record row extensions are candidate only; duplicate keys reject construction (including runtime-equal keys)."
+}

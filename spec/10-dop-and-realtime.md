@@ -2,9 +2,9 @@
 
 **Status: DRAFT; largely an optimization/profile target, not universal runtime evidence.**
 
-## Numerical semantics versus layout and vectorization
+For the inverted struct/class value-versus-identity split and optimization legality, see [chapter 27](27-inverted-structs-classes-aot-jit.md). It is a proposed contract, not implemented guest parity.
 
-See [numerical semantics v1](../language/numeric-semantics-v1.md) for the candidate exact scalar reference, first-failing-logical-index vector errors, checked dot/matrix evaluation order (including deterministic row/column/inner overflow locations), exact decimal quantity division without integer truncation, and explicit approximate fast modes. SIMD/SoA/AoSoA/GPU optimizations must not silently change numeric results or ownership, and reference or host-only tests do not establish guest AOT parity.
+Strict vector kernels preserve logical scalar evaluation order and first failing index irrespective of storage layout; see [numerical semantics v1](../language/numeric-semantics-v1.md). Approximate modes require separate explicit admission.
 
 ## Data-layout semantics
 
