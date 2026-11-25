@@ -1,0 +1,77 @@
+{
+  "schema": "atto.functional-pipelines.edge.v1",
+  "status": "accepted target semantics; supplemental source admission, execution evidence per backend still required",
+  "relationship": "Independent extension to the original eight-case functional-pipelines-v1 acceptance suite; do not replace or dilute the canonical eight fixtures",
+  "source_root": "conformance/functional-pipelines-v1/edge/",
+  "reporting": {
+    "normalization": "Compare actual signed-i64 Atto main() result, not just OS exit status; retain the underlying process/stdout/Wasm export ABI",
+    "executable_guest_required": true,
+    "source_hash_scheme": "Git blob SHA-1; literal source bytes pinned",
+    "ci_status": "not_executed"
+  },
+  "positive": [
+    {
+      "file": "two-argument-61.atto",
+      "blob_sha": "4089c524db1d076593994ad65acb5ca7f90eea32",
+      "expected_main_value": "61",
+      "checks": [
+        "forward prepends piped value",
+        "reverse prepends piped value",
+        "explicit second argument is evaluated once",
+        "name-first inline arrow body"
+      ]
+    },
+    {
+      "file": "preapplied-grouped-42.atto",
+      "blob_sha": "9a89ada18865fead0d92a7de75415957fbb5f67f",
+      "expected_main_value": "42",
+      "checks": [
+        "reverse preapplied named call",
+        "mixed directions grouped explicitly"
+      ]
+    },
+    {
+      "file": "signed-i64-min.atto",
+      "blob_sha": "bbc22347d7ccb0a5be1a7c2193f11c5f2f4805cc",
+      "expected_main_value": "-9223372036854775808",
+      "checks": [
+        "i64 lower bound literal",
+        "reverse pipeline",
+        "64-bit result not truncated to OS exit code"
+      ]
+    }
+  ],
+  "runtime_error": [
+    {
+      "file": "checked-overflow.atto",
+      "blob_sha": "59bb890b54addc1659065ab55cd565771523bfce",
+      "error_kind": "checked-signed-i64-overflow",
+      "expected_normal_main_result": false,
+      "checks": [
+        "compiled guest actually executes to overflow",
+        "no modular wraparound",
+        "target ABI may vary, must observe runtime failure"
+      ]
+    }
+  ],
+  "negative": [
+    {
+      "file": "reject-i64-positive-overflow.atto",
+      "blob_sha": "2e584ee01ee74a3a31e282cf0116957f9ff95bd1",
+      "kind": "literal-range",
+      "artifact_exists": false
+    },
+    {
+      "file": "reject-i64-negative-underflow.atto",
+      "blob_sha": "8b63b45e406db3e19aa793e0f7a627914623b9e0",
+      "kind": "literal-range",
+      "artifact_exists": false
+    },
+    {
+      "file": "reject-reserved-unsafe.atto",
+      "blob_sha": "b159def3fa26ca6023395e1c546b95c1b929fd14",
+      "kind": "reserved-authority-identifier",
+      "artifact_exists": false
+    }
+  ]
+}

@@ -10,8 +10,8 @@ For the portable scalar `int` profile, represent values in the closed range `[-9
 - Check **each** intermediate arithmetic operation, including inside a larger expression that would return to range. For example, `(INT64_MAX + 1) - 1` must fail, not yield `INT64_MAX`.
 - Evaluate effectful operands left-to-right exactly once, subject to the existing type/effect rules. A backend cannot reorder or discard an observable evaluation to avoid a checked fault. Neither an actor scheduler, JIT nor AOT optimizer may convert an overflow into an ordinary value.
 - Constant expressions that overflow reject at compile time with `E_CONST_OVERFLOW`, without producing a guest artifact. This is separate from runtime arithmetic overflow after input-dependent values are read.
-- Runtime checked overflow is a **terminal arithmetic-fault category** until a portable fault/error/CONTROL wire ABI is ratified. It must never be silently converted into an ordinary guest `throw`, `Result.Err`, `Option.None`, or catchable `trap` success. [Trap-to-Result v1](trap-result-v1.md) catches ordinary source `throw` only.
-- `Integer.rem(a,b)` is signed truncating remainder; `Integer.mod(a,b)` is Euclidean modulus. Both reject a zero divisor. `Integer.rem(INT64_MIN, -1)` is zero, not an overflow. Full signed division and `pow` overload policy, integer widths other than `int`, floating point and high-precision math require separate contracts.
+- Runtime checked overflow is an ordinary typed guest throw (`ArithmeticOverflowError`); zero division is `DivisionByZeroError`. Matching catch and `trap!` may handle these errors, as decided in the current [numeric reconciliation](cross-backend-semantics-reconciliation-v1.md#numeric-semantics). Unhandled throws escalate normally; the final panic is not catchable. The older terminal-only fault proposal is superseded.
+- `Integer.rem(a,b)` is signed truncating remainder; `Integer.mod(a,b)` is Euclidean modulus. Both reject a zero divisor. `Integer.rem(INT64_MIN, -1)` is zero, not an overflow. Signed division truncates toward zero under [numeric v1](numeric-semantics-v1.md); `pow` overload policy, integer widths other than `int`, floating point and high-precision math require separate contracts.
 - Bitwise XOR, AND/OR/NOT and shifts perform exact bit-pattern operations and are **not** arithmetic overflow events. Operator spelling remains governed by the separately evolving caret/`^^` and directional-I/O rules.
 
 ## Source admission and compatibility
@@ -35,7 +35,7 @@ Transitive imports **must preserve one checked numeric model** across the linked
 | Negation overflow | `-INT64_MIN` (dynamic operand) | runtime overflow |
 | Intermediate overflow | `(INT64_MAX + 1) - 1` (dynamic) | runtime overflow |
 | Remainder boundary | `Integer.rem(INT64_MIN,-1)` | `0` |
-| Remainder zero divisor | `Integer.rem(1,0)` | terminal zero-divisor |
+| Remainder zero divisor | `Integer.rem(1,0)` | ordinary typed zero-divisor error |
 | Const overflow | `const int n = INT64_MAX + 1` | `E_CONST_OVERFLOW`, no artifact |
 | Mixed unit import | checked caller → unchecked callee | no execution / no emitted artifact until profile proof |
 | Compatibility | unmarked archival `.ores` add overflow | versioned legacy wrapping only |
@@ -52,4 +52,7 @@ Maintain canonical shared source fixtures in `atto-platform-conformance`, track 
 - [Legacy Java arithmetic characterization](https://github.com/ores-truffle-oreslang/oreslang-source.java/blob/main/docs/GRAAL_I64_RUNTIME_CHARACTERIZATION.md): documents wrapping `long` behavior as a historical observation, not the canonical AttoLang rule.
 - [Compile-time constants](compile-time-constants-v1.md): already requires checked const arithmetic; this proposal aligns runtime integer arithmetic with that design.
 
-**Review decision needed before adoption:** canonical anonymous/eval source edition, the portable runtime overflow fault ID and actor CONTROL mapping, and whether archival wrapping requires an explicit per-package edition rather than inference from `.ores`. No automatic rewrite or silent mixed-profile linkage is authorized by this proposed rule.
+**Review decision needed before adoption:** canonical anonymous/eval source edition, whether archival wrapping requires an explicit per-package edition rather than inference from `.ores`. No automatic rewrite or silent mixed-profile linkage is authorized by this proposed rule.
+
+
+The checked-in host reference suite `tests/checked-i64-edition-reference.test.mjs` exercises selected semantic invariants only; it does not compile Atto source or certify backend parity.
