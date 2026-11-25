@@ -1,0 +1,10 @@
+// expect-exit: 42
+// java: rejects
+// Canonical T? type with independent x? omission: the callee sees a real None.
+fnc f(int? x?): int {
+  match x over
+    on None -> { return 42; }
+    on Some(n) -> { return n; }
+  end
+}
+pub fnc main(): int { return f(); }

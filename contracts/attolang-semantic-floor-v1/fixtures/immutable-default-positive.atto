@@ -1,0 +1,5 @@
+fnc main() -> int ::
+  int base = 40
+  const int offset = 2
+  return base + offset
+end

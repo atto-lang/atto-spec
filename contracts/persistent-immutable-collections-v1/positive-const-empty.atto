@@ -1,0 +1,6 @@
+// TARGET only — NOT_EXECUTED. Typed [] must be a constexpr frozen Vector<int>.
+fnc main() -> int {
+  const Vector<int> foo = [];
+  val Vector<int> next = foo.appended(42);
+  return next[0];
+}
