@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Single-threaded runtime mode v1](language/runtime-threading-mode-v1.md): canonical `--single-threaded` / `--max-threads-per-space=1` and `--mode=single-threaded` request at most one guest-executing OS thread per shared memory space. **PROPOSED:** SOURCE_FREE CLI reference tests are not guest-runtime execution or backend parity evidence.
+
 - [Return-type `infer` / `typeof(binding)` v1](language/return-type-queries-and-inference-v1.md): TARGET contract for explicit return inference and compile-time binding-derived return types, preserving historical `typeof fnc` and `typeof value`. Host-only checks are not guest execution.
 
 - [Compiler-generated proxy virtual interception candidate](language/class-proxy-virtual-interception-v1.md): typed virtual dispatch, one-shot continuation, ownership and effect-safety obligations; **not implemented or guest-verified**. Planned [58-case conformance matrix](conformance/class-proxy-interception-v1.json) is host-validated only.
