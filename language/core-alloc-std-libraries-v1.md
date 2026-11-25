@@ -1,5 +1,7 @@
 # core, alloc and std libraries: imports, layering and platforms (v1)
 
+> **2026-11-24 v2 target:** [Static imports v2](static-imports-v2.md) supersedes conflicting selector and binding rules for the v2 profile; preserve historical v1 admission until migration is implemented. Library layering, visibility, initialization, source identity and capability constraints remain unchanged. No backend parity implied.
+
 **Status: NORMATIVE (finalized 2026-11-22).** This document settles how the
 compiler-owned libraries are named, imported and layered. It supersedes the
 competing library-selector addenda in `unified-static-imports-v1.md`

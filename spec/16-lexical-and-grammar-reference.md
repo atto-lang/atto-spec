@@ -173,6 +173,12 @@ Only the first two forms run on free functions today. See [chapter 19](19-observ
 
 **PROPOSED** formatter rule: the formatter keeps the form the author wrote and does not rewrite one into another.
 
+### Candidate comma and inline lambda forms
+
+The versioned comma-body candidate is documented in [chapter 03](03-functions-and-effects.md#comma-callable-bodies-versioned-candidate). In the existing profile `::` remains a header delimiter, including after return-first effects. In a separately admitted profile, name-first `-> T :: ... end` sequences top-level comma items and returns its final expression; unmarked semicolon bodies require explicit return. Reject empty/trailing items, terminal declarations in non-void bodies and ambiguous inline argument commas.
+
+Typed inline lambda target: `|params| => T -> expression`, with `|params| (=> T) -> expression` a compatibility alias; reject `|params| -> T => expression`. The inferred `|params| -> expression`, explicit-result brace body `|params| -> T { ... }`, and candidate typed comma body remain distinct. Inline local sequences require a leading binding or explicit grouping; `|x| -> a, b` does not capture a surrounding argument separator. A pipeline passes one value, and multiple lambda parameters require a statically typed tuple of matching arity. An ungrouped lambda stage ends at the next top-level `|>`. Preserve scope, ownership, return type and evaluation order.
+
 ### Negated conditionals (TARGET)
 
 See [negated conditionals](ifnot-unless.md) and the [machine-readable contract](../contracts/ifnot-unless-v1.json). The value form requires `else` and `fi`; the `do` imperative form permits optional `else` and closes with `fi`; the brace form permits optional `else` and closes with matching braces only. The boolean head is evaluated once and inverted; `elif` predicates are positive. Invalid non-boolean predicates and unsafe negated binding heads are rejected. This is not evidence of compiler execution.
@@ -180,6 +186,10 @@ See [negated conditionals](ifnot-unless.md) and the [machine-readable contract](
 ## Candidate binding type-query annotation
 
 See [static binding type queries](../language/return-binding-type-query-target-v1.md). The proposed `typeof name` and `typeof(name)` forms are not additions to the verified accepted-spelling table; the existing callable-signature production and contextual `infer` remain distinct.
+
+## Typed local constant syntax (target)
+
+`T name = expression;` and `const T name = expression;` are equivalent typed local constants; `const name: T = expression;` is the type-right form. A runtime initializer cannot silently become `val`. `const mut` is explicit, and bare `mut T name` is rejected in this local grammar. Fields and contextual pattern bindings are separate. See [chapter 27](27-implicit-const-and-const-mut.md).
 
 ## Statements and semicolons
 
