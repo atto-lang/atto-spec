@@ -11,6 +11,7 @@ out-of-line `mtd` receivers; existing modifier and receiver checks still apply.
 ```atto
 fnc foo() : int { return 5; }
 fnc foo() : int -> { return 5; }
+fnc foo() : int -> 5;
 fnc foo() -> int { return 5; }
 
 fnc foo() -> int
@@ -97,6 +98,97 @@ distinct signatures or change receiver mutability.
 fat arrow for callable *type* definitions/declarations; do not rewrite one
 into the other.
 
+**Return-first extension:** the accepted `fnc T <- name(params)` / `T <- name(params)` spellings and their `{}`, `begin`/`end`, and return-first statement/`end` bodies are specified in [return-first callable syntax v1](return-first-and-begin-callables-v1.md). That extension is in addition to the name-first body forms below, not permission to omit a return annotation or to reinterpret legacy comma/end tail returns.
+
+## Inline single-expression arrow body (accepted target contract)
+
+The one-expression form `fnc name(args): T -> expression;` is an alternative to a
+braced body. It evaluates the expression exactly once and implicitly returns its
+value, subject to the same declared return type, call arity, ownership, borrow,
+effect, overflow, and evaluation-order checks as `{ return expression; }`.
+The trailing semicolon **is mandatory**; it is a callable-body delimiter, not
+a separator that permits a second expression. A braced `: T -> { ... }` body
+still requires an explicit return for non-`void` callables. The form applies
+to supported named `fnc`, `routine`, and method declarations; backends must
+independently prove each category before claiming executable support.
+
+```atto
+pub fnc double(int x): int -> x * 2;
+pub fnc increment(int x): int -> x + 1;
+pub fnc main(): int {
+    val a = 20 |> double |> increment;
+    val b = double <| 21;
+    return a + b; // 83
+}
+```
+
+This spelling is distinct from the established `fnc f() -> T` trailing
+return-type header and Erlang-style `end` body. No implicit `end`, newline
+termination, or implicit return from a brace block is introduced.
+Reject missing semicolons, empty expressions, mismatched result types, and
+`: T -> expression end`. Mixed `|>` and `<|` application chains require
+parentheses rather than an implementation-defined grouping.
+
+Functional application rules: `x |> f |> g` = `g(f(x))`, and
+`f <| g <| x` = `f(g(x))`; `<|` is right-associative. A standalone
+`f <| x` is `f(x)`. Both use ordinary checked function calls and never
+denote continuous actor/channel routing (`pipe`/`rpipe`).
+
+## Multi-argument functional application and signed-i64 edges
+
+Functional `|>` and `<|` **insert the piped value as argument 0** of the
+named callable. Any explicitly written arguments occupy subsequent positions,
+in their original order. For the expression patterns below, the same ordinary
+function-call arity, type, ownership and effect checks apply as to an explicit
+call. No implicit currying or callable value is created.
+
+```atto
+fnc subtract(int value, int adjustment): int -> value - adjustment;
+val a = 42 |> subtract(2);    // subtract(42, 2) => 40
+val b = subtract(1) <| 22;    // subtract(22, 1) => 21
+```
+
+Likewise `f(a) <| (x |> g)` lowers to `f(g(x), a)`. The explicit
+parentheses resolve otherwise mixed functional directions; mixing bare
+`|>` and `<|` without grouping must fail. The left-hand `f(a)` in this
+reverse-pipe context is a *syntactic call target with pre-applied arguments*,
+not an eagerly invoked partial function or a dynamically allocated closure.
+Piped values and subsequent explicit arguments are evaluated exactly once in
+the resulting argument order before entering the callable. Checked
+arithmetic/control effects cannot silently disappear, reorder or wrap.
+Continuous actor `pipe`/`rpipe` remains a distinct operator family.
+
+For signed 64-bit `int`, `-9223372036854775808` is a valid negative
+literal, even though its positive magnitude does not itself inhabit
+`int64`. A compiler must not reject the negative minimum merely because
+its host literal parser cannot represent `+9223372036854775808`.
+Both `+9223372036854775808` and `-9223372036854775809` are out of
+range and must fail source admission with no runnable artifact. Arithmetic
+overflow of two valid operands (for example `INT64_MAX + 1`) is a
+**runtime checked failure**, not modulo wraparound and not silently treated
+as source-literal overflow; its exact transport depends on the target ABI.
+
+These additional cases live in
+`conformance/functional-pipelines-v1/edge/cases.json`. They extend
+the eight pinned primary fixtures, rather than rewriting the primary
+acceptance set or granting any backend a pass without compiled-guest evidence.
+
+## Pure scalar compilation cannot reclassify concurrency control
+
+The pure signed-int64 pipeline subset is not permitted to interpret
+`sync`, `task`, or `yield` as ordinary callable, parameter-binding, or
+local-binding identifiers. Those spellings are reserved by the
+concurrency/task/generator language family and must never gain
+ordinary scalar-function authority simply because they appear next
+to `|>` or `<|`.
+
+Until a production compiler implements the corresponding typed,
+ownership-checked, effect-aware constructs, a scalar-only frontend
+must reject all nine combinations (three words × three binding
+positions) **before emitting executable output**. This is an
+admission-boundary requirement, not proof of task, scheduler,
+generator, or TenantVM runtime support.
+
 ## Body boundary and disambiguation
 
 ```ebnf
@@ -104,6 +196,7 @@ callable          = callable_head, return_spec, callable_body ;
 return_spec       = (":", type_ref) | ("->", type_ref) ;
 callable_body     = "{", c_statements, "}"
                   | "->", "{", c_statements, "}"  (* only after : Type *)
+                  | "->", expression, ";"    (* only after : Type *)
                   | ["::"], erlang_sequence, "end" (* only after -> Type *) ;
 erlang_sequence   = erlang_item, {",", erlang_item} ;
 erlang_item       = statement_without_terminator | expression ;
@@ -113,7 +206,8 @@ A `-> Type` header followed by `{` unambiguously selects C-style.
 The optional `::` after `-> Type` selects Erlang-style explicitly;
 otherwise the absence of `{` selects Erlang-style. A `: Type` header
 does **not** implicitly select Erlang-style. A body-opening `->` following
-`: Type` requires `{`. Neither `::` nor a second `->` may be used
+`: Type` requires either `{` for a statement block or exactly one expression
+terminated with `;`. Neither `::` nor a second `->` may be used
 as an expression operator. The parser must not fall back to another
 interpretation after encountering malformed delimiters.
 
@@ -145,12 +239,14 @@ interpretation after encountering malformed delimiters.
 
 All backends and the formatter should test the following:
 
-1. Each of the five examples above returns 5.
+1. Each of the six examples above returns 5; the inline `: int -> 5;`
+   form returns 5 with checked implicit-return typing.
 2. `fnc f() : int { 5; }` does not gain implicit return.
 3. `fnc f() -> int :: 3, 2 + 3 end` returns 5.
 4. Reject a missing `end`, a trailing comma, adjacent items without
    comma, a top-level semicolon in Erlang-style, and `: int ::`.
-5. Reject `fnc f() : int -> 5 end`: the `->` body marker requires braces.
+5. Reject `fnc f() : int -> 5 end`: an unbraced `: int ->` body requires
+   a single expression followed by a semicolon.
 6. Reject a non-`void` Erlang body that can fall through without a
    result, and enforce return-type and ownership checks for its tail.
 7. Keep argument commas (e.g., `sum(2, 3)`) distinct from sequence
@@ -173,3 +269,7 @@ header is not evidence that a guest Wasm method executes. Rust, Wasm,
 Java, LLVM, .NET, Forge, the formatter, and playground should publish
 their own tested capability status and a shared positive/negative
 conformance corpus before declaring parity.
+
+## Opt-in v2 body mode (draft)
+
+The legacy v1 grammar above remains the default. With an explicitly selected v2 edition only, an unmarked `-> Type ... end` body is statement-oriented and non-void paths require `return` or contextual `^`. An explicit `::` selects a comma body with implicit tail return. The `: Type -> expression;`, return-first, receiver, effect and ownership contracts above are unchanged. No edition inference from nested commas, no implicit format migration, and no change to package defaults is authorized. See [the v2 migration contract](callable-body-migration-v2.md) and [sequence contract](return-shorthand-and-sequences-v1.md). A terminal binding is not a return value; bare return commas cannot consume a `::` body's separators. Test both modes independently, including negative fallthrough, trailing commas, nested scopes, and receiver checks. Cross-backend parity is not established.

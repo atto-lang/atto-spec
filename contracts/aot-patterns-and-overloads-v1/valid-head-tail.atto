@@ -1,0 +1,7 @@
+pub fnc main(): int {
+    let values = [40, 2, 7];
+    return match values over
+        on [first, second | rest] -> { return first + second; }
+        on _ -> { return 0; }
+    end;
+}

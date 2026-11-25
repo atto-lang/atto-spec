@@ -120,7 +120,7 @@ using telemetry.span("request") as span {
 }
 ```
 
-A compiler that supports `using` must define resource acquisition and
+The [scoped-resource contract](../spec/03-functions-and-effects.md#existing-using-keyword-deterministic-scoped-resources-v1-target) governs resource admission and cleanup, independently of type predicates. A compiler that supports `using` must define resource acquisition and
 exactly-once cleanup for normal return, exception/unwind, and cancellation.
 Suspension retains the resource frame without leaking or double-closing it.
 Hard process abort is not a catchable unwind. Incomplete cleanup machinery

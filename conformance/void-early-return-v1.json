@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "language": "AttoLang",
+  "feature": "void-early-return-v1",
+  "contract": "language/return-shorthand-and-sequences-v1.md",
+  "status": "normative-proposed-not-executed",
+  "note": "New independent void-return vectors; no change to SHA-pinned 49-case caret/sequence corpus. Structural acceptance is not guest execution.",
+  "cases": [
+    {
+      "id": "brace-bare",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "fnc early_exit() -> void { if true { ^ } } pub fnc main(): int { early_exit(); ^ 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "brace-bare-semicolon",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "fnc early_exit() -> void { if true { ^; } } pub fnc main(): int { early_exit(); ^ 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "brace-explicit",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "fnc early_exit() -> void { if true { ^ void; } } pub fnc main(): int { early_exit(); ^ 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "brace-explicit-no-semicolon",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "fnc early_exit() -> void { if true { ^ void } } pub fnc main(): int { early_exit(); ^ 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "procedural-bare",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "fnc early_exit() -> void { do if true then ^ fi } pub fnc main(): int { early_exit(); ^ 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "procedural-explicit",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "fnc early_exit() -> void { do if true then ^ void fi } pub fnc main(): int { early_exit(); ^ 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "plain-if-fi-explicit",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "fnc early_exit() -> void { if true then ^ void fi } pub fnc main(): int { early_exit(); ^ 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "keyword-return-void",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "fnc early_exit() -> void { return void; } pub fnc main(): int { early_exit(); ^ 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "nested-brace-in-fi",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "fnc early_exit() -> void { if true then if true { ^ void; } fi } pub fnc main(): int { early_exit(); ^ 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "brace-conditional-false",
+      "phase": "execute",
+      "expect": "accept",
+      "source": "fnc early_exit() -> void { if false { ^ void; } } pub fnc main(): int { early_exit(); ^ 42; }\n",
+      "expectedReturn": 42,
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "nonvoid-caret-void",
+      "phase": "typecheck",
+      "expect": "reject",
+      "source": "pub fnc main(): int { ^ void; }\n",
+      "diagnostic": "return-type-mismatch",
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "nonvoid-keyword-void",
+      "phase": "typecheck",
+      "expect": "reject",
+      "source": "pub fnc main(): int { return void; }\n",
+      "diagnostic": "return-type-mismatch",
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "nonvoid-branch-void",
+      "phase": "typecheck",
+      "expect": "reject",
+      "source": "pub fnc main(): int { if true { ^ void; } ^ 42; }\n",
+      "diagnostic": "return-type-mismatch",
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "nonvoid-procedural-void",
+      "phase": "typecheck",
+      "expect": "reject",
+      "source": "pub fnc main(): int { do if true then ^ void fi ^ 42; }\n",
+      "diagnostic": "return-type-mismatch",
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "reject-void-value",
+      "phase": "parse",
+      "expect": "reject",
+      "source": "pub fnc main(): int { val result = void; ^ 42; }\n",
+      "diagnostic": "void-is-not-value",
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    },
+    {
+      "id": "reject-void-plus",
+      "phase": "parse",
+      "expect": "reject",
+      "source": "fnc early_exit() -> void { ^ void + 1; } pub fnc main(): int { early_exit(); ^ 42; }\n",
+      "diagnostic": "void-is-not-expression",
+      "verification": {
+        "rust_wasm": "not_executed",
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "net": "not_executed",
+        "forge": "not_executed"
+      }
+    }
+  ]
+}
