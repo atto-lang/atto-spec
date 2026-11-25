@@ -108,9 +108,9 @@ val connection = Actor.connect(reader, writer)
 **Decision:** make the spelling `using telemetry.span("checkout") as span { ... }`
 a first-class, compiler-checked AttoLang construct. This **reuses the existing
 `using` keyword**, not a new telemetry-specific keyword, decorator, macro
-or application instrumentation wrapper. An initial **restricted LLVM AOT**
-subset has passed compiler-built guest executable tests; this does not
-establish Java/Graal or fully asynchronous five-backend parity.
+or application instrumentation wrapper. The LLVM hosted-AOT subset has restricted guest execution evidence.
+Java's compiler-owned guest scope implementation has separate candidate
+tests; this amendment does not certify their execution.
 
 ```atto
 using telemetry.span("checkout") as span {
@@ -140,12 +140,12 @@ non-suspending `telemetry.span("literal")` scope subset (five native
 guest cases at `-O0` and `-O2`, five compiler-denial cases on the
 [approved source-blob carrier](https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43324098880)).
 That subset intentionally forbids observable scope-handle methods and
-suspension. The Java/Graal PR uses a test-defined nominal `SpanScope`
-with `try/finally` lowering; its source-org CI has no executed steps,
-so this is *not yet* a trusted native provider or equivalent backend
-runtime proof. Trace-context migration, `await`/cancel, production
-OTLP export and authorized JIT attach remain unproven. See the
-[machine-readable feature/evidence matrix](https://github.com/ores-truffle-oreslang/oreslang-common-source/blob/feat/atto-native-auto-instrumentation-v1-20261112/contracts/v1/native-scoped-span-parity-v1.json).
+suspension. Java main uses a compiler-owned lexical span and a trusted
+runtime provider. Its checked-in guest tests target nesting, `await`, cancellation
+and host-controlled recording; exact executed receipts are required. Full guest AOT, live JIT attach, and
+asynchronous scope parity across backends require independent execution
+evidence. See the [Java guest tests](https://github.com/atto-lang/atto-source.java/blob/b02efee4c036557278284ca444655e19cd0adc64/src/test/java/dev/oreslang/TelemetryUsingSpanLanguageTest.java)
+and the [shared telemetry contract](https://github.com/atto-lang/atto-common-source/pull/122).
 
 
 `close_scope` executes exactly once **after the body terminates** by
