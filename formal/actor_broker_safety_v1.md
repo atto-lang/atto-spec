@@ -31,9 +31,9 @@ An actor has an immutable actor ID, a monotonically increasing incarnation/gener
 
 ## Initial executable reference obligations
 
-- atto-lang/atto-platform-conformance and ores-truffle-oreslang/oreslang-platform-conformance: bounded critical-read/critical-write, generation and logical-stack exploration (2 lanes, 2 generations, 4 negative mutations).
+- [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance): bounded critical-read/critical-write, generation and logical-stack exploration (2 lanes, 2 generations, 4 negative mutations).
 - attomq/atto.mq and atto-poc/atto-rmq-clone.atto: bounded delivery lease, ACK, restart and stale replay exploration (2 messages, 2 generations, 4 negative mutations).
-- Existing Oreslang TLA+ models and bounded supervisor CONTROL/worker proofs remain independently scoped; do not count the new reference check as a replacement for or endorsement of their refinement claims.
+- Earlier separately scoped TLA+ models and bounded supervisor CONTROL/worker proofs remain independently scoped; do not count the new reference check as a replacement for or endorsement of their refinement claims.
 
 ## Next independent formalizations
 

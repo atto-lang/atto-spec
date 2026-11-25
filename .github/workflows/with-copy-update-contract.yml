@@ -1,0 +1,23 @@
+name: with-copy-update-source-contract
+on:
+  push:
+    branches: ['spec/with-immutable-copy-update-v1-*']
+  pull_request:
+    paths:
+      - 'language/with-copy-update-v1.md'
+      - 'tests/with-copy-update-contract.test.mjs'
+      - '.github/workflows/with-copy-update-contract.yml'
+permissions:
+  contents: read
+jobs:
+  host-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Node version
+        run: node --version
+      - name: Host-only reference tests (not compiler or guest)
+        run: node --test tests/with-copy-update-contract.test.mjs

@@ -19,75 +19,11 @@ The language must not conflate actors, tensors, graphs and kernels. Actors coord
 
 This proposal does not define a second model DSL or require Python at runtime.
 
-## 2. Canonical block and whitespace syntax
+## 2. Candidate model declaration bodies
 
-AttoLang source is **not indentation-sensitive**. Indentation is for people and formatters only. The parser must produce the same program when indentation changes but tokens and newlines remain unchanged.
+Model, layer, training and inference declarations may propose explicit as/end bodies in a future versioned grammar. Indentation is non-semantic. Existing callable brace, begin/end, return-first, conditional fi, range and comma-sequence grammar remains authoritative. The examples below use exploratory model notation; their routine as/end bodies, optional semicolons, shape parameters and member forms are illustrative only, not a change to the ordinary callable grammar. A formatter must not convert existing callable or conditional forms without a separate reviewed grammar and proven semantic equivalence.
 
-The canonical block form is:
-
-~~~atto
-define model GPT as
-    ...
-end
-
-define inference GPT as
-    ...
-end
-~~~
-
-Rules:
-
-- **as** opens a declaration body.
-- **do** opens an iterative/control-flow body.
-- **over** opens a match body.
-- **end** closes exactly the innermost open block, regardless of which opener introduced it.
-- Blocks may nest. Every opener requires one matching **end**.
-- Newlines separate statements. Horizontal whitespace separates tokens and has no layout meaning.
-- Indentation has no semantic meaning and must not affect parsing, name resolution or code generation.
-- Parentheses, brackets and other expression delimiters may contain line breaks. Outside an unclosed delimiter, a newline terminates the current statement.
-- Commas separate items in argument lists, type arguments, shape lists and other comma-delimited forms.
-- Canonical examples use no semicolons and no curly-brace block bodies.
-- **end** is a reserved keyword, not an identifier. An unexpected **end** and an unterminated block are compile-time errors.
-- A formatter may indent nested bodies, but must never add or remove an **end** based on indentation.
-
-The parser maintains a block stack. Each **end** pops exactly one entry. Diagnostics should identify the opening construct and source location when a block is left unterminated.
-
-### 2.1 EBNF target
-
-~~~ebnf
-block_open      = definition_open | loop_open | match_open ;
-definition_open = "define", definition_kind, [identifier], "as", newline ;
-loop_open       = "for", iteration_clause, "do", newline ;
-match_open      = "match", match_subject, "over", newline ;
-block_close     = "end" ;
-
-definition      = definition_open, statement_list, block_close ;
-loop            = loop_open, statement_list, block_close ;
-match_statement = match_open, match_arm_list, block_close ;
-
-statement_list  = { statement, newline } ;
-~~~
-
-This is a targeted grammar sketch, not the complete AttoLang grammar. Existing expression, declaration, effect and type rules remain in force unless explicitly extended by an accepted language change.
-
-### 2.2 Declaration bodies use as ... end
-
-The same body form should apply consistently to model, layer, training, inference, module, class, routine and other block declarations. In particular, function and method bodies in new canonical examples use **as ... end**, not curly-brace bodies.
-
-~~~atto
-pub fnc forward(Tensor<f32, [Batch, Sequence, Hidden]> input): Tensor<f32, [Batch, Sequence, Vocabulary]> as
-    val hidden = embedding.lookup(input)
-    return output_projection(hidden)
-end
-
-define class ModelSession as
-    pub mtd close(): void as
-        cache.release()
-    end
-end
-~~~
-
-This is a proposed source-style and grammar contract. Existing brace-bodied examples in older draft documents must not be treated as confirmation of this proposal's parser support.
+The initial target parser must track matching model declaration delimiters, reject missing/extra terminators and preserve nested source spans. No new general newline or block grammar is ratified by this proposal.
 
 ## 3. Tensor and shape model
 
