@@ -1,0 +1,4 @@
+fnc main() -> int ::
+  const mut int value = 42;
+  return value;
+end
