@@ -124,3 +124,5 @@ node --test tests/repository-capabilities.test.mjs
 Actual compiler, actor isolation, AOT and multi-backend parity claims require separate exact-commit executed guest receipts and independent review; this inventory never replaces those gates.
 
 - [Opaque newtypes, bounded values and const generics v1](language/opaque-newtypes-bounds-const-generics-v1.md): TARGET nominal scalar identities, checked ranges and compile-time shape/layout arguments, with [machine-readable vectors](contracts/opaque-newtypes-bounds-const-generics-v1.json) and **host-only** proof tests. No compiler/backend guest parity claimed.
+
+- [Checked owned Dyn interface erasure v1](language/checked-owned-dyn-erasure-v1.md): defines constructor, checked `(take! owner) as Dyn<I>`, and contextual `take!` equivalence; Rust/browser implementation draft remains unexecuted on current head, all other backends unverified.
