@@ -1,0 +1,10 @@
+# Static binding type queries — candidate v1
+
+**TARGET / not implemented or certified by this document.** This reconciles historical PR #186 with the accepted [mandatory named-callable return annotation contract](explicit-callable-return-types-v1.md) and the [November 23 control-flow reconciliation](cross-backend-semantics-reconciliation-v1.md). Named callables require explicit annotations and explicit returns on normally completing non-void paths; inference does not introduce implicit tail returns.
+
+- Explicit `-> infer` / `: infer` retains the accepted static inference semantics. Omission remains an error.
+- Proposed `-> typeof name` / `: typeof name` queries the static type of a uniquely resolved parameter or value binding. Parenthesized `typeof(name)` is compatibility input in this proposal; canonical output is `typeof name`. `typeof! name` is not a type query. Existing `typeof fnc(...) => T` callable-signature syntax remains separate. Neither form is runtime reflection.
+- A forward body-local query may name only one unambiguous outer-body `val` or `const` whose annotation or initializer type can be resolved acyclically without executing the initializer. No forward value access, forward mutable binding, nested scope or unresolved recursive inference is admitted. Reject cycles, ambiguous overload sets, unresolved generic callables and expression queries such as `typeof(call())`. Do not interpret `type<name>` as a value query.
+- Resolve the complete static result including ownership, effects and generic arguments before ABI generation, interface matching, lowering or AOT. Preserve all loan, escape and capability checks; a type query cannot make a borrowed value returnable.
+
+This proposal does not expand the dated accepted-spelling table or claim formatter, parser or guest implementation. Require positive and negative compiler evidence (including cycles, malformed query, forbidden escape and exact ABI identity) before backend admission. Historical design: [return-type queries proposal](https://github.com/atto-lang/atto-spec/blob/design/return-type-infer-typeof-v1-20261116/language/return-type-queries-and-inference-v1.md).

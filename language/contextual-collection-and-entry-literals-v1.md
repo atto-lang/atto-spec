@@ -59,12 +59,12 @@ it must reject guest codegen without creating an artifact.
 ## Named-field parenthesized Record
 
 (abc="foo", xyz=true, foo=5) is a closed Record constructor, equivalent
-to Record.of(abc="foo", xyz=true, foo=5). This is neither a positional Tuple,
+to the identifier-colon brace Record {abc:"foo", xyz:true, foo:5}. A Record-specific factory, if separately admitted, must not redefine ordinary named-call syntax. This is neither a positional Tuple,
 a function with keyword arguments, a Map, nor an assignment expression.
 All values evaluate once in lexical source order, though structural shape
 identity is independent of declared field order.
 
-All elements must be named with identifier or quoted static UTF-8 label.
+All elements must be named with an identifier label. Quoted brace keys construct Maps, never Record fields.
 Duplicate labels, mixed named/positional values, dynamic keys and spreads
 reject. (expr) is grouping, (a,b) is a positional Tuple, (label=value) is a
 one-field Record, and () remains a zero-element Tuple.
@@ -81,8 +81,7 @@ identity collapse or Map conversion may occur.
 
 The arrow inside Map.of(k => v) and inside Map literal braces preserves
 Map's existing Entry-context meaning; it does not construct a Pair. Lambda,
-match-arm and function arrows remain separate grammar. Bare k => v outside
-a known Pair/Entry/Map context is ambiguous and must reject, not guess.
+match-arm and function arrows remain separate grammar. Outside an explicit Pair context, k => v infers a nominal Entry<K,V> when both operand types are unambiguous; unresolved operands reject rather than inventing Any.
 Both Pair.of and Entry.of are compiler-recognized factory names: source
 shadowing must not bypass checked construction.
 

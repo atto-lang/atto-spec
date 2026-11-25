@@ -107,9 +107,7 @@ but expressions always execute exactly once in *source* order before
 results are placed into the declaration-order slots. No implicit
 field insertion, arbitrary quoted dynamic key, Map or open-Record view.
 
-The canonical constructor is S{field: value, ...}; a typed name is
-required, though a contextually known type may allow future shorthand
-{field: value} only with unambiguous parsing. For now, bare braces
+The canonical constructor is S{field: value, ...}; the separate explicit infer struct form requires a statically known nominal expected type. The restricted S(field=value) shorthand follows the named-generic layout target; ordinary calls still use colon labels. For now, bare braces
 remain Map/Record-context expressions, not silently guessed Structs.
 The source-level new keyword constructs class/actor heap objects, not
 ordinary Struct values. Backends may internally allocate or box a
@@ -127,7 +125,7 @@ rules and a deterministic evaluation order; no implicit zero defaults.
 
 The distinction between binding mutability and field mutability applies:
 val prevents rebinding a name; it does not magically copy a mutable
-graph held by a value. Declared mutable Struct fields (future
+graph held by a value. Declared mutable Struct fields (independently checked
 mut field syntax) may be written ONLY through an owned exclusive
 borrow or a checked mutation operation. A shared borrow cannot mutate.
 For an immutable Struct, field updates require constructing a new
