@@ -1,0 +1,75 @@
+{
+  "schema": "atto.actor.durable-typed-protocols.v1",
+  "status": "TARGET_HOST_MODEL_ONLY",
+  "extends": [
+    "atto.actor.event-sourced-target.v1",
+    "actor-persistence-v1"
+  ],
+  "spec": "language/durable-typed-protocols-v1.md",
+  "versioning": {
+    "schemaId": "stable_nominal_id",
+    "version": "positive_integer",
+    "fieldIds": "stable_no_reuse",
+    "originalDigest": "bind_original_wire_bytes_before_upcast",
+    "unknownFuture": "REJECT",
+    "migration": "explicit_adjacent_pure_bounded"
+  },
+  "boundary": {
+    "scope": "single_authoritative_local_store",
+    "atomically": [
+      "inbox_dedupe",
+      "state_or_event_batch",
+      "outbox_intents",
+      "commit_receipt"
+    ],
+    "epochBeforeDedupe": true,
+    "networkDeliveryGuarantee": "AT_LEAST_ONCE_ATTEMPTS_NOT_EXACTLY_ONCE"
+  },
+  "invariants": [
+    "DP01",
+    "DP02",
+    "DP03",
+    "DP04",
+    "DP05",
+    "DP06",
+    "DP07",
+    "DP08",
+    "DP09",
+    "DP10",
+    "DP11",
+    "DP12",
+    "DP13",
+    "DP14",
+    "DP15",
+    "DP16"
+  ],
+  "backendStatus": {
+    "rs": "NOT_EXECUTED",
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "cranelift": "NOT_EXECUTED",
+    "js": "NOT_EXECUTED"
+  },
+  "testTier": "HOST_MODEL_ONLY",
+  "cases": [
+    "old-version-upcast",
+    "unknown-future-reject",
+    "migration-missing-edge",
+    "migration-rollback",
+    "original-digest-dedupe",
+    "conflicting-idempotency",
+    "epoch-before-dedupe",
+    "atomic-outbox",
+    "crash-after-commit-lost-receipt",
+    "stale-outbox-claim",
+    "at-least-once-duplicate-window",
+    "journal-gap-recovery",
+    "cross-tenant-reject",
+    "no-uncommitted-publication",
+    "lease-expiry-redelivery",
+    "unsupported-provider-fail-closed"
+  ]
+}

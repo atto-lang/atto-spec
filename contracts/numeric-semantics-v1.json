@@ -1,0 +1,977 @@
+{
+  "schemaVersion": 1,
+  "id": "atto-numeric-semantics-v1",
+  "status": "TARGET_NOT_GUEST_EXECUTED",
+  "policy": "Reference values are source-free, not compiler execution, AOT certification, or a permission to transfer private source.",
+  "requiredBackends": [
+    "java-graalvm",
+    "llvm",
+    "wasm",
+    "net-nativeaot",
+    "forge",
+    "cranelift",
+    "rs-wasm"
+  ],
+  "backendResults": {
+    "java-graalvm": "not_executed",
+    "llvm": "not_executed",
+    "wasm": "not_executed",
+    "net-nativeaot": "not_executed",
+    "forge": "not_executed",
+    "cranelift": "not_executed",
+    "rs-wasm": "not_executed"
+  },
+  "integerAliases": {
+    "int": "i64",
+    "uint": "u64"
+  },
+  "failureCodes": [
+    "integer_literal_out_of_range",
+    "integer_overflow",
+    "division_by_zero",
+    "decimal_context_required",
+    "shape_mismatch",
+    "dimension_mismatch",
+    "affine_point_addition"
+  ],
+  "cases": [
+    {
+      "id": "i8-max",
+      "domain": "integer",
+      "op": "literal",
+      "type": "i8",
+      "args": [
+        "127"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "127"
+      }
+    },
+    {
+      "id": "i8-out-of-range",
+      "domain": "integer",
+      "op": "literal",
+      "type": "i8",
+      "args": [
+        "128"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_literal_out_of_range"
+      }
+    },
+    {
+      "id": "u8-negative",
+      "domain": "integer",
+      "op": "literal",
+      "type": "u8",
+      "args": [
+        "-1"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_literal_out_of_range"
+      }
+    },
+    {
+      "id": "u8-overflow",
+      "domain": "integer",
+      "op": "add",
+      "type": "u8",
+      "args": [
+        "255",
+        "1"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow"
+      }
+    },
+    {
+      "id": "i64-max-overflow",
+      "domain": "integer",
+      "op": "add",
+      "type": "int",
+      "args": [
+        "9223372036854775807",
+        "1"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow"
+      }
+    },
+    {
+      "id": "i64-min-negation",
+      "domain": "integer",
+      "op": "neg",
+      "type": "i64",
+      "args": [
+        "-9223372036854775808"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow"
+      }
+    },
+    {
+      "id": "i64-trunc-div",
+      "domain": "integer",
+      "op": "div",
+      "type": "int",
+      "args": [
+        "-7",
+        "3"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "-2"
+      }
+    },
+    {
+      "id": "i64-zero-div",
+      "domain": "integer",
+      "op": "div",
+      "type": "i64",
+      "args": [
+        "8",
+        "0"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "division_by_zero"
+      }
+    },
+    {
+      "id": "bigint-over-i64",
+      "domain": "bigint",
+      "op": "add",
+      "args": [
+        "9223372036854775807",
+        "1"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "9223372036854775808"
+      }
+    },
+    {
+      "id": "bigint-large-multiply",
+      "domain": "bigint",
+      "op": "mul",
+      "args": [
+        "1208925819614629174706176",
+        "1048576"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "1267650600228229401496703205376"
+      }
+    },
+    {
+      "id": "bigint-signed-quotient",
+      "domain": "bigint",
+      "op": "div",
+      "args": [
+        "-100000000000000000000",
+        "3"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "-33333333333333333333"
+      }
+    },
+    {
+      "id": "decimal-point-one",
+      "domain": "decimal",
+      "op": "add",
+      "args": [
+        "0.1",
+        "0.2"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "0.3"
+      }
+    },
+    {
+      "id": "decimal-cancel",
+      "domain": "decimal",
+      "op": "sub",
+      "args": [
+        "100000000000000000000.1",
+        "100000000000000000000"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "0.1"
+      }
+    },
+    {
+      "id": "decimal-exact-mul",
+      "domain": "decimal",
+      "op": "mul",
+      "args": [
+        "0.125",
+        "0.08"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "0.01"
+      }
+    },
+    {
+      "id": "decimal-exact-div",
+      "domain": "decimal",
+      "op": "div_exact",
+      "args": [
+        "1",
+        "8"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "0.125"
+      }
+    },
+    {
+      "id": "decimal-nonterminating",
+      "domain": "decimal",
+      "op": "div_exact",
+      "args": [
+        "1",
+        "3"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "decimal_context_required"
+      }
+    },
+    {
+      "id": "decimal-tie-even-low",
+      "domain": "decimal",
+      "op": "quantize",
+      "args": [
+        "1.365"
+      ],
+      "scale": 2,
+      "rounding": "half_even",
+      "expected": {
+        "kind": "value",
+        "value": "1.36"
+      }
+    },
+    {
+      "id": "decimal-tie-even-high",
+      "domain": "decimal",
+      "op": "quantize",
+      "args": [
+        "1.375"
+      ],
+      "scale": 2,
+      "rounding": "half_even",
+      "expected": {
+        "kind": "value",
+        "value": "1.38"
+      }
+    },
+    {
+      "id": "decimal-negative-tie",
+      "domain": "decimal",
+      "op": "quantize",
+      "args": [
+        "-1.375"
+      ],
+      "scale": 2,
+      "rounding": "half_even",
+      "expected": {
+        "kind": "value",
+        "value": "-1.38"
+      }
+    },
+    {
+      "id": "fixed-add-cents",
+      "domain": "fixed",
+      "op": "add",
+      "rep": "i64",
+      "scale": 2,
+      "args": [
+        "1234",
+        "66"
+      ],
+      "expected": {
+        "kind": "value",
+        "coefficient": "1300",
+        "scale": 2
+      }
+    },
+    {
+      "id": "fixed-mul-scale",
+      "domain": "fixed",
+      "op": "mul",
+      "rep": "i64",
+      "scale": 2,
+      "args": [
+        "123",
+        "200"
+      ],
+      "expected": {
+        "kind": "value",
+        "coefficient": "24600",
+        "scale": 4
+      }
+    },
+    {
+      "id": "fixed-rep-overflow",
+      "domain": "fixed",
+      "op": "add",
+      "rep": "i64",
+      "scale": 2,
+      "args": [
+        "9223372036854775807",
+        "1"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow"
+      }
+    },
+    {
+      "id": "vector-checked-add",
+      "domain": "vector",
+      "op": "add",
+      "type": "i8",
+      "args": [
+        [
+          "1",
+          "2",
+          "3"
+        ],
+        [
+          "4",
+          "5",
+          "6"
+        ]
+      ],
+      "expected": {
+        "kind": "value",
+        "value": [
+          "5",
+          "7",
+          "9"
+        ]
+      }
+    },
+    {
+      "id": "vector-checked-overflow",
+      "domain": "vector",
+      "op": "add",
+      "type": "i8",
+      "args": [
+        [
+          "1",
+          "127"
+        ],
+        [
+          "1",
+          "1"
+        ]
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow",
+        "index": 1
+      }
+    },
+    {
+      "id": "vector-shape-error",
+      "domain": "vector",
+      "op": "add",
+      "type": "i64",
+      "args": [
+        [
+          "1",
+          "2"
+        ],
+        [
+          "1"
+        ]
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "shape_mismatch"
+      }
+    },
+    {
+      "id": "vector-dot",
+      "domain": "vector",
+      "op": "dot",
+      "type": "i64",
+      "args": [
+        [
+          "1",
+          "2",
+          "3"
+        ],
+        [
+          "4",
+          "5",
+          "6"
+        ]
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "32"
+      }
+    },
+    {
+      "id": "dimension-velocity",
+      "domain": "dimension",
+      "op": "divide",
+      "left": {
+        "unit": {
+          "length": 1
+        },
+        "value": "10"
+      },
+      "right": {
+        "unit": {
+          "time": 1
+        },
+        "value": "2"
+      },
+      "expected": {
+        "kind": "value",
+        "unit": {
+          "length": 1,
+          "time": -1
+        },
+        "value": "5"
+      }
+    },
+    {
+      "id": "dimension-invalid-add",
+      "domain": "dimension",
+      "op": "add",
+      "left": {
+        "unit": {
+          "length": 1
+        },
+        "value": "3"
+      },
+      "right": {
+        "unit": {
+          "time": 1
+        },
+        "value": "4"
+      },
+      "expected": {
+        "kind": "error",
+        "code": "dimension_mismatch"
+      }
+    },
+    {
+      "id": "dimension-affine-point",
+      "domain": "dimension",
+      "op": "add_points",
+      "left": {
+        "unit": {
+          "temperature": 1
+        },
+        "value": "273"
+      },
+      "right": {
+        "unit": {
+          "temperature": 1
+        },
+        "value": "1"
+      },
+      "expected": {
+        "kind": "error",
+        "code": "affine_point_addition"
+      }
+    },
+    {
+      "id": "u64-max",
+      "domain": "integer",
+      "op": "literal",
+      "type": "uint",
+      "args": [
+        "18446744073709551615"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "18446744073709551615"
+      }
+    },
+    {
+      "id": "i64-min-division-negative-one",
+      "domain": "integer",
+      "op": "div",
+      "type": "i64",
+      "args": [
+        "-9223372036854775808",
+        "-1"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow"
+      }
+    },
+    {
+      "id": "decimal-zero-divisor",
+      "domain": "decimal",
+      "op": "div_exact",
+      "args": [
+        "1",
+        "0"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "division_by_zero"
+      }
+    },
+    {
+      "id": "fixed-out-of-range-rep",
+      "domain": "fixed",
+      "op": "add",
+      "rep": "i64",
+      "scale": 2,
+      "args": [
+        "9223372036854775808",
+        "0"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_literal_out_of_range"
+      }
+    },
+    {
+      "id": "dimension-commutative-unit-key-order",
+      "domain": "dimension",
+      "op": "add",
+      "left": {
+        "unit": {
+          "mass": 1,
+          "length": 2
+        },
+        "value": "3"
+      },
+      "right": {
+        "unit": {
+          "length": 2,
+          "mass": 1
+        },
+        "value": "4"
+      },
+      "expected": {
+        "kind": "value",
+        "unit": {
+          "mass": 1,
+          "length": 2
+        },
+        "value": "7"
+      }
+    },
+    {
+      "id": "decimal-rounded-third",
+      "domain": "decimal",
+      "op": "div_rounded",
+      "args": [
+        "1",
+        "3"
+      ],
+      "scale": 2,
+      "rounding": "half_even",
+      "expected": {
+        "kind": "value",
+        "value": "0.33",
+        "inexact": true
+      }
+    },
+    {
+      "id": "decimal-rounded-tie-to-even-low",
+      "domain": "decimal",
+      "op": "div_rounded",
+      "args": [
+        "1",
+        "8"
+      ],
+      "scale": 2,
+      "rounding": "half_even",
+      "expected": {
+        "kind": "value",
+        "value": "0.12",
+        "inexact": true
+      }
+    },
+    {
+      "id": "decimal-rounded-tie-to-even-high",
+      "domain": "decimal",
+      "op": "div_rounded",
+      "args": [
+        "3",
+        "8"
+      ],
+      "scale": 2,
+      "rounding": "half_even",
+      "expected": {
+        "kind": "value",
+        "value": "0.38",
+        "inexact": true
+      }
+    },
+    {
+      "id": "decimal-rounded-exact",
+      "domain": "decimal",
+      "op": "div_rounded",
+      "args": [
+        "1",
+        "4"
+      ],
+      "scale": 2,
+      "rounding": "half_even",
+      "expected": {
+        "kind": "value",
+        "value": "0.25",
+        "inexact": false
+      }
+    },
+    {
+      "id": "i16-min",
+      "domain": "integer",
+      "op": "literal",
+      "type": "i16",
+      "args": [
+        "-32768"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "-32768"
+      }
+    },
+    {
+      "id": "u16-negative",
+      "domain": "integer",
+      "op": "literal",
+      "type": "u16",
+      "args": [
+        "-1"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_literal_out_of_range"
+      }
+    },
+    {
+      "id": "i32-min-overflow",
+      "domain": "integer",
+      "op": "sub",
+      "type": "i32",
+      "args": [
+        "-2147483648",
+        "1"
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow"
+      }
+    },
+    {
+      "id": "u32-max",
+      "domain": "integer",
+      "op": "literal",
+      "type": "u32",
+      "args": [
+        "4294967295"
+      ],
+      "expected": {
+        "kind": "value",
+        "value": "4294967295"
+      }
+    },
+    {
+      "id": "dimension-fractional-exact",
+      "domain": "dimension",
+      "op": "divide",
+      "left": {
+        "unit": {
+          "length": 1
+        },
+        "value": "3"
+      },
+      "right": {
+        "unit": {
+          "time": 1
+        },
+        "value": "2"
+      },
+      "expected": {
+        "kind": "value",
+        "unit": {
+          "length": 1,
+          "time": -1
+        },
+        "value": "1.5"
+      }
+    },
+    {
+      "id": "dimension-nonterminating",
+      "domain": "dimension",
+      "op": "divide",
+      "left": {
+        "unit": {
+          "length": 1
+        },
+        "value": "1"
+      },
+      "right": {
+        "unit": {
+          "time": 1
+        },
+        "value": "3"
+      },
+      "expected": {
+        "kind": "error",
+        "code": "decimal_context_required"
+      }
+    },
+    {
+      "id": "dimension-zero-divisor",
+      "domain": "dimension",
+      "op": "divide",
+      "left": {
+        "unit": {
+          "length": 1
+        },
+        "value": "3"
+      },
+      "right": {
+        "unit": {
+          "time": 1
+        },
+        "value": "0"
+      },
+      "expected": {
+        "kind": "error",
+        "code": "division_by_zero"
+      }
+    },
+    {
+      "id": "dimension-decimal-add",
+      "domain": "dimension",
+      "op": "add",
+      "left": {
+        "unit": {
+          "length": 1
+        },
+        "value": "0.1"
+      },
+      "right": {
+        "unit": {
+          "length": 1
+        },
+        "value": "0.2"
+      },
+      "expected": {
+        "kind": "value",
+        "unit": {
+          "length": 1
+        },
+        "value": "0.3"
+      }
+    },
+    {
+      "id": "matrix-checked-matmul",
+      "domain": "matrix",
+      "op": "matmul",
+      "type": "i64",
+      "args": [
+        [
+          [
+            "1",
+            "2"
+          ],
+          [
+            "3",
+            "4"
+          ]
+        ],
+        [
+          [
+            "5",
+            "6"
+          ],
+          [
+            "7",
+            "8"
+          ]
+        ]
+      ],
+      "expected": {
+        "kind": "value",
+        "value": [
+          [
+            "19",
+            "22"
+          ],
+          [
+            "43",
+            "50"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "matrix-product-overflow",
+      "domain": "matrix",
+      "op": "matmul",
+      "type": "i8",
+      "args": [
+        [
+          [
+            "127",
+            "1"
+          ]
+        ],
+        [
+          [
+            "2"
+          ],
+          [
+            "1"
+          ]
+        ]
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow",
+        "row": 0,
+        "column": 0,
+        "inner": 0
+      }
+    },
+    {
+      "id": "matrix-accumulate-overflow",
+      "domain": "matrix",
+      "op": "matmul",
+      "type": "i8",
+      "args": [
+        [
+          [
+            "10",
+            "10"
+          ]
+        ],
+        [
+          [
+            "7"
+          ],
+          [
+            "7"
+          ]
+        ]
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "integer_overflow",
+        "row": 0,
+        "column": 0,
+        "inner": 1
+      }
+    },
+    {
+      "id": "matrix-ragged-rejected",
+      "domain": "matrix",
+      "op": "matmul",
+      "type": "i64",
+      "args": [
+        [
+          [
+            "1",
+            "2"
+          ],
+          [
+            "3"
+          ]
+        ],
+        [
+          [
+            "1"
+          ],
+          [
+            "2"
+          ]
+        ]
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "shape_mismatch"
+      }
+    },
+    {
+      "id": "matrix-inner-mismatch",
+      "domain": "matrix",
+      "op": "matmul",
+      "type": "i64",
+      "args": [
+        [
+          [
+            "1",
+            "2"
+          ]
+        ],
+        [
+          [
+            "3",
+            "4"
+          ]
+        ]
+      ],
+      "expected": {
+        "kind": "error",
+        "code": "shape_mismatch"
+      }
+    }
+  ],
+  "errorSemantics": {
+    "status": "TARGET_NOT_GUEST_EXECUTED",
+    "typedOrdinaryThrows": {
+      "integer_overflow": {
+        "guestType": "ArithmeticOverflowError",
+        "parent": "Error",
+        "abiCode": 65537,
+        "effect": "throw"
+      },
+      "division_by_zero": {
+        "guestType": "DivisionByZeroError",
+        "parent": "Error",
+        "abiCode": 65538,
+        "effect": "throw"
+      }
+    },
+    "trap": {
+      "catches": "ordinary_typed_guest_throw_only",
+      "scalarSuccess": "Result.Ok<T>",
+      "caughtError": "Result.Err<Error>",
+      "preexistingResult": "preserve_original_result_without_double_wrap",
+      "bypass": [
+        "raise",
+        "panic",
+        "cancellation",
+        "host_fatal"
+      ]
+    },
+    "unhandledActor": {
+      "escalation": [
+        "throw",
+        "raise",
+        "panic",
+        "supervisor_control_notice"
+      ],
+      "actorMayCatchFinalPanic": false
+    },
+    "nonActorUnhandled": "root_invocation_non_success",
+    "guestExecutionEvidence": "not_executed"
+  }
+}

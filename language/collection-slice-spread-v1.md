@@ -92,3 +92,6 @@ All backends must use identical checked normalization, evaluation order, UTF-8 p
 4. Cross-backend executable conformance, formatter canonical round-trip, optimizations and actor-safe borrow instrumentation.
 
 In-flight `atto-source.rs` array PRs #111 and #112 are independent draft implementation work; they must be reconciled with this contract before an executable-support claim. The full language does not gain runtime slicing merely because the browser subset parses this syntax.
+
+
+The checked-in host reference suite `tests/collection-slice-spread-reference.test.mjs` exercises selected semantic invariants only; it does not compile Atto source or certify backend parity.

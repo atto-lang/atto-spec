@@ -1,0 +1,20 @@
+name: Pipe/rpipe/stop bang alias source contract
+on:
+  pull_request:
+    paths:
+      - 'language/bang-pipeline-and-stop-aliases-v1.md'
+      - 'contracts/pipe-stop-bang-alias-v1.json'
+      - 'tests/pipe-stop-bang-alias-contract.test.mjs'
+      - '.github/workflows/pipe-stop-bang-alias-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/pipe-stop-bang-alias-contract.test.mjs

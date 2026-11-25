@@ -1,0 +1,5 @@
+fnc main() -> int ::
+  const x: int = 10;
+  x = 42;
+  return x;
+end
