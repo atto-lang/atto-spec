@@ -40,13 +40,15 @@ borrow model, not adopt Rust's pointer syntax or runtime implementation.
 
 ## Access API — candidate signatures
 
+The [persistent collection target](persistent-immutable-collections-v1.md) governs immutable Vector and List: no in-place writers or destructive removal are admitted for those types, even with a `mut` qualifier. The write-loan and destructive removal rows below apply only to separately admitted mutable collection profiles. Persistent updates return a new logical value; `get_copy` remains the additive owned-copy operation. Existing `Map` mutable and persistent profiles remain distinct.
+
 | Operation | Intended type/effect | Safety |
 | --- | --- | --- |
 | `collection.get(index)` | `Option<ReadLoan<T>>` | Bounds-safe, creates a rooted READ loan only on `Some`. |
 | `collection.get_mut(index)` | `Option<WriteLoan<T>>` | Bounds-safe, exclusive WRITE loan; no overlapping READ/WRITE. |
 | `collection.get_copy(index)` | `Option<T>` where `T: Copy` | Explicitly materialized owned copy; not allowed for move-only values. |
 | `collection[index]` | `T` projection with checked access | Invalid index is a contained, typed bounds trap for the current actor; NEVER unchecked UB. Prefer an admitted checked accessor for recoverable paths. |
-| `vector.pop()` / `list.remove(index)` | `Option<T>` | Moves owned element out after exclusive access; empty/out-of-range is `None`. |
+| `pop()` / `remove(index)` on an explicitly admitted mutable collection | `Option<T>` | Moves owned element out after exclusive access; empty/out-of-range is `None`. |
 | `map.get(key)` | `Option<ReadLoan<V>>` | Rooted map-entry loan; mutation/rehash while borrowed denied. |
 | `map.get_mut(key)` | `Option<WriteLoan<V>>` | Exclusive entry loan; conservative whole-map exclusion. |
 | `iterator.next()` | `Option<ReadLoan<T>>` or owned `Option<T>` | A view iterator holds a root READ loan; mutations invalidate it and are denied while live. |
