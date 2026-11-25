@@ -1,0 +1,3 @@
+// expect-runtime-error: signed-int64-overflow, not modulo wraparound
+fnc increment(int x): int -> x + 1;
+pub fnc main(): int -> 9223372036854775807 |> increment;
