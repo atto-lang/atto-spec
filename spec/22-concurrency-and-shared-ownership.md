@@ -24,6 +24,8 @@ These are declaration-shape examples, not executable conformance fixtures. Ordin
 
 All mutable state containers, including actor `state {}`, are sealed. `critical-read` grants compatible immutable scoped loans; `critical-write` grants one exclusive scoped loan and excludes conflicting readers/writers. A compiler must reason about nested referents and aliases, not only the state variable's binding. Serial scheduling does not waive loan lifetime, escape, suspension or cleanup checks. State loans cannot outlive the region or cross suspension without an explicit proven safe continuation protocol.
 
+The [attached state and lifecycle proposal](../language/actor-attached-state-and-lifecycle-v1.md) specifies one equivalent inline or nominally attached schema per actor incarnation. Successful mailbox admission is not proof of activation or execution; no receive may execute before definite initialization. Its syntax remains a target with independent parser, compiler and runtime gates.
+
 ## Critical scopes, scalar copy-out and actor-boundary effects
 
 A critical callback is a compiler-owned lexical state loan, not a general

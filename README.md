@@ -31,6 +31,25 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Authenticated incremental build cache](proposals/incremental-compilation-unit-boundaries-v1.md): proposed unit identity and provenance, never an authorization to reuse an untrusted artifact.
+
+- [Recursive layouts and typed identity graphs](language/recursive-layout-graph-wire-v1.md): target independent alias, layout and inhabitation proofs, candidate graph profile distinct from existing tree codecs. No wire or guest admission.
+
+- [Unsafe lexical proof boundary](language/unsafe-blocks-v1.md): fail-closed target for independently authorized trusted host operations, not guest-native admission or a permission grant.
+
+- [Hosted permission policy](language/host-permissions-v1.md): independent ceilings, explicit deny, runtime revocation and fail-closed native admission target.
+
+- [Hosted asynchronous HTTP and filesystem](language/hosted-async-http-fs-v1.md): target APIs with typed errors, scoped host capabilities, lifetime and backpressure; host-only evidence is not linked guest support.
+
+- [Deep-learning computation proposal](language/deep-learning-computation-v1.md): exploratory model declarations and shape-aware tensor/autodiff contracts, not global grammar ratification or backend support.
+
+- [Fatal-fault containment evidence](spec/28-fatal-fault-containment-evidence.md): independently scoped claims, physical retirement and safe isolated verification; no backend certification.
+
+
+- [Browser compiler integration profile](spec/23-browser-compiler-profile.md): dated Wasm/ESM execution evidence, tenant-worker topology and explicitly unsupported target features.
+
+- [Actor attached state and guarded activation](language/actor-attached-state-and-lifecycle-v1.md): nominal schema ownership, initialization fence and scoped state access target; no compiler certification.
+
 - [Typed actor job envelopes and acknowledgements](language/actor-job-envelope-v1.md): candidate single-worker dispatch, admission versus settlement, bounded volatile and durable ledger distinctions; not an implemented guest ABI.
 
 - [Typed constant imports and startup environment constants](language/constant-imports-v1.md): per-declaration once-only immutable values; current v2 selector rules remain authoritative.

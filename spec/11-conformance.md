@@ -117,3 +117,8 @@ Neither a function name/arity-only host model nor a typed binary parser that dyn
 ## Reactive conformance target
 
 Use the [bounded reactive admission contract](23-pull-push-and-lazy-collections.md). Preserve exact backend classifications; source-free reference tests never establish compiled guest or memory-profile support.
+
+
+## Browser evidence boundary
+
+The [dated browser compiler snapshot](23-browser-compiler-profile.md) reports observed Wasm and ESM results separately from native parity. Unsupported positive cases and skips are not passes.

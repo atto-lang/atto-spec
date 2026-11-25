@@ -7,7 +7,7 @@ Related implementation contract: [atto-common-source #133](https://github.com/at
 ## Semantic identities
 
 - A package instance is a pinned manifest/dependency-lock identity. Package ownership, import provenance and visibility must be verified before compiler cache reuse.
-- A file with one explicit `namespace N;` belongs to exactly `(PackageInstanceId, N)`. Multiple validated files may contribute to that one namespace within the same package, independent of directory. Namespace membership **never spans packages**.
+- A file with one explicit `use namespace N;` belongs to exactly `(PackageInstanceId, N)`. Multiple validated files may contribute to that one namespace within the same package, independent of directory. Namespace membership **never spans packages**.
 - A file with **no explicit namespace header** is a distinct `(PackageInstanceId, SourceUnitId)` compilation unit. No compiler may implicitly merge such source files into one global/default namespace just to form a cache group. Files in the same package remain separate units, regardless of folder. A source added to or removed from a namespace changes compilation identity and requires appropriate invalidation.
 - `define module` remains a separate source-language construct and does not implicitly join a namespace aggregate. Import resolution, runtime initialization and actor state rules are not changed by the build cache.
 
@@ -29,11 +29,11 @@ pub fnc alpha(): int { return 1; }
 pub fnc beta(): int { return 2; }
 
 // app/src/users/lookup.atto
-namespace users;
+use namespace users;
 pub fnc lookup(int id): int { return id; }
 
 // app/src/users/create.atto
-namespace users;
+use namespace users;
 pub fnc create(int id): int { return id; }
 ```
 
@@ -45,7 +45,7 @@ Prove clean-vs-incremental equivalence using actual compiled guests and source f
 
 Target CLI UX (`atto build --incremental --explain-rebuild`, `--clean`) is a separate tooling decision, not new language syntax. Compilers unable to prove reuse may perform correct clean compilation and report incremental support as unsupported, never as a successful cache optimization.
 
-**Review note:** do not merge this proposal before reconciling existing namespace/import/module proposals, manifest ownership contracts and independent source-compiler review.
+**Profile boundary:** [static imports v2](../language/static-imports-v2.md) governs source namespace headers, authenticated package identities and aliases. Preserve private declaration and capability checks, including [host permission ceilings](../language/host-permissions-v1.md). This candidate adds build-cache requirements only; implementation and persistent cache activation remain gated on independent compiler/security review.
 
 ## Persistent cache admission (candidate v1)
 
