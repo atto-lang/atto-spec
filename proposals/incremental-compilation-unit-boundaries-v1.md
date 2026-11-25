@@ -231,3 +231,34 @@ guest execution separately where possible. A tiny debug fixture with
 hot OS page cache is a smoke measurement, not a representative speedup
 or an acceptance threshold. Include compiler identity attestation cost
 and describe any amortization.
+
+#### Candidate externally pinned active ledger record
+
+The record is eight ASCII bytes ATTOLED1, a four-byte unsigned big-endian
+scope length, the ASCII scope, an eight-byte unsigned big-endian nonzero
+epoch, and 32 bytes of SHA-256 of the derived active receipt key. Total
+length is 52 + scope length, at most 564 bytes. No master or derived key
+is stored in the record. Admission requires exact expected scope,
+current record SHA-256 from an independently protected authority, and
+the independently provisioned master for that epoch. Reject malformed
+records, wrong scope, incorrect master and stale records against that
+current pin. A valid record under a stale pin is not evidence of current
+authority; the host must supply the current pin and serialize rotation
+with builds. A record codec is not a durable ledger implementation.
+
+For test-only master 32 repetitions of byte 07, scope tenant/a and
+epoch 2, the derived receipt key is
+d2153371616fc59b235d24aff7417a37fea38a6fdc5391503a54ea33f429a90e.
+The record is
+4154544f4c4544310000000874656e616e742f610000000000000002a63c8f18ca3245c9d319f61b2ca45a2a6605ea3293664ad236792133ce088462
+and its SHA-256 is
+95c69714073e8a9a4c845fa54d0f87706f718fed1f5879016723780618b83309.
+
+The explicit incremental candidate must re-admit the current ledger and
+source closure before lookup. A valid hit skips compilation; a true miss
+compiles and publishes only successfully verified compiler output.
+Corrupt or wrong-key entries fail with a cache diagnostic, not an
+implicit fallback. Explicit cold mode bypasses lookup and rebuilds;
+after rotation the host must cold rebuild or provision a fresh cache
+namespace. No guest API, implicit production activation, or signing
+arbitrary caller-provided artifacts.
