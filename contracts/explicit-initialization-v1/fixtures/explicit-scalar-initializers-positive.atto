@@ -1,0 +1,7 @@
+pub fnc main(): int {
+  let int zero = 0;
+  val bool disabled = false;
+  let string empty = "";
+  let int answer = 40 + 2;
+  return answer + zero;
+}
