@@ -1,5 +1,8 @@
 # Map.of_entries and nominal Structs — portable contract v1
 
+> **Proposed v2 constructor boundary (2026-11-25):** [Pair/Record and Entry/Map interoperability](entry-expression-and-record-literals-v1.md#parentheses-and-record-constructor-interoperability-v2-proposed) makes `Map.of` Entry-only in the new profile; `Map.of_entries` remains an explicitly typed compatible spelling. Flat alternating positional `Map.of(k,v,k,v)` is historical compatibility only, not new-profile admission. Pin the source profile; never silently reinterpret legacy calls. `Pair` is not `Entry`; `Record.of` accepts static named fields or identifier-proven Pair values, not Entries.
+
+
 **Status:** proposed normative AttoLang language contract, 2026-11-20.
 This document extends contextual collection forms and the candidate
 record-struct-layout-v1 contract. It specifies intended semantics,
