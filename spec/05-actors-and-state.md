@@ -90,3 +90,8 @@ See [actor protocol typestate v1](../language/actor-protocol-typestate-v1.md). *
 ## Typed group pub/sub (TARGET)
 
 ActorGroup membership does not automatically subscribe an actor to any message topic. Typed `Topic<T>` and affine `Subscription<T>` introduce explicit bounded fan-out without changing direct actor DATA send, sealed state, or supervisor CONTROL delivery. The portable core requires atomic `RELIABLE` reservation, per-topic sequencing and generation-fenced cancellation; lossy/latest policies and membership monitors are separately versioned. See [actor pub/sub v1](../language/actor-pubsub-v1.md) for the proposed language contract, conformance gaps and executable **source-free** model.
+
+
+## Experimental browser compatibility profile
+
+The [browser profile](23-browser-compiler-profile.md) documents historical direct fields and serial receive behavior, not sealed-state target certification.

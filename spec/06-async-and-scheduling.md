@@ -213,3 +213,8 @@ Cancellation is a structured control effect, not a normal `throw` to be swallowe
 ## Pull/push reactive admission target
 
 [Reactive admission](23-pull-push-and-lazy-collections.md) separates synchronous pull, demand-controlled push, one-shot Future receipts and graph pipes. Terminal choices are irrevocable and physical ACK debt remains charged after logical termination.
+
+
+## Browser carrier mapping
+
+A [browser tenant Worker](23-browser-compiler-profile.md) can host multiple actors but must keep separate actor memories and bounded continuations. TaskFuture and inline task contracts remain independently gated.

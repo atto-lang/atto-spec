@@ -31,6 +31,9 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+
+- [Browser compiler integration profile](spec/23-browser-compiler-profile.md): dated Wasm/ESM execution evidence, tenant-worker topology and explicitly unsupported target features.
+
 - [Actor attached state and guarded activation](language/actor-attached-state-and-lifecycle-v1.md): nominal schema ownership, initialization fence and scoped state access target; no compiler certification.
 
 - [Typed actor job envelopes and acknowledgements](language/actor-job-envelope-v1.md): candidate single-worker dispatch, admission versus settlement, bounded volatile and durable ledger distinctions; not an implemented guest ABI.
