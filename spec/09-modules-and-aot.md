@@ -13,10 +13,17 @@ define pub module math as
   end
 end
 
-import * as math from "+/lib/math";
+import namespace math from "+/lib/math";
 ```
 
-This is canonical unified static-import syntax. The old `import module math from "+lib/math"` is migration-only. Exact source ordering, safe resolution and executable linking still require backend-specific fixtures.
+The namespace-first spelling follows the latest static-imports v2 target (#227). Both `import * as math from "+/lib/math";` and the older `import module math from "+lib/math"` are migration spellings; no source resolver or linker support is implied. Preserve explicit typed module selection where admitted.
+
+## Compiler-owned libraries
+
+`core`, `alloc` and `std` are reserved library roots with Rust-like layering
+(freestanding core, allocator-backed alloc, hosted std). Selectors, import
+forms, platform variants and the v1 unit catalog are normative in
+[language/core-alloc-std-libraries-v1.md](../language/core-alloc-std-libraries-v1.md).
 
 ## Project root and resolver safety
 

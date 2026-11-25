@@ -29,35 +29,23 @@ val admitted = counter.send(Increment(1))
 
 This is the intended **sealed-state target**, not proof that the displayed `state {}` and `handle_state` lowering execute on every backend. API casing/signatures are fixed only after a conformance amendment.
 
+A durable actor opts in explicitly using `define persistent actor Counter as ... state {} ... end`. The state container remains actor-private and mutable; the `persistent` modifier adds a supervisor-selected storage adapter, fenced activation, durable inbox/state/outbox turn commits and commit-before-successful-reply semantics. See [chapter 22 — Persistent actors and storage adapters](22-persistent-actors-and-storage.md).
+
 ## State confinement
 
-At most one effective persistent guest state schema belongs to one actor. Direct reads/writes of actor state outside compiler-validated scoped callbacks (`handle_state(critical-read|write ...)` or equivalent admitted lexically scoped `using`) MUST fail compilation. The intrinsic is sealed; code cannot override it or forge an actor-state pointer. The restriction applies **even inside `receive`, `on_start` and actor methods**: direct `self.count = ...` is not a substitute for `self.handle_state(critical-write |s| -> ...)`. Separately checked construction-time initialization remains permitted. Historical direct-field positive fixtures are migration-only, not sealed-state parity.
+At most one effective persistent guest state schema belongs to one actor. Direct reads/writes of actor state outside compiler-validated scoped callbacks (`handle_state(critical-read|write ...)` or equivalent admitted lexically scoped `using`) MUST fail compilation. The intrinsic is sealed; code cannot override it or forge an actor-state pointer. The restriction applies even inside `receive`, `on_start` and actor methods; separately checked construction-time initialization remains permitted.
 
 - **critical-read:** immutable ephemeral loan; concurrent readers may be admitted if the actor/profile supports them.
 - **critical-write:** exclusive mutation; any writer excludes conflicting readers/writers.
 - No state loan may escape its callback, be serialized, be captured by a child task, or cross a suspension without an explicit proven and runtime-enforced safe exception.
-- Ordinary actors are concurrent by default. `define serial actor Name as ... end` opts into at most one active guest turn at a time. Concurrent admission never permits conflicting state access: compatible `critical-read` loans may overlap, while `critical-write` excludes readers and writers of the same protected region. Backend scheduling capacity does not replace these proofs.
+- Ordinary actors permit bounded reentrant DATA receives by default, including when another receive is suspended. `define serial actor Name as ... end` admits at most one live receive across suspension, until retirement. Concurrent admission never permits conflicting state access: compatible `critical-read` loans may overlap, while `critical-write` excludes readers and writers of the same protected region. Backend scheduling capacity does not replace these proofs.
 - Serial actors retain the same sealed-state and borrow rules; serialization is not permission to leak mutable references into tasks, pipes, singletons or other actors. See the [concurrency and shared-memory amendment](22-concurrency-and-shared-ownership.md) for migration and execution gates.
 
 ## Mailboxes and sends
 
 An actor has a bounded DATA inbox. Sending has a **linearization point**: either an owned message is admitted exactly once (with quota/ownership obligations transferred) or the send fails without partial publication. Admission checks type, identity, incarnation, authority, closure state and queue count/byte limits.
 
-**Canonical target:** synchronous mailbox admission `send(message)` returns `Result<Ack, SendError>`. An explicitly asynchronous admission API may instead return `Future<Result<Ack, SendError>>`. `Ack` proves admission to a bounded mailbox at the linearization point, **not processing, durability or completion**; `void` and `Result<void, SendError>` are transitional backend profiles, not portable typed-send parity. `SendError` reports refused admission (full, closed, stale generation, unauthorized) without implicit panic. Actual guest execution and compiler evidence are required before claiming backend parity.
-
-```atto
-val result = worker.send(42);
-match result over
-  on Ok(ack) -> {
-    // Message admitted; not necessarily processed.
-  }
-  on Err(err) -> {
-    // Handle rejected admission.
-  }
-end
-```
-
-Every `match ... over` arm must begin with contextual `on`, including `on _` wildcard; bare `Ok` / `Err`, `else`, `default`, `on default` are invalid. The example is a language target, not an executed-backend claim. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
+Canonical synchronous mailbox admission `send(message)` returns `Result<Ack, SendError>`; explicitly asynchronous admission may return `Future<Result<Ack, SendError>>`. Ack proves admission at the bounded mailbox linearization point, not processing, durability or completion. Void profiles are transitional and not portable typed-send parity. Rejected admission returns a typed error without implicit panic. Match the result with `on Ok(ack)` and `on Err(err)` arms. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
 
 A receiver is serialized with other conflicting turns. Messages may be rejected due to full/closed inbox, stale actor generation, invalid payload, cancelled sender or missing authority. No backend may silently drop a message while returning success.
 

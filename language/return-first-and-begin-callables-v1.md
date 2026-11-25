@@ -70,7 +70,7 @@ end
 fnc int <- double_answer(int value)
 raises Foo
 begin
-  if value > 3 then
+  do if value > 3 then
     raise! new Foo();
   fi
   return value * 2;
@@ -78,7 +78,7 @@ end
 
 fnc int <- double_answer(int value)
 raises Foo ::
-  if value > 3 then
+  do if value > 3 then
     raise! new Foo();
   fi
   return value * 2;
@@ -97,7 +97,7 @@ end
 
 fnc int <- checked_answer(int value)
 raises Foo ::
-  if value > 3 then
+  do if value > 3 then
     raise! new Foo();
   fi
   return value * 2;

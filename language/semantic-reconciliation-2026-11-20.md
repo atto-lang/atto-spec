@@ -13,13 +13,13 @@
 | Match | Every `match ... over` arm requires `on`, including `on _`; `default` is `switch`-only | Old bare/default match tests are historical |
 | Division | `int / int` yields floating-point; truncation is explicit, e.g. `Integer.div_trunc` | Superseded by the [November 23 truncating division contract](cross-backend-semantics-reconciliation-v1.md#numeric-semantics) |
 | Return-first | `<-` and the exact U+2022 bullet `•` are equivalent return-first separators (with optional `fnc`) | Formatter retains either spelling; reject lookalikes |
-| Imports | `import * as math from "+/lib/math";` is canonical | Old `import module` migration-only |
+| Imports | Historical November 20 choice: `import * as math from "+/lib/math";` | Superseded by November 24 namespace-first target #227; star-as is migration-only |
 
 These decisions do **not** supersede the separately proposed lambda four-style or exception-control bang keyword PRs; those need their own reviewed merge sequences.
 
 ## Historical backend evidence preserved
 
-The original Java/LLVM/.NET operator implementation status from this decision draft is archived in [bitwise backend status snapshot](bitwise-backend-status-snapshot-2026-11-20.md), not appended to the canonical syntax chapter. Those reported historical execution labels are **not** current exact-head compiler or guest test receipts. The operator chapter is byte-identical to draft [atto-spec #143](https://github.com/atto-lang/atto-spec/pull/143), which remains the canonical operator proposal. Both drafts stay unmerged until review and execution gates pass.
+The original Java/LLVM/.NET operator implementation status from this decision draft is archived in [bitwise backend status snapshot](bitwise-backend-status-snapshot-2026-11-20.md), not appended to the canonical syntax chapter. Those reported historical execution labels are **not** current exact-head compiler or guest test receipts. The canonical operator decision is now merged in [atto-spec #143](https://github.com/atto-lang/atto-spec/pull/143); later merged revisions retain its semantics and preserve historical evidence independently. This record does not certify implementation.
 
 ## Evidence policy
 

@@ -4,7 +4,7 @@
 
 ## Error values
 
-`Error` is the nominal base for typed exceptional values; `throw`, `raise` and `panic` accept only an `Error`-derived value. Constructing an error need not eagerly capture a stack trace. Explicit `capture_trace` or equivalent can attach bounded diagnostic context; serialized errors require a versioned JSON/MessagePack/Protobuf surface rather than raw host exception transport.
+`Error` is the built-in nominal base for typed exceptional values and implements the operation-specific `Throwable`, `Raisable` and `Panicable` traits. Under the November 23 target, `throw!`, `raise!` and `panic!` require their respective verified trait; an explicitly conforming non-Error type must preserve nominal identity and payload in an admitted guest error envelope. Until that representation is verified, the existing Error-derived subset is the only supported profile; unsupported cases reject before emission. Bare keywords remain migration aliases. Constructing an error need not eagerly capture a stack trace. Explicit `capture_trace` or equivalent can attach bounded diagnostic context; serialized errors require a versioned JSON/MessagePack/Protobuf surface rather than raw host exception transport.
 
 `Option<T>` and `Result<T,E>` are **ordinary data**, not automatically exceptions. A failed `Result` is not a panic. `unwrap()` on absent/error data intentionally **panics** and cannot be made safe by wrapping it in ordinary `trap`.
 
@@ -33,9 +33,9 @@ For non-actor `main`, an unhandled throw/raise/panic terminates the root guest i
 | `T` (not a `Result`) | `Result<T, Error>` | `Ok(v)` | `Err(Error)` |
 | `Result<T, E>` | `Result<T, E \| Error>`, or `Result<T, E>` when `E` already accepts `Error` | the value itself; its own `Err(E)` passes through unchanged | `Err(Error)` |
 
-- **No double wrapping.** A `Result` is never wrapped in a second `Result`, so `Result<Result<T, E>, Error>` is never produced. A widened error type `E | Error` never narrows back to `E` implicitly.
+- **No double wrapping.** An existing outer `Result` is not wrapped in a second `Result`; deliberately nested success payloads remain intact. A widened error type `E | Error` never narrows back to `E` implicitly.
 - **Other values are ordinary data.** An `Option` or `void` value is data inside `Ok`, e.g. `Result<Option<T>, Error>` or `Result<void, Error>`.
-- **The caught `Error` is sanitized.** It carries a bounded, printable type name and message, never a host exception object, cause chain or stack trace.
+- **Caught guest error identity is preserved.** Preserve the original nominal type, payload and identity inside the admitted domain. Only crossing a diagnostic/host boundary requires separately governed bounded printable metadata; never expose raw host exception objects, pointers or unverified cause chains.
 - **`trap fnc`** callables have the same call type. An async or scheduled trap boundary settles its Future with it: `Future<Result<T, Error>>`.
 - **`trap await f`** spans the suspension. Whether `f` is already complete or suspends first, its ordinary failure becomes `Err(Error)`. `await trap f` is a type error, because `trap f` is not a Future.
 - **Bypass.** `panic`, `raise`, cancellation, forced termination and VM-fatal failures bypass `trap`. `unwrap()` on an `Err` or `None` is a panic and cannot be made safe with `trap`.

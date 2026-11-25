@@ -34,7 +34,7 @@ test('core reconciled spec examples are present', () => {
  assert.ok(read('spec/16-lexical-and-grammar-reference.md').includes('on default'));
  assert.ok(read('spec/16-lexical-and-grammar-reference.md').includes('Integer bitwise XOR'));
  assert.ok(read('spec/07-errors-and-failure.md').includes('caller-trap-parity/v1'));
- assert.ok(read('spec/09-modules-and-aot.md').includes('import * as math from "+/lib/math";'));
+ assert.ok(read('spec/09-modules-and-aot.md').includes('import namespace math from "+/lib/math";'));
  assert.ok(read('spec/17-primitives-and-core-types.md').includes('`int / int` truncates toward zero'));
  assert.ok(read('language/bitwise-and-stream-operators-v1.md').includes('checked failure (invalid shift distance)'));
 });
@@ -81,4 +81,13 @@ test('current reconciliation preserves independent actor, task and error contrac
    'Signed `int / int` produces an `int` truncated toward zero'
  ]) assert.ok(spec.includes(phrase), phrase);
  assert.ok(!spec.includes('Reject bodies that can suspend.'));
+});
+
+test('updated numeric and exceptional identity decisions agree across chapters',()=>{
+ const types=read('spec/02-types-and-patterns.md'); const errors=read('spec/07-errors-and-failure.md'); const prim=read('spec/17-primitives-and-core-types.md');
+ assert.ok(types.includes('Dynamic integer overflow is an ordinary thrown guest error'));
+ assert.ok(prim.includes('ordinary thrown `ArithmeticOverflowError`'));
+ assert.ok(errors.includes('Caught guest error identity is preserved'));
+ assert.ok(errors.includes('deliberately nested success payloads remain intact'));
+ assert.ok(errors.includes('unsupported cases reject before emission'));
 });
