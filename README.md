@@ -8,6 +8,12 @@ Canonical AttoLang language specification, including syntax, semantics, types, o
 
 [AttoLang](https://github.com/atto-lang) is the sole canonical project name; configure repository remotes as `https://github.com/atto-lang/atto-spec.git` and refer to `.atto` in new examples. [atto-spec](https://github.com/atto-lang/atto-spec) owns normative grammar, ownership, lifetime, effects and actor contracts; [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance) tracks executed verification. Distinguish design proposals from tested compiler support and do not advertise zero-step CI as guest conformance.
 
+## Atto Theater application-platform architecture
+
+The adopted platform names are **Atto Theater** (OTP-style application platform), **Atto Director** (supervision), **Atto Ensemble** (actor groups, typed topics and subscriptions), and **Atto Runtime** (execution engine). These are architectural names, not new language keywords or claims of completed guest support.
+
+- [Atto Theater v1 — canonical naming, layering, safety boundaries and conformance plan](architecture/atto-theater-v1.md)
+
 ## Purpose
 
 Define normative syntax and semantics; document actor isolation, effects, ownership, and portability requirements.
@@ -20,7 +26,19 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
-- [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^ ~`, `<<< >>> ashr`, compound updates, and typed-I/O `<< >>`, with context-sensitive caret/structural-tilde parsing; target semantics, not backend parity.
+- [Ownership vocabulary v1](language/ownership-vocabulary-v1.md): canonical `borrow!`, `take!`, `share!`, `copy!`/`copy!!`; legacy `rt` ownership aliases and independent checked-handle admission.
+
+- [Exceptional bang spellings v1](language/exception-control-bang-spellings-v1.md): canonical `trap!` / `throw!` / `raise!` / `panic!` target spellings with bare migration aliases; no compiler certification.
+
+- [Cross-backend semantics reconciliation v1](language/cross-backend-semantics-reconciliation-v1.md): November 23 target decisions and independent backend admission boundaries.
+
+- [Canonical Boolean operators v1](docs/CANONICAL_BOOLEAN_OPERATORS_V1.md): strict bool `&&`, `||`, and `Xor(bool,bool)`; historical spellings require explicit migration.
+
+- [Checked int.parse Result v1](language/int-parse-result-v1.md): signed-i64 parsing to Result<int,Error> with deterministic bounded ASCII admission; target-only until compiled-guest evidence.
+
+- [Keyword roles and syntax highlighting taxonomy](spec/23-keyword-taxonomy-and-highlighting.md) records proposed editor metadata and links the documented lexer inventory.
+
+- [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^^ ~`, statement-return `^`, checked triple shifts `<<< >>> ashr`, and typed I/O `<< >>`; target semantics, not backend parity.
 
 - [Trap-to-Result v1](language/trap-result-v1.md): caller-side `trap` preserves returned `Result`/`Option` layers and catches ordinary `throw` as `Err(original Error)`; unverified backends must fail closed rather than emit legacy Option results.
 
@@ -31,8 +49,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 - [Visibility, foreign linkage and final fields v1](language/visibility-linkage-and-final-v1.md): distinguish internal, external, protected and final; includes fail-closed browser frontend matrix. Native link parity remains unverified.
 - [Namespaced and module exports v1](language/namespaced-exports-v1.md): explicit `export pub module`, qualified member access, source namespace identity, package gates and negative cross-file cases. This is a target contract; linker and native guest parity are **not verified**.
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
-- [Shared ownership and explicit guards v1](language/shared-ownership-and-guards-v1.md): TARGET semantics for canonical `share!` (legacy `rt share` is compatibility-only), frozen sharing and separately synchronized `RwLock<T>` mutation; **not compiler certified**.
-- [Ownership vocabulary v1](language/ownership-vocabulary-v1.md): canonical `borrow!`, `take!`, `share!`, `copy!`/`copy!!` and compatibility-only legacy `rt` spellings; runtime/backend support remains separately verified.
+- [Shared ownership and explicit guards v1](language/shared-ownership-and-guards-v1.md): TARGET semantics for canonical `share!` (legacy `rt share` is compatibility-only; frozen sharing) and separately synchronized `RwLock<T>` mutation; **not compiler certified**.
 
 - [Class field binding defaults v2](language/class-field-binding-defaults-v2.md): canonical implicit `val` for ordinary class fields, explicit `let` for writable bindings; replaces historical v1 implicit-`let` rule. Focused Rust/browser guest execution verified; cross-backend and package-linker parity remain pending.
 - [Class field binding defaults v1 (historical)](language/class-field-binding-defaults-v1.md): previously adopted `let` default, retained for migration and explicit supersession tracking.
@@ -49,6 +66,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 - [Return-first and begin/end callable syntax v1](language/return-first-and-begin-callables-v1.md): accept `fnc int <- name(args)` and bare `int <- name(args)` plus brace, `begin`/`end`, and statement/`end` bodies (target; backend parity pending).
 
 - [Freestanding core / alloc / std v1](language/freestanding-library-layers-v1.md): proposed three-layer dependency and bare-metal link contract; **not compiled-guest verified**.
+
+- [Identity-free value classes v1](language/value-classes-v1.md): **proposed** nominal value types, immutable construction, equality/copying, AOT and fail-closed gates. No backend guest conformance is verified. See [conformance PR #57](https://github.com/atto-lang/atto-platform-conformance/pull/57).
 
 ## Validation
 
@@ -75,3 +94,18 @@ This README records the intended role of this repository; it is not a claim of f
 This repository is the normative AttoLang (`.atto`) specification; migration-era syntax is not automatically part of current supported semantics.
 
 Changes asserting compiler/runtime support must identify the exact source head, target, toolchain, executed positive and negative guest tests, and failure/unsupported status; an empty CI step list is **not executed**. Documentation records responsibility, **not** a claim of feature completion.
+
+## Repository capability inventory v1 (advisory)
+
+This repository defines [the repository-capabilities contract](contracts/repository-capabilities-v1.schema.json) so ecosystem discovery tools can distinguish implemented code from README-only scaffolds without fabricating build or guest-execution claims.
+
+Each participating repository can publish a root-level `atto-capabilities.json` containing its exact `atto-lang/<name>` identity, role, `scaffold` or `implementation` source state, per-feature status and any evidence metadata. A **scaffold must report every feature as `not_executed` with no evidence**. All manifests are `NOT_CERTIFIED`; even a syntactically accepted evidence record is not independently verified.
+
+The offline validator and test suite require only Node.js:
+
+```sh
+node scripts/validate-capabilities.mjs atto-capabilities.json --repo atto-lang/atto-spec
+node --test tests/repository-capabilities.test.mjs
+```
+
+Actual compiler, actor isolation, AOT and multi-backend parity claims require separate exact-commit executed guest receipts and independent review; this inventory never replaces those gates.

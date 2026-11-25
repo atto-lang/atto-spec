@@ -3,15 +3,7 @@
 **Status: TARGET specification; browser subset and Rust model only.** Syntax
 admission is not proof of complete native guest runtime implementation.
 
-**Canonical spelling decision:** New AttoLang source and formatter output MUST
-prefer `borrow!`, `borrow! mut`, `take!`, `share!` and `copy!` (with
-`copy!!` for deep graph copy). The older `rt borrow`, `rt take`, `rt share`
-and `rt copy` spellings are migration compatibility aliases only; they must
-produce exactly the same typed ownership events and proof obligations. They
-must never bypass borrow checking. This does not define `ref!`, `deref!` or
-`unref!`; existing `rt ref`, `rt deref` and `rt unref` remain separate
-checked-handle operations. Bang forms are contextual parser operators, not
-new reserved bare words.
+**Canonical spelling:** New code and formatters prefer `borrow!`, `borrow! mut`, `take!`, `share!`, `copy!` and separately gated `copy!!`. Legacy `rt borrow`, `rt take`, `rt share`, `rt copy` are migration compatibility aliases with identical typed events, ownership proof and lowering; they never bypass borrow checking. `rt ref`, `rt deref`, `rt unref` remain checked-handle operations, not automatically `ref!`, `deref!`, `unref!` aliases. The bare words are not newly reserved.
 
 | Spelling | Meaning | Proof obligation |
 | --- | --- | --- |

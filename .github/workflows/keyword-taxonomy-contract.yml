@@ -4,10 +4,9 @@ on:
     paths:
       - 'contracts/keyword-taxonomy-v1/**'
       - 'spec/04-ownership-and-memory.md'
-      - 'spec/16-lexical-and-grammar-reference.md'
-      - 'spec/23-keyword-taxonomy-and-highlighting.md'
       - 'language/ownership-vocabulary-v1.md'
       - 'tests/ownership-bang-canonical.test.mjs'
+      - 'spec/16-lexical-and-grammar-reference.md'
       - 'spec/23-keyword-taxonomy-and-highlighting.md'
       - 'tests/keyword-taxonomy-contract.test.mjs'
       - 'tests/keyword-taxonomy-lexical-model.test.mjs'
@@ -18,10 +17,9 @@ on:
     paths:
       - 'contracts/keyword-taxonomy-v1/**'
       - 'spec/04-ownership-and-memory.md'
-      - 'spec/16-lexical-and-grammar-reference.md'
-      - 'spec/23-keyword-taxonomy-and-highlighting.md'
       - 'language/ownership-vocabulary-v1.md'
       - 'tests/ownership-bang-canonical.test.mjs'
+      - 'spec/16-lexical-and-grammar-reference.md'
       - 'spec/23-keyword-taxonomy-and-highlighting.md'
       - 'tests/keyword-taxonomy-contract.test.mjs'
       - 'tests/keyword-taxonomy-lexical-model.test.mjs'
