@@ -1,0 +1,473 @@
+{
+  "schema": "atto-implicit-receiver-qualified-calls-v1",
+  "evidence": "HOST_ONLY_MODEL_NOT_GUEST",
+  "description": "Source-shaped lookup oracle: expected bindings are normative targets, not backend test results",
+  "backend_evidence": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "rs": "NOT_EXECUTED"
+  },
+  "cases": [
+    {
+      "id": "actor-intrinsic-bare",
+      "call": "handle_state",
+      "mode": "bare",
+      "actor": true,
+      "sealed": true,
+      "instance": true,
+      "arity": 1,
+      "expected": "STATE_INTRINSIC"
+    },
+    {
+      "id": "actor-intrinsic-self",
+      "call": "handle_state",
+      "mode": "self",
+      "actor": true,
+      "sealed": true,
+      "instance": true,
+      "arity": 1,
+      "expected": "STATE_INTRINSIC"
+    },
+    {
+      "id": "actor-intrinsic-spoofed-local",
+      "call": "handle_state",
+      "mode": "bare",
+      "actor": true,
+      "sealed": true,
+      "instance": true,
+      "arity": 1,
+      "local": [
+        {
+          "name": "handle_state",
+          "arity": 1,
+          "callable": true
+        }
+      ],
+      "expected": "REJECT_INTRINSIC_SHADOW"
+    },
+    {
+      "id": "ordinary-method-wins-collision",
+      "call": "work",
+      "mode": "bare",
+      "instance": true,
+      "arity": 0,
+      "methods": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "root": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "imports": [
+        {
+          "alias": "work",
+          "arity": 0,
+          "public": true
+        }
+      ],
+      "expected": "INSTANCE_METHOD"
+    },
+    {
+      "id": "self-method-explicit",
+      "call": "work",
+      "mode": "self",
+      "instance": true,
+      "arity": 0,
+      "methods": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "expected": "INSTANCE_METHOD"
+    },
+    {
+      "id": "package-explicit",
+      "call": "work",
+      "mode": "pkg",
+      "instance": true,
+      "arity": 0,
+      "methods": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "root": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "expected": "FILE_ROOT"
+    },
+    {
+      "id": "import-explicit",
+      "call": "work",
+      "mode": "imports",
+      "instance": true,
+      "arity": 0,
+      "methods": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "imports": [
+        {
+          "alias": "work",
+          "arity": 0,
+          "public": true
+        }
+      ],
+      "expected": "EXPLICIT_IMPORT"
+    },
+    {
+      "id": "import-alias",
+      "call": "remote_work",
+      "mode": "imports",
+      "arity": 0,
+      "imports": [
+        {
+          "alias": "remote_work",
+          "original": "work",
+          "arity": 0,
+          "public": true
+        }
+      ],
+      "expected": "EXPLICIT_IMPORT"
+    },
+    {
+      "id": "import-original-not-alias",
+      "call": "work",
+      "mode": "imports",
+      "arity": 0,
+      "imports": [
+        {
+          "alias": "remote_work",
+          "original": "work",
+          "arity": 0,
+          "public": true
+        }
+      ],
+      "expected": "REJECT_MISSING_IMPORT"
+    },
+    {
+      "id": "lexical-callback-before-method",
+      "call": "work",
+      "mode": "bare",
+      "instance": true,
+      "arity": 0,
+      "local": [
+        {
+          "name": "work",
+          "arity": 0,
+          "callable": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "expected": "LEXICAL_CALLABLE"
+    },
+    {
+      "id": "lexical-noncallable-no-fallback",
+      "call": "work",
+      "mode": "bare",
+      "instance": true,
+      "arity": 0,
+      "local": [
+        {
+          "name": "work",
+          "arity": 0,
+          "callable": false
+        }
+      ],
+      "methods": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "expected": "REJECT_NONCALLABLE"
+    },
+    {
+      "id": "lexical-arity-no-fallback",
+      "call": "work",
+      "mode": "bare",
+      "instance": true,
+      "arity": 1,
+      "local": [
+        {
+          "name": "work",
+          "arity": 0,
+          "callable": true
+        }
+      ],
+      "methods": [
+        {
+          "name": "work",
+          "arity": 1
+        }
+      ],
+      "expected": "REJECT_WRONG_ARITY_LOCAL"
+    },
+    {
+      "id": "method-arity-no-free-fallback",
+      "call": "work",
+      "mode": "bare",
+      "instance": true,
+      "arity": 1,
+      "methods": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "root": [
+        {
+          "name": "work",
+          "arity": 1
+        }
+      ],
+      "expected": "REJECT_WRONG_ARITY_METHOD"
+    },
+    {
+      "id": "inherited-method-selected",
+      "call": "work",
+      "mode": "bare",
+      "instance": true,
+      "arity": 1,
+      "methods": [
+        {
+          "name": "work",
+          "arity": 1,
+          "inherited": true
+        }
+      ],
+      "root": [
+        {
+          "name": "work",
+          "arity": 1
+        }
+      ],
+      "expected": "INSTANCE_METHOD"
+    },
+    {
+      "id": "static-without-implicit-self",
+      "call": "work",
+      "mode": "bare",
+      "instance": false,
+      "arity": 0,
+      "methods": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "root": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "expected": "FILE_ROOT"
+    },
+    {
+      "id": "static-explicit-self-rejected",
+      "call": "work",
+      "mode": "self",
+      "instance": false,
+      "arity": 0,
+      "methods": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "expected": "REJECT_NO_RECEIVER"
+    },
+    {
+      "id": "actor-file-root-policy",
+      "call": "work",
+      "mode": "pkg",
+      "instance": true,
+      "actor": true,
+      "arity": 0,
+      "root": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "expected": "REJECT_ACTOR_SAME_FILE_DEPENDENCY"
+    },
+    {
+      "id": "import-value-extraction",
+      "call": "work",
+      "mode": "imports",
+      "arity": 0,
+      "as_value": true,
+      "imports": [
+        {
+          "alias": "work",
+          "arity": 0,
+          "public": true
+        }
+      ],
+      "expected": "REJECT_IMPORT_VALUE"
+    },
+    {
+      "id": "wildcard-not-flattened",
+      "call": "work",
+      "mode": "imports",
+      "arity": 0,
+      "imports": [
+        {
+          "alias": "work",
+          "arity": 0,
+          "public": true,
+          "wildcard": true
+        }
+      ],
+      "expected": "REJECT_MISSING_IMPORT"
+    },
+    {
+      "id": "private-import-denied",
+      "call": "work",
+      "mode": "imports",
+      "arity": 0,
+      "imports": [
+        {
+          "alias": "work",
+          "arity": 0,
+          "public": false
+        }
+      ],
+      "expected": "REJECT_PRIVATE_IMPORT"
+    },
+    {
+      "id": "pkg-arity-no-import-fallback",
+      "call": "work",
+      "mode": "pkg",
+      "arity": 1,
+      "root": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "imports": [
+        {
+          "alias": "work",
+          "arity": 1,
+          "public": true
+        }
+      ],
+      "expected": "REJECT_WRONG_ARITY_FILE_ROOT"
+    },
+    {
+      "id": "pkg-missing-no-project-scan",
+      "call": "work",
+      "mode": "pkg",
+      "arity": 0,
+      "imports": [
+        {
+          "alias": "work",
+          "arity": 0,
+          "public": true
+        }
+      ],
+      "expected": "REJECT_MISSING_FILE_ROOT"
+    },
+    {
+      "id": "implicit-nonactor-free-handle-state",
+      "call": "handle_state",
+      "mode": "bare",
+      "instance": false,
+      "actor": false,
+      "arity": 0,
+      "root": [
+        {
+          "name": "handle_state",
+          "arity": 0
+        }
+      ],
+      "expected": "FILE_ROOT"
+    },
+    {
+      "id": "variable-named-imports-does-not-spoof-selector",
+      "call": "work",
+      "mode": "imports",
+      "arity": 0,
+      "local": [
+        {
+          "name": "imports",
+          "arity": 0,
+          "callable": false
+        }
+      ],
+      "imports": [
+        {
+          "alias": "work",
+          "arity": 0,
+          "public": true
+        }
+      ],
+      "expected": "EXPLICIT_IMPORT"
+    },
+    {
+      "id": "variable-named-pkg-does-not-spoof-selector",
+      "call": "work",
+      "mode": "pkg",
+      "arity": 0,
+      "local": [
+        {
+          "name": "pkg",
+          "arity": 0,
+          "callable": false
+        }
+      ],
+      "root": [
+        {
+          "name": "work",
+          "arity": 0
+        }
+      ],
+      "expected": "FILE_ROOT"
+    },
+    {
+      "id": "diamond-conflict-must-not-choose-first",
+      "call": "work",
+      "mode": "bare",
+      "instance": true,
+      "arity": 0,
+      "methods": [
+        {
+          "name": "work",
+          "arity": 0,
+          "inherited": true,
+          "source": "A"
+        },
+        {
+          "name": "work",
+          "arity": 0,
+          "inherited": true,
+          "source": "B"
+        }
+      ],
+      "expected": "REJECT_AMBIGUOUS_INHERITANCE"
+    }
+  ]
+}

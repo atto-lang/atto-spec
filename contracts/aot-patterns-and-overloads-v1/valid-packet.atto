@@ -1,0 +1,15 @@
+fnc inspect(Bytes data): int {
+    return match data over
+        on packet {
+            version: u8,
+            length: u16be,
+            payload: bytes[length],
+            ..rest
+        } as frame -> { return frame.version + frame.length; }
+        on _ -> { return 0; }
+    end;
+}
+
+pub fnc main(): int {
+    return inspect(Bytes.from_list([39, 0, 3, 97, 98, 99]));
+}
