@@ -1,0 +1,28 @@
+name: Atomic and receive-only serial contract model
+
+on:
+  push:
+    paths:
+      - "contracts/atomic-receive-v1.json"
+      - "spec/27-atomics-and-receive-only-serialization.md"
+      - "tests/atomic-receive-contract.test.mjs"
+      - "tests/fixtures/atomic-v1/**"
+      - ".github/workflows/atomic-receive-contract.yml"
+  pull_request:
+    paths:
+      - "contracts/atomic-receive-v1.json"
+      - "spec/27-atomics-and-receive-only-serialization.md"
+      - "tests/atomic-receive-contract.test.mjs"
+      - "tests/fixtures/atomic-v1/**"
+      - ".github/workflows/atomic-receive-contract.yml"
+permissions:
+  contents: read
+
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Node host model and TARGET fixtures (not guest parity)
+        run: node --test tests/atomic-receive-contract.test.mjs

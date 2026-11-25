@@ -20,7 +20,7 @@ define serial actor SerialWorker as
 end
 ```
 
-These are declaration-shape examples, not executable conformance fixtures. Ordinary actors permit multiple active turns and execute on a multithreaded runtime. `serial` limits that actor to one active guest turn, without requiring a dedicated OS thread or making the whole language single-threaded. Capacity and fairness are explicit runtime policy; concurrent permission does not promise simultaneous execution on every machine.
+These are declaration-shape examples, not executable conformance fixtures. Ordinary actors permit multiple active turns and execute on a multithreaded runtime. `serial` limits that actor to one live DATA `receive()` invocation, including suspension; independently invoked receiver methods may still run concurrently. It does not require a dedicated OS thread or make the actor single-threaded. Capacity and fairness are explicit runtime policy; concurrent permission does not promise simultaneous execution on every machine.
 
 All mutable state containers, including actor `state {}`, are sealed. `critical-read` grants compatible immutable scoped loans; `critical-write` grants one exclusive scoped loan and excludes conflicting readers/writers. A compiler must reason about nested referents and aliases, not only the state variable's binding. Serial scheduling does not waive loan lifetime, escape, suspension or cleanup checks. State loans cannot outlive the region or cross suspension without an explicit proven safe continuation protocol.
 
@@ -50,7 +50,7 @@ The canonical Rust verifier lives in [atto-borrow-checker.rs](https://github.com
 
 Before any implementation/parity claim, execute the same `.atto` cases on Java, LLVM and .NET:
 
-- Concurrent readers succeed; a conflicting writer waits or receives the specified typed denial. Serial actors never overlap active guest turns.
+- Concurrent readers succeed; a conflicting writer waits or receives the specified typed denial. Serial actors never overlap live `receive()` invocations, but independent non-`receive` methods may overlap a suspended or running receive.
 - Unguarded state mutation, reader mutation, alias escape and unauthorized singleton writes fail before emission with the expected semantic diagnostic.
 - One-owner handoff succeeds; the prior owner and stale-generation ref32 fail. Check arena boundary, overflow, wrong-domain and retirement races.
 - Mailbox and shared-memory pipe variants preserve bounded admission, failed-send ownership, cancellation and physical cleanup.
