@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 const c=JSON.parse(readFileSync(new URL("../contracts/actor-pubsub-v1/contract.json",import.meta.url),"utf8"));
 
 // SOURCE-FREE invariants only. This suite is deliberately not a compiler/actor guest.
+const MAX_SEQUENCE = (1n << 64n) - 1n;
 class Broker {
   constructor(){this.actors=new Map();this.groups=new Map();this.grants=new Set();this.grantState=new WeakMap();this.topics=new Map();this.subs=[];this.actorHandles=new Set();this.groupHandles=new Set();this.topicHandles=new Set();this.closed=false;}
   actor(name,generation=1){if(this.closed)return {error:"Closed"};const a={name,generation,alive:true};this.actors.set(name,a);this.actorHandles.add(a);return a;}
@@ -37,7 +38,7 @@ class Broker {
     // This spec oracle models RELIABLE core only. An unimplemented extension
     // must never inherit RELIABLE semantics just because its name is accepted.
     if(policy!=="RELIABLE")return {error:"UnsupportedPolicy"};
-    const t={g,name,type,policy,seq:0};
+    const t={g,name,type,policy,seq:0n};
     scoped.set(name,t);this.topics.set(g,scoped);this.topicHandles.add(t);
     return t;
   }
@@ -63,6 +64,8 @@ class Broker {
     if(!this.grants.has(cap)||!this.grantState.get(cap)||cap.g!==t.g||
       !cap.a.alive||!t.g.members.has(cap.a))return {error:"UnauthorizedPublisher"};
     if(!shared)return {error:"NotShared"};
+    // Exhaustion is a hard error before capacity/Full; zero never becomes a receipt.
+    if(t.seq===MAX_SEQUENCE) throw new RangeError("TopicSequenceExhausted");
     const all=[];
     for(const sub of this.subs)if(!sub.closed&&sub.topic===t){
       const members=sub.kind==="actor"?[sub.target]:[...sub.target.members];
@@ -75,9 +78,9 @@ class Broker {
     t.seq++;
     for(const [sub,a] of all){
       if(!sub.queues.has(a))sub.queues.set(a,[]);
-      sub.queues.get(a).push({seq:t.seq,payload});
+      sub.queues.get(a).push({seq:t.seq.toString(),payload});
     }
-    return {sequence:t.seq,recipients:all.length};
+    return {sequence:t.seq.toString(),recipients:all.length};
   }
   begin(s,a){
     if(!this.subs.includes(s)||!this.actorHandles.has(a))return {error:"StaleTarget"};
@@ -149,21 +152,21 @@ test("contract identity and evidence cannot masquerade as backend execution",()=
   assert.equal(new Set(c.cases.map(x=>x.invariant)).size,18);
 });
 test("AP001 membership alone never subscribes",()=>{
-  const {b,cap,t}=setup();assert.deepEqual(b.publish(t,cap,"a"),{sequence:1,recipients:0});
+  const {b,cap,t}=setup();assert.deepEqual(b.publish(t,cap,"a"),{sequence:"1",recipients:0});
 });
 test("AP002 atomic RELIABLE reservation: one full recipient prevents every enqueue and sequence",()=>{
   const {b,a,g,cap,t}=setup(),other=b.actor("b");
   b.join(g,other);
   const sa=b.subscribe(t,"actor",a,1).sub,sb=b.subscribe(t,"actor",other,1).sub;
   assert.equal(b.publish(t,cap,"first").recipients,2);
-  assert.equal(b.begin(sa,a).seq,1);
+  assert.equal(b.begin(sa,a).seq,"1");
   assert.equal(b.finish(sa,a).ok,true);
   assert.equal(b.publish(t,cap,"refused").error,"Full");
-  assert.equal(t.seq,1);
+  assert.equal(t.seq,1n);
   assert.equal(b.begin(sa,a).error,"Empty");
   assert.equal(b.begin(sb,other).payload,"first");
   b.finish(sb,other);
-  assert.deepEqual(b.publish(t,cap,"retry"),{sequence:2,recipients:2});
+  assert.deepEqual(b.publish(t,cap,"retry"),{sequence:"2",recipients:2});
 });
 test("AP003/AP004 publisher grant and direct subscriber authorization",()=>{
   const {b,a,g,cap,t}=setup(),other=b.actor("b"),h=b.group("h");
@@ -171,14 +174,14 @@ test("AP003/AP004 publisher grant and direct subscriber authorization",()=>{
   assert.equal(b.publish(t,foreign,"x").error,"UnauthorizedPublisher");
   assert.equal(b.publish(t,{...cap},"x").error,"UnauthorizedPublisher");
   assert.equal(b.subscribe(t,"actor",other,1).error,"UnauthorizedSubscriber");
-  assert.equal(t.seq,0);
+  assert.equal(t.seq,0n);
 });
 test("AP005 overlap and independent group-topic identities",()=>{
   const {b,a,g,cap,t}=setup(),h=b.group("h"),other=b.join(h,a).cap;
   const ht=b.topic(h,"events");
   const gs=b.subscribe(t,"group",g,1).sub,hs=b.subscribe(ht,"group",h,1).sub;
-  assert.deepEqual(b.publish(t,cap,"g"),{sequence:1,recipients:1});
-  assert.deepEqual(b.publish(ht,other,"h"),{sequence:1,recipients:1});
+  assert.deepEqual(b.publish(t,cap,"g"),{sequence:"1",recipients:1});
+  assert.deepEqual(b.publish(ht,other,"h"),{sequence:"1",recipients:1});
   assert.equal(b.begin(gs,a).payload,"g");
   assert.equal(b.begin(hs,a).payload,"h");
 });
@@ -192,7 +195,7 @@ test("AP006/AP007 unsubscribe cancels queued events, but never in-flight complet
   assert.equal(b.begin(s,a).error,"Closed");
   assert.equal(b.finish(s,a).ok,true);
   assert.equal(b.done(s),true);
-  assert.deepEqual(b.publish(t,cap,"after"),{sequence:3,recipients:0});
+  assert.deepEqual(b.publish(t,cap,"after"),{sequence:"3",recipients:0});
 });
 test("AP008 stale grants cannot regain publication after leave/rejoin",()=>{
   const {b,a,g,cap,t}=setup();
@@ -200,7 +203,7 @@ test("AP008 stale grants cannot regain publication after leave/rejoin",()=>{
   const next=b.join(g,a).cap;
   assert.notEqual(next,cap);
   assert.equal(b.publish(t,cap,"no").error,"UnauthorizedPublisher");
-  assert.equal(b.publish(t,next,"yes").sequence,1);
+  assert.equal(b.publish(t,next,"yes").sequence,"1");
 });
 test("AP009 stopped incarnation cannot resurrect memberships or edges",()=>{
   const {b,a,g,cap,t}=setup(),s=b.subscribe(t,"actor",a,1).sub;
@@ -210,14 +213,14 @@ test("AP009 stopped incarnation cannot resurrect memberships or edges",()=>{
   assert.equal(b.begin(s,a).error,"Closed");
   const newCap=b.join(g,next).cap;
   const newSub=b.subscribe(t,"actor",next,1).sub;
-  assert.deepEqual(b.publish(t,newCap,"yes"),{sequence:1,recipients:1});
+  assert.deepEqual(b.publish(t,newCap,"yes"),{sequence:"1",recipients:1});
   assert.equal(b.begin(newSub,next).payload,"yes");
 });
 test("AP010 non-shared payload does not burn sequence or capacity",()=>{
   const {b,a,g,cap,t}=setup(),s=b.subscribe(t,"group",g,1).sub;
   assert.equal(b.publish(t,cap,{},false).error,"NotShared");
-  assert.equal(t.seq,0);
-  assert.equal(b.publish(t,cap,"safe").sequence,1);
+  assert.equal(t.seq,0n);
+  assert.equal(b.publish(t,cap,"safe").sequence,"1");
   assert.equal(b.begin(s,a).payload,"safe");
 });
 test("AP011 duplicate subscribe does not duplicate edges or alter capacity",()=>{
@@ -244,7 +247,7 @@ test("AP013: forged group, actor, topic and kind are rejected before publication
   assert.equal(b.subscribe({...t},"actor",a,1).error,"UnknownTopic");
   assert.equal(b.publish({...t},cap,"no").error,"UnknownTopic");
   assert.equal(b.subscribe(t,"whatever",a,1).error,"InvalidTargetKind");
-  assert.equal(b.publish(t,cap,"yes").sequence,1);
+  assert.equal(b.publish(t,cap,"yes").sequence,"1");
   assert.equal(b.begin(s,a).payload,"yes");
 });
 
@@ -256,7 +259,7 @@ test("AP014: equal group and topic names cannot cross broker boundaries",()=>{
   const fake=stranger.group("g");
   assert.equal(stranger.topic(g,"events").error,"StaleGroup");
   assert.notEqual(fake,g);
-  assert.equal(b.publish(t,cap,"still-authorized").sequence,1);
+  assert.equal(b.publish(t,cap,"still-authorized").sequence,"1");
 });
 
 test("AP015: topic identity locks nominal payload type and delivery policy",()=>{
@@ -266,7 +269,7 @@ test("AP015: topic identity locks nominal payload type and delivery policy",()=>
   assert.equal(b.topic(g,"events","Event","LOSSY").error,"TopicPolicyMismatch");
   for(const name of ["",".bad","-bad","bad space","ü"])
     assert.equal(b.topic(g,name).error,"InvalidName");
-  assert.equal(b.publish(t,cap,"yes").sequence,1);
+  assert.equal(b.publish(t,cap,"yes").sequence,"1");
 });
 
 test("AP016: group shutdown revokes its grants and subscriptions but not neighbors",()=>{
@@ -304,7 +307,7 @@ test("AP018: revoked immutable membership cannot be reactivated externally",()=>
   const next=b.join(g,a).cap;
   assert.notEqual(next,cap);
   assert.equal(b.publish(t,cap,"stale").error,"UnauthorizedPublisher");
-  assert.equal(b.publish(t,next,"new").sequence,1);
+  assert.equal(b.publish(t,next,"new").sequence,"1");
 });
 
 test("portable core rejects LOSSY/LATEST until a versioned policy model is selected",()=>{
@@ -312,5 +315,30 @@ test("portable core rejects LOSSY/LATEST until a versioned policy model is selec
   assert.equal(b.topic(g,"telemetry","Event","LOSSY").error,"UnsupportedPolicy");
   assert.equal(b.topic(g,"snapshots","Event","LATEST").error,"UnsupportedPolicy");
   assert.equal(b.topic(g,"weird","Event","INVALID").error,"UnsupportedPolicy");
-  assert.equal(b.publish(t,cap,"reliable").sequence,1);
+  assert.equal(b.publish(t,cap,"reliable").sequence,"1");
+});
+
+test("u64 sequence is exact above JS safe integers, never wraps, and exhaustion wins over Full",()=>{
+  const {b,a,g,cap,t}=setup(),s=b.subscribe(t,"group",g,1).sub;
+  t.seq=(1n<<53n)-1n;
+  assert.deepEqual(b.publish(t,cap,"first"),{sequence:"9007199254740992",recipients:1});
+  assert.equal(b.begin(s,a).seq,"9007199254740992");
+  b.finish(s,a);
+  t.seq=MAX_SEQUENCE-1n;
+  assert.deepEqual(b.publish(t,cap,"last"),{sequence:"18446744073709551615",recipients:1});
+  assert.throws(()=>b.publish(t,cap,"exhausted"),RangeError);
+  assert.equal(t.seq,MAX_SEQUENCE);
+  assert.equal(b.begin(s,a).payload,"last");
+  b.finish(s,a);
+  assert.throws(()=>b.publish(t,cap,"still exhausted"),RangeError);
+  assert.equal(b.begin(s,a).error,"Empty");
+});
+test("Full at the last available u64 sequence consumes no credit or sequence",()=>{
+  const {b,a,g,cap,t}=setup(),s=b.subscribe(t,"group",g,1).sub;
+  t.seq=MAX_SEQUENCE-2n;
+  b.publish(t,cap,"occupied");
+  assert.equal(b.publish(t,cap,"refused").error,"Full");
+  assert.equal(t.seq,MAX_SEQUENCE-1n);
+  b.begin(s,a);b.finish(s,a);
+  assert.equal(b.publish(t,cap,"retry").sequence,"18446744073709551615");
 });
