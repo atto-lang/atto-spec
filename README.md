@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Static imports v2](language/static-imports-v2.md): namespace-first syntax, scoped identities, alias graphs and offline AOT target; existing v1 profiles are migration-gated.
+
 - [TenantVM terminology](spec/tenant-vm-terminology.md): canonical per-tenant execution boundary and historical identifier compatibility; target terminology, not sandbox certification.
 
 - [Ownership vocabulary v1](language/ownership-vocabulary-v1.md): canonical `borrow!`, `take!`, `share!`, `copy!`/`copy!!`; legacy `rt` ownership aliases and independent checked-handle admission.
