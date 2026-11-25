@@ -1,0 +1,13 @@
+{
+  "schema": "atto.repository-capabilities.v1",
+  "repository": "atto-lang/atto-spec",
+  "role": "governance",
+  "source_state": "implementation",
+  "feature_status": {
+    "repository_capability_contract": "not_executed",
+    "optional_named_argument_spec": "not_executed",
+    "cross_backend_guest_conformance": "not_executed"
+  },
+  "certification": "NOT_CERTIFIED",
+  "evidence": []
+}

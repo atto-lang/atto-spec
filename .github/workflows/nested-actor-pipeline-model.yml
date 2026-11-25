@@ -1,0 +1,30 @@
+name: Nested actor pipeline source-free reference model
+
+on:
+  pull_request:
+    paths:
+      - 'spec/15-nested-actor-pipelines.md'
+      - 'scripts/nested-actor-pipeline-model.mjs'
+      - 'tests/nested-actor-pipeline-model.test.mjs'
+      - '.github/workflows/nested-actor-pipeline-model.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/nested-actor-pipeline-model.mjs'
+      - 'tests/nested-actor-pipeline-model.test.mjs'
+      - '.github/workflows/nested-actor-pipeline-model.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-free-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test abstract pipeline composition (NOT guest execution)
+        run: node --test tests/nested-actor-pipeline-model.test.mjs

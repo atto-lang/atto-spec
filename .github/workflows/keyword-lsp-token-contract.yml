@@ -1,0 +1,26 @@
+name: AttoLang LSP semantic-token contract
+on:
+  push:
+    paths:
+      - 'contracts/keyword-taxonomy-v1/lsp-semantic-token-v1.json'
+      - 'contracts/keyword-taxonomy-v1/catalog.json'
+      - 'tests/keyword-lsp-token-contract.test.mjs'
+      - '.github/workflows/keyword-lsp-token-contract.yml'
+  pull_request:
+    paths:
+      - 'contracts/keyword-taxonomy-v1/lsp-semantic-token-v1.json'
+      - 'contracts/keyword-taxonomy-v1/catalog.json'
+      - 'tests/keyword-lsp-token-contract.test.mjs'
+      - '.github/workflows/keyword-lsp-token-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source_only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node --test tests/keyword-lsp-token-contract.test.mjs

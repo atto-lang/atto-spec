@@ -86,3 +86,6 @@ define class Conflict implements A, B as end // E_IMPL_CONFLICT
 
 Portable regression fixtures live in `atto-platform-conformance`; at least one accepted and one rejected fixture per nominal owner kind, and inherited/default/conflict, signature, visibility, wrong-owner and declaration-mismatch cases are mandatory. Record parsing, type checking, linking, emitted guest status and actual guest execution separately. Positive tests require actual guest compilation and run; negative tests require the expected diagnostic and **no executable artifact**. Native-hosted Rust compiler tests alone do not prove browser-hosted Rust compiler, Java, LLVM, independent Wasm, .NET, Forge, Cranelift or JS parity. An exact-commit cross-org carrier must prove Git tree/blob identity and real job-step execution; a queued or zero-step run is `NOT_EXECUTED`.
 
+
+
+The checked-in host reference suite `tests/implements-receiver-reference.test.mjs` exercises selected semantic invariants only; it does not compile Atto source or certify backend parity.
