@@ -33,6 +33,10 @@ Borrow checking is not optional for a native backend. Aliased writes, use-after-
 
 Compact operands (`copy!value`, `borrow!mut value`) normalize to one ASCII space after the bang. The historical `mut borrow! value` is a migration alias for `borrow! mut value`. Prefix precedence is unary with postfix member/index expressions binding tighter; evaluate each operand once. Duplicate `mut` qualifiers reject. The [checked-handle call-loan profile](../language/checked-handle-call-loans-v1.md) defines all-path retirement, explicit lexical `block` scopes and versioned borrow-default call proof boundaries.
 
+## Implicit argument borrowing (target)
+
+The [versioned borrow-default profile](../language/implicit-argument-borrow-v1.md) makes ordinary nonprimitive object formals temporary loans. `inspect(foo)` and `inspect(borrow! foo)` have identical read-loan facts for a proven read-only parameter. `update(mut foo)` requires writable owner authority, a nonconflicting exclusive loan and a sealed callee write effect. Frozen data, sealed foreign actor state and ambiguous provenance never gain write rights. Borrow checks include subsequent arguments, exceptional edges, cleanup and all-path returned-loan provenance. Primitive scalars retain value passing. Explicit consuming `take! T` formals and explicit `take! owner` arguments are separate; `copy!!`, `share!` and `rebind` retain their own contracts. Legacy owned-formal behavior requires an explicit migration profile; do not silently switch it. No general compiler or ABI certification is implied.
+
 ## Explicit capability extensions: `freeze!`, `weak!`, and `pin!` (TARGET)
 
 These are **contextual prefix operations** (the word followed immediately by `!`), not

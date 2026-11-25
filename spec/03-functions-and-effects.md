@@ -172,6 +172,10 @@ val b = combine(1, second: 2)         // 12
 
 **Compatibility boundary:** A readonly record, `Map<K,V>`, tuple spread, structural product, named type metadata and actor message field are not interchangeable named-call argument packs. Static record-to-named forwarding requires an independently checked closed-field expansion with proven evaluation/ownership semantics. Formatters preserve source argument order and labels rather than sorting expressions to declaration order.
 
+## Call-argument ownership inference (target)
+
+In the versioned opt-in borrow-default profile, an ordinary nonprimitive reference-backed formal borrows rather than consumes. A read-only call may omit `borrow!`; a proved transitive write effect requires an exclusive writable loan requested with `mut`. Seal effects in the resolved signature before call admission. Receiver and supplied arguments evaluate once in lexical order, with each prior loan checked against subsequent argument effects. Permutation into formal slots neither duplicates nor retires a loan. Explicit `borrow!` cannot repair missing provenance. Keep explicit consuming `take! T` formals and `take! owner` arguments, and the separate `rebind` rule. See [implicit argument borrowing](../language/implicit-argument-borrow-v1.md) and [ownership](04-ownership-and-memory.md#implicit-argument-borrowing-target).
+
 ## Effect types
 
 A callable can be annotated for potential `throws`, `raises`, `panics` or `suspends` effects. The compile-time effect set is an upper bound used for diagnostics and safe call admission; it is not a license to perform privileged operations. `trap` describes a non-throwing boundary for ordinary throw effects, but does not catch panics or cancellation. Precise declaration syntax and effect-polymorphic inference are still being reconciled.
