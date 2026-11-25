@@ -29,23 +29,35 @@ val admitted = counter.send(Increment(1))
 
 This is the intended **sealed-state target**, not proof that the displayed `state {}` and `handle_state` lowering execute on every backend. API casing/signatures are fixed only after a conformance amendment.
 
+A durable actor opts in explicitly using `define persistent actor Counter as ... state {} ... end`. The state container remains actor-private and mutable; the `persistent` modifier adds a supervisor-selected storage adapter, fenced activation, durable inbox/state/outbox turn commits and commit-before-successful-reply semantics. See [chapter 22 — Persistent actors and storage adapters](22-persistent-actors-and-storage.md).
+
 ## State confinement
 
-At most one effective persistent guest state schema belongs to one actor. Direct reads/writes of actor state outside compiler-validated scoped callbacks (`handle_state(critical-read|write ...)` or equivalent admitted lexically scoped `using`) MUST fail compilation. The intrinsic is sealed; code cannot override it or forge an actor-state pointer.
+At most one effective persistent guest state schema belongs to one actor. Direct reads/writes of actor state outside compiler-validated scoped callbacks (`handle_state(critical-read|write ...)` or equivalent admitted lexically scoped `using`) MUST fail compilation. The intrinsic is sealed; code cannot override it or forge an actor-state pointer. The restriction applies even inside `receive`, `on_start` and actor methods; separately checked construction-time initialization remains permitted.
 
 - **critical-read:** immutable ephemeral loan; concurrent readers may be admitted if the actor/profile supports them.
 - **critical-write:** exclusive mutation; any writer excludes conflicting readers/writers.
 - No state loan may escape its callback, be serialized, be captured by a child task, or cross a suspension without an explicit proven and runtime-enforced safe exception.
-- Ordinary actors are concurrent by default. `define serial actor Name as ... end` opts into at most one live DATA `receive()` invocation at a time, including suspension; unrelated receiver methods remain concurrent and do not consume the receive permit. Concurrent admission never permits conflicting state access: compatible `critical-read` loans may overlap, while `critical-write` excludes readers and writers of the same protected region. Backend scheduling capacity does not replace these proofs.
+- Ordinary actors permit bounded reentrant DATA receives by default, including when another receive is suspended. `define serial actor Name as ... end` admits at most one live receive across suspension, until retirement. Independently invoked non-`receive` receiver methods remain concurrent and do not consume the DATA receive permit. Concurrent admission never permits conflicting state access: compatible `critical-read` loans may overlap, while `critical-write` excludes readers and writers of the same protected region. Backend scheduling capacity does not replace these proofs.
 - Serial actors retain the same sealed-state and borrow rules; serialization is not permission to leak mutable references into tasks, pipes, singletons or other actors. See the [concurrency and shared-memory amendment](22-concurrency-and-shared-ownership.md) for migration and execution gates.
 
 ## Mailboxes and sends
 
 An actor has a bounded DATA inbox. Sending has a **linearization point**: either an owned message is admitted exactly once (with quota/ownership obligations transferred) or the send fails without partial publication. Admission checks type, identity, incarnation, authority, closure state and queue count/byte limits.
 
-`send(message)` should return an explicit typed admission outcome such as `Result<Ack, SendError>` (or a Future thereof where admission is asynchronous); never mistake mailbox admission for recipient processing or completion. Existing backend APIs may expose different aliases, and must be reconciled before finalizing the signature. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
+Canonical synchronous mailbox admission `send(message)` returns `Result<Ack, SendError>`; explicitly asynchronous admission may return `Future<Result<Ack, SendError>>`. Ack proves admission at the bounded mailbox linearization point, not processing, durability or completion. Void profiles are transitional and not portable typed-send parity. Rejected admission returns a typed error without implicit panic. Match the result with `on Ok(ack)` and `on Err(err)` arms. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
 
-A receiver is serialized with other conflicting turns. Messages may be rejected due to full/closed inbox, stale actor generation, invalid payload, cancelled sender or missing authority. No backend may silently drop a message while returning success.
+The admission Ack is not authority to access other actors or tenants. This example is a target, not an execution receipt:
+
+```atto
+val result = worker.send(42);
+do match result over
+  on Ok(ack) -> { mark_admitted(ack); }
+  on Err(err) -> { handle_send_error(err); }
+end
+```
+
+Conflicting state loans obey the state confinement rules during receives. Messages may be rejected due to full/closed inbox, stale actor generation, invalid payload, cancelled sender or missing authority. No backend may silently drop a message while returning success.
 
 ## Lifecycle
 
@@ -68,3 +80,13 @@ Shared, private/isolated and untrusted kinds select capacity, transport and poli
 `spawn A() pipe spawn B()` creates a typed, bounded actor data pipeline; a supervisor is not a data stage. Affinity, number of carrier threads, and mailbox size do not weaken supervision or sealed-state rules.
 
 The proposed `Actor.pipe(A(), B(), ...)` and zero-argument-type `Actor.pipe(A, B, ...)` are new-actor factory forms of that pipeline, while `Actor.connect(a_ref, b_ref)` connects existing actors without changing their supervisor. These must share the same post-start admission, ownership, capacity and DATA/CONTROL separation guarantees. The deferred factory proposal returns a single-use builder; only `.start()` attempts to create the new graph. Nested builders can define explicit child-supervisor scopes without changing the owning supervisor of already-running actors. See [chapter 14](14-actor-pipeline-factories.md) and [chapter 15](15-nested-actor-pipelines.md); all factory syntax remains **TARGET / NOT_VERIFIED**.
+
+## Stateful communication protocols (candidate v1)
+
+In addition to message types, an actor may declare a type-level protocol with state-specific legal messages, required replies and explicit terminal completion. This refines the **same actor kind** and never exposes its sealed mutable state. The static guarantee requires an affine, incarnation-fenced `ProtocolHandle` rather than an aliasable `ActorRef`; unproven or remotely mutable state must be checked dynamically or rejected. A successful state transition is proved only after a matched reply and runtime state commitment; `get_done()` still means physical completion, not merely terminal protocol state.
+
+See [actor protocol typestate v1](../language/actor-protocol-typestate-v1.md). **TARGET / NOT_VERIFIED**: the linked source-free checker and tests are not parser, formatter, backend or guest-execution evidence.
+
+## Typed group pub/sub (TARGET)
+
+ActorGroup membership does not automatically subscribe an actor to any message topic. Typed `Topic<T>` and affine `Subscription<T>` introduce explicit bounded fan-out without changing direct actor DATA send, sealed state, or supervisor CONTROL delivery. The portable core requires atomic `RELIABLE` reservation, per-topic sequencing and generation-fenced cancellation; lossy/latest policies and membership monitors are separately versioned. See [actor pub/sub v1](../language/actor-pubsub-v1.md) for the proposed language contract, conformance gaps and executable **source-free** model.

@@ -30,6 +30,42 @@ Each actor MUST account for **aggregate** live invocation stacks, task stacks, f
 
 A backend MUST NOT promise recovery from arbitrary host/OS native stack overflow, JNI/FFI corruption or VM-wide OOM. For untrusted actors, use sufficiently strong process/tenant/VM boundaries and prove containment of runtime-called-near-limit stacks. Reserve space for failure handling and authenticated supervisor CONTROL delivery. Enforce bounded recursion/stack capacity for hard real-time profiles; unbounded segmented growth is not a hard real-time guarantee.
 
+
+## Unwinding: throw, raise, panic and stack exhaustion
+
+Every terminal effect unwinds **the logical stack it was raised on**, and only that stack. `defer` cleanups and compiler-owned guards run exactly once, in reverse registration order, on the owning invocation or Task's execution context, for **every** effect below. That includes `raise` and `panic`. Only VM-corrupting abort and OS kill may skip them (see `atto-spec` `language/defer-recover-unwind-v1.md`, which this table restates for stacks).
+
+| Effect | `catch` | `trap` | `recover` | `defer` | Ends at |
+| --- | --- | --- | --- | --- | --- |
+| `throw` | nearest match in the caller chain | may become `None` | only if still unhandled at a recovery boundary | runs | invocation/Task boundary, then supervisor |
+| `raise` | bypassed | bypassed | nearest eligible | runs | parent Task or supervisor CONTROL |
+| `panic` | bypassed | bypassed | never | runs | supervisor CONTROL |
+| logical stack exhaustion | bypassed | bypassed | never | runs, within a bounded unwind reserve | supervisor CONTROL; default actor restart |
+| cancellation | bypassed | bypassed | never | runs where safe | scheduler |
+| host fatal (VM OOM, host native overflow, FFI corruption) | bypassed | bypassed | never | not promised | host policy |
+
+- **Stack exhaustion is panic-class.** No guest construct consumes it. The poisoned invocation unwinds and then fails under the actor's supervision policy. It never resumes, and it never processes the next DATA message.
+- **Unwind reserve.** When a logical stack overflows, its cleanups need frames to run. The runtime MUST grant a small, fixed reserve of extra frames or bytes to a poisoned stack while it unwinds. A cleanup that exhausts the reserve fails too. That failure is recorded as suppressed on the original overflow, and the remaining cleanups still run. The reserve MUST be bounded and counted against the actor's aggregate budget. It cannot grow into another invocation's stack.
+- **Recover callbacks** run on the failing invocation's own stack, after that scope's defers, and are charged to its quota. They never run on a foreign mailman, I/O or control thread. A recover callback that overflows is itself panic-class.
+- **Precedence** is fatal/cancel > panic (including stack exhaustion) > raise > throw > success. A cleanup failure never hides a stronger pending cause.
+- An unwinding invocation affects no other stack. Sibling invocations of the same actor keep their frames. Whether they continue depends on the actor's failure policy, which by default stops the incarnation after the failing invocation unwinds.
+
+## Execution contexts, continuations and callbacks
+
+* An **execution context** is the identity of one logical stack: a receive invocation or a Task. It owns that stack's quota, unwind chain (defers and recovers) and trace lineage. Carrier threads are never execution contexts.
+* A **continuation** is a resume point of an existing logical stack. `await`, `select` and `rt cooperate` do not create a new stack. The suspended frames become heap-held continuation state, charged to the same invocation, and resume under the same execution context, possibly on another carrier. A continuation cannot be resumed twice (one-shot wake ticket).
+* A **new** execution context, and therefore a new logical stack, is created only for: an admitted receive invocation, a spawned or `task { }` child Task, and a supervisor-owned `on_panic` / CONTROL handler. A completion callback registered by guest code (for example a `Future` continuation lambda) runs either as a continuation of its registering context, when it is part of that invocation's control flow, or as a child Task. It never runs on an anonymous stack.
+* Defers and recovers registered before a suspension stay attached to the suspended stack. They run when that stack unwinds, even if the unwind happens on a different carrier after resumption.
+
+## Carriers, pools and affinity
+
+The pool topology is chapter 06's: a control and main path, the reactor, `ores-scheduler`, and lazily populated shared, isolated/private and untrusted actor pools. Logical stacks never cross pools: an invocation runs, suspends and resumes only on carriers of its actor's pool.
+
+* Several carriers MAY run invocations of one ordinary actor at the same time, each on its own stack. A `define serial actor` has at most one running or suspended DATA receive invocation; independent non-receive method frames are not counted against that receive permit.
+* **Soft affinity** (chapter 10) is the default. Each actor has a home lane in its pool. Its invocations and resumed continuations are queued there first, so the actor's arena, mailbox and recently used stack segments stay warm in that carrier's caches. A carrier that becomes free takes its own lane's work first, which in an otherwise equal choice means revisiting actors it has already run. It spills to, or steals from, other lanes only under bounded congestion, preferring lanes in the same LLC or NUMA domain.
+* Affinity is a placement preference and never an identity. Stack identity, quotas and generation checks MUST NOT depend on which carrier runs a frame, and spill or steal MUST NOT change observable results.
+* Stack segments freed by a retired invocation SHOULD be reused, after zeroization and a generation change, by the next invocation on the same lane, which keeps them cache-warm.
+
 ## Physical implementation latitude
 
 | Backend | Permitted implementation strategy; proof required |
@@ -51,5 +87,19 @@ There is no general promise of one physically allocated native stack per message
 5. A quota/overflow or swallowed stack-budget exception fails A without corrupting independent B; stale generations, duplicate wakes, recycled IDs and forged frame tickets are rejected.
 6. Verify bounded actor-wide stack accounting, overflow in runtime calls, cleanup exactly once, supervisor CONTROL progress, and zeroization before reuse.
 7. For every backend, attach exact source/tree/head SHA, actual nonzero-step compiler/guest execution and negative diagnostic receipts. Host-only model tests remain labeled **SOURCE_FREE_MODEL_ONLY**. Missing steps/runner admission count as **NOT_EXECUTED**.
+8. Overflow unwinding runs every live frame's `defer` exactly once using only the bounded unwind reserve. Guest `catch`, `trap` and `recover` cannot consume stack exhaustion. Trusted host code that swallows it still fails the incarnation.
+9. `raise` and `panic` both run defers before escalating; `panic` never reaches a local `recover`.
+10. A continuation resumed on another carrier keeps its execution context, quota and pending defers. No guest callback runs without an execution context.
 
 See actor stack-overflow conformance draft #609, logical borrow critical draft #617 and Task capture draft #624 in `oreslang-platform-conformance`. Their existing coverage complements but does not replace live per-invocation identity, suspension and task-stack proofs.
+
+## Backend status (audit, 2026-11-16)
+
+This section records state, not normative text.
+
+| Backend | Logical stack per invocation | Contained stack exhaustion | Notes |
+| --- | --- | --- | --- |
+| Java/GraalVM | Yes for synchronous frames: a per-receive segment with a 1024-frame quota, plus a per-carrier ceiling sized from the real thread stack | Yes: actor fails, carrier and siblings continue (oreslang-source.java, `LogicalStackQuota`) | Mailbox is still processed serially per actor. Task steps use the carrier's root segment. Runtime panics run defers innermost-first and bypass `catch` (verified). Source `throw`/`raise`/`panic`/`recover` statements are not yet admitted by the parser |
+| LLVM | Runtime substrate only (`NativeActorLogicalFramesV1`: up to 64 live turns, `max_turns = 1` for serial actors), not used by compiled code | No on `main`: compiled guest failures call `abort()`. The tenant-VM chain (llvm #1343 → #1565 → #1566) adds guarded carriers, a per-turn byte quota and restart | Landing the tenant-VM chain is the parity path |
+| .NET Native AOT | No: one `ActorFrameStack` per serial actor | No: a CLR stack overflow ends the process. Untrusted tenants run as Wasm on the native core | Needs a per-invocation frame stack plus a frame quota |
+| Wasm (Wasmtime) | Per Store | Traps at the Store level; actor-level restart not built | |

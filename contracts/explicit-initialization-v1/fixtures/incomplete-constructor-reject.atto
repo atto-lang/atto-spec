@@ -1,0 +1,11 @@
+define class Counter as
+  pub final int value;
+end
+
+pub constructor (Counter)(): self {
+}
+
+pub fnc main(): int {
+  val counter = new Counter();
+  return counter.value;
+}

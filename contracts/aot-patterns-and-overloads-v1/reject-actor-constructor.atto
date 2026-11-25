@@ -1,0 +1,5 @@
+define actor Worker as
+    constructor(int x) { return; }
+end
+
+pub fnc main(): int { return 0; }

@@ -1,0 +1,8 @@
+// TARGET only — NOT_EXECUTED. Local const cannot capture a runtime argument.
+fnc run(int number) -> int {
+  const Vector<int> data = [number];
+  return data[0];
+}
+fnc main() -> int {
+  return run(42);
+}
