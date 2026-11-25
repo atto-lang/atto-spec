@@ -1,0 +1,5 @@
+// Host-only scalar and identity distinction; does not parse or execute Atto.
+import test from 'node:test';import assert from 'node:assert/strict';
+function compare(op,a,b,profile='current'){if(op==='is'||(profile==='alternative'&&['==','!='].includes(op))){if(a===null||b===null||typeof a!=='object'||typeof b!=='object')throw Error('identity type');return op==='!='?a!==b:a===b}if(!['eq','neq','==','!='].includes(op))throw Error('operator');const same=a===b;return ['neq','!='].includes(op)?!same:same}
+test('current aliases stay value comparisons; alternative is opt-in',()=>{assert.equal(compare('==',42,42),true);assert.equal(compare('!=',42,43),true);assert.throws(()=>compare('==',42,42,'alternative'),/identity type/);assert.throws(()=>compare('is',42,42),/identity type/);const a={},b={};assert.equal(compare('is',a,a),true);assert.equal(compare('is',a,b),false);assert.equal(compare('==',a,b,'alternative'),false)});
+test('IEEE scalar edge cases and complement',()=>{for(const profile of ['current','alternative']){assert.equal(compare('eq',NaN,NaN,profile),false);assert.equal(compare('neq',NaN,NaN,profile),true);assert.equal(compare('eq',0,-0,profile),true)}});
