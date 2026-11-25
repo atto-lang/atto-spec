@@ -181,6 +181,10 @@ See [negated conditionals](ifnot-unless.md) and the [machine-readable contract](
 
 See [static binding type queries](../language/return-binding-type-query-target-v1.md). The proposed `typeof name` and `typeof(name)` forms are not additions to the verified accepted-spelling table; the existing callable-signature production and contextual `infer` remain distinct.
 
+## Typed local constant syntax (target)
+
+`T name = expression;` and `const T name = expression;` are equivalent typed local constants; `const name: T = expression;` is the type-right form. A runtime initializer cannot silently become `val`. `const mut` is explicit, and bare `mut T name` is rejected in this local grammar. Fields and contextual pattern bindings are separate. See [chapter 27](27-implicit-const-and-const-mut.md).
+
 ## Statements and semicolons
 
 Semicolons are the formatter's canonical output. They may be omitted only where the parser has a clear structural boundary, such as just before `}`, `fi` or `end`. There is no JavaScript-style automatic insertion. Imports and `namespace` declarations always need one.

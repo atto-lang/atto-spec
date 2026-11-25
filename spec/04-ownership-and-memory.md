@@ -2,6 +2,8 @@
 
 **Status: DRAFT.** The ownership contract applies to objects, collections, actor state, closure captures, task frames, and transport.
 
+Under [chapter 27](27-implicit-const-and-const-mut.md), `const mut` means an unrebindable local owning a fresh mutable instance from a constant template. Ordinary borrowing, sealed state and isolation checks still apply; global `const mut` is not admitted.
+
 ## Ownership operations
 
 **Canonical source spelling for new AttoLang code uses the contextual bang forms**, not the legacy `rt` prefix. These are prefix ownership operators: the operation name is immediately followed by `!`, then its operand. The bang forms are the preferred and formatter-emitted spelling.

@@ -22,6 +22,8 @@ end
 This is an accepted *semantic target*, not a claim that every backend already distinguishes `final`, `val`, `const` and `mut` in typed IR. Native/independent backend parity is pending. Normative implementation guide: [atto-spec class field binding defaults v2](https://github.com/atto-lang/atto-spec/blob/main/language/class-field-binding-defaults-v2.md); executable requirements: [atto-platform-conformance v2 registry](https://github.com/atto-lang/atto-platform-conformance/blob/main/contracts/class-field-binding-defaults-v2.json).
 
 
+A runtime `val` binding is not by itself deep immutability. Typed local `const` requires compile-time evaluation and frozen constant data; explicit `const mut` materializes a fresh owned mutable instance per execution, never a mutable pooled alias. See [chapter 27](27-implicit-const-and-const-mut.md).
+
 ## Type system
 
 AttoLang is statically typed and **nominal by default**. Two classes with the same fields are not automatically interchangeable. Explicit structural compatibility is permitted at designated call boundaries using `structural` or `struct{...}` / `structural {...}` forms after type-checker admission; structural typing is not a universal runtime cast.
