@@ -85,6 +85,10 @@ Historical v0.6 operator table (not current target precedence; see the operator 
 - `name = value` in a call is never a named argument. Named value arguments use `name: value` ([chapter 03](03-functions-and-effects.md)).
 - `++` and `--` exist only in a `for` update clause.
 
+### Current target bitwise precedence and token boundaries
+
+From lowest to highest within the operator expression region: Boolean `||`, Boolean `&&`, integer `|`, integer `^^`, integer `&`, equality, comparison, shifts `<<< >>> ashr`, additive, multiplicative, unary (including integer `~`), postfix. See the [normative operator grammar](../language/bitwise-and-stream-operators-v1.md). Boolean XOR is the explicit `Xor` call. `^` is statement-leading return only. Compound forms `&= |= ^^= <<<= >>>= ashr=` require writable integer places. Counts must be in `0..63`, never masked. Three adjacent brackets are shifts in expression context; two are typed I/O. Preserve nested generic closers, `|>` pipelines, and `|x| -> expr` lambdas. Legacy condition-only `|` is profile-specific; parenthesize integer OR where that legacy grammar remains active.
+
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
 
 ## Return-first named callables and explicit `begin`/`end` (target)
