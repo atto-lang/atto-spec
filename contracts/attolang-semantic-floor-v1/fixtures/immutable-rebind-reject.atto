@@ -1,0 +1,5 @@
+fnc main() -> int ::
+  int base = 40
+  base = 42
+  return base
+end

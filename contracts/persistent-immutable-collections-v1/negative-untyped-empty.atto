@@ -1,0 +1,5 @@
+// TARGET only — NOT_EXECUTED. [] cannot invent a collection type or element T.
+fnc main() -> int {
+  val data = [];
+  return 0;
+}
