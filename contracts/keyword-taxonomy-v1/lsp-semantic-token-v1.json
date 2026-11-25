@@ -1,0 +1,587 @@
+{
+  "schema_version": 1,
+  "status": "DRAFT_LSP_TOKEN_EXPECTATIONS_NOT_SERVER_EXECUTED",
+  "offset_encoding": "UTF-16",
+  "legend": {
+    "token_types": [
+      "namespace",
+      "type",
+      "class",
+      "enum",
+      "interface",
+      "struct",
+      "typeParameter",
+      "parameter",
+      "variable",
+      "property",
+      "enumMember",
+      "event",
+      "function",
+      "method",
+      "macro",
+      "keyword",
+      "modifier",
+      "comment",
+      "string",
+      "number",
+      "regexp",
+      "operator",
+      "decorator"
+    ],
+    "token_modifiers": [
+      "declaration",
+      "definition",
+      "readonly",
+      "static",
+      "deprecated",
+      "abstract",
+      "async",
+      "modification",
+      "documentation",
+      "defaultLibrary"
+    ]
+  },
+  "keyword_group_mappings": [
+    {
+      "id": "declaration_introducer",
+      "type": "keyword"
+    },
+    {
+      "id": "entity_kind",
+      "type": "keyword"
+    },
+    {
+      "id": "type_reflection",
+      "type": "keyword"
+    },
+    {
+      "id": "relationship",
+      "type": "keyword"
+    },
+    {
+      "id": "connective",
+      "type": "keyword"
+    },
+    {
+      "id": "qualifier",
+      "type": "modifier"
+    },
+    {
+      "id": "binding",
+      "type": "keyword"
+    },
+    {
+      "id": "construction",
+      "type": "operator"
+    },
+    {
+      "id": "effect",
+      "type": "modifier"
+    },
+    {
+      "id": "control",
+      "type": "keyword"
+    },
+    {
+      "id": "reference",
+      "type": "variable"
+    },
+    {
+      "id": "failure",
+      "type": "keyword"
+    },
+    {
+      "id": "concurrency",
+      "type": "keyword"
+    },
+    {
+      "id": "comparison",
+      "type": "operator"
+    },
+    {
+      "id": "literal",
+      "type": "keyword"
+    },
+    {
+      "id": "compute",
+      "type": "keyword"
+    }
+  ],
+  "examples": [
+    {
+      "id": "target-declared-actor",
+      "source": "declare actor Foo implements ActorXYZ;",
+      "status": "TARGET_NOT_EXECUTED",
+      "tokens": [
+        {
+          "text": "declare",
+          "start": 0,
+          "length": 7,
+          "line": 0,
+          "column": 0,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "actor",
+          "start": 8,
+          "length": 5,
+          "line": 0,
+          "column": 8,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "Foo",
+          "start": 14,
+          "length": 3,
+          "line": 0,
+          "column": 14,
+          "type": "class",
+          "modifiers": [
+            "declaration"
+          ]
+        },
+        {
+          "text": "implements",
+          "start": 18,
+          "length": 10,
+          "line": 0,
+          "column": 18,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "ActorXYZ",
+          "start": 29,
+          "length": 8,
+          "line": 0,
+          "column": 29,
+          "type": "interface",
+          "modifiers": []
+        }
+      ],
+      "encoded": [
+        0,
+        0,
+        7,
+        15,
+        0,
+        0,
+        8,
+        5,
+        15,
+        0,
+        0,
+        6,
+        3,
+        2,
+        1,
+        0,
+        4,
+        10,
+        15,
+        0,
+        0,
+        11,
+        8,
+        4,
+        0
+      ]
+    },
+    {
+      "id": "namespace-identifier",
+      "source": "namespace foo;",
+      "status": "TARGET_NOT_EXECUTED",
+      "tokens": [
+        {
+          "text": "namespace",
+          "start": 0,
+          "length": 9,
+          "line": 0,
+          "column": 0,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "foo",
+          "start": 10,
+          "length": 3,
+          "line": 0,
+          "column": 10,
+          "type": "namespace",
+          "modifiers": [
+            "declaration"
+          ]
+        }
+      ],
+      "encoded": [
+        0,
+        0,
+        9,
+        15,
+        0,
+        0,
+        10,
+        3,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "reserved-as-callable-name",
+      "source": "worker.stop();",
+      "status": "TARGET_NOT_EXECUTED",
+      "tokens": [
+        {
+          "text": "worker",
+          "start": 0,
+          "length": 6,
+          "line": 0,
+          "column": 0,
+          "type": "variable",
+          "modifiers": []
+        },
+        {
+          "text": "stop",
+          "start": 7,
+          "length": 4,
+          "line": 0,
+          "column": 7,
+          "type": "method",
+          "modifiers": []
+        }
+      ],
+      "encoded": [
+        0,
+        0,
+        6,
+        8,
+        0,
+        0,
+        7,
+        4,
+        13,
+        0
+      ]
+    },
+    {
+      "id": "function-with-effects",
+      "source": "pub fnc greet(): void { return 0; }",
+      "status": "TARGET_NOT_EXECUTED",
+      "tokens": [
+        {
+          "text": "pub",
+          "start": 0,
+          "length": 3,
+          "line": 0,
+          "column": 0,
+          "type": "modifier",
+          "modifiers": []
+        },
+        {
+          "text": "fnc",
+          "start": 4,
+          "length": 3,
+          "line": 0,
+          "column": 4,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "greet",
+          "start": 8,
+          "length": 5,
+          "line": 0,
+          "column": 8,
+          "type": "function",
+          "modifiers": [
+            "declaration"
+          ]
+        },
+        {
+          "text": "void",
+          "start": 17,
+          "length": 4,
+          "line": 0,
+          "column": 17,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "return",
+          "start": 24,
+          "length": 6,
+          "line": 0,
+          "column": 24,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "0",
+          "start": 31,
+          "length": 1,
+          "line": 0,
+          "column": 31,
+          "type": "number",
+          "modifiers": []
+        }
+      ],
+      "encoded": [
+        0,
+        0,
+        3,
+        16,
+        0,
+        0,
+        4,
+        3,
+        15,
+        0,
+        0,
+        4,
+        5,
+        12,
+        1,
+        0,
+        9,
+        4,
+        15,
+        0,
+        0,
+        7,
+        6,
+        15,
+        0,
+        0,
+        7,
+        1,
+        19,
+        0
+      ]
+    },
+    {
+      "id": "multiline-actor",
+      "source": "define actor Foo as\n  pub fnc run(): void { return 0; }\nend",
+      "status": "TARGET_NOT_EXECUTED",
+      "tokens": [
+        {
+          "text": "define",
+          "start": 0,
+          "length": 6,
+          "line": 0,
+          "column": 0,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "actor",
+          "start": 7,
+          "length": 5,
+          "line": 0,
+          "column": 7,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "Foo",
+          "start": 13,
+          "length": 3,
+          "line": 0,
+          "column": 13,
+          "type": "class",
+          "modifiers": [
+            "declaration"
+          ]
+        },
+        {
+          "text": "as",
+          "start": 17,
+          "length": 2,
+          "line": 0,
+          "column": 17,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "pub",
+          "start": 22,
+          "length": 3,
+          "line": 1,
+          "column": 2,
+          "type": "modifier",
+          "modifiers": []
+        },
+        {
+          "text": "fnc",
+          "start": 26,
+          "length": 3,
+          "line": 1,
+          "column": 6,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "run",
+          "start": 30,
+          "length": 3,
+          "line": 1,
+          "column": 10,
+          "type": "method",
+          "modifiers": [
+            "declaration"
+          ]
+        },
+        {
+          "text": "void",
+          "start": 37,
+          "length": 4,
+          "line": 1,
+          "column": 17,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "return",
+          "start": 44,
+          "length": 6,
+          "line": 1,
+          "column": 24,
+          "type": "keyword",
+          "modifiers": []
+        },
+        {
+          "text": "0",
+          "start": 51,
+          "length": 1,
+          "line": 1,
+          "column": 31,
+          "type": "number",
+          "modifiers": []
+        },
+        {
+          "text": "end",
+          "start": 56,
+          "length": 3,
+          "line": 2,
+          "column": 0,
+          "type": "keyword",
+          "modifiers": []
+        }
+      ],
+      "encoded": [
+        0,
+        0,
+        6,
+        15,
+        0,
+        0,
+        7,
+        5,
+        15,
+        0,
+        0,
+        6,
+        3,
+        2,
+        1,
+        0,
+        4,
+        2,
+        15,
+        0,
+        1,
+        2,
+        3,
+        16,
+        0,
+        0,
+        4,
+        3,
+        15,
+        0,
+        0,
+        4,
+        3,
+        13,
+        1,
+        0,
+        7,
+        4,
+        15,
+        0,
+        0,
+        7,
+        6,
+        15,
+        0,
+        0,
+        7,
+        1,
+        19,
+        0,
+        1,
+        0,
+        3,
+        15,
+        0
+      ]
+    },
+    {
+      "id": "symbol-and-string",
+      "source": "#ready #\"actor\" \"implements\";",
+      "status": "TARGET_NOT_EXECUTED",
+      "tokens": [
+        {
+          "text": "#ready",
+          "start": 0,
+          "length": 6,
+          "line": 0,
+          "column": 0,
+          "type": "string",
+          "modifiers": []
+        },
+        {
+          "text": "#\"actor\"",
+          "start": 7,
+          "length": 8,
+          "line": 0,
+          "column": 7,
+          "type": "string",
+          "modifiers": []
+        },
+        {
+          "text": "\"implements\"",
+          "start": 16,
+          "length": 12,
+          "line": 0,
+          "column": 16,
+          "type": "string",
+          "modifiers": []
+        }
+      ],
+      "encoded": [
+        0,
+        0,
+        6,
+        18,
+        0,
+        0,
+        7,
+        8,
+        18,
+        0,
+        0,
+        9,
+        12,
+        18,
+        0
+      ]
+    }
+  ],
+  "provenance": {
+    "based_on": "contracts/keyword-taxonomy-v1/catalog.json",
+    "server_evidence": "NOT_EXECUTED",
+    "guest_executions": 0
+  }
+}
