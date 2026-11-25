@@ -456,3 +456,8 @@ future_type_slot = "Future", "<", complete_type_ref, ">" ;
 - Runtime checks: admission of bounded writes, credit exhaustion and quota failure; supervisor error path when there is no callback; callback once on terminal success/failure; cancel vs commit; no payload duplication; no callback after owner destruction; no stack loan escaping the caller.
 - Negative parse/type tests for bare `do readch`, detached local read binders, `nb readch foo >> Future<string> foo`, a standalone `await Future<string>` expression outside the contextual nb-read continuation production, `do` under `pure`, missing I/O capability, and bare discarded checked Futures.
 - A Rust host model or syntax-only preflight must be reported separately from actual compiled `.atto` guest runtime/driver evidence. **No claims of executable support** until each backend runs a real channel and stream fixture from an exact SHA-pinned artifact.
+
+
+## Checked prefix/postfix reads and declaration-first typed bindings (candidate)
+
+See [prefix read](unary-read-expression-v1.md) and [terminal postfix read](postfix-channel-read-expression-v1.md). Both evaluate a readable once and preserve the exact checked result. Type-first and name-first annotations are admitted without silently unwrapping Result or Option. A potentially suspending read/write requires `susp` (legacy `suspends`) plus applicable capabilities. `trap!` preserves the suspend effect; it never turns a blocking read into an immediate attempt. Binary binding and write forms retain their own grammar, including the optional equals rules above. The restricted guest channel pilot is not portable runtime evidence.
