@@ -1,0 +1,6 @@
+fnc main() -> int ::
+  const mut object first = infer struct{ count: 40 };
+  const mut object second = infer struct{ count: 40 };
+  first.count = 99;
+  return second.count + 2;
+end

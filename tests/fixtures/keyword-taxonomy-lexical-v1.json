@@ -826,6 +826,61 @@
         ]
       ],
       "scope": "lexical_reference_only_not_parser_semantic_evidence"
+    },
+    {
+      "id": "negated-conditionals",
+      "source": "ifnot ready then unless busy then act(); fi fi",
+      "expected": [
+        [
+          "ifnot",
+          "reserved"
+        ],
+        [
+          "ready",
+          "identifier"
+        ],
+        [
+          "then",
+          "reserved"
+        ],
+        [
+          "unless",
+          "reserved"
+        ],
+        [
+          "busy",
+          "identifier"
+        ],
+        [
+          "then",
+          "reserved"
+        ],
+        [
+          "act",
+          "identifier"
+        ],
+        [
+          "(",
+          "punctuation"
+        ],
+        [
+          ")",
+          "punctuation"
+        ],
+        [
+          ";",
+          "punctuation"
+        ],
+        [
+          "fi",
+          "reserved"
+        ],
+        [
+          "fi",
+          "reserved"
+        ]
+      ],
+      "scope": "lexical_reference_only_not_parser_semantic_evidence"
     }
   ]
 }

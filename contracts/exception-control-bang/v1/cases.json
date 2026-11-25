@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "contract": "exception-control-bang-spellings-v1",
+  "status": "SOURCE_ONLY_TARGET_NOT_BACKEND_OR_GUEST_VERIFIED",
+  "normative_candidate": "language/exception-control-bang-spellings-v1.md",
+  "canonical_keywords": [
+    "trap!",
+    "throw!",
+    "raise!",
+    "panic!"
+  ],
+  "migration_keywords": [
+    "trap",
+    "throw",
+    "raise",
+    "panic"
+  ],
+  "backends": [
+    "atto-source.atto",
+    "atto-source.cranelift",
+    "atto-source.forge",
+    "atto-source.hdl",
+    "atto-source.java",
+    "atto-source.js",
+    "atto-source.llvm",
+    "atto-source.net",
+    "atto-source.realtime",
+    "atto-source.rs",
+    "atto-source.wasm"
+  ],
+  "cases": [
+    {
+      "id": "trap-spaced",
+      "source": "trap! parse_id(\"42\")",
+      "exceptional_tokens": [
+        "trap!"
+      ],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "trap-adjacent",
+      "source": "trap!parse_id(\"42\")",
+      "exceptional_tokens": [
+        "trap!"
+      ],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "throw-typed",
+      "source": "throw! Error(\"bad\")",
+      "exceptional_tokens": [
+        "throw!"
+      ],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "raise-typed",
+      "source": "raise! Error(\"bad\")",
+      "exceptional_tokens": [
+        "raise!"
+      ],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "panic-typed",
+      "source": "panic! Error(\"bad\")",
+      "exceptional_tokens": [
+        "panic!"
+      ],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "throw-adjacent",
+      "source": "throw!Error(\"bad\")",
+      "exceptional_tokens": [
+        "throw!"
+      ],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "legacy-trap",
+      "source": "trap parse_id(\"42\")",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "legacy-throw",
+      "source": "throw Error(\"bad\")",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "legacy-raise",
+      "source": "raise Error(\"bad\")",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "legacy-panic",
+      "source": "panic Error(\"bad\")",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "separated-logical-not",
+      "source": "trap !ready",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "not-equal",
+      "source": "trap!=next",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "word-not-equal",
+      "source": "trap!eq next",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "identifier-substring",
+      "source": "trapped! parse_id()",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "ownership-bang",
+      "source": "copy! owned",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "quoted-keywords",
+      "source": "\"trap! throw! raise! panic!\"",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "line-comment",
+      "source": "// trap! throw! raise! panic!\n42",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    },
+    {
+      "id": "block-comment",
+      "source": "/* trap! throw! raise! panic! */ 42",
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY"
+    }
+  ]
+}
