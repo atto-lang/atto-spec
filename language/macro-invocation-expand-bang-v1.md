@@ -19,11 +19,11 @@ pub fnc main() -> int {
 ```
 
 ```atto
-import * as macros from "std.macros";
+import namespace macros from "std.macros";
 const int capacity = expand! macros.const_capacity(const 64);
 ```
 
-The second sample describes the language-level spelling, not an assertion
+Namespace-first import spelling follows the proposed static-imports v2 contract (#227); the historical star-as spelling is a migration alias only. The second sample describes the language-level spelling, not an assertion
 that every compiler's built-in stdlib import resolver supports that path yet.
 A static qualified macro name can use the same existing namespace/module
 qualification rules as other resolved compiler metadata; no runtime dispatch.
@@ -112,3 +112,6 @@ with source-level tests; real compiler-backed execution and native AOT
 receipts are still required before claiming parity or shipping the feature.
 Existing v1 `name!(...)` source fixtures remain unchanged as legacy
 compatibility inputs while the new canonical vectors are admitted.
+
+## Host reference checks
+`node tests/macro-expand-prefix-reference.mjs` checks contextual invocation prefixes and disambiguation from neighboring punctuation and other bang operators. It does not scan comments/string bodies, parse macro arguments, expand ASTs or certify any compiler.
