@@ -44,7 +44,7 @@ The samples use one of several valid function forms: `: T` and `-> T` are both r
 
 ## Bindings and fields
 
-`val` declares an immutable binding, `let` a mutable binding, and `const` requires a compile-time constant. A `final` class field is single-assignment; a compile-time constant final initializer can be canonicalized from `final const` to `final` when proven constant. Instance field declarations default to immutable value slots unless explicit mutation is declared; the exact implicit-`val` grammar is a migration target.
+`val` declares an immutable binding, `let` a mutable binding, and `const` requires a compile-time constant. A `final` class field is single-assignment; a compile-time constant final initializer can be canonicalized from `final const` to `final` when proven constant. Unqualified ordinary class fields default to **`val`**, independent of type. Explicit `let` permits rebinding, and `mut` independently requests referent-write authority. Historical implicit-`let` is migration-only.
 
 ```atto
 val answer = 42
@@ -52,7 +52,7 @@ let counter = 0
 const max_retries = 3
 
 define class Session as
-  int id: 7             // implicit immutable field (target)
+  int id: 7             // implicit val: fixed binding
   let int attempts: 0   // explicitly mutable field
   final int epoch: 1    // assigned exactly once
 end
@@ -78,17 +78,33 @@ while should_continue() do
 done
 ```
 
-The **target** early-exit spelling is `guard condition { terminal_failure_path }` with **no `else` or `fi`**. A comma-separated guard list checks each clause once, left to right. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
+Both `ifnot` and `unless` negate the **first** boolean condition and evaluate it exactly once. They follow the same expression-versus-statement distinction as `if`: a value form has **mandatory** `else` and `fi` with compatible arm types; a `do ifnot/unless ... then` statement has **optional** `else` and closes with `fi`; a braced imperative form has optional `else` and **no `fi`**. The resulting `elif` conditions, if any, are not implicitly negated. Neither keyword supports postfix `unless`. Refutable pattern heads and conditional `as let` bindings in the negated head remain rejected until sound narrowing is implemented. See [the semantic contract](../contracts/ifnot-unless-v1.json) and [conditional-expression grammar PR #183](https://github.com/atto-lang/atto-spec/pull/183).
+
+```atto
+do ifnot ready then
+  start_worker();
+else
+  notify_ready();
+fi
+
+unless should_stop {
+  process_next();
+}
+
+val int selected = unless ready then 5 else 6 fi;
+```
+
+The **target** early-exit syntax admits both `guard condition { terminal_failure_path }` and `guard condition else terminal_failure_path end`. The guard condition expresses what must hold to continue; a failing condition runs the failure path, which MUST explicitly return from the enclosing function on every possible path (`return value` or `return;` for void; verified lexical `^` is equivalent). `throw`, `raise`, `panic`, `break`, and `continue` cannot discharge this return requirement. The two forms must lower identically, and the formatter preserves the authored block style. A comma-separated guard list checks each clause once, left to right. The brace form has no owned `else`; the keyword form owns `else ... end`, never `fi`. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
 
 An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.
 
-`match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. Every `match` and `do match` arm starts with the contextual keyword `on`. Use `on Ok(ack)`, `on Err(err)` or `on _` as appropriate. The `case` and `default` keywords belong to `switch`. Bare patterns and `default` or `else` arms are errors in an `over` match.
+`match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. Every `match ... over` arm requires contextual `on`, including `on Ok(ack)`, `on Err(err)` and `on _`; bare patterns, `else`, `default` and `on default` are invalid match arms. `default` belongs to `switch`. An expression-form `return match ...` must infer its enclosing return type where admitted. Typed variants such as `match<int>` and `select<int>` constrain arm results. Duplicate and unreachable arms should be compile errors; exhaustive/disjoint-vs-priority matching is still subject to [open questions](12-open-questions.md).
 
-A value `match` produces the selected arm's value. In a block arm, `return value;` and `^ value;` complete the arm. An explicit `return match ... end;` or `^ match ... end;` returns that value from the enclosing callable. An annotation such as `match<int>` constrains the common arm type. In `do match`, an arm may fall through or exit locally with `return;`, `return void;` or `^ void;`. A value return in a `do match` arm is a type error. Execution continues after the match when the arm completes normally.
-
-Evaluate the subject once and try arms in source order. Evaluate a `when` guard after binding the matching payload. A false guard advances to the next arm and does not prove exhaustiveness. Require unconditional coverage of the subject domain and report unreachable arms.
+A value `match` yields its selected arm's value. Inside a block arm, `return value;` or `^ value;` targets the arm join, not the enclosing callable. Only an explicit outer `return match ... end;` or `^ match ... end;` returns from the enclosing callable. `do match` is imperative: fallthrough, `return;`, `return void;` and `^ void;` complete the arm locally; value returns are rejected. Evaluate the subject once, try patterns in source order, bind before evaluating `when`, continue after a false guard, and require unguarded exhaustive coverage for value matches. Reject unreachable arms. See [the November 23 decision](../language/cross-backend-semantics-reconciliation-v1.md#control-flow).
 
 ## Call syntax and operators
+
+The target Boolean forms are `&&`, `||` and `Xor(bool,bool)` with strict bool typing; `^^` is integer XOR. See [Boolean contract](../docs/CANONICAL_BOOLEAN_OPERATORS_V1.md) and [source fixture registry](../contracts/logical-punctuation-v1/contract.json). Historical word/comma/pipe operators are not canonical; effect-preserving migration is required.
 
 Arithmetic, checked comparison, assignment, function call, lambdas and generic arguments have distinct grammar slots. `|>` is the *value/function* pipeline operator. The keyword `pipe` is reserved for actor pipeline connections; neither is a synonym for bitwise `|`. `?` has context-dependent uses (optional type, parameter omission, postfix propagation, and ternary form) and must not be parsed with a global text replacement.
 

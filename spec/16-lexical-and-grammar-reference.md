@@ -14,7 +14,7 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 
 ## Keywords
 
-The Java lexer reserves these words. The LLVM parser has its own keyword handling, and the two lists have not been compared.
+The historical table lists 93 documented Java reserved words. The two additional target words `ifnot` and `unless` are staged for syntax tooling and candidate compiler branches, not a claim about the historical Java or LLVM revisions. See chapter 23 for separate dated source snapshots.
 
 | Group | Words |
 | --- | --- |
@@ -22,7 +22,7 @@ The Java lexer reserves these words. The LLVM parser has its own keyword handlin
 | Callables | `fnc` `routine` `async` `suspends` `generator` `yield` `nlex` `return` `self` `super` `static` |
 | Visibility | `pub` `private` |
 | Bindings | `const` `val` `let` `mut` |
-| Control flow | `if` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
+| Control flow | `if` `ifnot` `unless` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
 | Errors | `try` `catch` `finally` `throw` `raise` `panic` `recover` `trap` `defer` |
 | Actors | `actor` `isoactor` `shared` `untrusted` `spawn` `stop` `rt` |
 | Async and channels | `await` `nb` `cb` `select` `readch` `writech` |
@@ -40,7 +40,7 @@ Some of these are narrower than the table suggests:
 
 Keywords may also be described linguistically as nouns (e.g. `actor`), relational verbs (e.g. `implements`), adjectives (e.g. `pub`), or execution qualifiers (e.g. `suspends`). These analogies are for readers and editor tooling, not additional syntax rules. The proposed taxonomy, semantic scopes, reserved-versus-contextual distinctions, and conformance gates appear in [chapter 23](23-keyword-taxonomy-and-highlighting.md).
 
-**This chapter's documented lexer inventory remains authoritative for its cited revisions.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
+**The historical 93-word inventory remains authoritative for its cited revisions; the two explicitly staged target additions are not historical observations.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
 
 ## Literals
 
@@ -57,63 +57,53 @@ Keywords may also be described linguistically as nouns (e.g. `actor`), relationa
 
 ## Operators
 
-From lowest to highest precedence, following the v0.6 grammar:
+Historical v0.6 operator table (not current target precedence; see the operator contract below):
 
 | Level | Operators | Associativity |
 | --- | --- | --- |
 | Assignment | `=` | Right |
 | Pipeline | `\|>` | Left |
 | Conditional | `? :` | Right |
-| Logical OR | `\\|\\|` (legacy `\\|` inside conditions) | Left |
-| Logical AND | `&&` (legacy `,` inside conditions) | Left |
-| Integer bitwise OR | `\\|` | Left |
-| Integer bitwise XOR | `^^` | Left |
-| Integer bitwise AND | `&` | Left |
+| Logical OR | `\|\|` (and `\|` inside conditions) | Left |
+| Logical XOR | `^^` | Left |
+| Logical AND | `&&` (and `,` inside conditions) | Left |
 | Equality and identity | `eq` `neq` `!eq` `==` `!=` `is` | Left |
 | Comparison and type tests | `<` `<=` `>` `>=` `is type` `matches` `as` `as?` | Left |
-| Shifts | `<<<` `>>>` `ashr` | Left |
 | Additive | `+` `-` | Left |
 | Multiplicative | `*` `/` `%` | Left |
-| Unary | `!` `-` `+` `~` `await` (legacy borrow/I/O forms by profile) | Prefix |
+| Unary | `!` `-` `+` `await` `&` `&mut` `readch` `writech` | Prefix |
 | Postfix | call, `.member`, `[index]` | Left |
 
 - `eq` and `neq` are the canonical comparisons. `==` and `!=` are accepted aliases.
 - `is` tests identity. Type tests use `is type`, as in `if animal is type Dog dog then`.
 - Inside an `if` or `while` condition, `,` means AND and `|` means OR, and comma binds tighter.
-- **Canonical owner decision (2026-11-20):** `&&` and `||` short-circuit on `bool`; `^^` is eager integer bitwise XOR on two `int` operands, never Boolean XOR. Boolean XOR uses `Xor(bool,bool)`. Single `^` is statement-leading return, not infix XOR. The result, evaluation order and precedence agree with atto-spec #151 and the versioned operator contract.
+- **SUPERSEDED TARGET (2026-11-14):** the former Boolean `^^` proposal is historical. The 2026-11-20 owner decision reserves `^^` for integer XOR; Boolean XOR uses `Xor(bool,bool)`. Boolean `&&` and `||` retain strict bool operands and left-to-right short circuit. See [operator contract](../language/bitwise-and-stream-operators-v1.md).
 - Backend status on 2026-11-14: Java main and LLVM main accept `&&` and `||`. .NET main accepts only the `and`/`or`/`xor` words. All three mains still reject `^^` as reserved. The fixes are oreslang-source.java#3009, oreslang-source.llvm#1728 / #1739 and oreslang-source.net#521, which adds `&&`, `^^` and `||` to the structured frontend.
-- `^ expr;` is a return statement. Infix single `^` is invalid; integer XOR is `^^`, and shifts are `<<<`, `>>>`, `ashr`, with checked distances `0..63`. `<<`/`>>` are typed I/O, not shifts. `Integer.bitXor(a,b)` is a named alternative.
+- The current target uses statement-leading `^` for return, not infix XOR or exponentiation. Integer `^^`, `&`, `|`, `~`, and checked `<<<`, `>>>`, `ashr` follow the separate operator contract; `<<` and `>>` are typed I/O.
 - Open: whether the condition-only `,` and `|` spellings stay. oreslang-source.java#3009 proposes removing them in favor of `&&` and `||`.
 - Assignment is an expression, but `if x = y then` is rejected.
 - `name = value` in a call is never a named argument. Named value arguments use `name: value` ([chapter 03](03-functions-and-effects.md)).
 - `++` and `--` exist only in a `for` update clause.
 
+### Current target bitwise precedence and token boundaries
+
+From lowest to highest within the operator expression region: Boolean `||`, Boolean `&&`, integer `|`, Integer bitwise XOR `^^`, integer `&`, equality, comparison, shifts `<<< >>> ashr`, additive, multiplicative, unary (including integer `~`), postfix. See the [normative operator grammar](../language/bitwise-and-stream-operators-v1.md). Boolean XOR is the explicit `Xor` call. `^` is statement-leading return only. Compound forms `&= |= ^^= <<<= >>>= ashr=` require writable integer places. Counts must be in `0..63`, never masked. Three adjacent brackets are shifts in expression context; two are typed I/O. Preserve nested generic closers, `|>` pipelines, and `|x| -> expr` lambdas. Legacy condition-only `|` is profile-specific; parenthesize integer OR where that legacy grammar remains active.
+
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
 
-## Canonical match-arm introducer (2026-11-20 decision)
+## Canonical match-arm introducer (target)
 
-**TARGET:** After `over`, every `match` arm MUST start with the **contextual** word `on`. This applies equally to `match value over`, `do match value over`, typed match variants, ADT payload bindings, guards, and wildcard fallback. `on` is contextual (not a blanket globally reserved identifier). The normal arm arrow is `->`, not `=>`.
-
-```atto
-do match outcome over
-  on Ok(ack) -> { mark_admitted(ack); }
-  on Err(err) -> { handle_send_error(err); }
-end
-```
-
-Use value `match` when the arm supplies a value. Use `do match` for effects. A `return` or `^` inside `do match` completes the arm with void. See [control flow](01-source-and-syntax.md) for return targets and exhaustiveness.
-
-A compiler MUST reject bare `Ok(ack) ->` or `Err(err) ->` **in an `over` match**, and `else`, `default` or `on default` are not catch-all aliases in this canonical form; use `on _`. Preserve a separately documented legacy `match value` without `over` only if that mode is explicitly selected. A formatter MUST preserve `on` and variant names, must not rewrite a `match` into a `switch` or turn `on _` into `default`, and must not silently make bare invalid arms valid when formatting a canonical source.
-
-The historical **Accepted spellings today** table below describes earlier source revisions and must not be treated as the currently normative syntax. LLVM's *browser-subset* parser already requires `on` for `match ... over`, but its native compiler still lacks general guest `Result<Ack, SendError>` lowering. Independent backends must report their own parse/typecheck/guest execution evidence.
+Every arm after `over` starts with contextual `on`; `on Ok(ack)`, `on Err(err)` and `on _` are examples. `on default`, `default`, `else` and bare patterns are invalid match arms; `case` and `default` are switch forms. Use `->`, not `=>`. In `do match`, void arm returns complete the arm; a nonvoid return is rejected. In value match, arm values join the common static result type. The formatter must preserve `on` and `on _`, and must not silently repair invalid bare arms or convert match to switch. Historical accepted spellings in this chapter are evidence only, not normative canonical grammar. Formatter and guest admission require independent proof.
 
 ## Return-first named callables and explicit `begin`/`end` (target)
 
-The mandatory return-type rule accepts conventional `fnc name(args) -> T` / `fnc name(args): T` and both equivalent return-first separators `fnc T <- name(args)`, `T <- name(args)`, `fnc T • name(args)` and `T • name(args)` (exact Unicode U+2022 BULLET). `T` may be `void`, `infer`, or a concrete return type. Contiguous `<-` and U+2022 `•` are declaration separators, not assignment; split `< -`, U+00B7 middle dot and U+2219 bullet operator are invalid. Return-first spelling is also valid for class/actor methods in declaration context; existing visibility, ownership and actor isolation rules do not change.
+The mandatory return-type rule accepts both conventional `fnc name(args) -> T` / `fnc name(args): T` and return-first `fnc T <- name(args)`, `T <- name(args)`, `fnc T • name(args)`, or `T • name(args)` with exact U+2022 BULLET. `T` may be `void`, `infer`, or a concrete return type. Both contiguous `<-` and exact U+2022 BULLET are declaration delimiters, not assignment or binary operators; lookalikes are rejected. Return-first spelling is also valid for class/actor methods in declaration context; existing visibility, ownership and actor isolation rules do not change.
 
-All three body families are supported for return-first declarations: `{ ... }`, `begin ... end`, and `statement; ... end` with no `begin`. The latter two require explicit return for a nonvoid result and admit empty bodies for void. Existing name-first `: T -> { ... }` remains valid. The legacy `-> T` comma/end tail-expression form remains distinct from semicolon/end. These variants define the *same* callable signature, and duplicate declarations remain errors.
+All three body families are supported for return-first declarations: `{ ... }`, `begin ... end`, and `statement; ... end` with no `begin`. Effect-free headers may start on a new line or the historical same-line statement form; `::` requires a physical newline. A trailing effect clause requires `begin`, `::`, or braces. No implicit tail return for these bodies. The latter two require explicit return for a nonvoid result and admit empty bodies for void. Existing name-first `: T -> { ... }` remains valid. The legacy `-> T` comma/end tail-expression form remains distinct from semicolon/end. These variants define the *same* callable signature, and duplicate declarations remain errors.
 
 See [normative return-first contract](https://github.com/atto-lang/atto-spec/blob/main/language/return-first-and-begin-callables-v1.md). Backend support and tests require independent evidence.
+
+The [logical punctuation fixture registry](../contracts/logical-punctuation-v1/contract.json) follows the current target, not the historical v0.6 table. `Xor` is an eager call, not an infix precedence tier; `&&` binds more tightly than `||`.
 
 ## Function forms
 
@@ -164,6 +154,10 @@ Only the first two forms run on free functions today. See [chapter 19](19-observ
 3. Newlines do not separate the return type from the body, because AttoLang has no automatic semicolon insertion.
 
 **PROPOSED** formatter rule: the formatter keeps the form the author wrote and does not rewrite one into another.
+
+### Negated conditionals (TARGET)
+
+See [negated conditionals](ifnot-unless.md) and the [machine-readable contract](../contracts/ifnot-unless-v1.json). The value form requires `else` and `fi`; the `do` imperative form permits optional `else` and closes with `fi`; the brace form permits optional `else` and closes with matching braces only. The boolean head is evaluated once and inverted; `elif` predicates are positive. Invalid non-boolean predicates and unsafe negated binding heads are rejected. This is not evidence of compiler execution.
 
 ## Statements and semicolons
 

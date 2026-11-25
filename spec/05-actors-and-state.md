@@ -29,37 +29,35 @@ val admitted = counter.send(Increment(1))
 
 This is the intended **sealed-state target**, not proof that the displayed `state {}` and `handle_state` lowering execute on every backend. API casing/signatures are fixed only after a conformance amendment.
 
+A durable actor opts in explicitly using `define persistent actor Counter as ... state {} ... end`. The state container remains actor-private and mutable; the `persistent` modifier adds a supervisor-selected storage adapter, fenced activation, durable inbox/state/outbox turn commits and commit-before-successful-reply semantics. See [chapter 22 — Persistent actors and storage adapters](22-persistent-actors-and-storage.md).
+
 ## State confinement
 
-At most one effective persistent guest state schema belongs to one actor. Direct reads/writes of actor state outside compiler-validated scoped callbacks (`handle_state(critical-read|write ...)` or equivalent admitted lexically scoped `using`) MUST fail compilation. The intrinsic is sealed; code cannot override it or forge an actor-state pointer.
+At most one effective persistent guest state schema belongs to one actor. Direct reads/writes of actor state outside compiler-validated scoped callbacks (`handle_state(critical-read|write ...)` or equivalent admitted lexically scoped `using`) MUST fail compilation. The intrinsic is sealed; code cannot override it or forge an actor-state pointer. The restriction applies even inside `receive`, `on_start` and actor methods; separately checked construction-time initialization remains permitted.
 
 - **critical-read:** immutable ephemeral loan; concurrent readers may be admitted if the actor/profile supports them.
 - **critical-write:** exclusive mutation; any writer excludes conflicting readers/writers.
 - No state loan may escape its callback, be serialized, be captured by a child task, or cross a suspension without an explicit proven and runtime-enforced safe exception.
-- Ordinary actors are reentrant by default. Another receive may start while the first is suspended, within the actor's logical receive limit. `define serial actor Name as ... end` keeps one live receive across suspension. Compatible `critical-read` loans may overlap where admitted, and `critical-write` excludes readers and writers of the same protected region.
+- Ordinary actors permit bounded reentrant DATA receives by default, including when another receive is suspended. `define serial actor Name as ... end` admits at most one live receive across suspension, until retirement. Concurrent admission never permits conflicting state access: compatible `critical-read` loans may overlap, while `critical-write` excludes readers and writers of the same protected region. Backend scheduling capacity does not replace these proofs.
 - Serial actors retain the same sealed-state and borrow rules; serialization is not permission to leak mutable references into tasks, pipes, singletons or other actors. See the [concurrency and shared-memory amendment](22-concurrency-and-shared-ownership.md) for migration and execution gates.
 
 ## Mailboxes and sends
 
 An actor has a bounded DATA inbox. Sending has a **linearization point**: either an owned message is admitted exactly once (with quota/ownership obligations transferred) or the send fails without partial publication. Admission checks type, identity, incarnation, authority, closure state and queue count/byte limits.
 
-**Canonical target:** synchronous mailbox admission `send(message)` returns `Result<Ack, SendError>`; an explicitly asynchronous admission API may return a `Future<Result<Ack, SendError>>` subject to its own separate contract. `Ack` is a typed indication that the message was admitted into the bounded mailbox, **not** that the receiver processed it, persisted it, or completed `get_done()`. An absent result, `void`, or `Result<void, SendError>` is a *transitional backend-only profile*, not the finalized portable signature; the typed `Ack` value must not be treated as a capability for other actors or tenants. `SendError` is a typed admission failure carrying an appropriate failure reason (e.g. full, closed, stale generation, unauthorized), not an implicit trap or panic. No backend may claim canonical typed-send parity until its source compiler and actual guest execution both prove these semantics. The canonical `match` syntax for a send outcome has **`on` before every arm**, including both variants:
+Canonical synchronous mailbox admission `send(message)` returns `Result<Ack, SendError>`; explicitly asynchronous admission may return `Future<Result<Ack, SendError>>`. Ack proves admission at the bounded mailbox linearization point, not processing, durability or completion. Void profiles are transitional and not portable typed-send parity. Rejected admission returns a typed error without implicit panic. Match the result with `on Ok(ack)` and `on Err(err)` arms. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
+
+The admission Ack is not authority to access other actors or tenants. This example is a target, not an execution receipt:
 
 ```atto
 val result = worker.send(42);
 do match result over
-  on Ok(ack) -> {
-    // Admitted to the mailbox; not necessarily processed.
-  }
-  on Err(err) -> {
-    // Refused; caller handles the admission failure.
-  }
+  on Ok(ack) -> { mark_admitted(ack); }
+  on Err(err) -> { handle_send_error(err); }
 end
 ```
 
-The snippet is a **language target**, not evidence that any backend already returns the typed value or lowers the guest program. `Ack` is an admission acknowledgment only. A bare `Ok(ack) ->`, bare `Err(err) ->`, `else` or `default` must not be accepted as canonical `match ... over` arms. Existing backend APIs may expose different aliases, and must be reconciled before finalizing the signature. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
-
-Conflicting state loans obey the state confinement rules during receives. Messages may be rejected due to a full or closed inbox, stale actor generation, invalid payload, cancelled sender or missing authority. No backend may silently drop a message while returning success.
+Conflicting state loans obey the state confinement rules during receives. Messages may be rejected due to full/closed inbox, stale actor generation, invalid payload, cancelled sender or missing authority. No backend may silently drop a message while returning success.
 
 ## Lifecycle
 
