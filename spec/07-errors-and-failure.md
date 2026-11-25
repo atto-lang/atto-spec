@@ -8,6 +8,8 @@
 
 `Option<T>` and `Result<T,E>` are **ordinary data**, not automatically exceptions. A failed `Result` is not a panic. `unwrap()` on absent/error data intentionally **panics** and cannot be made safe by wrapping it in ordinary `trap`.
 
+Checked numerical overflow and zero division are ordinary typed guest throws, with distinct identities and candidate ABI codes 65537/65538; `trap!` catches ordinary throws as Result. See [numeric v1](../language/numeric-semantics-v1.md) and the existing reconciliation for the current target.
+
 ## Exceptional control paths
 
 | Effect | Nearest permitted interception | If unhandled |

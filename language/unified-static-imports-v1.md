@@ -13,6 +13,10 @@ This document does not claim that the browser compiler currently links packages.
 > reserved `atto.core/`, `atto.alloc/`, `atto.std/` roots, no `pkg` and no dotted `"std.fs"` selectors for builtins. The
 > builtin-selector addenda at the end of this document are superseded by it.
 
+## Typed constant selection
+
+The [constant-import proposal](constant-imports-v1.md) defines immutable declaration-kind selection, startup-once initialization and visibility. In v2 its historical selector grammar is subordinate to [static imports v2](static-imports-v2.md); `pkg` denotes external packages, builtin identity is not inferred from a lexical lookalike, and mixed and direct typed selectors remain admitted.
+
 ## One static import verb
 
 `import` names all static dependencies. Quoted names beginning with the reserved

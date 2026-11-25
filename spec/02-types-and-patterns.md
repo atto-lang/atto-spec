@@ -43,22 +43,22 @@ An immutable binding does not imply deep immutability of every reachable object.
 - **Sealed / non-sealed classes:** intended hierarchy contracts; `sealed` bounds known subtypes for exhaustive checking, while `non-sealed` explicitly permits extension where policy allows.
 
 ```atto
-define enum Status as
-  Pending
-  Ready
-  Failed
-end
+define enum Status {
+    Pending,
+    Ready,
+    Failed
+}
 
-fnc describe(Status status) -> string {
-  return match status over
-    on Status.Pending -> { return "pending"; }
-    on Status.Ready   -> { return "ready"; }
-    on Status.Failed  -> { return "failed"; }
-  end;
+fnc describe(status: Status): string {
+    return match status over
+        on Pending -> "pending"
+        on Ready -> "ready"
+        on Failed -> "failed"
+    end;
 }
 ```
 
-This is an intended idiom, **not** an assertion that each enum and match spelling already executes in every backend.
+This is the **TARGET canonical idiom**, not a claim that each spelling executes in every backend. Field-bearing patterns support a whole-variant scoped borrow using `on Run { job_id, payload } as r`; the borrowed view `r` is narrowed to the selected variant. See [chapter 27](27-typed-enum-pattern-aliases.md).
 
 ## Generics and overloading
 
@@ -114,7 +114,7 @@ For generic functions/methods, value-argument name binding and type-argument nam
 
 `Option<T>` has `Some(T)` / `None`. `Result<T,E>` has `Ok(T)` / `Err(E)`. Operations include `map`, `and_then`, `map_err`, `unwrap_or`, `unwrap_safe` and explicit conversion. A failure represented as data is not an exception effect.
 
-Postfix `value?` is the target early-return operator: `None` or `Err(error)` exits the enclosing eligible callable without converting into `throw`, `raise`, or `panic`. `unwrap()` asserts presence and **panics** on absent/error variants. Do not silently flatten nested `Option` or `Result` types.
+Postfix `value?` is the target early-return operator: `None` or `Err(error)` exits the enclosing eligible callable without converting into `throw`, `raise`, or `panic`. `unwrap()` asserts presence and **panics** on absent/error variants. Do not silently flatten nested `Option` or `Result` types. The precise one-layer `map`, `and_then`, `map_err`, nested-ADT `transpose`/`flatten` equations, and the requirements for error-domain identity are specified in [the nested functor contract](23-functors-and-nested-adts.md).
 
 ```atto
 fnc parse_port(string input) -> Result<int, ParseError> ::

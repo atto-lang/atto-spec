@@ -1,0 +1,357 @@
+{
+  "contract": "atto.anonymous_structural_shapes.v1",
+  "status": "TARGET_SOURCE_ONLY_NOT_EXECUTED",
+  "evidence": "Proposed conformance source vectors; semantic rows are symbolic proof obligations, not source compilation",
+  "cases": [
+    {
+      "id": "AS001",
+      "category": "formal",
+      "expect": "accept",
+      "source": "fnc inspect({foo: string} p): int { return 42; }",
+      "note": "bare anonymous type shape"
+    },
+    {
+      "id": "AS002",
+      "category": "formal",
+      "expect": "accept",
+      "source": "fnc inspect(~{foo: string} p): int { return 42; }",
+      "note": "explicit tilde shape synonym"
+    },
+    {
+      "id": "AS003",
+      "category": "formal",
+      "expect": "accept",
+      "source": "fnc inspect(p: structural {foo: string}): int { return 42; }",
+      "note": "keyword shape synonym"
+    },
+    {
+      "id": "AS004",
+      "category": "formal",
+      "expect": "accept",
+      "source": "routine inspect(p: {foo: \"dog\"}): int { return 42; }",
+      "note": "singleton string type"
+    },
+    {
+      "id": "AS005",
+      "category": "formal",
+      "expect": "accept",
+      "source": "fnc inspect(p: {foo: string | int}): int { return 42; }",
+      "note": "union field type"
+    },
+    {
+      "id": "AS006",
+      "category": "formal",
+      "expect": "accept",
+      "source": "define class Service as evaluate(p: {foo: string | int}): int { return 42; } end",
+      "note": "inline method structural formal"
+    },
+    {
+      "id": "AS007",
+      "category": "formal",
+      "expect": "accept",
+      "source": "fnc inspect(p: {foo: {nested: bool}}): int { return 42; }",
+      "note": "nested shape type"
+    },
+    {
+      "id": "AS008",
+      "category": "formal",
+      "expect": "accept",
+      "source": "fnc inspect(p: {x: int, y: bool}): int { return 42; }",
+      "note": "row order variant A"
+    },
+    {
+      "id": "AS009",
+      "category": "formal",
+      "expect": "accept",
+      "source": "fnc inspect(p: {y: bool, x: int}): int { return 42; }",
+      "note": "row order variant B"
+    },
+    {
+      "id": "AS010",
+      "category": "formal",
+      "expect": "accept",
+      "source": "fnc inspect(p: {foo: int | string}): int { return 42; }",
+      "note": "union order variant B"
+    },
+    {
+      "id": "AS011",
+      "category": "formal",
+      "expect": "reject",
+      "source": "fnc inspect(p: {foo?: string}): int { return 42; }",
+      "note": "optional type-shape field not yet admitted"
+    },
+    {
+      "id": "AS012",
+      "category": "formal",
+      "expect": "reject",
+      "source": "fnc inspect(p: {foo: _}): int { return 42; }",
+      "note": "wildcard is a value pattern not a type"
+    },
+    {
+      "id": "AS013",
+      "category": "formal",
+      "expect": "reject",
+      "source": "fnc inspect(p: {}): int { return 42; }",
+      "note": "empty shape is not Any"
+    },
+    {
+      "id": "AS014",
+      "category": "formal",
+      "expect": "reject",
+      "source": "fnc inspect(p: {foo: int, foo: string}): int { return 42; }",
+      "note": "duplicate field name"
+    },
+    {
+      "id": "AS015",
+      "category": "formal",
+      "expect": "reject",
+      "source": "fnc inspect(p: {foo: string |}): int { return 42; }",
+      "note": "missing union arm"
+    },
+    {
+      "id": "AS016",
+      "category": "formal",
+      "expect": "reject",
+      "source": "fnc inspect(p: \"dog\"): int { return 42; }",
+      "note": "singleton type only inside field"
+    },
+    {
+      "id": "AS017",
+      "category": "formal",
+      "expect": "reject",
+      "source": "fnc inspect(p: ~int): int { return 42; }",
+      "note": "scalar nominal is not structural class view"
+    },
+    {
+      "id": "AS018",
+      "category": "formal",
+      "expect": "reject",
+      "source": "fnc inspect(p: {foo: null}): int { return 42; }",
+      "note": "null singleton requires separate contract"
+    },
+    {
+      "id": "AS019",
+      "category": "pattern",
+      "expect": "accept",
+      "source": "on {foo: \"dog\"} as val p",
+      "note": "exact field string value"
+    },
+    {
+      "id": "AS020",
+      "category": "pattern",
+      "expect": "accept",
+      "source": "on ~{foo: \"dog\"} as val p",
+      "note": "explicit synonym for exact value"
+    },
+    {
+      "id": "AS021",
+      "category": "pattern",
+      "expect": "accept",
+      "source": "on {foo: _} as val p",
+      "note": "required key wildcard value"
+    },
+    {
+      "id": "AS022",
+      "category": "pattern",
+      "expect": "accept",
+      "source": "on {foo?: \"dog\", status: _} as val p",
+      "note": "optional presence plus required wildcard"
+    },
+    {
+      "id": "AS023",
+      "category": "pattern",
+      "expect": "accept",
+      "source": "on is {foo: string} as val p",
+      "note": "anonymous field type test"
+    },
+    {
+      "id": "AS024",
+      "category": "pattern",
+      "expect": "accept",
+      "source": "on is ~{foo: string} as val p",
+      "note": "explicit anonymous type test"
+    },
+    {
+      "id": "AS025",
+      "category": "pattern",
+      "expect": "accept",
+      "source": "on is {foo: \"dog\"} as val p",
+      "note": "literal singleton type test"
+    },
+    {
+      "id": "AS026",
+      "category": "pattern",
+      "expect": "accept",
+      "source": "on is {foo: string | int} as val p",
+      "note": "union field type test"
+    },
+    {
+      "id": "AS027",
+      "category": "pattern",
+      "expect": "reject",
+      "source": "on {foo: string} as val p",
+      "note": "type name without is"
+    },
+    {
+      "id": "AS028",
+      "category": "pattern",
+      "expect": "reject",
+      "source": "on is {foo: _} as val p",
+      "note": "wildcard not a type"
+    },
+    {
+      "id": "AS029",
+      "category": "pattern",
+      "expect": "reject",
+      "source": "on is {foo?: string} as val p",
+      "note": "type field optionality unproven"
+    },
+    {
+      "id": "AS030",
+      "category": "pattern",
+      "expect": "reject",
+      "source": "on {foo: effectful()} as val p",
+      "note": "effectful pattern value"
+    },
+    {
+      "id": "AS031",
+      "category": "pattern",
+      "expect": "reject",
+      "source": "on {foo: \"dog\", foo?: _} as val p",
+      "note": "duplicate field regardless of optionality"
+    },
+    {
+      "id": "AS032",
+      "category": "argument",
+      "expect": "reject",
+      "source": "f(p: ~(foo: \"dog\"))",
+      "note": "removed tilde record construction"
+    },
+    {
+      "id": "AS033",
+      "category": "argument",
+      "expect": "reject",
+      "source": "f(p: ~ (k => \"dog\"))",
+      "note": "removed tilde map construction"
+    },
+    {
+      "id": "AS034",
+      "category": "argument",
+      "expect": "accept",
+      "source": "f(p: Record.of(foo: \"dog\"))",
+      "note": "canonical record factory"
+    },
+    {
+      "id": "AS035",
+      "category": "argument",
+      "expect": "accept",
+      "source": "f(p: Map.of(\"foo\", \"dog\"))",
+      "note": "canonical map factory"
+    },
+    {
+      "id": "AS036",
+      "category": "semantic",
+      "expect": "accept",
+      "source": "class_with_pub_foo_string → readonly {foo: string}",
+      "note": "read-only public class projection"
+    },
+    {
+      "id": "AS037",
+      "category": "semantic",
+      "expect": "accept",
+      "source": "struct_with_foo_string → readonly {foo: string}",
+      "note": "readonly shape projection preserves concrete struct layout"
+    },
+    {
+      "id": "AS038",
+      "category": "semantic",
+      "expect": "accept",
+      "source": "record_with_literal_foo_dog → readonly {foo: \"dog\"}",
+      "note": "singleton witness preserved"
+    },
+    {
+      "id": "AS039",
+      "category": "semantic",
+      "expect": "accept",
+      "source": "map_with_proven_foo_key → readonly {foo: string}",
+      "note": "key presence and type witness"
+    },
+    {
+      "id": "AS040",
+      "category": "semantic",
+      "expect": "reject",
+      "source": "Map<string, string> → readonly {foo: string}",
+      "note": "key type alone does not guarantee presence"
+    },
+    {
+      "id": "AS041",
+      "category": "semantic",
+      "expect": "reject",
+      "source": "class_with_private_foo → readonly {foo: string}",
+      "note": "private fields are not shape evidence"
+    },
+    {
+      "id": "AS042",
+      "category": "semantic",
+      "expect": "reject",
+      "source": "actor_sealed_state_foo → readonly {foo: string}",
+      "note": "sealed actor state must not leak"
+    },
+    {
+      "id": "AS043",
+      "category": "semantic",
+      "expect": "reject",
+      "source": "class_with_mutable_foo_string → readonly {foo: \"dog\"}",
+      "note": "default initializer does not imply singleton type"
+    },
+    {
+      "id": "AS044",
+      "category": "semantic",
+      "expect": "reject",
+      "source": "read_only_shape_foo_union → writable_foo_int",
+      "note": "covariant read projection is not invariant write authority"
+    },
+    {
+      "id": "AS045",
+      "category": "semantic",
+      "expect": "reject",
+      "source": "class_with_effectful_foo_getter → readonly {foo: string}",
+      "note": "getter side effects not shape witnesses"
+    },
+    {
+      "id": "AS046",
+      "category": "semantic",
+      "expect": "reject",
+      "source": "union_field_string_or_int.foo + 1 without type narrowing",
+      "note": "must narrow union before int operation"
+    },
+    {
+      "id": "AS047",
+      "category": "semantic",
+      "expect": "accept",
+      "source": "match union_field_string_or_int over on is {foo: int} then foo + 1",
+      "note": "branch-local proof after checked refinement"
+    },
+    {
+      "id": "AS048",
+      "category": "semantic",
+      "expect": "reject",
+      "source": "narrowed_field_read_after_mutable_key_change",
+      "note": "mutation between check and read invalidates proof"
+    },
+    {
+      "id": "AS049",
+      "category": "semantic",
+      "expect": "reject",
+      "source": "transferring_scoped_read_only_shape_loan_outside_match_arm",
+      "note": "borrows cannot escape region"
+    },
+    {
+      "id": "AS050",
+      "category": "semantic",
+      "expect": "reject",
+      "source": "recursive_shape_without_bounded_memoization",
+      "note": "unbounded recursive shape proof"
+    }
+  ]
+}

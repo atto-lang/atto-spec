@@ -7,7 +7,7 @@ Related implementation contract: [atto-common-source #133](https://github.com/at
 ## Semantic identities
 
 - A package instance is a pinned manifest/dependency-lock identity. Package ownership, import provenance and visibility must be verified before compiler cache reuse.
-- A file with one explicit `namespace N;` belongs to exactly `(PackageInstanceId, N)`. Multiple validated files may contribute to that one namespace within the same package, independent of directory. Namespace membership **never spans packages**.
+- A file with one explicit `use namespace N;` belongs to exactly `(PackageInstanceId, N)`. Multiple validated files may contribute to that one namespace within the same package, independent of directory. Namespace membership **never spans packages**.
 - A file with **no explicit namespace header** is a distinct `(PackageInstanceId, SourceUnitId)` compilation unit. No compiler may implicitly merge such source files into one global/default namespace just to form a cache group. Files in the same package remain separate units, regardless of folder. A source added to or removed from a namespace changes compilation identity and requires appropriate invalidation.
 - `define module` remains a separate source-language construct and does not implicitly join a namespace aggregate. Import resolution, runtime initialization and actor state rules are not changed by the build cache.
 
@@ -29,11 +29,11 @@ pub fnc alpha(): int { return 1; }
 pub fnc beta(): int { return 2; }
 
 // app/src/users/lookup.atto
-namespace users;
+use namespace users;
 pub fnc lookup(int id): int { return id; }
 
 // app/src/users/create.atto
-namespace users;
+use namespace users;
 pub fnc create(int id): int { return id; }
 ```
 
@@ -45,4 +45,74 @@ Prove clean-vs-incremental equivalence using actual compiled guests and source f
 
 Target CLI UX (`atto build --incremental --explain-rebuild`, `--clean`) is a separate tooling decision, not new language syntax. Compilers unable to prove reuse may perform correct clean compilation and report incremental support as unsupported, never as a successful cache optimization.
 
-**Review note:** do not merge this proposal before reconciling existing namespace/import/module proposals, manifest ownership contracts and independent source-compiler review.
+**Profile boundary:** [static imports v2](../language/static-imports-v2.md) governs source namespace headers, authenticated package identities and aliases. Preserve private declaration and capability checks, including [host permission ceilings](../language/host-permissions-v1.md). This candidate adds build-cache requirements only; implementation and persistent cache activation remain gated on independent compiler/security review.
+
+## Persistent cache admission (candidate v1)
+
+Private typed intermediates may be retained by the same compiler instance.
+Persistent artifacts cross a trust boundary: a content-addressed filename
+or a digest recorded beside untrusted bytes does not prove that an artifact
+was produced by an authorized compiler. These rules apply to disk, shared,
+remote and restored CI caches. No JIT or new language syntax is required.
+
+### Identity and key material
+
+Separate stable logical identity (package owner + namespace or source unit)
+from authenticated changing input identity. A logical ID must not depend on
+inventory order or unrelated providers. A frozen package lock digest commits
+to its exact dependency pins; conservative v1 invalidation traverses the full
+changed dependency closure. Package name and version alone are insufficient.
+
+A key MUST commit to the cache schema/stage, exact compiler and relevant
+toolchain/runtime/library identities, architecture/OS/data layout/target
+features/ABI, language edition and semantic flags, optimization profile,
+capability/ownership/effect policy, authenticated logical unit identity,
+manifest/lock/source membership and content digests, resolved import
+provenance and stage-relevant dependency witnesses, and generated inputs or
+expansion tool identities where enabled. Encode field boundaries
+unambiguously with a domain separator and version; sort only unordered inputs,
+reject duplicate identities, distinguish absent from empty values, preserve
+semantic source order. Cross-backend reuse requires proven matching stage
+format and toolchain identities. Canonical wire encoding and cross-language
+key vectors remain a separate implementation gate.
+
+### Trust and atomicity
+
+1. Verify the complete required source closure and resolve current bindings
+   before lookup. Missing/unauthorized imports, stale pins and ambiguous
+   identities reject even on a warm build.
+2. A hit requires the expected key, artifact stage, size, digest and
+   independently trusted provenance binding that key to that digest (such as
+   a signed compiler receipt or separately protected local compiler ledger).
+   An attacker-controlled blob and matching attacker-controlled metadata
+   are not evidence. Untrusted intermediates may be hints only if fully
+   revalidated or recomputed; do not execute untrusted native code to validate it.
+3. Use bounded safe file-handle reads; reject symlinks, traversal, nonregular
+   files and substitution between validation and use. Bound entry size,
+   storage, file count and parsing effort. Respect package access boundaries.
+4. Stage privately and publish atomically only after all required semantic,
+   ownership, effect, linking and artifact-verification gates succeed.
+   Failure, cancellation, crash, concurrent writers or eviction must not
+   publish partially valid or stale entries.
+5. Corrupt, untrusted or incompatible cache entries are misses or explicit
+   diagnostics, never permission to reuse stale code. Invalid source graphs
+   are compilation rejections, not misses. Never cache live runtime handles,
+   host pointers, credentials, actor state or runtime capability grants.
+
+### Required conformance matrix
+
+| Fixture | Required outcome |
+| --- | --- |
+| Cold / warm / inventory permutation | Equivalent guest; stage-specific actual reuse counters |
+| C edit in A → B → C; independent D | A/B/C and affected consumer invalidated; D eligible |
+| Unrelated insertion ahead of A; removal and re-add | Stable existing IDs; removed entries evicted |
+| Changed compiler, target, ABI, flags, policy or lock | Miss or rejection, no incompatible reuse |
+| Private/undeclared/negative import on warm graph | Same rejection as clean build; no partial publication |
+| Blob corruption, swapped key, forged digest/receipt, unknown signer | No trusted hit even with self-consistent local metadata |
+| Symlink, traversal, nonregular file, oversized entry, interrupted writer | No escape, unsafe read or partial hit |
+| Concurrent readers/writers, eviction, failed build and recovery | Clean-build equivalence and no stale artifacts |
+
+Report parsing, type checking, CFG/IR verification, code generation, linking,
+native publication and actual guest execution separately. A parser hit is not
+a code-generation hit. A persistent-cache claim requires a second process or
+restarted compiler and hostile on-disk fixture tests.

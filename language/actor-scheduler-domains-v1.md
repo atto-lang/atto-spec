@@ -114,3 +114,6 @@ completion replay, queued CONTROL starvation, CPU-fuel exhaustion and
 noncooperative loops. Pin compiler/runtime/artifact hashes and demonstrate
 that another active tenant survives expected guest traps in the same
 measured process. Host-only tests must be reported separately.
+
+
+Current permission, activation and fault-evidence contracts govern every domain independently. A TenantVM is not a physical crash domain merely because its scheduler and allocator are distinct. The inline `sync task<T>` contract requires same-thread continuation, while an independently scheduled TaskFuture retains its authorized pool identity.

@@ -26,6 +26,8 @@ Boolean logic uses `&&` and `||` with strict `bool` operands and short-circuit e
 
 The signed 64-bit `int` operations `& | ^^ ~ <<< >>> ashr` act on two's-complement bit patterns. Left shift discards high bits, logical right shift zero-fills, and arithmetic right shift sign-extends. Counts outside `0..63` are checked language failures, not masked. Examples: `12 & 10` gives 8, `12 ^^ 10` gives 6, `-1 >>> 1` gives 9223372036854775807, `-8 ashr 1` gives -4, and `1 <<< 63` gives -9223372036854775808. These are bit operations, not arithmetic overflow or type coercion. Single `^` means return in statement position, `Xor` is Boolean XOR, and `<<`/`>>` are typed I/O. See [chapter 16](16-lexical-and-grammar-reference.md#current-target-bitwise-precedence-and-token-boundaries) and the [operator contract](../language/bitwise-and-stream-operators-v1.md). Backend execution remains separately verified.
 
+The [numerical semantics v1 target](../language/numeric-semantics-v1.md) extends the decided checked-integer and truncating division rules to exact decimal contexts, fixed-point, vector kernels and dimensions. Host reference tests do not establish guest support.
+
 ## Integer rules
 
 The chapter 02 rule is that no backend may rely on unchecked host overflow when the source specifies checked arithmetic. The following table is historical observation, not current language semantics:

@@ -38,7 +38,7 @@ At most one effective persistent guest state schema belongs to one actor. Direct
 - **critical-read:** immutable ephemeral loan; concurrent readers may be admitted if the actor/profile supports them.
 - **critical-write:** exclusive mutation; any writer excludes conflicting readers/writers.
 - No state loan may escape its callback, be serialized, be captured by a child task, or cross a suspension without an explicit proven and runtime-enforced safe exception.
-- Ordinary actors permit bounded reentrant DATA receives by default, including when another receive is suspended. `define serial actor Name as ... end` admits at most one live receive across suspension, until retirement. Concurrent admission never permits conflicting state access: compatible `critical-read` loans may overlap, while `critical-write` excludes readers and writers of the same protected region. Backend scheduling capacity does not replace these proofs.
+- Ordinary actors permit bounded reentrant DATA receives by default, including when another receive is suspended. `define serial actor Name as ... end` admits at most one live receive across suspension, until retirement. Independently invoked non-`receive` receiver methods remain concurrent and do not consume the DATA receive permit. Concurrent admission never permits conflicting state access: compatible `critical-read` loans may overlap, while `critical-write` excludes readers and writers of the same protected region. Backend scheduling capacity does not replace these proofs.
 - Serial actors retain the same sealed-state and borrow rules; serialization is not permission to leak mutable references into tasks, pipes, singletons or other actors. See the [concurrency and shared-memory amendment](22-concurrency-and-shared-ownership.md) for migration and execution gates.
 
 ## Mailboxes and sends
@@ -86,3 +86,12 @@ The proposed `Actor.pipe(A(), B(), ...)` and zero-argument-type `Actor.pipe(A, B
 In addition to message types, an actor may declare a type-level protocol with state-specific legal messages, required replies and explicit terminal completion. This refines the **same actor kind** and never exposes its sealed mutable state. The static guarantee requires an affine, incarnation-fenced `ProtocolHandle` rather than an aliasable `ActorRef`; unproven or remotely mutable state must be checked dynamically or rejected. A successful state transition is proved only after a matched reply and runtime state commitment; `get_done()` still means physical completion, not merely terminal protocol state.
 
 See [actor protocol typestate v1](../language/actor-protocol-typestate-v1.md). **TARGET / NOT_VERIFIED**: the linked source-free checker and tests are not parser, formatter, backend or guest-execution evidence.
+
+## Typed group pub/sub (TARGET)
+
+ActorGroup membership does not automatically subscribe an actor to any message topic. Typed `Topic<T>` and affine `Subscription<T>` introduce explicit bounded fan-out without changing direct actor DATA send, sealed state, or supervisor CONTROL delivery. The portable core requires atomic `RELIABLE` reservation, per-topic sequencing and generation-fenced cancellation; lossy/latest policies and membership monitors are separately versioned. See [actor pub/sub v1](../language/actor-pubsub-v1.md) for the proposed language contract, conformance gaps and executable **source-free** model.
+
+
+## Experimental browser compatibility profile
+
+The [browser profile](23-browser-compiler-profile.md) documents historical direct fields and serial receive behavior, not sealed-state target certification.

@@ -4,7 +4,7 @@
 
 **Dependencies and overlap:** [actor scheduler/TenantVM contract](actor-scheduler-domains-v1.md), proposed persistent/durable modes (atto-spec #63), checked `implements` semantics (#105), typed `receives`/`sends` (#28), actor ownership and mailbox contracts (atto-common-source #1), and the common spec rule registry (#115). This document adds declaration and static/dynamic admission rules; it MUST NOT replace the security and resource requirements of those contracts.
 
-## Declaration grammar and canonical form
+## Candidate declaration grammar and canonical form
 
 ```ebnf
 ActorDef          = "define", ["pub"], [ActorDomain], [ActorStorage],
@@ -16,7 +16,7 @@ ActorConcurrency  = "serial";
 ActorTransport    = "http" | "tcp" | "ws";
 ```
 
-This EBNF defines the modifier portion of an actor header only; the rest follows the canonical grammar in atto-spec. The default domain is `shared`, and `define shared actor` is a valid redundant spelling. The canonical formatter MAY remove only redundant `shared` after proving parse-equivalence and identical compiler artifact behavior; until then it MUST preserve it. Ordering is `pub`, domain, storage, concurrency, transport; duplicate, contradictory and out-of-order modifiers fail at parse, with no best-effort recovery. `persistent` and `durable` are exclusive *storage* policies, not execution domains. `serial` limits request/message concurrency; it does not confer confinement. `http`/`tcp`/`ws` are behaviors, not ambient socket grants.
+This target EBNF defines the modifier portion of an actor header only; the rest follows the canonical grammar in atto-spec. The default domain is `shared`, and `define shared actor` is a valid redundant spelling. The canonical formatter MAY remove only redundant `shared` after proving parse-equivalence and identical compiler artifact behavior; until then it MUST preserve it. Ordering is `pub`, domain, storage, concurrency, transport; duplicate, contradictory and out-of-order modifiers fail at parse, with no best-effort recovery. `persistent` and `durable` are exclusive *storage* policies, not execution domains. `serial` limits request/message concurrency; it does not confer confinement. `http`/`tcp`/`ws` are behaviors, not ambient socket grants.
 
 ```atto
 define actor DefaultShared receives int as

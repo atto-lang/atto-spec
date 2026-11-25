@@ -74,3 +74,6 @@ For each backend (Java/GraalVM JVM and AOT, LLVM, Wasm, Forge and .NET NativeAOT
 - Spec PR #49's prior `nonreentrant DATA turn gate irrespective of domain parallelism` is incompatible with chapter 22 concurrent-default actors; the intended invariant is instead **per-invocation identity and checked guarded state**, plus a one-live-receive gate only for serial actors.
 - Spec PR #175 describes serial as receive-only and allows other methods to be independently live; its statement about *physically simultaneous* method execution conflicts with the user's explicit serial max-one-carrier request. Preserve method admission while settling this distinction in the reviewed spec and corresponding negative fixtures.
 - Conformance PR #515's `physical single-writer lease` must mean an authenticated **per-execution-context/guard** check for ordinary actors, not an unconditional actor-global one-worker gate; the new actor-wide physical cap must apply to child Tasks as well.
+
+
+This scheduling-policy candidate preserves the existing receive-only logical serial admission rule. The proposed additional one-running-carrier ceiling is a distinct opt-in target until the overlapping compiler and conformance contracts agree. No existing verified profile is silently reclassified by this proposal.

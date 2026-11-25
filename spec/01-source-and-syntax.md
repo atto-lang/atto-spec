@@ -65,13 +65,13 @@ A local binding and class field are distinct syntactic contexts. No implicit ass
 ## Control flow
 
 ```atto
-if ready then
+do if ready then
   consume()
 else
   retry()
 fi
 
-if load_optional() as const item then
+do if load_optional() as const item then
   use(item)
 fi
 
@@ -96,6 +96,8 @@ unless should_stop {
 val int selected = unless ready then 5 else 6 fi;
 ```
 
+Canonical keyword-delimited statement conditionals require `do`; historical bare statement `if` is migration-only. Value conditionals require `else` and a compatible result, and brace statements require no `fi`. See [the base conditional target](27-value-conditionals-and-do-if.md) and [the separately gated v2 arm blocks](27-conditional-expression-modes.md). Preserve positive presence-binding semantics and all guard rules.
+
 The **target** early-exit syntax admits both `guard condition { terminal_failure_path }` and `guard condition else terminal_failure_path end`. The guard condition expresses what must hold to continue; a failing condition runs the failure path, which MUST explicitly return from the enclosing function on every possible path (`return value` or `return;` for void; verified lexical `^` is equivalent). `throw`, `raise`, `panic`, `break`, and `continue` cannot discharge this return requirement. The two forms must lower identically, and the formatter preserves the authored block style. A comma-separated guard list checks each clause once, left to right. The brace form has no owned `else`; the keyword form owns `else ... end`, never `fi`. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
 
 An `if expression as const/let name` binding tests **presence**, not truthiness. Contextual `const` binds the runtime value immutably, without a compile-time evaluation requirement; `let` permits rebinding within ordinary ownership rules. `final` is not a conditional-binding keyword.
@@ -108,7 +110,7 @@ A value `match` yields its selected arm's value. Inside a block arm, `return val
 
 The target Boolean forms are `&&`, `||` and `Xor(bool,bool)` with strict bool typing; `^^` is integer XOR. See [Boolean contract](../docs/CANONICAL_BOOLEAN_OPERATORS_V1.md) and [source fixture registry](../contracts/logical-punctuation-v1/contract.json). Historical word/comma/pipe operators are not canonical; effect-preserving migration is required.
 
-Arithmetic, checked comparison, assignment, function call, lambdas and generic arguments have distinct grammar slots. `|>` is the *value/function* pipeline operator. The keyword `pipe` is reserved for actor pipeline connections; neither is a synonym for bitwise `|`. `?` has context-dependent uses (optional type, parameter omission, postfix propagation, and ternary form) and must not be parsed with a global text replacement.
+Arithmetic, checked comparison, assignment, function call, lambdas and generic arguments have distinct grammar slots. `|>` is the *value/function* pipeline operator. The keyword `pipe` is reserved for actor pipeline connections; neither is a synonym for bitwise `|`. The staged [bang-suffixed alias contract](../language/bang-pipeline-and-stop-aliases-v1.md) defines `pipe!`/`rpipe!`/`stop!` as context-checked semantic aliases of `pipe`/`rpipe`/`stop`, without changing direction, lifecycle effects or stop capabilities; `rpipe` itself is pending the directional pipeline proposal. `?` has context-dependent uses (optional type, parameter omission, postfix propagation, and ternary form) and must not be parsed with a global text replacement.
 
 ## Rejection requirements
 
