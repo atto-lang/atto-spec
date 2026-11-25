@@ -2,7 +2,7 @@
 
 **Status:** accepted language-design direction (2026-11-15); this document is a normative target, **not** proof of compiler or backend execution.
 
-## One meaning for `~`
+## Contextual meaning for `~`
 
 The tilde sigil is shorthand for the `structural` type modifier. In a
 type, parameter, constraint, or `is` pattern, `~Point` is an alternative
@@ -21,7 +21,7 @@ Distinguish type testing from structural value matching according to the
 structural-pattern contract; this change does **not** redefine
 `on is ~Point` versus `on ~Point`.
 
-## Construction: Type.of only
+## Named construction: Type.of factories
 
 Collection construction uses ordinary, statically resolved
 `Type.of(...)` factories. For all built-in collection/aggregate families,
@@ -62,11 +62,11 @@ Type-position `~map<K,V>` must not be treated as a nominal Map synonym:
 `Map[K,V]` where required by grammar) for the nominal type.
 
 ```atto
-const entries = Map.of<string,int>("a" => 1, "b" => 2);
-const pair = Pair.of("age", 30);
-const tuple = Tuple.of(1, true);
-const numbers = Array.of(1, 2, 3);
-const labels = List.of("ready", "done");
+val entries = Map.of<string,int>("a" => 1, "b" => 2);
+val pair = Pair.of("age", 30);
+val tuple = Tuple.of(1, true);
+val numbers = Array.of(1, 2, 3);
+val labels = List.of("ready", "done");
 ```
 
 An unsupported factory must **fail closed** with a diagnostic, not silently
@@ -109,6 +109,8 @@ Tracked historical drafts to revise/supersede:
 `oreslang-source.java#2734` and `#2735`.
 
 ## Generic `.of` factory resolution and Record shapes
+
+The merged factory contract and immutable persistent collection target govern the shared baseline. Flat Map arguments, zero-field Record and explicit row syntax below remain separately gated candidate additions; no change to ordinary named-call syntax (`label: expr`) or literal typing is implied. Use `val` for runtime factories unless constant evaluation is proven.
 
 **Normative portable TARGET; not an implementation claim.** This section extends the
 canonical factory contract and must be reconciled with inline-literal typing
@@ -153,8 +155,7 @@ trial-and-error runtime evaluation: all Entry-arrow arguments or all
 alternating positional arguments; no mixed forms. An odd positional
 argument count is `E_FACTORY_ARITY`. Duplicate constant keys reject
 with `E_DUPLICATE`, including equal keys with distinct literal spelling.
-Runtime-equal dynamic keys follow the existing Map last-value-wins
-contract. Every key/value expression is evaluated once, left to right;
+Runtime-equal dynamic keys must reject construction transactionally under the merged [canonical collection factory contract](collection-factory-spelling-target-v1.md). Last-value-wins is not a constructor rule; explicit mutable Map update remains distinct. Every key/value expression is evaluated once, left to right;
 hash/eq, drop, borrow and transaction safety remain mandatory.
 
 ### `Record.of`: field names are compile-time schema, values are generic
@@ -171,8 +172,8 @@ val headers = Record.of("content-type": "text/plain", status: 200);
 The names on the left of `=` or `:` are **static record field
 declarations**, not ordinary formal-parameter names and not variables
 whose values are fetched or evaluated. Identifier fields support
-`field=expr` (canonical call-style syntax) and `field: expr` (the
-already-proposed record-field spelling). A quoted string literal label
+`field=expr` (candidate factory-specific compatibility syntax) and `field: expr` (the
+already-proposed record-field spelling). A quoted string literal label is a separate candidate extension (not a general inline Record literal rule; #133–#136 remain unresolved) and
 uses `"arbitrary-name": expr`; a computed expression / interpolated
 name cannot become a closed Record field. Both spellings produce the same
 structural field slot; formatter canonicalization must preserve strings

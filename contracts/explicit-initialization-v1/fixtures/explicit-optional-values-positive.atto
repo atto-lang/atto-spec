@@ -1,0 +1,8 @@
+pub fnc main(): int {
+  let Option<int> absent = None;
+  val Option<int> present = Some(42);
+  return match present over
+    Some(value) -> value
+    None -> 0
+  end;
+}

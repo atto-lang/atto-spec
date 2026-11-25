@@ -19,121 +19,121 @@
       "id": "map-of",
       "expected": "ACCEPT",
       "phase": "guest",
-      "source": "const v = Map.of<string,int>(\"a\" => 1);"
+      "source": "val v = Map.of<string,int>(\"a\" => 1);"
     },
     {
       "id": "map-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const v = ~map<string,int>(\"a\" => 1);"
+      "source": "val v = ~map<string,int>(\"a\" => 1);"
     },
     {
       "id": "entry-of",
       "expected": "ACCEPT",
       "phase": "guest",
-      "source": "const v = Entry.of(\"a\", 1);"
+      "source": "val v = Entry.of(\"a\", 1);"
     },
     {
       "id": "entry-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const v = ~entry(\"a\", 1);"
+      "source": "val v = ~entry(\"a\", 1);"
     },
     {
       "id": "pair-of",
       "expected": "ACCEPT",
       "phase": "guest",
-      "source": "const v = Pair.of(\"a\", 1);"
+      "source": "val v = Pair.of(\"a\", 1);"
     },
     {
       "id": "pair-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const v = ~pair(\"a\", 1);"
+      "source": "val v = ~pair(\"a\", 1);"
     },
     {
       "id": "tuple-of",
       "expected": "ACCEPT",
       "phase": "guest",
-      "source": "const v = Tuple.of(1, true);"
+      "source": "val v = Tuple.of(1, true);"
     },
     {
       "id": "tuple-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const v = ~tuple(1, true);"
+      "source": "val v = ~tuple(1, true);"
     },
     {
       "id": "array-of",
       "expected": "ACCEPT",
       "phase": "guest",
-      "source": "const v = Array.of(1, 2);"
+      "source": "val v = Array.of(1, 2);"
     },
     {
       "id": "array-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const v = ~array(1, 2);"
+      "source": "val v = ~array(1, 2);"
     },
     {
       "id": "list-of",
       "expected": "ACCEPT",
       "phase": "guest",
-      "source": "const v = List.of(1, 2);"
+      "source": "val v = List.of(1, 2);"
     },
     {
       "id": "list-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const v = ~list(1, 2);"
+      "source": "val v = ~list(1, 2);"
     },
     {
       "id": "vector-of",
       "expected": "ACCEPT",
       "phase": "guest",
-      "source": "const v = Vector.of(1, 2);"
+      "source": "val v = Vector.of(1, 2);"
     },
     {
       "id": "vector-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const v = ~vector(1, 2);"
+      "source": "val v = ~vector(1, 2);"
     },
     {
       "id": "set-of",
       "expected": "ACCEPT",
       "phase": "guest",
-      "source": "const v = Set.of(1, 2);"
+      "source": "val v = Set.of(1, 2);"
     },
     {
       "id": "set-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const v = ~set(1, 2);"
+      "source": "val v = ~set(1, 2);"
     },
     {
       "id": "record-of",
       "expected": "ACCEPT",
       "phase": "guest",
-      "source": "const v = Record.of(ready: true);"
+      "source": "val v = Record.of(ready: true);"
     },
     {
       "id": "record-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const v = ~record(ready: true);"
+      "source": "val v = ~record(ready: true);"
     },
     {
       "id": "typed-empty-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const m = ~<Map<string,int>>();"
+      "source": "val m = ~<Map<string,int>>();"
     },
     {
       "id": "empty-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const m = ~();"
+      "source": "val m = ~();"
     },
     {
       "id": "structural-param",
@@ -151,31 +151,31 @@
       "id": "legacy-array-literal",
       "expected": "ACCEPT",
       "phase": "guest",
-      "source": "const a = [1, 2];"
+      "source": "val a = [1, 2];"
     },
     {
       "id": "legacy-tuple-literal",
       "expected": "ACCEPT",
       "phase": "guest",
-      "source": "const t = (1, true);"
+      "source": "val t = (1, true);"
     },
     {
       "id": "bare-map-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const m = ~(\"a\" => 1);"
+      "source": "val m = ~(\"a\" => 1);"
     },
     {
       "id": "bare-record-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const r = ~(ready: true);"
+      "source": "val r = ~(ready: true);"
     },
     {
       "id": "spaced-map-tilde-removed",
       "expected": "REJECT",
       "phase": "parser",
-      "source": "const m = ~ map(\"a\" => 1);"
+      "source": "val m = ~ map(\"a\" => 1);"
     },
     {
       "id": "spaced-structural-param",
@@ -325,7 +325,23 @@
       "phase": "type",
       "source": "val props = Map.of(\"a\",1); val r = Record.of(...props);",
       "code": "E_UNSUPPORTED"
+    },
+    {
+      "id": "map-of-duplicate-runtime-keys",
+      "expected": "REJECT",
+      "phase": "guest",
+      "source": "val key = get_key(); val m = Map.of(key => 1, key => 2);",
+      "code": "E_DUPLICATE",
+      "note": "Runtime rejection must publish no partial collection."
+    },
+    {
+      "id": "integer-bitwise-complement-preserved",
+      "expected": "ACCEPT",
+      "phase": "guest",
+      "source": "pub fnc main() -> int { return ~(0); }",
+      "note": "i64 result -1; exit status 255 on POSIX only",
+      "expected_result": -1
     }
   ],
-  "notes": "SOURCE EXPECTATIONS ONLY. New Record.of field=... and type-level Record<{...}> syntax are target-only, not current compiler passes. All backends require independently verified exact-head compiled guest tests."
+  "notes": "SOURCE EXPECTATIONS ONLY. New Record.of field=... and type-level Record<{...}> syntax are target-only, not current compiler passes. All backends require independently verified exact-head compiled guest tests. Flat Map and Record row extensions are candidate only; duplicate keys reject construction (including runtime-equal keys)."
 }
