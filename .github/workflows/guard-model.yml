@@ -1,0 +1,26 @@
+name: Guard source-free contract model
+on:
+  pull_request:
+    paths:
+      - 'spec/15-guard.md'
+      - 'spec/01-source-and-syntax.md'
+      - 'tests/guard-*'
+      - '.github/workflows/guard-model.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tests/guard-*'
+      - '.github/workflows/guard-model.yml'
+permissions:
+  contents: read
+jobs:
+  source-free-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check guard contract model (not compiler or guest evidence)
+        run: node --test tests/guard-model.test.mjs

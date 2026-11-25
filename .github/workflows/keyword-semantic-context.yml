@@ -1,0 +1,26 @@
+name: AttoLang semantic context fixtures
+on:
+  push:
+    paths:
+      - 'tests/fixtures/keyword-semantic-context-v1.json'
+      - 'tests/keyword-semantic-context-contract.test.mjs'
+      - 'contracts/keyword-taxonomy-v1/catalog.json'
+      - '.github/workflows/keyword-semantic-context.yml'
+  pull_request:
+    paths:
+      - 'tests/fixtures/keyword-semantic-context-v1.json'
+      - 'tests/keyword-semantic-context-contract.test.mjs'
+      - 'contracts/keyword-taxonomy-v1/catalog.json'
+      - '.github/workflows/keyword-semantic-context.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source_only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node --test tests/keyword-semantic-context-contract.test.mjs
