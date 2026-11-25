@@ -1,0 +1,16 @@
+name: Ifnot/unless source contract
+on:
+  pull_request:
+    paths: ['contracts/ifnot-unless-v1.json', 'contracts/keyword-taxonomy-v1/catalog.json', 'tests/ifnot-unless-contract.test.mjs']
+  push:
+    branches: [main]
+    paths: ['contracts/ifnot-unless-v1.json', 'contracts/keyword-taxonomy-v1/catalog.json', 'tests/ifnot-unless-contract.test.mjs']
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/ifnot-unless-contract.test.mjs
