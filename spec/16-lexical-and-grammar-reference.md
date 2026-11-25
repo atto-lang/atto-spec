@@ -10,11 +10,15 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 - Identifiers and keywords are case-sensitive.
 - An identifier starts with a letter or `_` and continues with letters, digits or `_`. The Java lexer accepts any Unicode letter. Whether every backend must do the same is open (S-22).
 - `//` starts a line comment. `/* ... */` is a block comment, and block comments nest.
-- **TARGET (decided, 2026-11-14):** block comments nest at most 128 deep. Opening a 129th level is a compile error, reported as `block comment nesting exceeds 128`, before parsing. Java main and .NET main already enforce this limit with that wording. LLVM main has no limit yet; oreslang-source.llvm#1251 adds it, with fixtures at depth 128 (accepted) and 129 (rejected).
+- **TARGET (decided, 2026-11-14):** block comments nest at most 128 deep. Opening a 129th level is a compile error, reported as `block comment nesting exceeds 128`, before parsing. Java, .NET and LLVM main all enforce this limit with that wording (LLVM via oreslang-source.llvm#1251, merged 2026-11-15, with fixtures at depth 128 accepted and 129 rejected).
+
+## Canonical exceptional bang keywords (target)
+
+`trap!`, `throw!`, `raise!`, `panic!` are contiguous exceptional tokens; bare forms remain migration aliases. Keep `!=`, `!eq`, ownership bangs, comments and quoted text distinct. See [exception-control bang spellings v1](../language/exception-control-bang-spellings-v1.md). This is not evidence of historical lexer support.
 
 ## Keywords
 
-The Java lexer reserves these words. The LLVM parser has its own keyword handling, and the two lists have not been compared.
+The historical table lists 93 documented Java reserved words. The two additional target words `ifnot` and `unless` are staged for syntax tooling and candidate compiler branches, not a claim about the historical Java or LLVM revisions. See chapter 23 for separate dated source snapshots.
 
 | Group | Words |
 | --- | --- |
@@ -22,7 +26,7 @@ The Java lexer reserves these words. The LLVM parser has its own keyword handlin
 | Callables | `fnc` `routine` `async` `suspends` `generator` `yield` `nlex` `return` `self` `super` `static` |
 | Visibility | `pub` `private` |
 | Bindings | `const` `val` `let` `mut` |
-| Control flow | `if` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
+| Control flow | `if` `ifnot` `unless` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
 | Errors | `try` `catch` `finally` `throw` `raise` `panic` `recover` `trap` `defer` |
 | Actors | `actor` `isoactor` `shared` `untrusted` `spawn` `stop` `rt` |
 | Async and channels | `await` `nb` `cb` `select` `readch` `writech` |
@@ -36,11 +40,25 @@ Some of these are narrower than the table suggests:
 - `critical-read`, `critical-write` and `transform-pipe` are recognized by the parser only in declaration context, so `a-b` stays subtraction. Only `nb-select` is handled by the lexer.
 - These words are not reserved by the Java lexer: `enum`, `supervisor`, `state`, `pipe`, `final`, `on`, `when`, `case`, `first`, `infer`, `record` and `tuple`. Some have contextual meaning in the grammar, and others are target features that compilers reject with a diagnostic.
 
+## Contextual ownership prefix operators
+
+| Operation | Canonical spelling | Legacy compatibility spelling |
+| --- | --- | --- |
+| Transfer unique owner | `take! value` | `rt take value` |
+| Shallow/value copy | `copy! value` | `rt copy value` |
+| Shared read loan | `borrow! value` | `rt borrow value` |
+| Exclusive mutable loan | `borrow! mut value` | `rt borrow mut value`, `rt mut borrow value` |
+| Share/freeze admission | `share! value` | `rt share value` |
+
+These are parser-contextual **operator forms**, not new reserved words. The parser recognizes adjacent word and `!` only in a valid prefix-expression or parameter-ownership context. No whitespace or comment between verb and `!`; never consume `!=` or `!eq` as a suffix. The operand can immediately follow the bang; formatters emit the bang forms with one separating space. `copy!!` is one deep-copy operator, not shallow copy followed by logical NOT. Legacy aliases have identical typed ownership checks, diagnostics and lowering. Do not add `ref!`, `deref!` or `unref!`; `rt ref`, `rt deref` and `rt unref` remain separate checked-handle operations pending a separate decision.
+
+Ownership prefix operations bind at unary precedence; postfix member/index access binds more tightly (`borrow! foo.bar` borrows that place, while `copy! a + b` copies `a`). The legacy `mut borrow!` normalizes to `borrow! mut`; duplicate qualifiers reject. `borrow!mutfoo` borrows the identifier, not a mutable `foo`. `block { statements }` is the explicit nested lexical scope; the checked-handle profile requires all-path cleanup and a nonescaping loan. See [checked-handle call-loan profile](../language/checked-handle-call-loans-v1.md).
+
 ## Linguistic keyword roles and editor highlighting
 
 Keywords may also be described linguistically as nouns (e.g. `actor`), relational verbs (e.g. `implements`), adjectives (e.g. `pub`), or execution qualifiers (e.g. `suspends`). These analogies are for readers and editor tooling, not additional syntax rules. The proposed taxonomy, semantic scopes, reserved-versus-contextual distinctions, and conformance gates appear in [chapter 23](23-keyword-taxonomy-and-highlighting.md).
 
-**This chapter's documented lexer inventory remains authoritative for its cited revisions.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
+**The historical 93-word inventory remains authoritative for its cited revisions; the two explicitly staged target additions are not historical observations.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
 
 ## Literals
 
@@ -57,52 +75,7 @@ Keywords may also be described linguistically as nouns (e.g. `actor`), relationa
 
 ## Operators
 
-### Ownership-prefix operators (TARGET)
-
-**Decided 2026-11-14; not verified as implemented in the dated compiler revisions below.** The canonical forms are `copy! operand`, `take! operand`, `borrow! operand`, `borrow! mut operand`, `share! operand`, `ref! operand`, `deref! operand` and `unref! operand`. The same eight forms with no whitespace after the marker (such as `copy!foo` and `borrow!mut foo`) MUST parse identically. The earlier `mut borrow! operand` is accepted as a compatibility alias and MUST be canonicalized to `borrow! mut operand`. The original `rt copy`, `rt take`, `rt borrow`, `rt borrow mut`, `rt share`, `rt ref`, `rt deref` and `rt unref` remain admitted for compatibility, along with the additional `rt mut borrow` spelling for mutable borrowing. Chapter 04 defines their rights semantics.
-
-Lexical rule: `!` is a punctuation token, not part of an identifier. In the ownership-prefix grammar, the verb (`copy`, `take`, `borrow`, `share`, `ref`, `deref`, `unref`) MUST be immediately adjacent to its `!` token. The parser matches this contextual token pair at the start of a unary expression; for `borrow! mut`, `mut` is a distinct keyword after the attached marker, and may touch `!` without whitespace. The leading `mut borrow!` compatibility form must have the same semantics and diagnostics. A source gap after `!` is optional, including zero whitespace. A source gap *before* `!` breaks the ownership operator; `copy !foo` and `borrow !foo` MUST NOT be treated as `copy!` or `borrow!`. Other identifiers followed by `!` are not ownership operators. Existing unary logical `!foo`, inequality `!=` and `!eq` retain their meanings. These spellings do not create a general macro-invocation `name!expr` rule; `copy!(foo)` is the ownership operator applied to a parenthesized expression.
-
-Ownership prefixes bind at unary precedence, with postfix place/member/index operations on their operand binding more tightly: `borrow! foo.bar` means `borrow! (foo.bar)`, and `copy! a + b` means `(copy! a) + b`. Parentheses are required to apply an ownership operation to a whole compound expression (`copy! (a + b)`). A mutating borrow or move MUST satisfy the existing type, place, lifetime, authority and effects checks; syntax acceptance cannot bypass an ownership diagnostic. The operand must be evaluated exactly once. Duplicate mutable qualifiers (`borrow! mut mut value`, `mut borrow! mut value`) are invalid and MUST not be silently reinterpreted as a different unary operator.
-
-```ebnf
-ownership_simple_prefix = ("copy" | "take" | "borrow" | "share"
-                        | "ref" | "deref" | "unref") "!" ;
-ownership_mut_prefix    = "borrow" "!" "mut"
-                        | "mut" "borrow" "!" ; // compatibility only
-ownership_expr          = (ownership_mut_prefix | ownership_simple_prefix) unary_expr ;
-// Longest contextual prefix wins: borrow! mut x is BorrowMut, not Borrow(mut x).
-// The "mut" is a distinct token: borrow!mutfoo borrows the identifier mutfoo,
-// but borrow!mut(value) mutably borrows the parenthesized expression.
-// Do not permit a second "mut" on the same borrow.
-// Lexical adjacency is required only between the ownership verb and "!".
-// Whitespace between "!" and a following operand is optional.
-```
-
-**Checked handles:** `ref!`, `deref!` and `unref!` are contextual unary prefixes with exactly the same checked-handle AST/IR semantics as `rt ref`, `rt deref` and `rt unref`. They are **not** ordinary borrows, reference-count increments by assumption, raw address operators, or macro invocations. The parser MUST disallow `mut` qualifiers on these three prefixes; their effects, proof requirements and result types must be resolved identically to their respective `rt` forms. The checker/runtime must reject invalid or forged handles, stale actor/arena/allocation generations, out-of-bounds/misaligned access, unauthorized domains, double release and use after release. Absent checked-handle lowering, both spellings fail closed.
-
-**Procedural conditional `do if` (canonical):** The preferred spelling for a statement conditional, including inside a checked-handle `block`, is `do if condition then ... else ... fi`. The optional `else` and existing `elif`/`elseif` variants retain their existing behavior. The Rust/browser prototype accepts both `do if` and the legacy bare `if` form, lowering both to the same typed conditional node. While a checked handle is live, **every** branch must preserve the same checked handle and read-only views, without releasing/moving them or bypassing the required final `unref!`. This is enforced with a bounded all-path CFG preflight in the prototype, not a full typed-MIR borrow proof.
-
-```ebnf
-procedural_if_stmt = "do" "if" expression "then" { statement }
-                     { ( "elif" | "elseif" ) expression "then" { statement } }
-                     [ "else" { statement } ] "fi" ;
-```
-
-**Nested block statement and borrowed function parameter (TARGET / prototype):** The nested lexical scope must be spelled `block { statements }`; a bare `{ statements }` in statement position is NOT an alternative form. This does not change brace-delimited callable bodies, condition arms or class declarations. When a function explicitly expects a nonescaping, read-only class argument, its contextual signature form may be `fnc inspect_readonly(borrow! Payload item): int`. This is parameter-declaration syntax, not a new general prefix expression or a statement form. The `borrow` verb and `!` must be adjacent; only a named class type is permitted in the initial Rust/Wasm profile (not `int`, mutable references, actors or FFI). Passing a scoped view as `inspect_readonly(view)` must not move or escape it; passing a view to a by-value class parameter must be rejected. Do not allow borrowed arguments to outlive their enclosing `block`, cross suspension/actor boundaries without a validated lifetime plan, or be stored/returned as owned values. The formatter emits `borrow! Payload item`. Codegen on other backends fails closed until their typed signature and lifetime checks exist.
-
-```ebnf
-nested_block_stmt       = "block" "{" { statement } "}" ;
-borrowed_param_v1       = "borrow" "!" class_type identifier ;
-// "borrow" and "!" MUST be adjacent; this is only admitted
-// by a parameter parser, not by the general type parser.
-```
-
-**Formatter:** Always use one space after the final `!`, e.g. `copy! foo`, `borrow! mut foo`, `ref! foo` and `deref! handle`; preserve grouping, comments, and existing evaluation order. Normalize `rt ref`, `rt deref` and `rt unref` only when semantic equivalence is established. The parser MUST reject missing operands and syntax that cannot be lowered, rather than silently interpreting an unrecognized ownership operator as a generic call or other host behavior.
-
-**Conformance gate:** Test both `borrow! mut` and `borrow!mut` (and legacy `mut borrow!`) input, formatter round trips, nested/postfix operands, `!` vs `!=` / `!eq`, ordinary identifiers named similarly to ownership verbs, and the absent-space-before-`!` distinction. Type-checking negatives must cover use-after-take, non-Copy duplication, non-place mutable borrowing, aliased mutable loans, unauthorized share, loans illegally crossing suspension, invalid/forged checked handles, stale generation, double `unref!`, use after `unref!`, and checked-handle cross-actor escape. Tests must execute against each target compiler/backend at recorded commits; a source-only fixture or parser acceptance is not evidence of backend implementation.
-
-From lowest to highest precedence, following the v0.6 grammar:
+Historical v0.6 operator table (not current target precedence; see the operator contract below):
 
 | Level | Operators | Associativity |
 | --- | --- | --- |
@@ -122,15 +95,33 @@ From lowest to highest precedence, following the v0.6 grammar:
 - `eq` and `neq` are the canonical comparisons. `==` and `!=` are accepted aliases.
 - `is` tests identity. Type tests use `is type`, as in `if animal is type Dog dog then`.
 - Inside an `if` or `while` condition, `,` means AND and `|` means OR, and comma binds tighter.
-- **TARGET (decided, 2026-11-14):** `&&` is short-circuit boolean AND, `^^` is boolean XOR, and `||` is short-circuit boolean OR. `^^` is eager: it evaluates both operands exactly once, left to right. Precedence is `&&` above `^^` above `||`. Every operand must have static type `bool`, and there is no truthiness conversion. The built-in `And`, `Or` and `Xor` functions stay valid.
+- **SUPERSEDED TARGET (2026-11-14):** the former Boolean `^^` proposal is historical. The 2026-11-20 owner decision reserves `^^` for integer XOR; Boolean XOR uses `Xor(bool,bool)`. Boolean `&&` and `||` retain strict bool operands and left-to-right short circuit. See [operator contract](../language/bitwise-and-stream-operators-v1.md).
 - Backend status on 2026-11-14: Java main and LLVM main accept `&&` and `||`. .NET main accepts only the `and`/`or`/`xor` words. All three mains still reject `^^` as reserved. The fixes are oreslang-source.java#3009, oreslang-source.llvm#1728 / #1739 and oreslang-source.net#521, which adds `&&`, `^^` and `||` to the structured frontend.
-- Single `^` and the bitwise and shift operators are not in the grammar. Integer bit operations use named functions such as `Integer.bitXor(a, b)`.
+- The current target uses statement-leading `^` for return, not infix XOR or exponentiation. Integer `^^`, `&`, `|`, `~`, and checked `<<<`, `>>>`, `ashr` follow the separate operator contract; `<<` and `>>` are typed I/O.
 - Open: whether the condition-only `,` and `|` spellings stay. oreslang-source.java#3009 proposes removing them in favor of `&&` and `||`.
 - Assignment is an expression, but `if x = y then` is rejected.
 - `name = value` in a call is never a named argument. Named value arguments use `name: value` ([chapter 03](03-functions-and-effects.md)).
 - `++` and `--` exist only in a `for` update clause.
 
+### Current target bitwise precedence and token boundaries
+
+From lowest to highest within the operator expression region: Boolean `||`, Boolean `&&`, integer `|`, Integer bitwise XOR `^^`, integer `&`, equality, comparison, shifts `<<< >>> ashr`, additive, multiplicative, unary (including integer `~`), postfix. See the [normative operator grammar](../language/bitwise-and-stream-operators-v1.md). Boolean XOR is the explicit `Xor` call. `^` is statement-leading return only. Compound forms `&= |= ^^= <<<= >>>= ashr=` require writable integer places. Counts must be in `0..63`, never masked. Three adjacent brackets are shifts in expression context; two are typed I/O. Preserve nested generic closers, `|>` pipelines, and `|x| -> expr` lambdas. Legacy condition-only `|` is profile-specific; parenthesize integer OR where that legacy grammar remains active.
+
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
+
+## Canonical match-arm introducer (target)
+
+Every arm after `over` starts with contextual `on`; `on Ok(ack)`, `on Err(err)` and `on _` are examples. `on default`, `default`, `else` and bare patterns are invalid match arms; `case` and `default` are switch forms. Use `->`, not `=>`. In `do match`, void arm returns complete the arm; a nonvoid return is rejected. In value match, arm values join the common static result type. The formatter must preserve `on` and `on _`, and must not silently repair invalid bare arms or convert match to switch. Historical accepted spellings in this chapter are evidence only, not normative canonical grammar. Formatter and guest admission require independent proof.
+
+## Return-first named callables and explicit `begin`/`end` (target)
+
+The mandatory return-type rule accepts both conventional `fnc name(args) -> T` / `fnc name(args): T` and return-first `fnc T <- name(args)`, `T <- name(args)`, `fnc T • name(args)`, or `T • name(args)` with exact U+2022 BULLET. `T` may be `void`, `infer`, or a concrete return type. Both contiguous `<-` and exact U+2022 BULLET are declaration delimiters, not assignment or binary operators; lookalikes are rejected. Return-first spelling is also valid for class/actor methods in declaration context; existing visibility, ownership and actor isolation rules do not change.
+
+All three body families are supported for return-first declarations: `{ ... }`, `begin ... end`, and `statement; ... end` with no `begin`. Effect-free headers may start on a new line or the historical same-line statement form; `::` requires a physical newline. A trailing effect clause requires `begin`, `::`, or braces. No implicit tail return for these bodies. The latter two require explicit return for a nonvoid result and admit empty bodies for void. Existing name-first `: T -> { ... }` remains valid. The legacy `-> T` comma/end tail-expression form remains distinct from semicolon/end. These variants define the *same* callable signature, and duplicate declarations remain errors.
+
+See [normative return-first contract](https://github.com/atto-lang/atto-spec/blob/main/language/return-first-and-begin-callables-v1.md). Backend support and tests require independent evidence.
+
+The [logical punctuation fixture registry](../contracts/logical-punctuation-v1/contract.json) follows the current target, not the historical v0.6 table. `Xor` is an eager call, not an infix precedence tier; `&&` binds more tightly than `||`.
 
 ## Function forms
 
@@ -140,8 +131,10 @@ As a grammar rule (**TARGET (decided)**), this reads:
 
 ```ebnf
 callable_body = return_spec [ "::" ] ( block | { statement } "end" ) ;
-return_spec   = ":" type_ref | "->" type_ref ;
+return_spec   = (":" | "->") (type_ref | "infer") ;
 ```
+
+A named callable **must** include this return specification, even for `void`. `infer` is explicitly allowed but not preferred; omitting the annotation is an error and never means `void` by default. This applies to functions, routines, instance/static methods, actor handlers and out-of-line methods. Constructors and contextual lambda inference follow their separate grammar contracts.
 
 So these all declare the same function:
 
@@ -179,6 +172,10 @@ Only the first two forms run on free functions today. See [chapter 19](19-observ
 3. Newlines do not separate the return type from the body, because AttoLang has no automatic semicolon insertion.
 
 **PROPOSED** formatter rule: the formatter keeps the form the author wrote and does not rewrite one into another.
+
+### Negated conditionals (TARGET)
+
+See [negated conditionals](ifnot-unless.md) and the [machine-readable contract](../contracts/ifnot-unless-v1.json). The value form requires `else` and `fi`; the `do` imperative form permits optional `else` and closes with `fi`; the brace form permits optional `else` and closes with matching braces only. The boolean head is evaluated once and inverted; `elif` predicates are positive. Invalid non-boolean predicates and unsafe negated binding heads are rejected. This is not evidence of compiler execution.
 
 ## Statements and semicolons
 

@@ -6,7 +6,7 @@ import test from 'node:test';
 
 const fixture = JSON.parse(readFileSync(fileURLToPath(new URL('./fixtures/ownership-bang-aliases-v1.json', import.meta.url)), 'utf8'));
 function reference_recognize(source) {
-  const bang = /^(mut\s+borrow|copy|take|borrow|share|ref|deref|unref)!(?!=|eq(?![\p{L}0-9_]))([\s\S]*)$/u.exec(source);
+  const bang = /^(mut\s+borrow|copy|take|borrow|share)!(?!=|eq(?![\p{L}0-9_]))([\s\S]*)$/u.exec(source);
   if (bang && bang[2].trim()) {
     let operand = bang[2].trim();
     const trailingMut = bang[1] === 'borrow' && /^mut(?=\s|\(|$)/.test(operand);
@@ -25,7 +25,7 @@ function reference_recognize(source) {
   if ((op === 'borrow mut' || op === 'mut borrow') &&
       /^mut(?=\s|\(|$)/.test(legacy[2].trim())) return null;
   const name = op === 'borrow mut' || op === 'mut borrow' ? 'mut borrow' : op;
-  return { operation: name === 'mut borrow' ? 'mut_borrow' : name, canonical: name === 'mut borrow' ? 'borrow! mut ' + legacy[2].trim() : name + '! ' + legacy[2].trim() };
+  return { operation: name === 'mut borrow' ? 'mut_borrow' : name, canonical: name === 'mut borrow' ? 'borrow! mut ' + legacy[2].trim() : (['ref','deref','unref'].includes(name) ? 'rt ' + name + ' ' : name + '! ') + legacy[2].trim() };
 }
 test('preferred spaced/compact ownership forms and legacy spelling normalize', () => {
   for (const c of fixture.accepted) assert.deepEqual(reference_recognize(c.input), {operation:c.operation, canonical:c.canonical}, c.input);
@@ -46,11 +46,10 @@ test('mutable borrows canonically place mut after borrow! while preserving old a
   assert.equal(reference_recognize('borrow!mut'), null);
 });
 
-test('checked-handle aliases preserve identity and fail closed for mut-qualified spellings', () => {
+test('checked-handle rt operations preserve spelling; unapproved bangs fail closed', () => {
   for (const name of ['ref', 'deref', 'unref']) {
-    for (const spelling of [`${name}! h`, `${name}!h`, `rt ${name} h`]) {
-      assert.deepEqual(reference_recognize(spelling), { operation:name, canonical:`${name}! h` }, spelling);
-    }
+    assert.deepEqual(reference_recognize(`rt ${name} h`), {operation:name,canonical:`rt ${name} h`});
+    for (const spelling of [`${name}! h`, `${name}!h`]) assert.equal(reference_recognize(spelling), null, spelling);
     assert.equal(reference_recognize(`${name}! mut h`), null);
     assert.equal(reference_recognize(`${name} !h`), null);
   }
@@ -68,7 +67,7 @@ test('checked-handle semantic-negative gates stay explicit and source-only', () 
   ];
   for (const gate of mustCheck) assert.ok(fixture.required_compiler_semantic_negative.includes(gate), gate);
   for (const op of ['ref', 'deref', 'unref']) {
-    assert.ok(fixture.accepted.some(c => c.input === `${op}! h` || c.input === `${op}! x`));
+    assert.ok(fixture.must_not_recognize_as_ownership.some(s => s.startsWith(`${op}!`)));
     assert.ok(fixture.accepted.some(c => c.input === `rt ${op} h` || c.input === `rt ${op} x`));
   }
 });

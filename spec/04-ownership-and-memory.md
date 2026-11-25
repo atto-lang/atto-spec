@@ -4,168 +4,180 @@
 
 ## Ownership operations
 
-AttoLang uses explicit rights operations. **TARGET (decided, 2026-11-14):** the preferred spellings are the punctuated ownership-prefix operators below. Legacy `rt` forms remain accepted compatibility aliases; a spelling change does not grant additional rights.
+**Canonical source spelling for new AttoLang code uses the contextual bang forms**, not the legacy `rt` prefix. These are prefix ownership operators: the operation name is immediately followed by `!`, then its operand. The bang forms are the preferred and formatter-emitted spelling.
 
-| Preferred spelling | Compact accepted spelling | Legacy compatibility spelling | Intended meaning |
+| Intent | Canonical spelling | Legacy compatibility spelling | Intended meaning |
 | --- | --- | --- | --- |
-| `take! value` | `take!value` | `rt take value` | Move exclusive ownership; subsequent use of the old place is invalid |
-| `copy! value` | `copy!value` | `rt copy value` | Explicit shallow copy when `Copy`/`Copyable` proof allows it; never an implicit argument copy |
-| `borrow! value` | `borrow!value` | `rt borrow value` | Acquire a bounded immutable loan |
-| `borrow! mut value` | `borrow!mut value` | `mut borrow! value`, `rt borrow mut value` and `rt mut borrow value` | Acquire a bounded exclusive mutable loan |
-| `share! value` | `share!value` | `rt share value` | Convert to explicitly authorized shared/frozen ownership |
-| `ref! value` | `ref!value` | `rt ref value` | Create a checked handle under validated ownership and domain authority |
-| `deref! handle` | `deref!handle` | `rt deref handle` | Access through a validated, live checked handle; not an ordinary borrow |
-| `unref! handle` | `unref!handle` | `rt unref handle` | Consume/retire the checked handle exactly once; unwrap ownership only when the checked-handle contract permits |
+| Transfer unique ownership | `take! value` | `rt take value` | Move exclusive ownership; subsequent use of the old place is invalid |
+| Shallow/value copy | `copy! value` | `rt copy value` | Fresh root/value; aliasing children requires proved sharing or immutable storage |
+| Deep graph copy | `copy!! value` | none | Distinct maximal-munch operation; preserve internal alias/cycle topology and reject unproved ownership |
+| Shared read loan | `borrow! value` | `rt borrow value` | Acquire a bounded immutable loan |
+| Exclusive mutable loan | `borrow! mut value` | `rt borrow mut value`, `rt mut borrow value` | Acquire a bounded exclusive mutable loan |
+| Shared ownership | `share! value` | `rt share value` | Convert to explicitly authorized shared/frozen ownership |
 
-`ref!`, `deref!` and `unref!` are **syntax-only aliases** for the existing checked-handle `rt ref`, `rt deref`, and `rt unref` operations, respectively; they do not desugar to `borrow!`, `take!` or `share!`. The frontend MUST lower both spellings of each operation to the same typed checked-handle IR instruction, with identical evaluation count, handle kind, actor/arena/domain identity, allocation extent, generation, bounds, alignment, permissions, lifetime and release checks. `unref!` consumes the handle, must not permit double consumption or subsequent `deref!` on the retired handle, and MUST preserve any owned-value unwrap result defined by `rt unref` (never guess reference-count semantics); `deref!` must not grant an owned value, borrow, mutable access, cross-actor capability or raw host pointer that the legacy form could not grant. If a backend cannot implement the original checked-handle operation safely, it MUST reject both spellings (not silently reinterpret them as raw pointers, generic calls, or ordinary loans). These are TARGET contracts, not assertions of implemented compiler or guest support.
+The legacy forms have **the same typing, ownership effects, proof obligations, diagnostics and lowering** as their canonical bang equivalents. They are accepted only for source compatibility; formatters and new examples MUST emit the bang forms. A backend MUST NOT give the legacy spelling weaker checks or a different runtime representation.
 
-### Default function/method call ownership and Rust-grade loan exclusion (TARGET)
-
-**Normative cross-reference:** `language/implicit-argument-borrow-v1.md` (atto-spec PR #89) governs calls; `language/copyable-ownership-v1.md` (PR #39) governs shallow vs deep copies; `language/pointer-aot-safety-v1.md` (PR #18) governs `Pointer<T>`. These overlapping draft branches must be reconciled before merge. The existing bounded browser/compiler prototypes do **not** certify that these rules are implemented across backends.
-
-- For ordinary **nonprimitive** `fnc` and method formals, `process(owner)` means a proven, non-owning **shared readonly loan**. It neither copies `owner` nor transfers it, changes its allocation, grants a destructor, creates shared ownership, or inserts an implicit `Pointer<T>`. `process(borrow! owner)` has the **same typed loan proof** and effect. A lone concrete `Borrow<T>` annotation is not mandatory at the ordinary call boundary.
-- Primitive and proven value-copy scalars (e.g. `int`, `bool`) retain **by-value** semantics. An ABI may pass an address, offset, register, or word without changing AttoLang ownership semantics; physical argument passing is **not** permission to retain or mutate the caller's owner.
-- `mutate(mut owner)` or `mutate(borrow! mut owner)` requests an **exclusive mutable loan**. It is legal only for a writable addressable place, with a compiler-proved writable callee effect and **no** overlapping read or write loans. The default read loan cannot mutate even if the caller's binding is mutable.
-- `consume(take! owner)` requires a `take!`-marked **consuming formal**. The caller owner is invalidated upon transfer. Neither the callee nor overload resolution may silently treat a bare `T` formal as consuming.
-- `copy! owner` is a **shallow** copy with a verified `Copy`/`Copyable` witness. A fresh identity-bearing root must not duplicate uniquely owned mutable children; reject illegal aliasing. `copy!! owner` is an explicit **deep** copy with a separate `DeepCopyable` proof. `share! owner` remains an explicit independently proved shared-ownership action. No one of these is inserted by an ordinary call.
-- Multiple read-only loans of the *same place* may coexist. A mutable loan excludes **all** overlapping read and write loans, including those from a different alias, field projection, receiver, argument, closure, checked pointer, callback or async continuation. Use place-sensitive liveness/last-use and reborrowing only when provenance is proved; do not assume lexical blocks or call returns automatically erase escaped loans.
-- Resolve effects, generics, overloads, receiver identity, argument evaluation order, named/default arguments, and each lifetime edge in typed frontend/MIR **before** backend lowering. A virtual/FFI/unknown callee must prove read/write effects and nonescape or reject. Actor state remains sealed; `await`, `select`, actor transport, cancellation and exceptions need pinned/cleanup/outlives proof. Any missing proof fails closed **without generating a guest artifact**.
-- A borrowed-local `Pointer<T>` is a compiler-minted non-owning handle, **distinct** from an implicit loan and from the owning `CheckedRef<Class>` prototype. `ref! local` may mint a checked local lease, `deref! ptr` safely reads while live, and `unref! ptr` consumes that lease and returns `void` (never frees the local). An owning `Pointer<T>` region has separate `close`/drop rules; `CheckedRef<Class>` may have an ownership-restoring `unref!` according to its distinct type. No implicit handle copying or raw address syntax.
-
-
-### Java-style zero-payload-copy calls with checked rights (TARGET)
-
-The ordinary nonprimitive call `inspect(obj)` passes a **temporary read-only loan to the original allocation**, analogous in cost to Java passing a reference value, but unlike an unrestricted Java mutable alias. The callee gets no new object identity or ownership; no payload graph copy, clone, implicit share, refcount promotion or additional destructor is permitted. ABI lowering MAY copy an offset, pointer-sized word or register/spill **representing** that loan, without minting a second owner. A small reference-word transfer is not an object `copy!`. Argument call sugar never creates a user-visible `Pointer<T>`.
-
-- `inspect(obj)` and `inspect(borrow! obj)` have equivalent loan rights and provenance; `obj.inspect()`, virtual/interface/generic receivers and nested synchronous calls must preserve this. `inspect_pair(obj, obj)` may hold two simultaneous read loans to the same place; no clone is performed.
-- `write(mut obj)` or `write(borrow! mut obj)` is an **exclusive write-through** loan only if the writable formal effect is sealed and statically proven. It mutates the caller's original allocation. `write(obj)` cannot silently promote read access to write. The first argument's loan remains active while later arguments are evaluated: `f(mut obj, obj)`, `f(obj, mut obj)`, and `f(mut obj, mut obj)` must fail before emission when their proven place projections overlap.
-- `take! obj` explicitly transfers ownership (caller invalidated). `copy! obj` produces a verified shallow copy; `copy!! obj` produces a separately verified deep copy; `share! obj` requires a separate sharing proof. Plain arguments, methods, receiver lookup and return lowering MUST NOT insert any of these. Primitive scalar and proven inline-value ABI passing remain by-value; the no-copy rule concerns nonprimitive/reference-backed object **payloads**, not machine register movement.
-- An assignment such as `val alias = obj` MUST NOT silently create a second independently droppable owner or duplicate the object graph. Until the binding rule establishes a checked scoped alias or a separately specified affine move, ambiguous binding must fail closed. An implicit read-only parameter cannot return an independently owned `T`, store a borrow into an unbounded field, or detach it to a task. A `Borrow<T>` result must carry a proven origin/outlives relation; an owned return requires proved explicit transfer.
-- Passing a unique `Pointer<T>` to an ordinary readonly formal passes a **loan of the pointer capability**, not a cloned or transferred handle. The callee cannot `unref!`, `close()`, `take!`, return or retain that pointer as an owner. Under a separately supported consuming-formal contract, `take! ptr` may transfer the unique handle with all-path cleanup; the old binding becomes invalid. Copying pointer bits for ABI delivery does **not** create a second independently releasable token. `copy! ptr` and `copy!! ptr` reject even when the pointee type has copy traits. Independently minting multiple read leases with `ref! local` is distinct from duplicating one linear handle.
-- `deref! ptr` of a Copy primitive yields a primitive value; for a non-Copy referent it grants a bounded checked view, **not a copied referent**. The read-only lease cannot be upgraded to write authority. `unref! ptr` of a local borrowed pointer consumes that lease exactly once, does not free the original local and returns `void`. Owning-region `Pointer<T>` requires its own close/drop protocol. The separate `CheckedRef<Class>` ownership-restoring `unref!` must not be confused with either form.
-- A compact actor-local `Ref32` can move as a 32-bit ABI word but is **not** an unscoped physical address: origin actor, actor incarnation, domain, allocation generation, bounds, alignment, type and authority must still be checked in typed IR/runtime sidecars. Numeric equality of handles from different actors grants no access. `Pointer<T>` is never actor/network `Sendable` or `Serializable` by inheritance from `T`.
-- Before emission, validate non-escape, alias last use, receiver identity, argument evaluation order, dynamic callees, FFI, exceptional/cancellation cleanup, suspension and actor critical sections. Unknown effects or unproved provenance fail closed with **zero emitted guest artifact**. Host structural fixtures alone cannot certify guest soundness.
-
-~~~atto
-fnc read(Document d): int { return d.version; }
-fnc write(mut Document d): void { d.version += 1; }
-let mut doc = make_document();
-val before = read(doc);  // uses same allocation; no payload copied
-write(mut doc);         // modifies original; no clone
-val after = read(doc);
-val other = copy!! doc; // a new graph is explicitly requested
-// write(doc);          // E_BORROW_MUT_REQUIRED
-// f(mut doc, doc);     // E_BORROW when argument loans overlap
-~~~
-
-**Conformance admission (TARGET, not guest-verified):** check unchanged allocation identity, no additional guest object-payload allocation, alias/loan exclusion, readonly mutation rejection, pointer token non-Copy/non-Send, local all-path release, borrowed return outlives, actor numeric-handle collision and no-artifact negative diagnostics across every backend. Host/ABI register copies are not object cloning.
-
-Illustrative compiler acceptance/rejection **targets**, not executed guest evidence:
-
-```atto
-fnc inspect(Document d): int { return d.version; }
-fnc modify(mut Document d): void { d.version += 1; } // explicit exclusive-writer formal
-fnc consume(take! Document d): int { return d.version; }
-
-let mut doc = make_document();
-val a = inspect(doc);             // shared readonly loan; doc remains owned
-val b = inspect(borrow! doc);     // same permissions and proof as inspect(doc)
-modify(mut doc);                  // exclusive writable loan if no readers live
-val copy = copy! doc;             // verified shallow Copyable copy
-val clone = copy!! doc;           // verified deep DeepCopyable copy
-val owned = consume(take! doc);   // ownership moved; doc now invalid
-// inspect(doc);                  // E_MOVED
-// modify(doc);                   // E_BORROW_MUT_REQUIRED
-// consume(doc);                  // E_OWNERSHIP, explicit take! required
-```
-
-Mandatory negative compiler gates include read+write overlap, two mutable loans, writes under a read loan, use-after-take, owner drop/close with a live loan, escaping returned/retained borrow, forged `Pointer<T>`, double `unref!`, `deref!` after `unref!`, stale generation and cross-actor pointer leak. The standard is **real compiler + executed guest tests** on exact backend heads, not parser-string or reference-model checks.
-
-The formatter MUST emit a single ASCII space after `!` in the preferred forms (e.g. `copy! foo`, `borrow! mut foo`). It MUST accept the compact forms without warning and normalize old `rt` forms only when it can preserve the same AST, effects, precedence and evaluation order. No space or comment is allowed between an ownership verb and its `!` marker: `copy !foo` is *not* the `copy!` operator. `mut` follows the attached `borrow!` marker as a separate keyword. The earlier `mut borrow! value` form remains a compatibility alias, never the formatter output. See [chapter 16](16-lexical-and-grammar-reference.md#ownership-prefix-operators-target).
-
-```atto
-val packet = make_packet();
-val owned = take! packet;
-// using packet here is a compile-time use-after-move error
-
-val payload_copy = copy! data;
-val reader = borrow! record;
-val writer = borrow! mut record;
-val frozen = share! payload;
-// A separate owned value is consumed when creating a checked handle.
-val owned_for_handle = make_payload();
-val checked_handle = ref! owned_for_handle;
-block {
-  val checked_view = deref! checked_handle;
-  inspect_readonly(checked_view);
-}
-val returned_owner = unref! checked_handle;
-```
-
-### Checked-handle lexical block and borrowed callable boundary (TARGET / browser Rust prototype)
-
-The canonical scoped statement is **`block { ... }`**, not a bare `{ ... }` statement. Callables such as `fnc main() { ... }` retain their existing braced-body syntax; the `block` keyword creates a separate, explicit **nested lexical scope**. The checked view returned by `deref!` must end at that scope's exit. An `unref!` that would consume the handle with any live view (including on an exceptional or suspension path) is invalid.
-
-The first browser Rust/Wasm compiler prototype proposes an explicit borrowed class parameter contract, `fnc inspect_readonly(borrow! Payload item): int`. It is not a general new `Pointer<T>` or transferable capability and is **not yet tested as compiled guest behavior**. The call site remains `inspect_readonly(view)`; the callee's parameter is a readonly, nonescaping loan with no ownership transfer. **Reconciled ownership target:** ordinary nonprimitive `fnc inspect(Payload item)` parameters are read-only implicit borrows, with the same restrictions as `fnc inspect(borrow! Payload item)`. A consuming parameter instead requires an explicit `take! Payload item` formal and `take! owner` at the call site. The older checked-handle compiler prototype's by-value class-parameter move is a *legacy restricted implementation*, not the intended language default. Both forms must reject unsupported view-to-owner conversions; neither may turn a borrowed view into an independently owned class. The compiler MUST not let a borrowed parameter escape as a result, owned field, owned argument, suspended continuation, actor message, or closure; it MUST reject mutations through the loan. Nested synchronous calls with explicitly borrowed parameters may preserve the same loan while its caller's `block` stays active.
-
-```atto
-fnc inspect_readonly(borrow! Payload item): int { return item.value; }
-
-val original = make_payload();
-val handle = ref! original;
-// original has moved
-
-block {
-  val view = deref! handle;
-  inspect_readonly(view);
-}
-
-val restored = unref! handle;
-```
-
-Other backends MUST fail closed until the same parameter/loan provenance and runtime lifetime guarantees are implemented and tested. The initial browser profile only admits named local class values, synchronous top-level functions and explicit `val` handle/view/restore bindings; that restriction is an implementation gate, not a limit on the eventual language contract.
-
-For `copy!foo`, the scanner must recognize `copy`, `!`, `foo` with a context-sensitive ownership-prefix parse; `!` is not part of the identifier. These are **TARGET semantics**, not a claim that every backend currently compiles the new spelling. In particular, mutable borrowing still requires an addressable writable place, shared ownership still requires explicit authority and the immutable/frozen proof, and `take!` never permits later use of a moved place.
+This preference does not invent `ref!`, `deref!` or `unref!`. The existing `rt ref`, `rt deref` and `rt unref` operations remain separately specified checked-handle operations until a future language decision defines alternatives. It also does not make `rt` a general ownership escape hatch: unlisted `rt` operations are not authorized by this table.
 
 ```atto
 val packet = make_packet()
-val owned = rt take packet
+val owned = take! packet
 // using packet here is a compile-time use-after-move error
 ```
 
+**Migration and conformance:** New code and formatter output use `take!`, `copy!`, `borrow!`, `borrow! mut` and `share!`. Existing `rt take/copy/borrow/share` source remains accepted only as a compatibility spelling while a versioned migration profile exists. A compiler may warn on legacy source, but MUST NOT silently reinterpret it or allow it to bypass ownership checks. Positive and negative fixtures must exercise both spellings and prove identical typed ownership events.
+
 Borrow checking is not optional for a native backend. Aliased writes, use-after-take, escaping stack borrows, double-drops, stale actor references, and mutable aliases crossing isolation domains MUST be rejected or safely represented with explicit runtime guards, never silently trusted.
 
-### Loan-preserving procedural `do if` (TARGET / checked Rust-browser profile)
+Compact operands (`copy!value`, `borrow!mut value`) normalize to one ASCII space after the bang. The historical `mut borrow! value` is a migration alias for `borrow! mut value`. Prefix precedence is unary with postfix member/index expressions binding tighter; evaluate each operand once. Duplicate `mut` qualifiers reject. The [checked-handle call-loan profile](../language/checked-handle-call-loans-v1.md) defines all-path retirement, explicit lexical `block` scopes and versioned borrow-default call proof boundaries.
 
-A conditional over live checked-handle loans uses **`do if ... then ... else ... fi`** as its preferred procedural spelling. Every reachable arm must preserve the outstanding checked handle and all live immutable views, and no branch may skip the required post-scope `unref!`. Branches are admitted only when every reachable call preserves the checked view's loan rights and cleanup. An ordinary `Class` parameter is a readonly implicit loan in the target language; the legacy prototype that moves a plain class formal must be version-gated or reject, not silently treated as conformant. A consuming `take! Class` parameter MUST reject a borrowed view.
+## Explicit capability extensions: `freeze!`, `weak!`, and `pin!` (TARGET)
+
+These are **contextual prefix operations** (the word followed immediately by `!`), not
+permissions that bypass ordinary ownership. They require the same checked
+provenance as `borrow!`, `take!`, and `share!`. Existing `rt` forms remain
+historical compatibility spellings; this section does not silently ratify
+`rt freeze` / `rt weak` / `rt pin` as additional aliases.
+
+### `freeze! owner`: permanently deep-immutable
+
+- Consumes the **unique** owner graph and yields a distinct frozen capability.
+  The source owner becomes unusable. It is not a temporary read-only loan.
+- The compiler MUST prove the complete transitive reachable graph has no
+  mutable aliases, interior-mutability escape, mutable FFI pointer, mutable
+  closure capture, or reachable unsynchronized tenant/actor-local storage.
+  Graphs with unresolved aliasing or dynamic types MUST fail closed.
+- Once frozen, neither an owning handle nor a borrowed handle may mutate the
+  graph. Compatible immutable borrows may continue.
+- A later `share!` requires independent Sendable/Sync and tenant-domain
+  admission proofs. `freeze!` does not grant cross-tenant access on its own.
+- An immutable scalar is already deeply immutable and may be admitted as an
+  identity operation. Do **not** generalize that optimization to a sum type
+  with mutable nested payloads.
 
 ```atto
-fnc inspect_readonly(borrow! Payload item): int { return item.value; }
-fnc inspect_other(borrow! Payload item): int { return item.value; }
-
-fnc get_payload(bool condition): Payload {
-  val original = make_payload();
-  val handle = ref! original;
-  block {
-    val view = deref! handle;
-    do if condition then
-      inspect_readonly(view);
-    else
-      inspect_other(view);
-    fi
-  }
-  val restored = unref! handle;
-  return restored;
-}
+let config = make_mutable_config();
+let frozen = freeze! take! config;
+// config is moved; frozen can only be read and may be shared after proof.
 ```
 
-The initial Rust/browser prototype adds a bounded, path-sensitive **type-admitted source-to-CFG bridge** to the canonical borrow-checker model, with explicit `Ref`, `Deref`, scope-end `EndView`, `Unref`, `Exit` and conditional edges. This is a precursor to general typed-MIR certificates; it is not a complete NLL/Polonius implementation and does not permit unchecked loops, unverified effects, suspension or cross-actor handle transfers. Implementations without corresponding compiler/runtime proof MUST fail closed.
+### `weak! shared`: no ownership extension
 
-### Checked-handle exceptional-call gate (current Rust/Wasm prototype)
+- Only an explicitly admitted shared-ownership handle may be weakened; an
+  ordinary local borrow or arbitrary object address may not.
+- A weak handle does not keep the object/actor/region alive. `upgrade()`
+  returns `Option<Shared<T>>`, with **atomic** generation validation and
+  acquisition of a strong reference before any dereference.
+- Failed upgrade returns `None`, never a dangling pointer. Recycled arena
+  offsets, actor IDs and tenant slots MUST NOT resurrect an expired handle.
+- Cross-domain access still requires a separate authorization check;
+  a weak handle cannot confer stronger rights than its source.
+- Weak reference cleanup and object retirement must be race-safe. Tests must
+  cover concurrent upgrades, retirement and generation reuse.
 
-The eventual language contract requires all-path retirement, including exceptional and cancellation exits. The current compiler does **not** yet have typed unwind/drop edges for checked handles and therefore must reject code that could bypass a required `unref!`. This includes transitive calls to known `throw`/`raise`/early-exit callees, even when the immediate caller contains no explicit failure statement. Unknown effects and suspendable calls must fail closed until their cleanup and lifetime proofs are available.
+```atto
+let observer = weak! shared_service;
+if observer.upgrade() as const service then
+  service.notify();
+fi
+```
 
-An independent bounded CFG proof prototype in `atto-borrow-checker.rs` tracks distinct handle/loan facts across branch joins and rejects missing cleanup on any path, including abrupt exits. This oracle is **not wired into compiler typed MIR**, and it does not yet establish runtime reclamation, actor-domain validity, or five-backend parity. Until native and Wasm guest tests run, the Rust frontend's straight-line checked-handle profile remains draft.
+### `pin! take! value`: stable pointee address
+
+- Pinning guarantees stable **pointee storage** until the required pin lifetime
+  ends; the owning pointer/handle and its scheduler thread may still change.
+- Backends MUST prove stable allocation placement and prevent address-changing
+  compaction/relocation while pinned. Pinning does not make raw FFI safe.
+- A pinned owner cannot cross a task capture, actor mailbox, guarded-region
+  promotion or frozen shared-region publication unless the backend proves
+  the actual pointee allocation retains its stable address across the handoff.
+  The conservative V0 checker rejects such transfers with
+  E_PIN_BOUNDARY_TRANSFER; ordinary same-arena moves of the owner handle are
+  still legal.
+- Pinning alone never extends the owner's lifetime, authorizes cross-actor
+  borrowing, or makes a loan across `await`/cancellation valid. A separate
+  continuation/cleanup and suspension proof is necessary.
+- Runtime address-stability evidence MUST be generated by a trusted backend,
+  not by accepting an unverified source-level boolean/witness.
+
+```atto
+let pinned = pin! take! io_buffer;
+```
+
+### Compatibility, diagnostics, and conformance
+
+`drop!` remains an **optional future convenience** over deterministic
+destruction, not a fourth newly reserved operation in this amendment.
+Unadmitted `weak!`/`pin!` code MUST produce an explicit unsupported
+diagnostic, not an identity lowering or a copied strong alias.
+
+The canonical Rust V0 verifier models `Freeze`, `PinStorage`,
+`RelocateStorage`, `CreateWeak`, and `ProbeWeak` as **typed ownership
+events**. It does not build a real weak upgrade result or authenticate a
+backend's deep-freeze, generation or stable-address witnesses. Successful model
+tests are **not** cross-backend runtime certification. The browser compiler
+admits scalar `freeze!` only and fails closed for unlowered weak/pin storage.
+
+Required positive/negative tests include: valid scalar freeze, graph freeze
+witness rejection, surviving mutable alias rejection, writes through frozen
+handles, send/share domain mismatch, use-after-freeze, borrowed freeze,
+pinning with no stable allocation, pointee relocation after moving the
+pinned handle, pin plus cross-suspension loan (still rejected), weak from
+unshared storage, stale/recycled-generation weak upgrades, and concurrent
+retirement/upgrade races. Backend test evidence must be tied to exact commits.
+
+### Concrete host reference model and conformance registry
+
+The canonical Rust checker additionally includes a restricted host-only runtime model using iterative graph validation, Arc/Weak upgrade, exact-region read permits, nonblocking retirement, and Pin<Box<T>>. Its source and tests are in atto-borrow-checker.rs PR #43. The shared positive/negative expectation registry is atto-platform-conformance PR #76.
+
+This proves neither source-to-IR completeness nor the correct code generation of Java, LLVM, Forge, .NET or Wasm guests. The runtime host must authenticate the original graph and caller domain; bare numeric IDs and caller-supplied boolean witnesses are not authority. Source compilers MUST continue rejecting unsupported graph freeze, weak upgrade and pin forms rather than accepting an unsound identity lowering.
+
+Cross-backend release is gated on compiled guest tests for concurrent weak upgrades against retirement, actor/tenant stop, generation reuse, physical pinned address stability, cancellation cleanup, and sanitizer-backed lifetime safety. All exact-head backend evidence remains unverified until executed.
+## Complete ownership vocabulary: copy!!, lt!, mut and drop!
+
+This amendment completes the proposed user-visible set: borrow!, take!,
+share!, copy!, copy!!, mut, lt!, freeze!, weak!, pin! and drop!.
+All spellings and safety obligations are defined in atto-spec PR #92;
+production backend support must be verified separately.
+
+### copy!! — truly independent graph cloning
+
+copy!! requires a full transitive clone into independent mutable storage,
+preserving graph cycles and repeated references *within* the clone without
+sharing nested mutable allocations with the original. A simple root pointer
+copy, repeated copy!, or automatic Arc clone is NOT deep copy. The compiler
+must verify all reachable types/edges, reject external mutable aliases and
+unproven foreign handles, bound work, and cleanly roll back partial clone
+failures without consuming the original. Scalar immutable values may use
+ordinary value copy. The browser compiler currently rejects heap graph
+copy!! until its allocation/clone ABI exists.
+
+### lt! a and lifetime! a — compile-time region binders
+
+A lifetime binder is a type-level declaration, not an ordinary expression:
+lt! a is canonical; lifetime! a is the long-form alias. The name a is an
+identifier without a Rust-style apostrophe, referenced by a named generic
+parameter such as Borrow<T, lt=a>. Nonprimitive parameters borrow by default;
+a caller need not use borrow! unless explicitly disambiguating. Explicit
+mut requests exclusive access. Outlives, cancellation, scope exit and
+suspension checking apply equally to implicit and explicit loans.
+
+### drop! — consuming ownership release
+
+drop! must be a standalone statement on a named owned value. It invalidates
+the owner, rejects if any loan is live, and prevents repeated release. Real
+resource-owning values require deterministic destructor/allocator integration
+on normal exit and on verified exceptional/cancellation cleanup. A compiler
+may accept drop! for resource-free scalars as logical ownership termination,
+but must not pretend a class or external resource was reclaimed without a
+working Drop ABI.
+
+The canonical checker models copy!! via a distinct DeepCopy event rather
+than the Copy trait and has a bounded host graph clone; it models drop via
+Drop and named lifetimes via a separate conservative lt! verifier. These
+are reference models, not compiler-generated guest ABI proofs. The shared
+test registry (atto-platform-conformance PR #76) marks all native backends
+NOT VERIFIED until exact source-to-guest tests run.
 
 ## Lifetimes across suspension
 
@@ -188,7 +200,7 @@ The target actor-heap reference representation uses checked **32-bit arena-relat
 
 Each message transfer must have a provable ownership action (`take`, `copy`, or permitted `share`), validated payload graph, bounded bytes/depth/nodes, and type-correct domain admission. A mutable pointer, synchronized cell, closure with host capability, or foreign pointer cannot be smuggled across isolation merely because its in-memory representation is small.
 
-`Pointer<T>` capability transport or serialization across actors, tenants, isolates or networks is forbidden, even if `T` is `Sendable`/`Serializable`/`Copyable`. An authorized broker can separately transfer, copy or serialize **pointee data** with its own proof and receiving-domain ownership; this never exports the source pointer token. Proven same-domain owned-value transfer is a distinct operation, not capability serialization. See `language/pointer-aot-safety-v1.md` (#18).
+`Pointer<T>` capability transport or serialization across actors, tenants, isolates or networks is forbidden, even if `T` is Sendable or Serializable. An authorized transfer may copy, move or serialize the **pointee data** under its own proof and receiving-domain ownership, never the pointer token. Same-domain owner transfer requires separate proof. `Sendable` and `Serializable` are distinct properties.
 
 ## Resource lifecycle
 

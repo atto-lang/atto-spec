@@ -1,7 +1,7 @@
 {
   "contract": "attolang.ownership-bang-aliases.v1",
   "status": "TARGET_SOURCE_ONLY_NOT_BACKEND_VERIFIED",
-  "formatter": "one ASCII space after !; canonical mutable form borrow! mut operand; ref/deref/unref are checked-handle aliases",
+  "formatter": "one ASCII space after ownership !; canonical mutable form borrow! mut operand; checked handles retain rt ref/deref/unref",
   "accepted": [
     {
       "input": "copy! foo",
@@ -124,78 +124,18 @@
       "operation": "share"
     },
     {
-      "input": "ref! x",
-      "canonical": "ref! x",
-      "operation": "ref"
-    },
-    {
-      "input": "ref!x",
-      "canonical": "ref! x",
-      "operation": "ref"
-    },
-    {
-      "input": "ref!eqtoken",
-      "canonical": "ref! eqtoken",
-      "operation": "ref"
-    },
-    {
-      "input": "ref!(x)",
-      "canonical": "ref! (x)",
-      "operation": "ref"
-    },
-    {
       "input": "rt ref x",
-      "canonical": "ref! x",
+      "canonical": "rt ref x",
       "operation": "ref"
-    },
-    {
-      "input": "deref! h",
-      "canonical": "deref! h",
-      "operation": "deref"
-    },
-    {
-      "input": "deref!h",
-      "canonical": "deref! h",
-      "operation": "deref"
-    },
-    {
-      "input": "deref!(h)",
-      "canonical": "deref! (h)",
-      "operation": "deref"
-    },
-    {
-      "input": "deref!h.value",
-      "canonical": "deref! h.value",
-      "operation": "deref"
     },
     {
       "input": "rt deref h",
-      "canonical": "deref! h",
+      "canonical": "rt deref h",
       "operation": "deref"
     },
     {
-      "input": "unref! h",
-      "canonical": "unref! h",
-      "operation": "unref"
-    },
-    {
-      "input": "unref!h",
-      "canonical": "unref! h",
-      "operation": "unref"
-    },
-    {
-      "input": "unref!(h)",
-      "canonical": "unref! (h)",
-      "operation": "unref"
-    },
-    {
-      "input": "unref! handles[0]",
-      "canonical": "unref! handles[0]",
-      "operation": "unref"
-    },
-    {
       "input": "rt unref h",
-      "canonical": "unref! h",
+      "canonical": "rt unref h",
       "operation": "unref"
     }
   ],
@@ -241,7 +181,19 @@
     "rt unref mut h",
     "ref!eq",
     "deref!eq",
-    "unref!eq"
+    "unref!eq",
+    "ref! x",
+    "ref!x",
+    "ref!eqtoken",
+    "ref!(x)",
+    "deref! h",
+    "deref!h",
+    "deref!(h)",
+    "deref!h.value",
+    "unref! h",
+    "unref!h",
+    "unref!(h)",
+    "unref! handles[0]"
   ],
   "required_compiler_semantic_negative": [
     "use-after-take",
@@ -258,5 +210,6 @@
     "double unref release",
     "deref after unref",
     "checked handle escape across actor isolation"
-  ]
+  ],
+  "supersedes": "Earlier candidate handle bang forms are historical, not admitted by merged #221."
 }
