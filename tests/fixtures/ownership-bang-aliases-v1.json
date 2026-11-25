@@ -1,0 +1,215 @@
+{
+  "contract": "attolang.ownership-bang-aliases.v1",
+  "status": "TARGET_SOURCE_ONLY_NOT_BACKEND_VERIFIED",
+  "formatter": "one ASCII space after ownership !; canonical mutable form borrow! mut operand; checked handles retain rt ref/deref/unref",
+  "accepted": [
+    {
+      "input": "copy! foo",
+      "canonical": "copy! foo",
+      "operation": "copy"
+    },
+    {
+      "input": "copy!foo",
+      "canonical": "copy! foo",
+      "operation": "copy"
+    },
+    {
+      "input": "copy!eqfoo",
+      "canonical": "copy! eqfoo",
+      "operation": "copy"
+    },
+    {
+      "input": "copy!eqé",
+      "canonical": "copy! eqé",
+      "operation": "copy"
+    },
+    {
+      "input": "take! foo",
+      "canonical": "take! foo",
+      "operation": "take"
+    },
+    {
+      "input": "take!foo",
+      "canonical": "take! foo",
+      "operation": "take"
+    },
+    {
+      "input": "borrow! foo",
+      "canonical": "borrow! foo",
+      "operation": "borrow"
+    },
+    {
+      "input": "borrow!foo.bar",
+      "canonical": "borrow! foo.bar",
+      "operation": "borrow"
+    },
+    {
+      "input": "borrow! mut foo",
+      "canonical": "borrow! mut foo",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "borrow!mutfoo",
+      "canonical": "borrow! mutfoo",
+      "operation": "borrow"
+    },
+    {
+      "input": "borrow!mut(value)",
+      "canonical": "borrow! mut (value)",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "borrow! mut(value)",
+      "canonical": "borrow! mut (value)",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "borrow!mut foo[0]",
+      "canonical": "borrow! mut foo[0]",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "mut borrow! foo",
+      "canonical": "borrow! mut foo",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "mut borrow!foo[0]",
+      "canonical": "borrow! mut foo[0]",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "share! value",
+      "canonical": "share! value",
+      "operation": "share"
+    },
+    {
+      "input": "share!value",
+      "canonical": "share! value",
+      "operation": "share"
+    },
+    {
+      "input": "copy!(left + right)",
+      "canonical": "copy! (left + right)",
+      "operation": "copy"
+    },
+    {
+      "input": "rt copy foo",
+      "canonical": "copy! foo",
+      "operation": "copy"
+    },
+    {
+      "input": "rt take foo",
+      "canonical": "take! foo",
+      "operation": "take"
+    },
+    {
+      "input": "rt borrow foo",
+      "canonical": "borrow! foo",
+      "operation": "borrow"
+    },
+    {
+      "input": "rt borrow mut foo",
+      "canonical": "borrow! mut foo",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "rt mut borrow foo",
+      "canonical": "borrow! mut foo",
+      "operation": "mut_borrow"
+    },
+    {
+      "input": "rt share foo",
+      "canonical": "share! foo",
+      "operation": "share"
+    },
+    {
+      "input": "rt ref x",
+      "canonical": "rt ref x",
+      "operation": "ref"
+    },
+    {
+      "input": "rt deref h",
+      "canonical": "rt deref h",
+      "operation": "deref"
+    },
+    {
+      "input": "rt unref h",
+      "canonical": "rt unref h",
+      "operation": "unref"
+    }
+  ],
+  "must_not_recognize_as_ownership": [
+    "copy !foo",
+    "take ! foo",
+    "borrow !foo",
+    "mut borrow !foo",
+    "share !foo",
+    "copy!=foo",
+    "other!foo",
+    "mutborrow!foo",
+    "copy!",
+    "mut borrow!",
+    "copy!eq foo",
+    "copy!eq",
+    "borrow!eq foo",
+    "mut borrow!eq foo",
+    "copy!eq é",
+    "borrow! mut",
+    "borrow!mut",
+    "mut borrow! mut foo",
+    "borrow! mut mut foo",
+    "rt borrow mut mut foo",
+    "rt mut borrow mut foo",
+    "ref !x",
+    "deref !h",
+    "unref !h",
+    "ref!=x",
+    "deref!=h",
+    "unref!=h",
+    "ref!eq h",
+    "deref!eq h",
+    "unref!eq h",
+    "ref!",
+    "deref!",
+    "unref!",
+    "ref! mut x",
+    "deref! mut h",
+    "unref! mut h",
+    "rt ref mut x",
+    "rt deref mut h",
+    "rt unref mut h",
+    "ref!eq",
+    "deref!eq",
+    "unref!eq",
+    "ref! x",
+    "ref!x",
+    "ref!eqtoken",
+    "ref!(x)",
+    "deref! h",
+    "deref!h",
+    "deref!(h)",
+    "deref!h.value",
+    "unref! h",
+    "unref!h",
+    "unref!(h)",
+    "unref! handles[0]"
+  ],
+  "required_compiler_semantic_negative": [
+    "use-after-take",
+    "non-Copy duplication",
+    "non-place mutable borrow",
+    "overlapping mutable loans",
+    "unauthorized share",
+    "borrow across unsafe await",
+    "cross-actor mutable pointer escape",
+    "invalid or forged checked handle",
+    "stale arena or allocation generation",
+    "checked handle wrong actor/domain",
+    "checked handle out-of-bounds or misaligned access",
+    "double unref release",
+    "deref after unref",
+    "checked handle escape across actor isolation"
+  ],
+  "supersedes": "Earlier candidate handle bang forms are historical, not admitted by merged #221."
+}

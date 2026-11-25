@@ -1,0 +1,4 @@
+const mut object global_item = infer struct{};
+fnc main() -> int ::
+  return 42;
+end
