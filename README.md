@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Unsafe lexical proof boundary](language/unsafe-blocks-v1.md): fail-closed target for independently authorized trusted host operations, not guest-native admission or a permission grant.
+
 - [Hosted permission policy](language/host-permissions-v1.md): independent ceilings, explicit deny, runtime revocation and fail-closed native admission target.
 
 - [Hosted asynchronous HTTP and filesystem](language/hosted-async-http-fs-v1.md): target APIs with typed errors, scoped host capabilities, lifetime and backpressure; host-only evidence is not linked guest support.
