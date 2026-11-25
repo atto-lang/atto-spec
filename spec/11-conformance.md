@@ -14,7 +14,7 @@ All five implementations target the **same language-level semantics**:
 | `oreslang-source.forge` | Forge independent JIT/AOT | Same language and actor contract |
 | `oreslang-source.net` | .NET/CIL | Full Native AOT deployment target |
 
-A source feature is not "five-backend parity" because a parser recognizes it, one backend passes a host-unit test, or different backends execute different reduced fixtures. Hierarchical `define supervisor` is **TARGET / NOT_VERIFIED** across all five until equivalent nested guest trees, CONTROL events and restarts execute in exact-head builds. The [source-free topology model](13-supervisor-hierarchies.md) checks invariants but is not guest proof.
+A source feature is not "five-backend parity" because a parser recognizes it, one backend passes a host-unit test, or different backends execute different reduced fixtures. The [nested functor/ADT return-type gate](23-functors-and-nested-adts.md) likewise requires actual guest execution and negative semantic checks on immutable heads; a source-free algebraic model is not guest evidence. Hierarchical `define supervisor` is **TARGET / NOT_VERIFIED** across all five until equivalent nested guest trees, CONTROL events and restarts execute in exact-head builds. The [source-free topology model](13-supervisor-hierarchies.md) checks invariants but is not guest proof.
 
 ## Named generic and named value-call conformance gate
 
@@ -100,7 +100,6 @@ draft until appropriate reviews and proof.
 ## Semantic floor v1 (additive candidate lane)
 
 The [AttoLang semantic-floor amendment](21-semantic-floor-and-parity.md) and its versioned [machine contract](../contracts/attolang-semantic-floor-v1/contract.json) define six independently required targets, including Cranelift, for the new candidate lane. This corrects any implication above that the five-family table alone is an exhaustive compiler-parity list. The legacy 53-case `.ores` inventory remains separate. All four new `.atto` candidates are `AUTHORED_NOT_EXECUTED`; none can be called verified on a copied fixture, host-only run or zero-step job.
-
 
 ## Overload and binary pattern target v1 (NOT EXECUTED)
 
