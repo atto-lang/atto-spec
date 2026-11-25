@@ -70,7 +70,7 @@ class Broker {
     for(const sub of this.subs)if(!sub.closed&&sub.topic===t){
       const members=sub.kind==="actor"?[sub.target]:[...sub.target.members];
       for(const a of members)if(a.alive&&t.g.members.has(a)){
-        const used=(sub.queues.get(a)?.length??0)+(sub.inflight.get(a)??0);
+        const used=(sub.queues.get(a)?.length??0)+(sub.inflight.get(a)?.size??0);
         if(used>=sub.capacity)return {error:"Full"};
         all.push([sub,a]);
       }
@@ -88,15 +88,19 @@ class Broker {
     if(!a.alive||!s.topic.g.alive||!s.topic.g.members.has(a)||
       (s.kind==="actor"&&s.target!==a))return {error:"StaleTarget"};
     const q=s.queues.get(a);if(!q?.length)return {error:"Empty"};
-    s.inflight.set(a,(s.inflight.get(a)??0)+1);return q.shift();
+    const delivery=Object.freeze(q.shift());
+    if(!s.inflight.has(a))s.inflight.set(a,new Set());
+    s.inflight.get(a).add(delivery);return delivery;
   }
-  finish(s,a){
-    const n=s.inflight.get(a)??0;if(!n)return {error:"NoInFlight"};
-    if(n===1)s.inflight.delete(a);else s.inflight.set(a,n-1);
+  finish(s,a,delivery){
+    if(!this.subs.includes(s)||!this.actorHandles.has(a))return {error:"StaleTarget"};
+    const pending=s.inflight.get(a);
+    if(!pending?.delete(delivery))return {error:"NoInFlight"};
+    if(pending.size===0)s.inflight.delete(a);
     return {ok:true};
   }
   unsubscribe(s){s.closed=true;s.queues.clear();return {ok:true};}
-  done(s){return s.closed&&[...s.inflight.values()].every(n=>n===0);}
+  done(s){return s.closed&&[...s.inflight.values()].every(tickets=>tickets.size===0);}
   stop(a){
     a.alive=false;
     for(const cap of this.grants)
@@ -159,13 +163,15 @@ test("AP002 atomic RELIABLE reservation: one full recipient prevents every enque
   b.join(g,other);
   const sa=b.subscribe(t,"actor",a,1).sub,sb=b.subscribe(t,"actor",other,1).sub;
   assert.equal(b.publish(t,cap,"first").recipients,2);
-  assert.equal(b.begin(sa,a).seq,"1");
-  assert.equal(b.finish(sa,a).ok,true);
+  const leftDelivery=b.begin(sa,a);
+  assert.equal(leftDelivery.seq,"1");
+  assert.equal(b.finish(sa,a,leftDelivery).ok,true);
   assert.equal(b.publish(t,cap,"refused").error,"Full");
   assert.equal(t.seq,1n);
   assert.equal(b.begin(sa,a).error,"Empty");
-  assert.equal(b.begin(sb,other).payload,"first");
-  b.finish(sb,other);
+  const rightDelivery=b.begin(sb,other);
+  assert.equal(rightDelivery.payload,"first");
+  b.finish(sb,other,rightDelivery);
   assert.deepEqual(b.publish(t,cap,"retry"),{sequence:"2",recipients:2});
 });
 test("AP003/AP004 publisher grant and direct subscriber authorization",()=>{
@@ -188,12 +194,13 @@ test("AP005 overlap and independent group-topic identities",()=>{
 test("AP006/AP007 unsubscribe cancels queued events, but never in-flight completion",()=>{
   const {b,a,g,cap,t}=setup(),s=b.subscribe(t,"group",g,2).sub;
   b.publish(t,cap,"active");
-  assert.equal(b.begin(s,a).payload,"active");
+  const activeDelivery=b.begin(s,a);
+  assert.equal(activeDelivery.payload,"active");
   b.publish(t,cap,"pending");
   b.unsubscribe(s);
   assert.equal(b.done(s),false);
   assert.equal(b.begin(s,a).error,"Closed");
-  assert.equal(b.finish(s,a).ok,true);
+  assert.equal(b.finish(s,a,activeDelivery).ok,true);
   assert.equal(b.done(s),true);
   assert.deepEqual(b.publish(t,cap,"after"),{sequence:"3",recipients:0});
 });
@@ -288,14 +295,15 @@ test("AP016: group shutdown revokes its grants and subscriptions but not neighbo
 test("AP017: broker close fences grants; in-flight work remains quiescence tracked",()=>{
   const {b,a,g,cap,t}=setup(),s=b.subscribe(t,"group",g,2).sub;
   b.publish(t,cap,"active");
-  assert.equal(b.begin(s,a).payload,"active");
+  const activeDelivery=b.begin(s,a);
+  assert.equal(activeDelivery.payload,"active");
   assert.equal(b.close().ok,true);
   assert.equal(b.close().ok,true);
   assert.equal(b.done(s),false);
   assert.equal(b.publish(t,cap,"no").error,"Closed");
   assert.equal(b.join(g,a).error,"Closed");
   assert.equal(b.subscribe(t,"group",g,1).error,"Closed");
-  assert.equal(b.finish(s,a).ok,true);
+  assert.equal(b.finish(s,a,activeDelivery).ok,true);
   assert.equal(b.done(s),true);
 });
 
@@ -322,14 +330,16 @@ test("u64 sequence is exact above JS safe integers, never wraps, and exhaustion 
   const {b,a,g,cap,t}=setup(),s=b.subscribe(t,"group",g,1).sub;
   t.seq=(1n<<53n)-1n;
   assert.deepEqual(b.publish(t,cap,"first"),{sequence:"9007199254740992",recipients:1});
-  assert.equal(b.begin(s,a).seq,"9007199254740992");
-  b.finish(s,a);
+  const wideDelivery=b.begin(s,a);
+  assert.equal(wideDelivery.seq,"9007199254740992");
+  b.finish(s,a,wideDelivery);
   t.seq=MAX_SEQUENCE-1n;
   assert.deepEqual(b.publish(t,cap,"last"),{sequence:"18446744073709551615",recipients:1});
   assert.throws(()=>b.publish(t,cap,"exhausted"),RangeError);
   assert.equal(t.seq,MAX_SEQUENCE);
-  assert.equal(b.begin(s,a).payload,"last");
-  b.finish(s,a);
+  const lastDelivery=b.begin(s,a);
+  assert.equal(lastDelivery.payload,"last");
+  b.finish(s,a,lastDelivery);
   assert.throws(()=>b.publish(t,cap,"still exhausted"),RangeError);
   assert.equal(b.begin(s,a).error,"Empty");
 });
@@ -339,6 +349,27 @@ test("Full at the last available u64 sequence consumes no credit or sequence",()
   b.publish(t,cap,"occupied");
   assert.equal(b.publish(t,cap,"refused").error,"Full");
   assert.equal(t.seq,MAX_SEQUENCE-1n);
-  b.begin(s,a);b.finish(s,a);
+  b.finish(s,a,b.begin(s,a));
   assert.equal(b.publish(t,cap,"retry").sequence,"18446744073709551615");
+});
+
+test("duplicate, forged and stale delivery completion cannot settle another reservation",()=>{
+  const {b,a,g,cap,t}=setup(),sub=b.subscribe(t,"group",g,2).sub;
+  b.publish(t,cap,"old");
+  const old=b.begin(sub,a);
+  assert.equal(b.leave(cap).ok,true);
+  const next=b.join(g,a).cap;
+  assert.equal(b.publish(t,next,"new").sequence,"2");
+  const current=b.begin(sub,a);
+  assert.equal(b.finish(sub,a,{...current}).error,"NoInFlight");
+  assert.equal(b.finish(sub,a,old).ok,true);
+  assert.equal(b.finish(sub,a,old).error,"NoInFlight");
+  assert.equal(b.publish(t,next,"queued").sequence,"3");
+  assert.equal(b.publish(t,next,"must-be-full").error,"Full");
+  assert.equal(b.finish(sub,a,current).ok,true);
+  const queued=b.begin(sub,a);
+  assert.equal(queued.payload,"queued");
+  assert.equal(b.finish(sub,a,queued).ok,true);
+  b.unsubscribe(sub);
+  assert.equal(b.done(sub),true);
 });
