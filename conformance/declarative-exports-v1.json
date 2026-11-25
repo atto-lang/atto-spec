@@ -52,9 +52,16 @@
     {
       "id": "duplicate-export",
       "phase": "compile",
+      "expect": "accept",
+      "source": "export pub Foo;\nexport pub class Foo;\ndefine class Foo as\nend\n",
+      "note": "Inferred and explicit kind resolve to one identical source binding."
+    },
+    {
+      "id": "duplicate-export-conflicting-scope",
+      "phase": "compile",
       "expect": "reject",
-      "diagnostic": "duplicate-export",
-      "source": "export pub Foo;\nexport pub class Foo;\ndefine class Foo as\nend\n"
+      "diagnostic": "export-visibility-conflict",
+      "source": "export pub Foo;\nexport pub[pkg] class Foo;\ndefine class Foo as\nend\n"
     },
     {
       "id": "invalid-visibility",

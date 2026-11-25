@@ -4,7 +4,7 @@
 
 ## Source spelling and migration
 
-New canonical AttoLang source is proposed to use `trap! expression` and `throw! Error(...)`; `raise!` and `panic!` receive the same contiguous exceptional-keyword suffix. This is a **lexical spelling change**, not a change to the types, error identity, cleanup or capture rules below. The historical bare `trap`/`throw`/`raise`/`panic` forms and the examples below remain temporarily migration-compatible. The full target, lexer boundaries and per-backend proof gates are in [exception-control bang spellings v1](exception-control-bang-spellings-v1.md). Preserve earlier SHA-pinned fixtures unchanged; newer bang fixtures need independent pins.
+New canonical Atto source uses `trap! expression` and `throw! Error(...)`; `raise!` and `panic!` use the same contiguous exceptional-keyword suffix. This spelling amendment preserves type/effect checking, original error identity and cleanup. Bare forms and older examples remain migration-compatible. See [exception-control bang spellings v1](exception-control-bang-spellings-v1.md). Non-Error trait-conforming payloads are separately gated by the [November 23 decision](cross-backend-semantics-reconciliation-v1.md#errors-macros-and-pipelines); the Error-based trap profile here is unchanged. Historical fixtures remain pinned.
 
 ## Meaning
 

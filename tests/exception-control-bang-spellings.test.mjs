@@ -37,7 +37,7 @@ function referenceExceptionBangs(source) {
       assert.equal(depth,0,'reference contract has unclosed comment');
       continue;
     }
-    if(source[i]==='"'||source[i]==="'") {
+    if(source[i]==='"'||source[i]==="'"||source[i]===String.fromCharCode(96)) {
       const quote=source[i++];
       let closed=false;
       while(i<source.length) {
@@ -47,12 +47,18 @@ function referenceExceptionBangs(source) {
       assert.equal(closed,true,'reference contract has unclosed string');
       continue;
     }
-    const word=/^[A-Za-z_][A-Za-z_0-9]*/.exec(source.slice(i));
+    if(source[i]==='#') {
+      i++;
+      if(source[i]==='"'||source[i]==="'") continue; // next iteration shields quoted symbol
+      const symbol=/^[\p{L}_][\p{L}\p{N}_]*/u.exec(source.slice(i));
+      if(symbol){i+=symbol[0].length;continue;}
+    }
+    const word=/^[\p{L}_][\p{L}\p{N}_]*/u.exec(source.slice(i));
     if(word) {
       i+=word[0].length;
       // Do not reinterpret != or !eq as an exceptional keyword suffix.
       if(names.has(word[0])&&source[i]==='!'&&source[i+1]!=='='&&
-          !/^!eq(?![A-Za-z_0-9])/.test(source.slice(i))) {
+          !/^!eq(?![\p{L}\p{N}_])/u.test(source.slice(i))) {
         const keyword=word[0]+'!';
         assert.ok(bangNames.has(keyword));
         bangTokens.push(keyword);
@@ -100,4 +106,13 @@ test('one-character and nested comment changes never promote unrecognized bangs'
     assert.deepEqual(referenceExceptionBangs('/* '+word+'! /* hidden '+word+'! */ */ 42'),[]);
     assert.deepEqual(referenceExceptionBangs('"'+word+'!"'),[]);
   }
+});
+
+test('Unicode identifier prefixes and quoted symbols or templates are shielded',()=>{
+ for(const word of names){
+  assert.deepEqual(referenceExceptionBangs('é'+word+'!value'),[]);
+  assert.deepEqual(referenceExceptionBangs('#'+word+'!'),[]);
+  assert.deepEqual(referenceExceptionBangs('#"'+word+'!"'),[]);
+  assert.deepEqual(referenceExceptionBangs(String.fromCharCode(96)+word+'!'+String.fromCharCode(96)),[]);
+ }
 });
