@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Immutable `with` copy-and-update v1](language/with-copy-update-v1.md): candidate Record field addition/type change and nominal Struct same-type reconstruction with strict ownership gates. Guest and backend parity are not yet verified.
+
 - [Inline collections and nominal Entry/Map mutation (candidate)](language/inline-collection-literals-v1.md): `key => value` Entry literal, `{key => value}` Map literal, checked mutable upserts, `get(): Option<V>`; target only, not guest-certified ([conformance #99](https://github.com/atto-lang/atto-platform-conformance/pull/99)).
 
 - [Named-generic collection layouts](spec/27-collection-layout-named-generics.md): target layout and nominal struct field initialization; host reference only.
