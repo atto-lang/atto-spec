@@ -64,6 +64,16 @@ Keywords may also be described linguistically as nouns (e.g. `actor`), relationa
 
 The canonical enum syntax is `define enum Name { Variant, Data { field: Type } }`. Match arms begin with contextual `on` and use unqualified variants when the scrutinee's enum is known: `do match msg over on Run { job_id } as r -> { ... } end`. `as r` names a scoped readonly view of the entire narrowed variant, not a copied payload. A prefix dot such as `.Run` is not canonical. A qualified `EnumName.Run` may resolve ambiguity. Field-level renaming such as `job_id as j` remains deferred. See [chapter 27](27-typed-enum-pattern-aliases.md). The keyword inventory above is the observed Java lexer, **not** proof of target support.
 
+**Target scoped-resource grammar (`using`):** AttoLang already designates
+`using` as a language keyword. Its accepted `using expression as identifier
+{ ... }` spelling is now required by the first-class resource-scope target in
+[chapter 03](03-functions-and-effects.md#existing-using-keyword-deterministic-scoped-resources-v1-target).
+The historical Java lexer keyword table above is the earlier audited snapshot
+and does **not** by itself establish that this new form parses in the cited
+compiler revisions. Add `using` to lexer/parser/compiler tests and formatter
+round-trip cases per backend; do not treat documenting a target as tested
+lexical support.
+
 ## Literals
 
 | Kind | Form | Notes |

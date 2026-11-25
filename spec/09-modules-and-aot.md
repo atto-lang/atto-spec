@@ -72,3 +72,86 @@ Hot loading can introduce validated source/IR into a new code generation in expl
 ## Version stability
 
 Do not change historical `oreslang` CLI, binary/wire protocol, package coordinates, ABI, code-unit identities, manifest formats, or persistent keys merely for the AttoLang brand. Version the migration and test old/new filenames against each selected backend.
+
+## Live runtime instrumentation: JIT versus full AOT (v1 target)
+
+Instrumentation is native **compiler/runtime functionality** with a
+host-authorized, budgeted control plane; neither application monkey-patching,
+Java agents, runtime reflection hooks nor arbitrary source-code rewriting is
+required.
+
+- **Already compiled probes:** a trace-capable build may retain dormant,
+  statically typed boundary/function probe sites while tracing is off.
+  Enabling recording at runtime does not require restart, new executable
+  code, or weakening the program's security profile. `--instrument=none`
+  emits no **static** optional probe sites and cannot enable those precompiled
+  sites through a flag. This does **not** preclude a separately admitted JIT
+  dynamic-attach feature if the runtime retained tagged AST/bytecode metadata;
+  strict stripped builds with no such metadata cannot add probes.
+- **Truffle guest JIT:** a registered trusted Atto Truffle instrument may
+  dynamically attach execution-event nodes/listeners to tagged Atto
+  functions or activate a predeclared Bytecode DSL instrumentation table
+  while execution continues. Existing optimized code is invalidated or
+  re-tiered at safe points and **future** function entries become observable.
+  This requires real instrumentable Atto nodes/bytecode, stable source
+  descriptors and runtime support; the mere use of GraalVM is not proof.
+- **Independent Forge/other JITs:** optional, conditioned on evidence of
+  retained IR/tags, safe deoptimization, backend-verified lifecycle and
+  authorized instrumentation control. Do not assume Java's implementation
+  transfers to Forge, LLVM, Wasm or Native AOT.
+- **Sealed guest full AOT:** no arbitrary JIT or runtime generation of new
+  guest code. Only previously compiled probes can be activated in place.
+  A separately authorized **precompiled and validated** module generation
+  might be hot-loaded where the program's explicit deployment profile
+  permits it; this is a new artifact, not magic reinstrumentation of an
+  opaque existing native binary. Old call frames remain generation-fenced.
+- **Wasm and .NET Native AOT:** statically admitted probes and, where
+  explicitly supported, separately validated new module instances; no
+  browser JS monkey patching, unrestricted managed JIT or imported
+  reflection-codegen fallback.
+
+Live activation controls MUST be authenticated/authorized, audited,
+rate-limited and budgeted by class of probe. A target must report its
+actual coverage: precompiled probes enabled, JIT probes attached, new
+module generation deployed, or instrumentation unavailable. It may not
+promise retroactive spans for already-entered frames or infer lost
+timestamps. Deopt, recompilation, exporter backlog and dynamic filters
+are bounded; actor supervisor CONTROL, borrowing and data-plane
+nonblocking invariants remain unchanged.
+
+An explicitly requested [`using` span](03-functions-and-effects.md#existing-using-keyword-deterministic-scoped-resources-v1-target)
+can be created in any profile that admits `ores.std.telemetry`. Its source
+spelling and cleanup rules are the same across execution profiles.
+
+| Deployment | Scoped span behavior |
+| --- | --- |
+| Full AOT | Lower explicit and macro-generated `using` scopes before linking. The sealed artifact can record at the sites it includes when the host enables them. |
+| JIT instrumentation | A supported host can add automatic call probes to checked code with retained instrumentation metadata. Explicit `using` still has its ordinary lexical meaning. |
+| Hybrid | Keep an independently executable AOT baseline and permit governed JIT call probes. Both paths use the same logical trace context and the same identity for each lexical site. |
+
+When a backend admits statement macros, a macro may emit a `using` span
+scope and its binding. Expression macros may supply operands accepted by
+the backend's span scope, such as a compile-time name. Recheck expanded
+code for the same resource provenance, effects, ownership, and cleanup as
+handwritten code. Preserve expansion provenance when assigning lexical
+site identities. The macro expansion is complete before guest execution
+in AOT, JIT, and hybrid deployments.
+
+In a hybrid version, one entry into a lexical `using` site produces at
+most one recorded span for that site. An automatic call probe may create a
+distinct parent or child span with its own site identity. A scope admitted
+for recording keeps its cleanup obligation through policy changes,
+detachment, and code-generation changes. New recording policy applies to
+subsequent admissions.
+
+Verify AOT and live JIT independently for `atto-source.java`,
+`atto-source.llvm`, `atto-source.net`, `atto-source.rs`,
+`atto-source.cranelift`, and `atto-source.forge`. Each backend needs a real
+guest built and run with its runtime compiler disabled or absent for AOT
+credit. JIT credit requires execution of newly instrumented code, and
+hybrid credit requires both paths in the same workload with parentage and
+exactly-once cleanup verified.
+
+Release evidence requires real exact-head .atto compiler and guest tests, separate
+`none/off/on` measurements, actor cancellation/hot-reload traces and
+independent per-backend evidence.
