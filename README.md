@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Hosted permission policy](language/host-permissions-v1.md): independent ceilings, explicit deny, runtime revocation and fail-closed native admission target.
+
 - [Hosted asynchronous HTTP and filesystem](language/hosted-async-http-fs-v1.md): target APIs with typed errors, scoped host capabilities, lifetime and backpressure; host-only evidence is not linked guest support.
 
 - [Deep-learning computation proposal](language/deep-learning-computation-v1.md): exploratory model declarations and shape-aware tensor/autodiff contracts, not global grammar ratification or backend support.
