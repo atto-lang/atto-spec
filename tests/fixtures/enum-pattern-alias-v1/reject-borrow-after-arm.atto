@@ -1,0 +1,16 @@
+use namespace jobs;
+
+define enum WorkerMsg {
+    Run { job_id: u64 },
+    Stop
+}
+
+fnc bad_borrow(msg: WorkerMsg): u64 {
+    do match msg over
+        on Run as r -> {
+            val borrowed = rt borrow r;
+        }
+        on Stop -> {}
+    end
+    return borrowed.job_id;
+}

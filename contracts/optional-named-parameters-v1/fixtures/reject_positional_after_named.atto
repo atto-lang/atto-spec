@@ -1,0 +1,7 @@
+fnc add(int x, int y): int {
+  return x + y;
+}
+
+pub fnc main(): int {
+  return add(y: 2, 40);
+}

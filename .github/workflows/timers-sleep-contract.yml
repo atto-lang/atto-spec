@@ -1,0 +1,26 @@
+name: Timer and sleep contract (host-only)
+on:
+  pull_request:
+    paths:
+      - 'language/timers-and-sleep-v1.md'
+      - 'tests/timers-sleep-contract.test.mjs'
+      - '.github/workflows/timers-sleep-contract.yml'
+  push:
+    paths:
+      - 'language/timers-and-sleep-v1.md'
+      - 'tests/timers-sleep-contract.test.mjs'
+      - '.github/workflows/timers-sleep-contract.yml'
+permissions:
+  contents: read
+jobs:
+  reference-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Run host-only reference tests (NOT compiler/guest conformance)
+        run: |
+          node --version
+          node --test tests/timers-sleep-contract.test.mjs

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "contract": "actor-spawn-ready-pipeline-lifecycle-v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "related": [
+    "https://github.com/atto-lang/atto-spec/pull/45",
+    "https://github.com/atto-lang/atto-spec/pull/148"
+  ],
+  "api": {
+    "spawn": "registered ActorRef before startup completion",
+    "get_ready": "shareable Future<void> initialization barrier",
+    "get_done": "shareable Future<void> physical quiescence barrier",
+    "await_spawn": "initialized ActorRef, not terminal completion",
+    "pipe": "atomic checked directed attachment before READY",
+    "stop_bang": "graceful stop, no force kill"
+  },
+  "required_invariants": [
+    "spawn_publishes_registered_ports_before_return",
+    "pipe_admission_never_waits_for_ready",
+    "no_data_dispatch_before_receiver_ready",
+    "bounded_data_backpressure",
+    "failed_startup_never_publishes_ready",
+    "failure_propagates_to_pipeline_completion",
+    "stop_fences_new_admission_but_drains_accepted_data",
+    "done_waits_tear_down_descendants_loans_and_carriers",
+    "duplicate_unicast_edge_checked_rollback",
+    "tenant_and_generation_checked",
+    "future_subscriptions_once_and_late",
+    "unsupported_backend_no_guest_artifact"
+  ],
+  "forbidden_aliases": [
+    "actor.ready",
+    "actor.done"
+  ],
+  "backend_targets": [
+    {
+      "repo": "atto-lang/atto-source.java",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "repo": "atto-lang/atto-source.llvm",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "repo": "atto-lang/atto-source.rs",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "repo": "atto-lang/atto-source.wasm",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "repo": "atto-lang/atto-source.net",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "repo": "atto-lang/atto-source.forge",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "repo": "atto-lang/atto-source.cranelift",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "repo": "atto-lang/atto-source.js",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "repo": "atto-lang/atto-source.atto",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "repo": "atto-lang/atto-source.hdl",
+      "guest_execution": "NOT_EXECUTED"
+    },
+    {
+      "repo": "atto-lang/atto-source.realtime",
+      "guest_execution": "NOT_EXECUTED"
+    }
+  ],
+  "no_claim_of_backend_parity": true
+}

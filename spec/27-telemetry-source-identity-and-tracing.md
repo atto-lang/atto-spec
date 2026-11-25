@@ -22,7 +22,7 @@ Stable IDs are opaque 128-bit values with human-searchable textual renderings su
 Illustrative **target syntax; not yet proven accepted by every backend**:
 
 ```atto
-use namespace ores.std.telemetry;
+import namespace telemetry from std.telemetry;
 
 @Tracing.RoutineId("rid_d5f8e146ba97430dac6bf17430477e2a")
 pub fnc hammer(): void {
@@ -116,7 +116,7 @@ LLVM XRay-style nop-sled/patch-point support is **optional platform-qualified im
 
 ## Span semantics and actor context
 
-Reuse chapter 03's target `using telemetry.span(...) as span { ... }` scoped-resource semantics. An acquired scope closes exactly once after lexical exit on fallthrough, `return`, `?`, `trap`, `throw`, `raise`, `panic` or cancellation; `await`/`select` suspension is **not** scope exit. For native hard-RT profiles, require bounded scope closure, recorder offer and cleanup.
+Reuse chapter 03's target `using telemetry.span(...) as span { ... }` scoped-resource semantics. On supported unwinding paths an acquired scope closes exactly once after lexical exit on fallthrough, `return`, `?`, `trap!`, `throw!`, `raise!`, `panic!` or cancellation; `await`/`select` suspension is **not** scope exit. Hard process kill, host corruption and non-unwinding final panic cannot promise guest scope cleanup; trusted retirement and physical quiescence remain mandatory. For native hard-RT profiles, require bounded scope closure, recorder offer and cleanup.
 
 The active `trace_id`/`span_id` follows the logical task/continuation and approved actor-message envelope, **not** the carrier OS thread. Default concurrent actors can execute multiple receivers simultaneously; each handler invocation has independent context. Multiple causal parents use span links when appropriate, not a fabricated single parent. Distinguish producer/send, enqueue, queue wait, processing and child task spans; deduplicate stdlib automatic spans with user semantic spans. State and payload references never escape an actor merely because an exporter wants fields.
 
@@ -162,3 +162,6 @@ Require individual runtime proofs for Java/Truffle JIT attach, LLVM AOT probe in
 - [Rust tracing static callsites](https://docs.rs/tracing-core/latest/tracing_core/callsite/index.html), [.NET source-generated logging](https://learn.microsoft.com/en-us/dotnet/core/extensions/logging/high-performance-logging), [LLVM XRay](https://llvm.org/docs/XRay.html), [OTel log record model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md), and [OTel code attributes](https://opentelemetry.io/docs/specs/semconv/registry/attributes/code/) are relevant precedents.
 
 This document is deliberately a spec amendment: no newly introduced `@Tracing` annotation, CLI command, registry parser, probe emitter, native exporter or cross-backend conformance claim is treated as implemented.
+
+
+The checked-in host reference suite `tests/telemetry-source-identity-reference.test.mjs` exercises selected semantic invariants only; it does not compile Atto source or certify backend parity.

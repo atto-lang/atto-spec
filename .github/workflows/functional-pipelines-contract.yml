@@ -1,0 +1,26 @@
+name: Functional pipeline source contracts (host only)
+on:
+  pull_request:
+    paths:
+      - 'language/callable-body-styles-v1.md'
+      - 'conformance/functional-pipelines-v1/**'
+      - 'tests/functional-pipelines-contract.test.mjs'
+      - '.github/workflows/functional-pipelines-contract.yml'
+  push:
+    paths:
+      - 'language/callable-body-styles-v1.md'
+      - 'conformance/functional-pipelines-v1/**'
+      - 'tests/functional-pipelines-contract.test.mjs'
+      - '.github/workflows/functional-pipelines-contract.yml'
+permissions:
+  contents: read
+jobs:
+  source-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate fixtures and manifest (not compiled guest parity)
+        run: node --test tests/functional-pipelines-contract.test.mjs
