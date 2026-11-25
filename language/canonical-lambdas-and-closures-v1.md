@@ -1,15 +1,16 @@
-# 27 — Canonical lambdas and AOT closure semantics (v1)
+#  Canonical lambdas and AOT closure semantics (v1)
 
 **Status: DRAFT / TARGET — not implementation or parity certification.**
 
-AttoLang's canonical lambda spelling is **`|x| -> expression`**. Every formatter, compiler, documentation example, and conformance fixture MUST favor this form. This contract is a reviewed-design target until it is merged and individually proved on real guest backends.
+AttoLang's canonical lambda spelling is **`|x| -> expression`**. Every formatter, compiler, documentation example, and conformance fixture MUST favor this form. This is a design target; actual guest admission remains independently gated.
 
 ## Canonical grammar (single-expression v1)
 
 ```ebnf
-lambda_expr   = "|", lambda_params, "|", "->", expression ;
+lambda_expr   = "|", [lambda_params], "|", [result_annotation], "->", expression ;
 lambda_params = lambda_param, { ",", lambda_param } ;
-lambda_param  = identifier | type_expr, identifier ;
+lambda_param  = identifier | type_expr, identifier | identifier, ":", type_expr ;
+result_annotation = "=>", type_expr | ":", type_expr ;
 ```
 
 ```atto
@@ -20,7 +21,7 @@ lambda_param  = identifier | type_expr, identifier ;
 users |> filter(|user| -> user.active) |> map(|user| -> user.name)
 ```
 
-Zero-argument and block-bodied canonical spellings remain deferred until their token/block grammar is reconciled; this chapter does not silently introduce either. Existing explicit type spelling uses `int x` order. The lambda is an ordinary expression and MUST parse in argument positions, parentheses, nested lambda bodies, `match`/`switch` arms, and the RHS of functional `|>`.
+The merged typed-lambda contract permits both `int x` and `x: int`, zero parameters `||`, discarded parameters `|_|`, explicit typed inline annotations `=> T ->` (colon compatibility), and separately admitted braced statement bodies. See [lambda return types](lambda-return-types-v1.md). This expression-only subset does not override those forms. The lambda is an ordinary expression and MUST parse in argument positions, parentheses, nested lambda bodies, `match`/`switch` arms, and the RHS of functional `|>`.
 
 The lexer MUST distinguish `|`, `|>`, `||`, and `->` without text replacement. The parameter bars are not binary bitwise operators. A lambda body associates with its owning `->` and normal expression delimiters. Duplicate parameter bindings are rejected. Lexical shadowing of an outer binding by an inner lambda parameter is allowed under ordinary scoping. Formatter output MUST be idempotent, preserve explicit types, parameter order, precedence and source spans, and keep the canonical `|...| ->` syntax.
 
@@ -30,7 +31,7 @@ Elixir captures (`& &1.active`), implicit numbered placeholders (`_1` without a 
 
 A lambda has a statically checked callable type with an ordered parameter list, one result type, and an effect set. Unannotated parameter types use bidirectional inference from an expected callable type (argument, variable, return value or functional pipeline); the body constrains the result. Explicit parameter types must agree with context. Implementations MAY use normal static constraints but MUST reject ambiguity rather than assuming `Any`, runtime dynamic dispatch or backend-specific defaults.
 
-The callable and arguments are evaluated exactly once in lexical order before the body; the body expression supplies one result value. Functional `|>` passes its LHS value to the RHS callable following the established pipeline contract. Actor `pipe` remains a different construct.
+The callable and arguments are evaluated exactly once in lexical order before the body; the body expression supplies one result value. Functional `|>` passes one LHS value to a RHS callable, with an explicitly admitted tuple expansion for multi-parameter lambda stages. The next top-level pipe is outside the lambda body; explicit grouping is required to nest it. Actor `pipe` remains a different construct.
 
 ## Closures, ownership, actors
 
