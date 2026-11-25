@@ -1,20 +1,20 @@
 # ByteBuffer and endian-safe byte access v1
 
-**Status:** proposed normative API/ABI contract; **no backend is certified**. This document describes required AttoLang behavior, not code already executable. Portable library source belongs in `atto-common-source`; guest receipts belong in `atto-platform-conformance`.
+**Status:** proposed normative API/ABI contract; **no backend is certified**. This document describes required AttoLang behavior, not code already executable. Public semantics and shared fixtures are the parity boundary; each `atto-source.*` repository owns its own `.atto` implementation under the [normative library layering contract](core-alloc-std-libraries-v1.md). Guest receipts belong in `atto-platform-conformance`.
 
 ## Layer ownership
 
 - `core`: freestanding byte/endian primitives and borrowed `ByteView` / `MutByteView` contracts; **no implicit allocator, OS, host GC or I/O**.
 - `alloc`: `ByteBuffer` owned storage and explicit bounded allocator integration. The caller/actor owns the heap/region; allocation is accounted against the active tenant quota.
-- `std.buffer`: hosted module exporting `ByteBuffer` and the explicit endian read/write convenience API. It MUST be implemented using the canonical `alloc`/ `core` contracts, not divergent backend host classes.
+- `std.buffer`: hosted module exporting `ByteBuffer` and the explicit endian read/write convenience API. It MUST be implemented using the canonical `alloc`/ `core` contracts, not divergent guest-visible host-class APIs. Backend-local `.atto` implementations may differ.
 - Implementations MAY expose `alloc.buffer` directly in freestanding builds and `std.buffer` as a re-export, provided the same ABI, semantics and source ownership apply. No covert host allocator is permitted.
 
-These requirements extend the core -> alloc -> std layering proposal (atto-spec PR #42). They do not assume that proposal has been merged.
+These candidate requirements extend the finalized core -> alloc -> std layering contract. Static import v2 governs the v2 profile; the example below uses the historical v1 library selector.
 
 ## Canonical target source
 
 ```atto
-import module buffer from pkg "std.buffer";
+import module buffer from "atto.std/buffer";
 
 pub fnc main(): int throws Error {
   val mut bytes = buffer.ByteBuffer.allocate(8);
@@ -66,15 +66,15 @@ Evaluate receiver, offset, and value exactly once in source order. Validate full
 Each `atto-source.*` backend, including Java, LLVM, Wasm, Rust/browser, .NET, Forge, Cranelift, JS, native Atto, and HDL where applicable, must publish independent **compiled Atto guest** evidence for the exact source and codegen SHA. HDL target applicability is to be decided explicitly rather than assumed. At minimum run: 8-byte zero-init; LE and BE u8/u16/u32 round trips; unaligned offsets; boundaries at 0, `length-width`, `length-width+1`, negative and max-int offsets; failed write atomicity; invalid unsigned input; immutable binding compile rejection; mutable borrow exclusivity; actor transfer/stale view; tenant quota failure; no extra effects. Compile-negative cases must emit no executable artifact. Run on real guest artifacts, not host-only reference models or parser-only success; record PASS / FAIL / UNSUPPORTED / NOT_EXECUTED per backend and case.
 
 **Conformance source:** `atto-platform-conformance/contracts/byte-buffer-v1.json`.
-**Implementation home:** `atto-common-source` canonical `.atto` and each `atto-source.*` compiler/runtime.
+**Implementation home:** each `atto-source.*` compiler/runtime owns its backend-local `.atto` library source. Shared contracts and examples may live in `atto-common-source`; no byte-identical common implementation is required.
 **Migration overlaps:** `atto-common-source#10/#23`, `atto-spec#7/#42`, and legacy `oreslang-source.java#2934` require integration/compatibility review but do not certify this API.
 
 ## Source-first sealed storage ABI (implementation milestone)
 
-Canonical source is staged at `atto-common-source/stdlib/std/buffer.atto`, with pure helpers under `stdlib/core/`. The current implementation is **not yet compiled**. It requires a minimal compiler-sealed `OwnedBytes` type in the `alloc` layer, not a public host buffer class. The versioned contract is `atto-common-source/contracts/owned-bytes-runtime-abi-v1.json`.
+A reference source is staged at `atto-common-source/stdlib/std/buffer.atto`, with pure helpers under `stdlib/core/`. The current implementation is **not yet compiled**. It requires a minimal compiler-sealed `OwnedBytes` type in the `alloc` layer, not a public host buffer class. The versioned contract is `atto-common-source/contracts/owned-bytes-runtime-abi-v1.json`.
 
 - Primitive surface: `OwnedBytes.empty()`, `OwnedBytes.allocate_zeroed(int)`, `length`, `read_byte(int)` returning 0..255, and exclusive `write_byte(int,int)` accepting only 0..255. The primitive alone does not expose raw pointers, arbitrary object memory, foreign host APIs or untrusted owner tokens.
-- Backend runtime allocates and owns storage; **the endian and offset algorithms remain canonical .atto**. Compiler/frontend/linker must reject unresolved sealed intrinsics, forbidden direct guest calls, and any invalid import/effect boundary before code emission.
+- Backend runtime allocates and owns storage; **the endian and offset algorithms remain .atto source within each backend's admitted library subset**. Compiler/frontend/linker must reject unresolved sealed intrinsics, forbidden direct guest calls, and any invalid import/effect boundary before code emission.
 - The primitive must enforce trusted TenantVM/actor/generation identity, quota accounting and zeroization; no cross-tenant transfer is admitted in v1. Capacity and in-flight loans remain valid for the entire non-suspending checked multi-byte write.
 - `ByteBuffer.allocate(0)` is permitted as an empty owned buffer; every nonzero-width read/write rejects. This differs from a fixed-buffer **pool** requiring nonzero slot capacity (`atto-common-source#10`).
 - If the frontend cannot type-check private `OwnedBytes` or `mtd (mut self: ByteBuffer)` and `pub static fnc allocate`, emit deterministic `E_UNSUPPORTED` with no artifact, rather than falling back to an implicit host byte-array implementation.
