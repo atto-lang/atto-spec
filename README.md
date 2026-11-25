@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Maybe/else with lexical defer v1](language/maybe-else-defer-v1.md): contextual `do maybe` / `return maybe`, exhaustive value-failure `else`, and body cleanup before handler; **design proposal, not compiler certified**.
+
 - [Persistent immutable collections v1](language/persistent-immutable-collections-v1.md): constexpr Vector, nonmutating updates, distinct collection identities and explicit ownership proof; backend registry remains NOT_EXECUTED.
 
 - [Static imports v2](language/static-imports-v2.md): namespace-first syntax, scoped identities, alias graphs and offline AOT target; existing v1 profiles are migration-gated.
