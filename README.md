@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Return-type `infer` / `typeof(binding)` v1](language/return-type-queries-and-inference-v1.md): TARGET contract for explicit return inference and compile-time binding-derived return types, preserving historical `typeof fnc` and `typeof value`. Host-only checks are not guest execution.
+
 - [Compiler-generated proxy virtual interception candidate](language/class-proxy-virtual-interception-v1.md): typed virtual dispatch, one-shot continuation, ownership and effect-safety obligations; **not implemented or guest-verified**. Planned [58-case conformance matrix](conformance/class-proxy-interception-v1.json) is host-validated only.
 
 - [Affine proxy proceed protocol](language/class-proxy-affine-proceed-v1.md): continuation state machine, typed short-circuit and failure-control obligations; **design only, not executable**.
