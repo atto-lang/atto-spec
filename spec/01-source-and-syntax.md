@@ -78,7 +78,23 @@ while should_continue() do
 done
 ```
 
-The **target** early-exit spelling is `guard condition { terminal_failure_path }` with **no `else` or `fi`**. A comma-separated guard list checks each clause once, left to right. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
+Both `ifnot` and `unless` negate the **first** boolean condition and evaluate it exactly once. They follow the same expression-versus-statement distinction as `if`: a value form has **mandatory** `else` and `fi` with compatible arm types; a `do ifnot/unless ... then` statement has **optional** `else` and closes with `fi`; a braced imperative form has optional `else` and **no `fi`**. The resulting `elif` conditions, if any, are not implicitly negated. Neither keyword supports postfix `unless`. Refutable pattern heads and conditional `as let` bindings in the negated head remain rejected until sound narrowing is implemented. See [the semantic contract](../contracts/ifnot-unless-v1.json) and [conditional-expression grammar PR #183](https://github.com/atto-lang/atto-spec/pull/183).
+
+```atto
+do ifnot ready then
+  start_worker();
+else
+  notify_ready();
+fi
+
+unless should_stop {
+  process_next();
+}
+
+val int selected = unless ready then 5 else 6 fi;
+```
+
+The **target** early-exit syntax admits both `guard condition { terminal_failure_path }` and `guard condition else terminal_failure_path end`. The guard condition expresses what must hold to continue; a failing condition runs the failure path, which MUST explicitly return from the enclosing function on every possible path (`return value` or `return;` for void; verified lexical `^` is equivalent). `throw`, `raise`, `panic`, `break`, and `continue` cannot discharge this return requirement. The two forms must lower identically, and the formatter preserves the authored block style. A comma-separated guard list checks each clause once, left to right. The brace form has no owned `else`; the keyword form owns `else ... end`, never `fi`. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
 
 An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.
 
@@ -86,31 +102,9 @@ An `if expression as const/let name` binding tests **presence**, not truthiness.
 
 ## Call syntax and operators
 
+The target Boolean forms are `&&`, `||` and `Xor(bool,bool)` with strict bool typing; `^^` is integer XOR. See [Boolean contract](../docs/CANONICAL_BOOLEAN_OPERATORS_V1.md) and [source fixture registry](../contracts/logical-punctuation-v1/contract.json). Historical word/comma/pipe operators are not canonical; effect-preserving migration is required.
+
 Arithmetic, checked comparison, assignment, function call, lambdas and generic arguments have distinct grammar slots. `|>` is the *value/function* pipeline operator. The keyword `pipe` is reserved for actor pipeline connections; neither is a synonym for bitwise `|`. `?` has context-dependent uses (optional type, parameter omission, postfix propagation, and ternary form) and must not be parsed with a global text replacement.
-
-### Canonical boolean punctuation operators (target decision, 2026-11-12)
-
-Boolean conjunction, disjunction, and exclusive-or use the **punctuation** tokens `&&`, `||`, and `^^`. These supersede proposed lowercase word operators `and`, `or`, `xor` and historical condition-only comma/pipe shorthand. None of `and`, `or`, or `xor` becomes a reserved word solely by virtue of logical expression syntax; existing name-resolution restrictions unrelated to boolean operators are separate.
-
-```atto
-bool and = a && b;
-bool or  = a || b;
-bool xor = a ^^ b;
-```
-
-These are illustrative boolean declarations: each operand and the result must have type `bool`. There is no integer bitwise interpretation, truthiness, user-defined overloading, or implicit conversion. Bare `&` and `|` **must not** act as boolean AND/OR operators. A single `^` **must not** act as boolean or integer XOR; integer bitwise XOR remains an explicitly named API such as `Integer.bitXor` where supported. Other dedicated syntax (for example `|>` value pipelines, union-type `|`, and borrowing syntax) retains its own documented meaning.
-
-With decreasing precedence the expression grammar is `equality/comparison > && > ^^ > || > ?: > assignment` (subject to the existing distinct pipeline grammar). Each logical operator associates left-to-right:
-
-```ebnf
-logical_or  = logical_xor { "||" logical_xor } ;
-logical_xor = logical_and { "^^" logical_and } ;
-logical_and = equality { "&&" equality } ;
-```
-
-`&&` evaluates its left operand and skips the right operand if false. `||` evaluates its left operand and skips the right operand if true. `^^` evaluates each operand **exactly once, left to right**, without short-circuiting: it is true iff the operands differ. An operand that suspends retains this ordering through continuation; thrown errors propagate without evaluating later operands. The typechecker checks both operands even if one is a known constant. The tokenizer must match adjacent two-character punctuation atomically; `^ ^` is not `^^`.
-
-Positive and negative migration fixtures live in `contracts/logical-punctuation-v1/`. A backend MUST reject unsupported syntax before claiming executable IR and MUST record exact-head, executed compiler/typecheck, and guest test evidence before marking implementation or parity. Source-only contracts and zero-step CI are not execution evidence.
 
 ## Rejection requirements
 

@@ -10,19 +10,18 @@
       "operand_type": "bool",
       "result_type": "bool"
     },
-    "^^": {
-      "name": "boolean-xor",
-      "precedence": 20,
-      "associativity": "left",
-      "evaluation": "left-first-eager-exactly-once-each",
-      "operand_type": "bool",
-      "result_type": "bool"
-    },
     "||": {
       "name": "boolean-or",
       "precedence": 10,
       "associativity": "left",
       "evaluation": "left-first-short-circuit-if-true",
+      "operand_type": "bool",
+      "result_type": "bool"
+    },
+    "Xor": {
+      "name": "boolean-xor",
+      "form": "explicit-call",
+      "evaluation": "left-first-eager-exactly-once-each",
       "operand_type": "bool",
       "result_type": "bool"
     }
@@ -34,7 +33,11 @@
     "and",
     "or",
     "xor",
-    ","
+    ",",
+    "^^",
+    "AND",
+    "OR",
+    "XOR"
   ],
   "positive_fixture": "scalar-parity.atto",
   "positive_expected_exit_code": 42,
@@ -45,7 +48,9 @@
     "reject-bare-pipe.atto",
     "reject-bare-ampersand.atto",
     "reject-single-caret.atto",
-    "reject-spaced-caret.atto"
+    "reject-spaced-caret.atto",
+    "reject-bool-infix-xor.atto"
   ],
-  "evidence_required": "exact-head compiler and runtime guest execution; zero-step or host-only tests are NOT_EXECUTED"
+  "evidence_required": "exact-head compiler and runtime guest execution; zero-step or host-only tests are NOT_EXECUTED",
+  "migration": "Supersedes 2026-11-12 bool ^^ proposal; ^^ is integer bitwise XOR. Historical fixture is retained outside active manifest."
 }
