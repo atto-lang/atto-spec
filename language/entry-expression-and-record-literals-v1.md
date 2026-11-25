@@ -95,6 +95,8 @@ let Record r4 = Record.of(Pair.of("a", 5), Pair.of("b", true));
 let Map m1 = {"a" => 5, "b" => 6};
 let Map m2 = Map.of("a" => 5, "b" => 6);
 let Map m3 = Map.of(Entry.of("a", 5), Entry.of("b", 6));
+let Map m4 = Map.of(Pair.of("a", 5), Pair.of("b", 6));
+let Map m5 = Map.of(Pair.of("a", 5), "b" => 6);
 
 let Tuple t = (5, 6, true);
 let Tuple t2 = Tuple.of(5, 6, true);
@@ -102,7 +104,7 @@ let Tuple t2 = Tuple.of(5, 6, true);
 
 For Record.of, admit identifier-equals fields or Pair values whose first component is a compile-time-proven string that satisfies the same lexical identifier and reserved-name rules as fnc/mtd parameter names. The second component is the field value, with ordinary checked typing, ownership and lifetime rules. A constant alias or folded constant string may supply the name if the compiler can prove its exact value without executing guest code. Pair values with a dynamic first component, invalid identifiers, non-string names, duplicate decoded names or an unproved shape reject before artifact emission. Do not normalize case, sanitize names or stringify other key types. For the initial profile, permit one of the two constructor item styles per invocation; mixed styles remain unadmitted pending a separate decision. The restriction is on Record.of, never on Pair itself. No runtime reflection or dynamic shape construction.
 
-`=>` always retains ordinary Entry semantics, including in constructor arguments. Bare identifiers are evaluated bindings, not literal labels. No Record-specific reinterpretation: `Record.of(a => 5)` and `Record.of(Entry.of("a",5))` reject, even for statically known string keys. Map.of admits Entry values, including arrow sugar. Map.of_entries remains a compatible explicit Entry-only spelling; the historical flat alternating Map.of(k,v,k,v) overload is legacy-profile-only and rejects in v2; `Map.of(Pair.of("a",5))` and `Map.of(a=5)` reject. An Entry may contain arbitrary well-typed key values even if the Map would reject them for unstable or unsupported hashing/equality. Map construction preserves the existing Map type inference, duplicate-key and ownership rules; it does not invent a second insertion policy.
+`=>` always retains ordinary Entry semantics, including in constructor arguments. Bare identifiers are evaluated bindings, not literal labels. No Record-specific reinterpretation: `Record.of(a => 5)` and `Record.of(Entry.of("a",5))` reject, even for statically known string keys. Map.of admits both nominal Pair<K,V> and Entry<K,V> items, including arrow sugar; mixed Pair/Entry items are legal if all keys and values satisfy the same resolved K,V and ownership obligations. For Pair inputs, the first component supplies the ordinary evaluated key and the second supplies the value; it need not be a string or identifier. Map.of performs explicit constructor ingestion, not a general Pair-to-Entry conversion. Map.of_entries remains an explicit Entry-only spelling; the historical flat alternating Map.of(k,v,k,v) overload is legacy-profile-only and rejects in v2; `Map.of(a=5)` rejects. Pair.of and Entry.of each require exactly two arguments; zero-argument calls do not create empty pairs or entries. An Entry may contain arbitrary well-typed key values even if the Map would reject them for unstable or unsupported hashing/equality. Map construction preserves the existing Map type inference, duplicate-key and ownership rules; it does not invent a second insertion policy.
 
 Only authenticated compiler-owned symbols receive intrinsic lowering. Shadowed/user-defined Record, Pair, Entry, Map and Tuple symbols follow ordinary call rules. Ordinary named arguments still use label: expression; `f(a=5)` does not become a named call. A grouped Record argument `f((a=5))` is one value; `f((5,6))` is one Tuple argument, whereas `f(5,6)` supplies two arguments. Normalize equivalent forms to the same checked typed aggregate operations, preserve source spans and exactly-once left-to-right evaluation independently of canonical Record field ordering. Temporary Pair/Entry allocations may be elided only after ownership, effects and lifetime equivalence is proved. Tuple.of must preserve tuple arity and positional types, including the zero- and one-element cases.
 
@@ -129,13 +131,16 @@ Grouping overrides the existing operator precedence without changing its tiers (
 | `(a==5)` | grouped comparison |
 | `(a=5,6)`, `(5,,6)`, `(a=5,a=6)` | reject, no artifact |
 | All four Record constructions above | same shape, field values and source-order effects |
-| All three Map constructions above | same key/value association and source-order effects |
+| All five Map constructions above | same key/value association and source-order effects |
 | `Tuple.of()`, `Tuple.of(5)`, `Tuple.of(5,6,true)` | same respective typed tuples as `()`, `(5,)`, `(5,6,true)` |
 | `Record.of(Pair.of(dynamic_key,5))` | reject if name not statically proved |
 | `Record.of(Pair.of("first-name",5))`, `Record.of(Pair.of(123,5))` | reject invalid name / non-string |
 | `Record.of(Pair.of("a",5), Pair.of("a",6))`, `Record.of(a=5,a=6)` | duplicate rejection |
 | `Record.of(a => 5)`, `Record.of(Entry.of("a",5))` | reject Entry inputs; no contextual arrow exception |
-| `Map.of(Pair.of("a",5))`, `Map.of(a=5)` | reject non-Entry inputs |
+| `Map.of(Pair.of("a",5))`, `Map.of(Pair.of(42,5), 43 => 6)` | accept compatible key/value items |
+| `Map.of(a=5)`, `Map.of_entries(Pair.of("a",5))` | reject inappropriate input forms |
+| `Pair.of()`, `Entry.of()`, `Map.of(Pair.of())` | reject wrong factory arity |
+| `Map.of(Pair.of("a",5), Entry.of("a",6))` | reject duplicate constant keys across item kinds |
 | `Entry.of(non_hashable_key,5)` | valid if ordinary type/ownership rules allow; Map insertion separately rejects |
 | `false && (trap_expression)`, `true || (trap_expression)` | right operand not evaluated (with bool-typed trap expression) |
 | `(key) => 5` | ordinary evaluated Entry key |
