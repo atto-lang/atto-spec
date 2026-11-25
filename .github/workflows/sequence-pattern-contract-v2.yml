@@ -1,0 +1,26 @@
+name: Structural sequence matching v2 reference (HOST ONLY)
+on:
+  pull_request:
+    paths:
+      - 'language/sequence-pattern-matching-v2.md'
+      - 'tests/sequence-pattern-contract-v2.test.mjs'
+      - '.github/workflows/sequence-pattern-contract-v2.yml'
+  push:
+    paths:
+      - 'language/sequence-pattern-matching-v2.md'
+      - 'tests/sequence-pattern-contract-v2.test.mjs'
+      - '.github/workflows/sequence-pattern-contract-v2.yml'
+permissions:
+  contents: read
+jobs:
+  reference-contract-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Execute HOST-ONLY reference tests (NOT compiler guest proof)
+        run: |
+          node --version
+          node --test tests/sequence-pattern-contract-v2.test.mjs

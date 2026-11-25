@@ -1,0 +1,33 @@
+name: Actor protocol typestate source-free model
+
+on:
+  pull_request:
+    paths:
+      - 'language/actor-protocol-typestate-v1.md'
+      - 'spec/05-actors-and-state.md'
+      - 'scripts/actor-protocol-typestate-model.mjs'
+      - 'tests/actor-protocol-typestate-*.json'
+      - 'tests/actor-protocol-typestate-*.mjs'
+      - '.github/workflows/actor-protocol-typestate-model.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/actor-protocol-typestate-model.mjs'
+      - 'tests/actor-protocol-typestate-*.json'
+      - 'tests/actor-protocol-typestate-*.mjs'
+      - '.github/workflows/actor-protocol-typestate-model.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-free-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify typestate reference model (NOT guest compiler evidence)
+        run: node --test tests/actor-protocol-typestate-model.test.mjs
