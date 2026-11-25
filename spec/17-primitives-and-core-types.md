@@ -80,6 +80,10 @@ Outside an actor, unhandled overflow ends the root invocation as described in [c
 - `ArrayList` is not a core sequence type on Java `main`. Chapter 02 uses it only as a conditional example.
 - On Java, an out-of-bounds index fails with a host `IllegalArgumentException`. **TARGET:** it becomes a language-level panic with a defined class.
 
+## Collection factory spelling (target)
+
+See the [canonical named collection-factory spelling proposal](../language/collection-factory-spelling-target-v1.md). Structural type shorthand is not a collection value factory; existing bitwise complement and separately specified collection literals are unaffected. Constructor admission, ownership and exact guest evidence remain independently gated.
+
 ## Option and Result
 
 The unqualified `Option`, `Result`, `Some`, `None`, `Ok` and `Err` names belong to the **automatic core prelude**; users need not explicitly import them. This is a compile-time source binding, not a process-global value. For the profile boundaries and the rules for `String`, collections, ownership, name collisions and cross-backend conformance, see [automatic prelude v1](../language/automatic-prelude-v1.md).
