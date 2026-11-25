@@ -20,8 +20,13 @@ guest-source conformance across backends.
 | `panic Error` | Bypass | Bypass | **Never locally recoverable** | Supervisor CONTROL / root fatal policy |
 | cancellation, host fatal | Bypass | Bypass | **Never** | Scheduler / host policy |
 
-All source `throw` / `raise` / `panic` operands must be a statically
-validated `Error` subclass, including the built-in `Error`. Distinguish
+The portable Error profile requires a statically validated built-in `Error`
+or its subclass. The later [nominal trait reconciliation](cross-backend-semantics-reconciliation-v1.md#errors-macros-and-pipelines)
+admits other values only with independently proven `Throwable`, `Raisable`
+or `Panicable` conformance respectively, including valid inherited conformance.
+The compiler must preserve original nominal identity and payload; a backend
+without that representation must reject the extension before emission.
+Distinguish
 an application `raise` from host/runtime traps, allocator exhaustion,
 authenticated cancellation and forced termination; none can be relabeled
 as a recoverable application error.
@@ -48,6 +53,19 @@ typed continuations must remain valid despite cleanup of failed scopes.
 Fail closed for any backend that cannot prove this ownership/lifetime and
 resumption property. This cannot be implemented by installing one ordinary
 Wasm exception handler at each local `recover` site.
+
+## AOT and deterministic memory obligations
+
+These control effects must be representable as statically typed exceptional
+control-flow edges and bounded per-invocation unwind metadata. Record live
+owned resources, completed moves, borrow termination, and cleanup ordering on
+every admitted exit. Ordinary return, `?`, throw, raise, panic and cancellation
+must not cause double destruction or leak a transferred error payload. Catch
+search must not run recovery registrations prematurely. The guest must not
+require a tracing collector, dynamic code generation or mandatory stack-trace
+allocation to implement these semantics. Backend host allocation and native
+AOT claims require separate executed evidence; source-level contracts do not
+certify either.
 
 ## Accepted source syntax (canonical v1)
 
