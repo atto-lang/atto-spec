@@ -3,12 +3,22 @@ on:
   pull_request:
     paths:
       - 'language/inline-collection-literals-v1.md'
+      - 'language/entry-expression-and-record-literals-v1.md'
+      - 'language/map-of-entries-and-nominal-structs-v1.md'
+      - 'language/typed-map-of-entries-and-nominal-structs-v1.md'
+      - 'tests/parenthesized-record-contract.test.mjs'
+      - 'conformance/aggregate-constructor-v2.json'
       - 'language/record-struct-layout-v1.md'
       - 'tests/record-map-literal-contract.test.mjs'
       - '.github/workflows/record-map-literal-contract.yml'
   push:
     paths:
       - 'language/inline-collection-literals-v1.md'
+      - 'language/entry-expression-and-record-literals-v1.md'
+      - 'language/map-of-entries-and-nominal-structs-v1.md'
+      - 'language/typed-map-of-entries-and-nominal-structs-v1.md'
+      - 'tests/parenthesized-record-contract.test.mjs'
+      - 'conformance/aggregate-constructor-v2.json'
       - 'language/record-struct-layout-v1.md'
       - 'tests/record-map-literal-contract.test.mjs'
       - '.github/workflows/record-map-literal-contract.yml'
@@ -25,4 +35,4 @@ jobs:
       - name: Run host-only Map/Record classification and document checks
         run: |
           node --version
-          node --test tests/record-map-literal-contract.test.mjs
+          node --test tests/record-map-literal-contract.test.mjs tests/parenthesized-record-contract.test.mjs
