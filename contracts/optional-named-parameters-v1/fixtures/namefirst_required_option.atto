@@ -1,0 +1,7 @@
+// Target guest fixture, NOT executed as backend evidence.
+fnc required(x: int?): int {
+  return 42;
+}
+pub fnc main(): int {
+  return required(x: Some(5));
+}

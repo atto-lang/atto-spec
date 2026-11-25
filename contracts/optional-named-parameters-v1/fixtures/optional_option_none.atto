@@ -1,0 +1,7 @@
+fnc defaultable(int? value?, int answer? = 42): int {
+  return answer;
+}
+
+pub fnc main(): int {
+  return defaultable();
+}

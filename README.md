@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Optional types and named/omittable call arguments](spec/27-optional-and-named-arguments.md): independent `?` positions, defaults, named binding and provenance; host tests do not certify guest support.
+
 - [Immediate channel probes](spec/27-channel-immediate-probes.md): recoverable `Accepted`/`Full(T)`/`Closed(T)`, no waiter registration and affine ownership; host reference only.
 
 - [Effects and lifetimes](spec/23-effects-and-lifetimes.md): typed CFG loans, latent effects, actor-domain retirement and proof gates; canonical bang ownership syntax and host-only contract evidence.
