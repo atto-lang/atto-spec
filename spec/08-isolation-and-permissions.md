@@ -1,13 +1,12 @@
 # 08 — Isolation, Capabilities and Permission Admission
 
-**Canonical terminology (2026-11-11):** the per-tenant execution boundary is **TenantVM** in every toolchain, nested under the trusted **OresVM** root and enclosing all actors for exactly one tenant incarnation. Historical *IsolateVM* and *tenant isolate* refer to the same conceptual runtime unit. See [Chapter 23 — TenantVM](23-tenant-vm-terminology.md). This naming decision does not certify a sandbox or compiled untrusted guest execution.
-
-
 **Status: DRAFT; profile-dependent security contract.**
+
+**Canonical naming:** [TenantVM](tenant-vm-terminology.md) denotes the per-tenant execution domain; historical IsolateVM identifiers describe the same conceptual boundary. Naming alone does not certify hostile-tenant containment.
 
 ## Threat and authority model
 
-Language-level actor confinement is **not** an OS sandbox. Actor kind controls runtime policy: trusted shared, private/isolated, or untrusted actors may have different capabilities and transport. Actual memory/CPU fault isolation requires a verified isolate, process, sandbox or platform mechanism.
+Language-level actor confinement is **not** an OS sandbox. Hostile tenants may share one OS process only inside independently verified per-tenant TenantVM/isolate containment boundaries; **a separate OS process is not universally mandatory**. An allocator arena, thread, unchecked cage or user-supplied provenance marker alone is insufficient. A process sandbox remains an optional stronger deployment profile. Actor kind controls runtime policy: trusted shared, private/isolated, or untrusted actors may have different capabilities and transport. Actual memory/CPU fault isolation requires a verified isolate, process, sandbox or platform mechanism.
 
 The guest does not grant itself host access merely by importing a package, declaring an actor or invoking a privileged method.
 

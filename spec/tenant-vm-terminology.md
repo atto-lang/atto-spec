@@ -1,4 +1,4 @@
-# 23 — TenantVM (canonical name for per-tenant execution domains)
+# TenantVM (canonical name for per-tenant execution domains)
 
 **Status: DRAFT, normative target terminology, not backend certification.**
 **Decision date: 2026-11-11.**
@@ -84,7 +84,7 @@ subject to checked state access and scheduling policy.
 | Forge | `runtime/isolate.hpp`, `TenantIsolationAdmission.hpp` | Host registry and fail-closed untrusted guest admission |
 | .NET Native AOT | `OresVmHost`, `IsolateHandle`, `NativeVmIsolate` | Logical host substrate; native validated-Wasm TenantVM integration pending |
 | Cranelift | `src/isolate.rs`, trusted JIT bridge | Native scalar host model; no untrusted guest guarantee |
-| Rust frontend | `oreslang-source.rs` scalar compiler | Must preserve TenantVM facts in future IR/actor lowering |
+| Rust frontend | `atto-source.rs` scalar compiler | Must preserve TenantVM facts in future IR/actor lowering |
 | JavaScript | `tenant-isolation-policy.mjs`, Worker adapters | Worker alone not hostile tenant containment |
 | HDL | experimental source-to-RTL compiler | Does not support TenantVM or actor execution; fail closed |
 
@@ -94,7 +94,7 @@ and retain any historical symbol spellings needed to build existing code.
 
 ## Conformance
 
-Use the existing [tenant isolation v2 shared-process contract](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/blob/main/contracts/tenant-isolation-v2.json).
+Use the existing [tenant isolation v2 shared-process contract](https://github.com/atto-lang/atto-platform-conformance).
 Require real compiled guest tests with at least two tenants, multiple actors
 inside one TenantVM, denial of cross-tenant access, stale-handle invalidation,
 per-actor/tenant/host quotas, a trapped/spinning tenant, neighbor survival and
