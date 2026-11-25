@@ -1,0 +1,36 @@
+name: Generic callable contract (host-only registry)
+on:
+  pull_request:
+    paths:
+      - 'language/generic-callables-v1.md'
+      - 'conformance/generic-callables-v1.json'
+      - 'tests/generic-callables-contract.test.mjs'
+      - '.github/workflows/generic-callables-contract.yml'
+  push:
+    paths:
+      - 'language/generic-callables-v1.md'
+      - 'conformance/generic-callables-v1.json'
+      - 'tests/generic-callables-contract.test.mjs'
+      - '.github/workflows/generic-callables-contract.yml'
+permissions:
+  contents: read
+jobs:
+  registry-sanity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Exact checkout provenance
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git rev-parse HEAD
+          git rev-parse HEAD^{tree}
+      - name: Validate target-only case registry (NOT guest proof)
+        run: |
+          node --version
+          node --test tests/generic-callables-contract.test.mjs

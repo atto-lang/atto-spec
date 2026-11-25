@@ -1,0 +1,383 @@
+{
+  "schema": "atto.runtime.threading-mode.contract.v1",
+  "status": "PROPOSED_SOURCE_FREE_ONLY",
+  "capabilityProfile": "single-threaded-and-trace-only-for-reference-parser",
+  "invariant": "at_most_one_os_thread_in_guest_memory_space",
+  "testScope": "CLI_REFERENCE_MODEL_NOT_COMPILER_OR_GUEST_EXECUTION",
+  "cliCases": [
+    {
+      "id": "default",
+      "args": [],
+      "expected": {
+        "accept": true,
+        "singleThreaded": false,
+        "extraModes": []
+      }
+    },
+    {
+      "id": "canonical",
+      "args": [
+        "--single-threaded"
+      ],
+      "expected": {
+        "accept": true,
+        "singleThreaded": true,
+        "extraModes": []
+      }
+    },
+    {
+      "id": "numeric-one",
+      "args": [
+        "--max-threads-per-space=1"
+      ],
+      "expected": {
+        "accept": true,
+        "singleThreaded": true,
+        "extraModes": []
+      }
+    },
+    {
+      "id": "mode-one",
+      "args": [
+        "--mode=single-threaded"
+      ],
+      "expected": {
+        "accept": true,
+        "singleThreaded": true,
+        "extraModes": []
+      }
+    },
+    {
+      "id": "mode-and-trace",
+      "args": [
+        "--mode=single-threaded,trace"
+      ],
+      "expected": {
+        "accept": true,
+        "singleThreaded": true,
+        "extraModes": [
+          "trace"
+        ]
+      }
+    },
+    {
+      "id": "reverse-mode-order",
+      "args": [
+        "--mode=trace,single-threaded"
+      ],
+      "expected": {
+        "accept": true,
+        "singleThreaded": true,
+        "extraModes": [
+          "trace"
+        ]
+      }
+    },
+    {
+      "id": "equivalent-flags",
+      "args": [
+        "--single-threaded",
+        "--mode=single-threaded",
+        "--max-threads-per-space=1"
+      ],
+      "expected": {
+        "accept": true,
+        "singleThreaded": true,
+        "extraModes": []
+      }
+    },
+    {
+      "id": "trace-only",
+      "args": [
+        "--mode=trace"
+      ],
+      "expected": {
+        "accept": true,
+        "singleThreaded": false,
+        "extraModes": [
+          "trace"
+        ]
+      }
+    },
+    {
+      "id": "app-separator",
+      "args": [
+        "--",
+        "--single-threaded"
+      ],
+      "expected": {
+        "accept": true,
+        "singleThreaded": false,
+        "extraModes": []
+      }
+    },
+    {
+      "id": "shorthand-ambiguous",
+      "args": [
+        "--single"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_UNKNOWN_FLAG"
+      }
+    },
+    {
+      "id": "max1-ambiguous",
+      "args": [
+        "--mode=max1"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_UNKNOWN_MODE"
+      }
+    },
+    {
+      "id": "empty-mode",
+      "args": [
+        "--mode="
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_EMPTY_MODE"
+      }
+    },
+    {
+      "id": "empty-element",
+      "args": [
+        "--mode=single-threaded,,trace"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_EMPTY_MODE"
+      }
+    },
+    {
+      "id": "trailing-comma",
+      "args": [
+        "--mode=single-threaded,"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_EMPTY_MODE"
+      }
+    },
+    {
+      "id": "leading-comma",
+      "args": [
+        "--mode=,single-threaded"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_EMPTY_MODE"
+      }
+    },
+    {
+      "id": "duplicate-mode",
+      "args": [
+        "--mode=trace,trace"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_DUPLICATE_MODE"
+      }
+    },
+    {
+      "id": "space-mode",
+      "args": [
+        "--mode=trace, single-threaded"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_UNKNOWN_MODE"
+      }
+    },
+    {
+      "id": "wrong-case",
+      "args": [
+        "--mode=Single-Threaded"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_UNKNOWN_MODE"
+      }
+    },
+    {
+      "id": "unknown-mode",
+      "args": [
+        "--mode=single-threaded,abc"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_UNKNOWN_MODE"
+      }
+    },
+    {
+      "id": "zero",
+      "args": [
+        "--max-threads-per-space=0"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_INVALID_THREAD_LIMIT"
+      }
+    },
+    {
+      "id": "negative",
+      "args": [
+        "--max-threads-per-space=-1"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_INVALID_THREAD_LIMIT"
+      }
+    },
+    {
+      "id": "positive-sign",
+      "args": [
+        "--max-threads-per-space=+1"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_INVALID_THREAD_LIMIT"
+      }
+    },
+    {
+      "id": "fraction",
+      "args": [
+        "--max-threads-per-space=1.0"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_INVALID_THREAD_LIMIT"
+      }
+    },
+    {
+      "id": "scientific",
+      "args": [
+        "--max-threads-per-space=1e0"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_INVALID_THREAD_LIMIT"
+      }
+    },
+    {
+      "id": "leading-zero",
+      "args": [
+        "--max-threads-per-space=01"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_INVALID_THREAD_LIMIT"
+      }
+    },
+    {
+      "id": "overflow",
+      "args": [
+        "--max-threads-per-space=999999999999999999"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_INVALID_THREAD_LIMIT"
+      }
+    },
+    {
+      "id": "unsupported-two",
+      "args": [
+        "--max-threads-per-space=2"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_UNSUPPORTED_THREAD_LIMIT"
+      }
+    },
+    {
+      "id": "conflict",
+      "args": [
+        "--single-threaded",
+        "--max-threads-per-space=2"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_CONFLICTING_THREAD_POLICY"
+      }
+    },
+    {
+      "id": "flag-value",
+      "args": [
+        "--single-threaded=false"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_UNKNOWN_FLAG"
+      }
+    },
+    {
+      "id": "unknown-flag",
+      "args": [
+        "--threads=1"
+      ],
+      "expected": {
+        "accept": false,
+        "code": "E_UNKNOWN_FLAG"
+      }
+    }
+  ],
+  "runtimeCases": [
+    {
+      "id": "same-memory-two-actors",
+      "condition": "two cpu-bound actors run in one shared mutable memory space",
+      "expected": "SERIALIZE_IN_ONE_LANE"
+    },
+    {
+      "id": "independent-workers",
+      "condition": "two workers have disjoint nonshared memory spaces",
+      "expected": "CONCURRENT_ALLOWED"
+    },
+    {
+      "id": "ffi-inbound-callback",
+      "condition": "foreign thread calls into guest memory with owner lane already busy",
+      "expected": "MARSHAL_OR_REJECT"
+    },
+    {
+      "id": "shared-wasm-alias",
+      "condition": "distinct workers alias one SharedArrayBuffer or shared Wasm memory",
+      "expected": "JOIN_DOMAIN_OR_REJECT"
+    },
+    {
+      "id": "async-io",
+      "condition": "async I/O completes on host reactor while owner actor awaits",
+      "expected": "QUEUE_COMPLETION_AND_PROGRESS"
+    },
+    {
+      "id": "blocking-owner",
+      "condition": "one actor holds the sole lane while awaiting an event on same lane",
+      "expected": "COOPERATIVE_SUSPEND_NOT_DEADLOCK"
+    },
+    {
+      "id": "unverified-plugin",
+      "condition": "plugin may spawn a thread with retained mutable guest pointer",
+      "expected": "REJECT_UNSUPPORTED"
+    },
+    {
+      "id": "reentrant-owner",
+      "condition": "nested synchronous callback on same OS thread",
+      "expected": "ALLOW_ONLY_WITH_BORROW_AND_REENTRANCY_SAFETY"
+    },
+    {
+      "id": "cross-process-shared-map",
+      "condition": "two processes map writable shared guest memory",
+      "expected": "SHARED_DOMAIN_PROOF_OR_REJECT"
+    },
+    {
+      "id": "supervisor-panic",
+      "condition": "actor panics while another actor is runnable",
+      "expected": "CONTROL_AND_CLEANUP_WITHOUT_PARALLEL_GUEST_EXECUTION"
+    },
+    {
+      "id": "untrusted-native-ffis",
+      "condition": "native ABI cannot prove callback thread control",
+      "expected": "REJECT_UNSUPPORTED"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+fnc accept_option(int? x): int {
+  return 42;
+}
+
+pub fnc main(): int {
+  return accept_option(5);
+}

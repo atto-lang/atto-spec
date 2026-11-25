@@ -1,0 +1,26 @@
+name: Object and actor lifecycle contract
+on:
+  pull_request:
+    paths:
+      - 'contracts/object-actor-lifecycle-v1.json'
+      - 'spec/27-root-object-actor-lifecycle.md'
+      - 'tests/object-actor-lifecycle-contract.test.mjs'
+      - '.github/workflows/object-actor-lifecycle-contract.yml'
+  push:
+    paths:
+      - 'contracts/object-actor-lifecycle-v1.json'
+      - 'spec/27-root-object-actor-lifecycle.md'
+      - 'tests/object-actor-lifecycle-contract.test.mjs'
+      - '.github/workflows/object-actor-lifecycle-contract.yml'
+permissions:
+  contents: read
+jobs:
+  source-contract-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Node runtime
+        run: node --version
+      - name: Run source-only lifecycle inventory validation (NOT guest execution)
+        run: node --test tests/object-actor-lifecycle-contract.test.mjs
