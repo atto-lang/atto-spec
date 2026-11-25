@@ -338,7 +338,7 @@
       "id": "collection_list_alias",
       "expectation": "accept",
       "feature": "generic_delimiters_v2",
-      "source": "fnc pass(List<string> value): List<string> { return value; } pub fnc main(): int { return 42; }",
+      "source": "fnc pass(List[string] value): List<string> { return value; } pub fnc main(): int { return 42; }",
       "status": "NOT_EXECUTED"
     },
     {
