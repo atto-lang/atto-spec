@@ -14,6 +14,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Channel read Future ownership and cancellation v1](language/channel-future-lifecycle-v1.md): checked one-shot `Channel<int>` reads, consuming `abandon()`, cancellation, FIFO preservation and Worker cleanup; Rust/Wasm verified, Java/LLVM/.NET parity pending.
+- [Return-position `match` with `return` or `^` v1](language/return-match-caret-v1.md): nested lexical returns, exhaustive arm proof and typed Channel/Future example; compiler/CI acceptance remains separately gated.
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
 
 ## Validation
@@ -41,3 +43,7 @@ This README records the intended role of this repository; it is not a claim of f
 Keep canonical AttoLang (.atto) semantics consistent with the language specification, while treating Oreslang-named tooling and .ores as compatibility surfaces.
 
 Changes asserting compiler/runtime support must identify the exact source head, target, toolchain, executed positive and negative guest tests, and failure/unsupported status; an empty CI step list is **not executed**. Documentation records responsibility, **not** a claim of feature completion.
+
+- [Process stdio channel endpoints v1](language/stdio-channel-endpoints-v1.md): target process/stdin/stdout/stderr identity aliases, checked reads and writes, nonparking suspension, one stdin consumer lease, host-permission isolation and executable parity gates; **not guest-verified**.
+
+- [Nominal `on is` ADT constructor patterns (v1 target)](language/adt-is-variant-patterns-v1.md)

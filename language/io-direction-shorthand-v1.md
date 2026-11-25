@@ -35,12 +35,25 @@ For `Channel<T>`, this is a syntax-directed alias for the same read/write and ow
 
 ```ebnf
 io_statement   = writable_expr, "<<", value_expr, ";"
-               | readable_expr, ">>", ("val" | "let"), identifier, [" :", type], ";" 
+               | readable_expr, ">>", [ "=" ], ("val" | "let"), identifier, [" :", type], ";" 
                | ("val" | "let"), identifier, [":", type], "<<", readable_expr, ";" ;
 select_io_arm  = "when", writable_expr, "<<", value_expr, "->", block
-               | "when", readable_expr, ">>", ("val" | "let"), identifier, [":", type], "->", block
+               | "when", readable_expr, ">>", [ "=" ], ("val" | "let"), identifier, [":", type], "->", block
                | "when", ("val" | "let"), identifier, [":", type], "<<", readable_expr, "->", block ;
 ```
+
+Optional `=` after a read-direction `>>` is accepted only when it is
+separated from `>>` by whitespace and followed by a fresh `val`/`let`
+binding; it is redundant and the target formatter canonicalizes it away.
+For example, `inbox >> = val item;` is equivalent to
+`inbox >> val item;`, including in selectable read arms. `>>=` as a
+contiguous operator, `>> ==`, `>> = =`, and
+`>> = existing_variable` are **not** valid read-binding spellings.
+The same optional marker is admitted for the contextual typed Future slot
+and terminal checked-pipeline captures in
+`language/typed-io-continuation-pipelines-v1.md`; the underlying
+directional operation still evaluates exactly once. No optional `=` is
+introduced after `<<` writes, and this is not a general assignment alias.
 
 A statement may also use a parenthesized source/sink and a qualified path (`stdio.out`, `streams.output`). The token pairs must be contiguous: `<<` and `>>`, not `< <` / `> >`. Nested generic closing delimiters such as `Result<Option<int>>` remain distinct by grammar context. Numeric bit shifts are not retroactively I/O; no inferred channel creation, arithmetic shift-to-I/O conversion, or arbitrary class operator overloading is permitted. v1 rejects chained I/O operators without explicit sequencing.
 
@@ -335,13 +348,15 @@ do readch foo, |outcome| -> void {
 
 **Latest directional-capture extension:** The two explicit reverse/forward
 spellings `nb source >> (val T result << |f| -> await f <| Future<T>)`
-and `nb source >> Future<T> pending |> await pending >> val T result`,
-and the checked `(await pending)?` / `(await f)?` propagation forms,
+and `nb source >> Future<T> pending |> |f| -> await f >> val T result`,
+and the checked inline-lambda `(await f)?` propagation form,
 are specified in `language/typed-io-continuation-pipelines-v1.md`.
 This is a contextual exception: `Future<T>` is a typed placeholder
 **only** in that `nb` read production; outside it `Future<T>` is not a
-runtime value and bare `|> await` is still invalid. `?` propagates
-`Result.Err` after await while preserving an inner `Option<T>` EOF.
+runtime value and both bare `|> await` and `|> await pending` are invalid.
+The explicit inline-lambda stage is lowered in the enclosing callable,
+so `?` propagates `Result.Err` after await to that caller while preserving
+an inner `Option<T>` EOF; ordinary first-class lambdas retain local `?` scope.
 This newest draft supersedes contradictory earlier rejection wording below.
 
 
@@ -358,10 +373,9 @@ await and stays available in the remaining statement scope.
 // not a constructor, expression, or evaluated generic.
 nb incoming >> (val Outcome resolved << await Future<Outcome>);
 
-// Second spelling: '|' is a delimiter ONLY in this typed I/O continuation
-// production, not a replacement for functional '|>'.
+// Second spelling: a real inline lambda is the callable pipeline stage.
 nb incoming >> Future<Outcome> pending
-    | await pending >> val Outcome resolved;
+    |> |f| -> await f >> val Outcome resolved;
 
  // Third equivalent, explicitly functional pipeline stage, with susp alias:
 nb incoming >> val pending: Future<Outcome>
@@ -442,3 +456,8 @@ future_type_slot = "Future", "<", complete_type_ref, ">" ;
 - Runtime checks: admission of bounded writes, credit exhaustion and quota failure; supervisor error path when there is no callback; callback once on terminal success/failure; cancel vs commit; no payload duplication; no callback after owner destruction; no stack loan escaping the caller.
 - Negative parse/type tests for bare `do readch`, detached local read binders, `nb readch foo >> Future<string> foo`, a standalone `await Future<string>` expression outside the contextual nb-read continuation production, `do` under `pure`, missing I/O capability, and bare discarded checked Futures.
 - A Rust host model or syntax-only preflight must be reported separately from actual compiled `.atto` guest runtime/driver evidence. **No claims of executable support** until each backend runs a real channel and stream fixture from an exact SHA-pinned artifact.
+
+
+## Checked prefix/postfix reads and declaration-first typed bindings (candidate)
+
+See [prefix read](unary-read-expression-v1.md) and [terminal postfix read](postfix-channel-read-expression-v1.md). Both evaluate a readable once and preserve the exact checked result. Type-first and name-first annotations are admitted without silently unwrapping Result or Option. A potentially suspending read/write requires `susp` (legacy `suspends`) plus applicable capabilities. `trap!` preserves the suspend effect; it never turns a blocking read into an immediate attempt. Binary binding and write forms retain their own grammar, including the optional equals rules above. The restricted guest channel pilot is not portable runtime evidence.
