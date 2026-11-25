@@ -31,6 +31,9 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Checked directional I/O](language/io-direction-shorthand-v1.md), [prefix/postfix reads](language/postfix-channel-read-expression-v1.md), and [mixed endpoint pipes](language/mixed-endpoint-pipe-v1.md): single-operation and continuous graph contracts; host models only, not portable guest certification.
+- [Pipeline failure accounting](language/pipeline-effect-proof-v1.md), [handler boundaries](language/pipeline-handler-boundaries-v1.md), and [declared actor ingress](language/declared-actor-pipe-signatures-v1.md): checked effects and lifecycle targets with independently gated compiler/runtime evidence.
+
 - [Type tests, conversion and scoped using](language/type-tests-casts-and-using-v1.md): candidate explicit type predicates, branch-local capture and checked conversion; no universal execution claim.
 
 - [Adversarial sequence conformance](language/seq-adversarial-conformance-v1.md) and [void return vectors](conformance/void-early-return-v1.json): target tests, not portable execution certification.
