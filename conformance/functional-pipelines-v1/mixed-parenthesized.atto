@@ -1,0 +1,4 @@
+// expect-exit: 42
+fnc double(int x): int -> x * 2;
+fnc increment(int x): int -> x + 1;
+pub fnc main(): int -> double <| (20 |> increment);

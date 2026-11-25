@@ -103,3 +103,6 @@ Adoption proceeds in order: (1) parser and canonical named-generic binding, (2) 
 - Evidence: use **actual source-compiled guest execution** and compile-failure evidence with exact source head/tree, fixture blob SHAs, compiler SHA, jobs and nonzero executed steps. A parser-only check, host planning model or source-free unit test is **NOT_EXECUTED** for runtime conformance. Every unsupported backend MUST fail closed before emitting an artifact.
 
 See [chapter 11](11-conformance.md) for evidence and the portable `collection-layout-v1` candidate contract in the AttoLang platform-conformance repository.
+
+
+The host reference suite `tests/collection-layout-reference.test.mjs` exercises layout binding and field-evaluation order only, not physical storage or compiled guest behavior.

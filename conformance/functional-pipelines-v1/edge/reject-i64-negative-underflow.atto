@@ -1,0 +1,2 @@
+// expect-error: signed-int64-literal-range; no executable output
+pub fnc main(): int -> -9223372036854775809;
