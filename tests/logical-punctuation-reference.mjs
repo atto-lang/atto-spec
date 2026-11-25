@@ -1,0 +1,6 @@
+import {readFileSync} from 'node:fs';
+function check(contract,fixture,report){const assert=(x,m)=>{if(!x)throw Error(m)};assert(contract.status==="TARGET_NOT_VERIFIED","status");assert(Object.keys(contract.semantics).sort().join(",")==="&&,Xor,||","operator inventory");assert(contract.semantics["&&"].precedence>contract.semantics["||"].precedence,"precedence");assert(contract.semantics.Xor.form==="explicit-call"&&!fixture.includes("^^"),"xor");assert(new Set(contract.negative_fixtures).size===8,"negative fixtures");let n=0;for(const a of [false,true])for(const b of [false,true]){for(const [expr,expected] of [[`(${a} && ${b})`,a&&b],[`(${a} || ${b})`,a||b],[`Xor(${a}, ${b})`,a!==b]]){assert(fixture.includes(`${expr} eq ${expected}`),"missing truth table "+expr);n++}}assert(fixture.includes("Xor(Xor(true, true), true) eq true"),"nested");assert(fixture.includes("(false || Xor(true, true && false)) eq true"),"precedence");report(`${n+7} logical contract/fixture consistency checks passed`)}
+const dir=new URL('../contracts/logical-punctuation-v1/',import.meta.url);
+const c=JSON.parse(readFileSync(new URL('contract.json',dir),'utf8'));
+check(c,readFileSync(new URL(c.positive_fixture,dir),'utf8'),console.log);
+for(const p of c.negative_fixtures) if(!readFileSync(new URL(p,dir),'utf8').includes('fnc main')) throw Error('missing fixture '+p);

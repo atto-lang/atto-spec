@@ -1,0 +1,17 @@
+use namespace jobs;
+
+define enum WorkerMsg {
+    Run { payload: Bytes },
+    Stop
+}
+
+fnc bad_move(msg: WorkerMsg): void {
+    do match msg over
+        on Run as r -> {
+            val loan = rt borrow r.payload;
+            val stolen = rt take r.payload;
+            val use_loan = loan.length();
+        }
+        on Stop -> {}
+    end
+}

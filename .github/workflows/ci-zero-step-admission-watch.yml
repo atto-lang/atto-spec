@@ -18,7 +18,7 @@ permissions:
   contents: read
 jobs:
   report-admission:
-    uses: atto-lang/.github/.github/workflows/ci-zero-step-watcher.yml@main
+    uses: atto-lang/.github/.github/workflows/ci-zero-step-watcher.yml@e934ffd39781a7642e2bc1a0d9d4fa893e866091
     permissions:
       actions: read
       contents: read
