@@ -142,3 +142,12 @@ Actual compiler, actor isolation, AOT and multi-backend parity claims require se
 - [Opaque newtypes, bounded values and const generics v1](language/opaque-newtypes-bounds-const-generics-v1.md): TARGET nominal scalar identities, checked ranges and compile-time shape/layout arguments, with [machine-readable vectors](contracts/opaque-newtypes-bounds-const-generics-v1.json) and **host-only** proof tests. No compiler/backend guest parity claimed.
 
 - [Checked owned Dyn interface erasure v1](language/checked-owned-dyn-erasure-v1.md): defines constructor, checked `(take! owner) as Dyn<I>`, and contextual `take!` equivalence; Rust/browser implementation draft remains unexecuted on current head, all other backends unverified.
+
+## Rule registry and cross-toolchain conformance
+
+- [Specification framework](language/specification-framework-v1.md): rule identity, edition/profile authority, governance and formatter safety laws (proposed protocol; NOT a backend proof).
+- [Machine-readable rule index](contracts/specification-rules-v1.json): stable rule IDs and formatter target vectors linking existing language clauses to conformance; **not yet executable guest certification**.
+- [Formal refinement obligations](formal/specification-refinement-obligations-v1.md): parse, type/ownership, actor, formatter and compilation proof targets.
+- [Host-only registry tests](tests/specification-framework-v1.test.mjs): checks traceability and negative vectors; does not execute compilers or formatters.
+
+`atto-format` and historical `oreslang-format` are independent consumers of this specification and must separately report parser/semantic round-trip evidence. Runtime/guest results belong in `atto-platform-conformance`, with exact SHA provenance. Do not infer parity from file presence or source-only CI.
