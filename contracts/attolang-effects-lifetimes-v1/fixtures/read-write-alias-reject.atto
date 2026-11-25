@@ -4,7 +4,7 @@ define class Box as
 end
 pub fnc main(): int {
   let Box owner = new Box();
-  val read = rt borrow owner;
-  val write = rt mut borrow owner;
+  val read = borrow! owner;
+  val write = borrow! mut owner;
   return read.value + write.value;
 }

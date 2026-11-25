@@ -4,7 +4,7 @@
 
 ## Decision: Rust-grade safety, actor-native ergonomics
 
-Adopt the *guarantees* of affine moves, immutable shared loans, exclusive mutable loans, flow-sensitive non-lexical lifetimes (NLL), initialized-before-use, and exactly-once owned resource release. Do **not** add Rust's `&` / `*` syntax or require users to annotate lifetimes in common code. AttoLang's canonical ownership forms remain `rt take`, `rt copy`, `rt borrow`, `rt mut borrow` and `rt share` (subject to parser parity).
+Adopt the *guarantees* of affine moves, immutable shared loans, exclusive mutable loans, flow-sensitive non-lexical lifetimes (NLL), initialized-before-use, and exactly-once owned resource release. Do **not** add Rust's `&` / `*` syntax or require users to annotate lifetimes in common code. AttoLang's canonical ownership forms remain `take!`, `copy!`, `borrow!`, `borrow! mut` and `share!` (subject to parser parity; legacy `rt` spellings are migration aliases under the current ownership contract).
 
 All backends MUST enforce the same safety theorem: **an access is admissible only when the typed operation has both (1) a valid lifetime/ownership proof and (2) the required effect/capability admission.** Neither one substitutes for the other. The static checker must operate on typed CFG/MIR after macro expansion and checked call resolution, not on untrusted tokens or a host-library-only model.
 

@@ -4,8 +4,8 @@ define class Box as
 end
 pub fnc main(): int {
   let Box owner = new Box();
-  val view = rt borrow owner;
+  val view = borrow! owner;
   val snapshot = view.value;
-  val moved = rt take owner;
+  val moved = take! owner;
   return snapshot;
 }

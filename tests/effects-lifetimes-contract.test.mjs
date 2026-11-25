@@ -54,7 +54,7 @@ test("candidate fixtures have distinct targeted oracles but no fake passes", () 
     assert.equal(c.status, "AUTHORED_NOT_EXECUTED");
     assert.equal(c.path, `contracts/attolang-effects-lifetimes-v1/fixtures/${c.id}.atto`);
     const source = readFileSync(path.join(root, c.path), "utf8");
-    assert.ok(source.includes("rt borrow owner"));
+    assert.ok(source.includes("borrow! owner"));
     assert.ok(source.endsWith("\n"));
     if (negative.has(c.id)) {
       assert.equal(c.kind, "compile_reject");
@@ -72,7 +72,7 @@ test("candidate fixtures have distinct targeted oracles but no fake passes", () 
 test("ownership spec uses canonical mutable borrow ordering", () => {
   const chapter = readFileSync(path.join(root, "spec/04-ownership-and-memory.md"), "utf8");
   assert.ok(chapter.includes("`rt mut borrow value`"));
-  assert.ok(chapter.includes("historical `rt borrow mut value` ordering is invalid"));
+  assert.ok(chapter.includes("`borrow! mut value`"));
   const target = readFileSync(path.join(root, "spec/23-effects-and-lifetimes.md"), "utf8");
-  assert.ok(target.includes("`rt mut borrow`"));
+  assert.ok(target.includes("`borrow! mut`"));
 });

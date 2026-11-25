@@ -1,0 +1,87 @@
+{
+  "schema": "atto.functional-pipelines.v1",
+  "status": "accepted-target-semantics; backend evidence required",
+  "source_type": ".atto",
+  "instructions": "Compile each file with the backend's actual Atto frontend and execute admitted positive guests; negative inputs must fail with no runnable artifact. Host parsers and text scans are not guest evidence.",
+  "positive": [
+    {
+      "file": "block-body.atto",
+      "expected_exit": 83,
+      "expected_stdout": "",
+      "requires": [
+        "pipe-forward",
+        "pipe-reverse",
+        "braced-callable-body"
+      ]
+    },
+    {
+      "file": "inline-arrow-body.atto",
+      "expected_exit": 83,
+      "expected_stdout": "",
+      "requires": [
+        "pipe-forward",
+        "pipe-reverse",
+        "inline-arrow-expression-body"
+      ]
+    },
+    {
+      "file": "reverse-associative.atto",
+      "expected_exit": 42,
+      "expected_stdout": "",
+      "requires": [
+        "reverse-right-associativity",
+        "inline-arrow-expression-body"
+      ]
+    },
+    {
+      "file": "mixed-parenthesized.atto",
+      "expected_exit": 42,
+      "expected_stdout": "",
+      "requires": [
+        "pipe-forward",
+        "pipe-reverse",
+        "grouped-mixed-direction",
+        "inline-arrow-expression-body"
+      ]
+    }
+  ],
+  "negative": [
+    {
+      "file": "reject-return-type.atto",
+      "kind": "type"
+    },
+    {
+      "file": "reject-unterminated-body.atto",
+      "kind": "syntax"
+    },
+    {
+      "file": "reject-ambiguous-mixed-direction.atto",
+      "kind": "syntax"
+    },
+    {
+      "file": "reject-reverse-mixed-unparenthesized.atto",
+      "kind": "syntax"
+    }
+  ],
+  "reporting": {
+    "states": [
+      "passed",
+      "failed",
+      "unsupported",
+      "not_executed"
+    ],
+    "required_evidence": [
+      "compiler_repo",
+      "head_sha",
+      "compiler_blob_sha",
+      "fixture_blob_sha",
+      "command",
+      "exit_status",
+      "guest_executed",
+      "stdout",
+      "stderr",
+      "ci_run_url"
+    ],
+    "rule": "No backend parity assertion from host-only, syntax-only, preview-only, zero-step, or code-inspection checks."
+  }
+}
