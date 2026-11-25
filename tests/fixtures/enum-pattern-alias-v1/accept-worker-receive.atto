@@ -1,0 +1,23 @@
+use namespace jobs;
+
+define enum WorkerMsg {
+    Run { job_id: u64, payload: Bytes },
+    Cancel { job_id: u64 },
+    Stop
+}
+
+declare actor Worker;
+
+mtd (Worker self) receive(msg: WorkerMsg): void {
+    do match msg over
+        on Run { job_id, payload } as r -> {
+            val chosen_id = r.job_id;
+            val field_id = job_id;
+        }
+        on Cancel { job_id } as c -> {
+            val cancelled_id = c.job_id;
+            val field_id = job_id;
+        }
+        on Stop -> {}
+    end
+}

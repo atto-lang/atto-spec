@@ -1,0 +1,140 @@
+{
+  "schema": "atto.comptime.abi.reference.v1",
+  "status": "SOURCE_FREE_MODEL_NOT_GUEST_EXECUTION",
+  "profiles": [
+    {
+      "triple": "x86_64-unknown-linux-gnu",
+      "endian": "little",
+      "maxAlign": 16,
+      "alignments": {
+        "u8": 1,
+        "i8": 1,
+        "u16": 2,
+        "i16": 2,
+        "u32": 4,
+        "i32": 4,
+        "u64": 8,
+        "i64": 8,
+        "f32": 4,
+        "f64": 8
+      }
+    },
+    {
+      "triple": "i686-unknown-linux-gnu",
+      "endian": "little",
+      "maxAlign": 16,
+      "alignments": {
+        "u8": 1,
+        "i8": 1,
+        "u16": 2,
+        "i16": 2,
+        "u32": 4,
+        "i32": 4,
+        "u64": 4,
+        "i64": 4,
+        "f32": 4,
+        "f64": 4
+      }
+    }
+  ],
+  "examples": [
+    {
+      "name": "SamplePacket",
+      "repr": "C",
+      "target": "x86_64-unknown-linux-gnu",
+      "endian": "little",
+      "fields": [
+        {
+          "name": "tag",
+          "type": "u8",
+          "offset": 0
+        },
+        {
+          "name": "counter",
+          "type": "i64",
+          "offset": 8
+        },
+        {
+          "name": "flags",
+          "type": "u32",
+          "offset": 16
+        }
+      ],
+      "size": 24,
+      "align": 8
+    },
+    {
+      "name": "SamplePacket",
+      "repr": "C",
+      "target": "i686-unknown-linux-gnu",
+      "endian": "little",
+      "fields": [
+        {
+          "name": "tag",
+          "type": "u8",
+          "offset": 0
+        },
+        {
+          "name": "counter",
+          "type": "i64",
+          "offset": 4
+        },
+        {
+          "name": "flags",
+          "type": "u32",
+          "offset": 12
+        }
+      ],
+      "size": 16,
+      "align": 4
+    }
+  ],
+  "type": {
+    "name": "packet.SamplePacket",
+    "owner": "packet",
+    "kind": "struct",
+    "closed": true,
+    "fields": [
+      {
+        "name": "tag",
+        "type": "u8",
+        "visibility": "pub"
+      },
+      {
+        "name": "secret",
+        "type": "i64",
+        "visibility": "private"
+      }
+    ]
+  },
+  "foreignBinding": {
+    "symbol": "atto_math_add",
+    "target": "x86_64-unknown-linux-gnu",
+    "abi": "C-v1",
+    "artifactSha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "params": [
+      "int",
+      "int"
+    ],
+    "result": "int",
+    "effects": [
+      "ffi",
+      "blocking"
+    ],
+    "ownership": [
+      "value",
+      "value"
+    ],
+    "callbacks": "none",
+    "thread": "calling-thread"
+  },
+  "backendEvidence": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "cranelift": "NOT_EXECUTED",
+    "rs": "NOT_EXECUTED"
+  }
+}

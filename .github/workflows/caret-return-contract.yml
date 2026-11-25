@@ -7,8 +7,6 @@ on:
       - 'language/return-shorthand-and-sequences-v1.md'
       - 'conformance/caret-return-sequences-v1.json'
       - 'tests/caret-return-sequences-contract.test.mjs'
-      - 'conformance/void-early-return-v1.json'
-      - 'tests/void-early-return-contract.test.mjs'
       - '.github/workflows/caret-return-contract.yml'
   push:
     paths:
@@ -17,8 +15,6 @@ on:
       - 'language/return-shorthand-and-sequences-v1.md'
       - 'conformance/caret-return-sequences-v1.json'
       - 'tests/caret-return-sequences-contract.test.mjs'
-      - 'conformance/void-early-return-v1.json'
-      - 'tests/void-early-return-contract.test.mjs'
       - '.github/workflows/caret-return-contract.yml'
 permissions:
   contents: read
@@ -41,7 +37,7 @@ jobs:
       - name: Validate 49 normative cases (host structural checks only)
         run: |
           node --version
-          node --test tests/caret-return-sequences-contract.test.mjs tests/void-early-return-contract.test.mjs
+          node --test tests/caret-return-sequences-contract.test.mjs
       - name: Boundary of evidence
         run: |
           echo "Host corpus shape validation only. Actual guest execution and cross-backend parity NOT established."

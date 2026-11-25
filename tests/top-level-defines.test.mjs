@@ -22,11 +22,19 @@ test('proposal covers declaration families and browser-stage-1-only operator gap
  const sources=cases.cases.map(x=>x.source).join('\n');
  for(const kind of ['class','actor','enum','struct','interface','trait','fnc'])
    assert.ok(sources.includes('define '+kind)||sources.includes('define pub '+kind));
- for(const [id,op] of [['stage1-unsupported-modulo','%'],['stage1-unsupported-bitwise-xor','^'],['stage1-unsupported-boolean-xor','^^']]) {
+ for(const [id,op] of [['stage1-unsupported-modulo','%'],['stage1-unsupported-typed-int-xor','^^']]) {
    const c=cases.cases.find(x=>x.id===id);
    assert.ok(c && c.expected==='REJECTS' && c.source.includes(' '+op+' '));
    assert.equal(c.scope_note,'BROWSER_STAGE1_ONLY_NOT_A_LANGUAGE_WIDE_OPERATOR_BAN');
  }
+ const infix=cases.cases.find(x=>x.id==='invalid-infix-single-caret');
+ assert.equal(infix.expected,'REJECTS');
+ assert.match(infix.source,/7 \^ 2/);
+ assert.equal(infix.scope_note,'LANGUAGE_WIDE_INVALID_INFIX_CARET');
+ const bool=cases.cases.find(x=>x.id==='invalid-boolean-bitwise-xor');
+ assert.equal(bool.expected,'REJECTS');
+ assert.match(bool.source,/true \^\^ false/);
+ assert.equal(bool.scope_note,'INT_BITWISE_XOR_REQUIRES_INT');
  assert.ok(!cases.cases.some(x=>x.id.startsWith('removed-')));
  const enumCase=cases.cases.find(x=>x.id==='enum-symbols');
  assert.match(enumCase.source,/#done/);

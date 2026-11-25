@@ -125,20 +125,30 @@
       "scope_note": "BROWSER_STAGE1_ONLY_NOT_A_LANGUAGE_WIDE_OPERATOR_BAN"
     },
     {
-      "id": "stage1-unsupported-bitwise-xor",
+      "id": "invalid-infix-single-caret",
       "expected": "REJECTS",
       "source": "fnc main() -> int {return 7 ^ 2;}\n",
+      "diagnostic": "E_UNSUPPORTED",
+      "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT",
+      "scope_note": "LANGUAGE_WIDE_INVALID_INFIX_CARET",
+      "normative_note": "^ is a statement-leading return shorthand; historical stage1 E_UNSUPPORTED remains an observed backend response"
+    },
+    {
+      "id": "stage1-unsupported-typed-int-xor",
+      "expected": "REJECTS",
+      "source": "fnc main() -> int {return 7 ^^ 2;}\n",
       "diagnostic": "E_UNSUPPORTED",
       "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT",
       "scope_note": "BROWSER_STAGE1_ONLY_NOT_A_LANGUAGE_WIDE_OPERATOR_BAN"
     },
     {
-      "id": "stage1-unsupported-boolean-xor",
+      "id": "invalid-boolean-bitwise-xor",
       "expected": "REJECTS",
       "source": "fnc main() -> bool {return true ^^ false;}\n",
       "diagnostic": "E_UNSUPPORTED",
       "execution_evidence": "NOT_EXECUTED_BY_THIS_CONTRACT",
-      "scope_note": "BROWSER_STAGE1_ONLY_NOT_A_LANGUAGE_WIDE_OPERATOR_BAN"
+      "scope_note": "INT_BITWISE_XOR_REQUIRES_INT",
+      "normative_note": "^^ is integer bitwise XOR in this contract; historical stage1 E_UNSUPPORTED does not establish a language-wide Boolean XOR operator"
     }
   ]
 }
