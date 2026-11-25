@@ -33,6 +33,12 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [ActorGroup typed pub/sub v1](language/actor-pubsub-v1.md): group membership is distinct from topic subscriptions; bounded RELIABLE atomic fan-out, affine cancellation and incarnation fencing are TARGET, not yet backend-verified.
 
+- [Primitive, aggregate and object storage v1 — Java/LLVM](language/primitive-object-storage-java-llvm-v1.md): **draft target** for inline scalars, nominal Struct/structural Record, identity classes, actor-private heap handles and verified implicit borrowing. [30 target cases](conformance/primitive-object-storage-java-llvm-v1.json) are **NOT_EXECUTED** on Java and LLVM.
+
+- [Control-loop and actor unmanaged memory v1](language/control-and-actor-unmanaged-memory-v1.md): **draft target** for separate control/actor Ref32 memory domains, versioned offset-vs-slot ABIs, unmanaged JVM/.NET guest payloads and measured zero-managed-allocation hot paths; no backend certification.
+
+- [Hybrid actor memory v1 — 32/64/128-bit extensibility](language/hybrid-actor-memory-v1.md): **draft target** preserving the Ref32 offset8+1 layout while permitting explicitly versioned extended heaps, native pointers, SIMD and capability profiles; guest parity unverified.
+
 - [Fresh return types v1](language/fresh-return-types-v1.md): candidate `new T` and `new unique T` provenance and ownership rules, including stronger Copyable return contracts. Host-only oracle; no Java/LLVM/.NET compiler support claimed.
 
 - [Copyable / DeepCopyable shallow-and-deep v2](language/copyable-ownership-v1.md): candidate Object and interface contracts for shallow `copy!` / `.copy()` and graph-deep `copy!!` / `.copy_deep()`, array/collection copying, per-recipient actor isolation, AOT-generated inherited/private-field copy plans, share-permission checks, override hooks and fail-closed diagnostics. Its checked-in tests are **host-only**; backend guest execution is **not verified**.
@@ -138,3 +144,12 @@ Actual compiler, actor isolation, AOT and multi-backend parity claims require se
 - [Opaque newtypes, bounded values and const generics v1](language/opaque-newtypes-bounds-const-generics-v1.md): TARGET nominal scalar identities, checked ranges and compile-time shape/layout arguments, with [machine-readable vectors](contracts/opaque-newtypes-bounds-const-generics-v1.json) and **host-only** proof tests. No compiler/backend guest parity claimed.
 
 - [Checked owned Dyn interface erasure v1](language/checked-owned-dyn-erasure-v1.md): defines constructor, checked `(take! owner) as Dyn<I>`, and contextual `take!` equivalence; Rust/browser implementation draft remains unexecuted on current head, all other backends unverified.
+
+## Rule registry and cross-toolchain conformance
+
+- [Specification framework](language/specification-framework-v1.md): rule identity, edition/profile authority, governance and formatter safety laws (proposed protocol; NOT a backend proof).
+- [Machine-readable rule index](contracts/specification-rules-v1.json): stable rule IDs and formatter target vectors linking existing language clauses to conformance; **not yet executable guest certification**.
+- [Formal refinement obligations](formal/specification-refinement-obligations-v1.md): parse, type/ownership, actor, formatter and compilation proof targets.
+- [Host-only registry tests](tests/specification-framework-v1.test.mjs): checks traceability and negative vectors; does not execute compilers or formatters.
+
+`atto-format` and historical `oreslang-format` are independent consumers of this specification and must separately report parser/semantic round-trip evidence. Runtime/guest results belong in `atto-platform-conformance`, with exact SHA provenance. Do not infer parity from file presence or source-only CI.
