@@ -46,6 +46,95 @@ spawn Consumer() rpipe spawn Processor() rpipe spawn Producer();
 Actor roles still come from `receives` and `emits`, never arbitrary
 `sends` or CONTROL messages.
 
+## Canonical compiler-IR direction normalization
+
+A compiler MUST preserve endpoint expressions in the written lexical order
+and may compute source-to-sink edges using immutable lexical indices. Stage
+evaluation order and DATA direction are deliberately separate properties:
+
+| Source | Written indices | Directed DATA edges |
+| --- | --- | --- |
+| `producer pipe transform pipe consumer` | `[0,1,2]` | `(0,1),(1,2)` |
+| `consumer rpipe transform rpipe producer` | `[0,1,2]` | `(2,1),(1,0)` |
+
+Endpoint constructors must run **exactly once in lexical order**. An
+implementation must not reverse constructor evaluation or execute a stage
+again while reversing the DATA edges. The normalizer must reject an invalid
+stage count before allocating runtime resources; a backend's smaller profile
+limit, such as the current browser subset's 16 stages, must be declared
+rather than silently truncating the graph. No stage may be created
+implicitly by type inference.
+
+The compiler's typed edge proof is **not** a runtime connection. It cannot
+grant an ActorRef, sendable/tenant capability, sink ownership, mail queue,
+or supervisor CONTROL path. Graph activation remains checked and atomic
+under the separately specified `PipeHandle` lifetime and port contracts.
+See [atto-source.rs #224](https://github.com/atto-lang/atto-source.rs/pull/224)
+for the Rust source-only `DirectedPipeTopology` candidate; its presence is
+not evidence that the guest transport is executable.
+
+## Named actor references and duplicate directional edges
+
+A previously spawned, typed actor reference may be used as a stage. `spawn`
+is not required inside the graph expression. The compiler checks the
+**declared** actor `emits` and `receives` contracts, regardless of whether
+the stage is a fresh `spawn Foo()` or an existing `ActorRef<Foo>`.
+
+The following is **target-language syntax, not verified guest execution**:
+
+```atto
+define actor Producer receives int emits int as
+    susp receive(ActorMail<int> mail): void {
+        emit(mail.value);
+    }
+end
+
+define actor Consumer receives int as
+    susp receive(ActorMail<int> mail): void { }
+end
+
+pub susp fnc main(): int {
+    val producer = spawn Producer();
+    val consumer = spawn Consumer();
+    val link = producer pipe consumer;
+    // Equivalent topology when used INSTEAD of the previous declaration:
+    // val link = consumer rpipe producer;
+    // The eventual checked PipeHandle must be owned and supervised.
+    return 0;
+}
+```
+
+`Producer receives int` **without `emits int`** is *not* a pipe
+source, even if the handler handles `ActorMail<int>`. `send` and `sends`
+are likewise not `emit` and `emits`. Neither spawning nor attaching a
+pipe injects an initial message or guarantees the producer will emit.
+
+```atto
+producer pipe consumer;
+consumer rpipe producer;
+```
+
+These are **two separate graph-construction expressions with the same
+`producer → consumer` direction**. The second line is not a return
+connection, an ACK path, or a duplex pipe. Both must undergo independent
+checked admission; implementations must not silently merge them,
+create an implicit broadcast, double-deliver, or discard unchecked
+`Result<PipeHandle, PipeSetupError>` outcomes. If the runtime's unicast
+ownership policy disallows a second attachment, reject it atomically
+with a typed duplicate-edge/occupied-port error, leaving the first
+graph intact. If an explicit adapter permits multiple attachments,
+create and retain distinct handles and obey its fan-out policy.
+No reverse CONTROL flow can be inferred from `rpipe`.
+
+For genuine two-way application DATA, declare matching `emits` and
+`receives` capabilities on **both** actors, or use a separate typed
+request/reply API, then explicitly connect the reverse edge. Bidirectional
+capability must never be inferred from the spelling of a single operator.
+An owned connection must remain live for the intended task lifetime;
+ending `main()` immediately is not a proof of message delivery or graceful
+pipeline completion. A portable implementation needs checked setup,
+completion via `get_done()`, cancellation and quiescence.
+
 ## Directed type checking
 
 The compiler constructs **one graph** with edges directed by the keyword,
@@ -54,6 +143,17 @@ roles, nominal type agreement, ownership, effects, and cross-domain
 `Sendable` constraints. An interior transform has a matching sink
 input and source output, potentially with distinct `In` and `Out` types.
 The graph is unicast unless an explicit tee/broadcast adapter is present.
+In the default unicast profile, **both** an output port and an input port
+have at most one owning DATA connection across all live pipeline expressions.
+Two different producers connected to the same sink are implicit fan-in and
+must fail with an occupied-input admission error, just as one producer
+connected to two sinks is implicit fan-out and must fail with an
+occupied-output error. Repeating a directed pair, including its `rpipe`
+spelling, must fail as a duplicate edge. An explicit typed merge/join
+adapter may be used for fan-in; a tee/broadcast adapter may be used for
+fan-out. A compiler's static proof cannot replace atomic, generation-checked
+runtime reservation and rollback for either port.
+
 
 For `A rpipe B`, the **right** expression `B` must provide a source;
 the **left** expression `A` must provide the corresponding sink.
@@ -150,6 +250,37 @@ single-value reverse functional capture continues to follow the
 separate candidate contract in
 [typed-io-continuation-pipelines-v1.md](typed-io-continuation-pipelines-v1.md).
 The new `rpipe` only connects continuous source/sink endpoints.
+
+## Closed and stopped endpoint admission (normative candidate)
+
+A continuous DATA edge MUST NOT attach to a closed `Channel<T>`, a
+stopped/completed actor, or a stream whose relevant source/sink port has
+closed or been revoked. The ownership/generation check is required at
+**runtime**, even when the compiler has already established static
+`receives T` and `emits T` roles.
+
+Before publishing any new edge, graph admission MUST check every endpoint's
+live generation, tenant capability, closure state and exclusive-port owner.
+On any failure it MUST return a checked `Err(PipeSetupError)` (the specific
+closed-port variant is not yet assigned) **without any new DATA delivery,
+bridge task, retained borrow, or partially active graph**. Do not treat a
+generic panic or a string-based endpoint descriptor as the stable contract.
+A runtime that cannot roll back a partially acquired graph must reject
+before activation rather than publish a prefix and then fail.
+
+Both `producer pipe channel` and `channel rpipe producer` have the same
+closed-port admission obligation. An actor that stops while graph admission
+is in progress must be protected by an atomic generation/lease check; a
+preflight-only check is insufficient under concurrent cancellation.
+
+Atto v2's experimental single-guest-memory actor runtime may use a
+provisional trap code 10 to reject a closed or stopped endpoint. This is
+only a **legacy implementation regression**, not proof of the future
+`Result<PipeHandle, PipeSetupError>` contract or secure TenantVM isolation.
+The portable source-only admission fixtures are in
+[atto-platform-conformance PR #102](https://github.com/atto-lang/atto-platform-conformance/pull/102)
+(`stopped-source`, `closed-channel`, `stopped-consumer`,
+`stopped-actor-sink`).
 
 ## Checked setup and stage failures
 
