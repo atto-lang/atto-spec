@@ -1,0 +1,478 @@
+{
+  "schema_version": 1,
+  "status": "DRAFT_TOOLING_METADATA_NOT_COMPILER_VERIFIED",
+  "basis": {
+    "source": "spec/16-lexical-and-grammar-reference.md",
+    "scope": "documented Java lexer inventory at chapter 16 cited revisions, not a live lexer extraction",
+    "backend_parity": "NOT_TESTED",
+    "guest_executions": 0
+  },
+  "reserved_groups": [
+    {
+      "id": "declaration_introducer",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "action_verb",
+      "semantic_role": "declaration",
+      "highlight_scope": "keyword.declaration.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "define",
+        "def",
+        "impl",
+        "import"
+      ]
+    },
+    {
+      "id": "entity_kind",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "noun",
+      "semantic_role": "entity_kind",
+      "highlight_scope": "keyword.entity.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "module",
+        "namespace",
+        "contract",
+        "class",
+        "struct",
+        "interface",
+        "trait",
+        "type",
+        "fnc",
+        "routine",
+        "generator",
+        "actor",
+        "isoactor"
+      ]
+    },
+    {
+      "id": "type_reflection",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "noun",
+      "semantic_role": "type_operation",
+      "highlight_scope": "keyword.type.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "types",
+        "typeof"
+      ]
+    },
+    {
+      "id": "relationship",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "relational_verb",
+      "semantic_role": "type_relation",
+      "highlight_scope": "keyword.relationship.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "conforms",
+        "extends",
+        "implements"
+      ]
+    },
+    {
+      "id": "connective",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "connective",
+      "semantic_role": "clause_connector",
+      "highlight_scope": "keyword.grammar.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "from",
+        "as",
+        "of",
+        "over",
+        "then"
+      ]
+    },
+    {
+      "id": "qualifier",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "adjective",
+      "semantic_role": "declaration_modifier",
+      "highlight_scope": "storage.modifier.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "abstract",
+        "nlex",
+        "static",
+        "pub",
+        "private",
+        "const",
+        "mut",
+        "shared",
+        "untrusted"
+      ]
+    },
+    {
+      "id": "binding",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "action_verb",
+      "semantic_role": "binding_introducer",
+      "highlight_scope": "keyword.binding.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "val",
+        "let"
+      ]
+    },
+    {
+      "id": "construction",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "action_verb",
+      "semantic_role": "construction_operator",
+      "highlight_scope": "keyword.operator.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "new"
+      ]
+    },
+    {
+      "id": "effect",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "adverb",
+      "semantic_role": "effect_modifier",
+      "highlight_scope": "keyword.effect.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "async",
+        "suspends"
+      ]
+    },
+    {
+      "id": "control",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "structural",
+      "semantic_role": "control_flow",
+      "highlight_scope": "keyword.control.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "yield",
+        "return",
+        "if",
+        "else",
+        "elif",
+        "elseif",
+        "fi",
+        "do",
+        "done",
+        "end",
+        "while",
+        "for",
+        "loop",
+        "block",
+        "break",
+        "continue",
+        "switch",
+        "match",
+        "default",
+        "select"
+      ]
+    },
+    {
+      "id": "reference",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "pronoun",
+      "semantic_role": "receiver_reference",
+      "highlight_scope": "variable.language.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "self",
+        "super"
+      ]
+    },
+    {
+      "id": "failure",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "action_verb",
+      "semantic_role": "failure_control",
+      "highlight_scope": "keyword.effect.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "try",
+        "catch",
+        "finally",
+        "throw",
+        "raise",
+        "panic",
+        "recover",
+        "trap",
+        "defer"
+      ]
+    },
+    {
+      "id": "concurrency",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "action_verb",
+      "semantic_role": "concurrency_operation",
+      "highlight_scope": "keyword.concurrency.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "spawn",
+        "stop",
+        "rt",
+        "await",
+        "nb",
+        "cb",
+        "readch",
+        "writech"
+      ]
+    },
+    {
+      "id": "comparison",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "relational_verb",
+      "semantic_role": "comparison_or_pattern",
+      "highlight_scope": "keyword.operator.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "matches",
+        "eq",
+        "neq",
+        "is"
+      ]
+    },
+    {
+      "id": "literal",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "literal_marker",
+      "semantic_role": "literal_or_type_marker",
+      "highlight_scope": "constant.language.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "true",
+        "false",
+        "null",
+        "void",
+        "obj",
+        "arr"
+      ]
+    },
+    {
+      "id": "compute",
+      "lexical_status": "documented_java_reserved",
+      "linguistic_role": "noun",
+      "semantic_role": "execution_target",
+      "highlight_scope": "keyword.compute.atto",
+      "lsp_fallback": "keyword",
+      "words": [
+        "cpu",
+        "gpu",
+        "quantum"
+      ]
+    }
+  ],
+  "documented_not_reserved": [
+    {
+      "spelling": "enum",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "entity_kind",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    },
+    {
+      "spelling": "supervisor",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "entity_kind",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    },
+    {
+      "spelling": "state",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "entity_kind",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    },
+    {
+      "spelling": "pipe",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "concurrency",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    },
+    {
+      "spelling": "final",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "qualifier",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    },
+    {
+      "spelling": "on",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "control",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    },
+    {
+      "spelling": "when",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "control",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    },
+    {
+      "spelling": "case",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "control",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    },
+    {
+      "spelling": "first",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "qualifier",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    },
+    {
+      "spelling": "infer",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "type_reflection",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    },
+    {
+      "spelling": "record",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "entity_kind",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    },
+    {
+      "spelling": "tuple",
+      "lexical_status": "documented_java_not_reserved",
+      "suggested_category": "entity_kind",
+      "admission": "contextual_or_target_requires_parser_evidence"
+    }
+  ],
+  "compound_spellings": [
+    {
+      "spelling": "nb-select",
+      "lexical_status": "documented_lexer_compound",
+      "category": "concurrency",
+      "admission": "lexer_recognized_not_general_hyphen_identifier"
+    },
+    {
+      "spelling": "critical-read",
+      "lexical_status": "documented_parser_contextual_compound",
+      "category": "qualifier",
+      "admission": "parser_context_only_per_chapter_16"
+    },
+    {
+      "spelling": "critical-write",
+      "lexical_status": "documented_parser_contextual_compound",
+      "category": "qualifier",
+      "admission": "parser_context_only_per_chapter_16"
+    },
+    {
+      "spelling": "transform-pipe",
+      "lexical_status": "documented_parser_contextual_compound",
+      "category": "concurrency",
+      "admission": "parser_context_only_per_chapter_16"
+    }
+  ],
+  "candidate_spellings": [
+    {
+      "spelling": "declare",
+      "lexical_status": "not_listed_in_documented_java_reserved_inventory",
+      "suggested_category": "declaration_introducer",
+      "admission": "unverified_contextual_or_target"
+    },
+    {
+      "spelling": "singleton",
+      "lexical_status": "not_listed_in_documented_java_reserved_inventory",
+      "suggested_category": "entity_kind",
+      "admission": "unverified_contextual_or_target"
+    },
+    {
+      "spelling": "sealed",
+      "lexical_status": "not_listed_in_documented_java_reserved_inventory",
+      "suggested_category": "qualifier",
+      "admission": "unverified_contextual_or_target"
+    },
+    {
+      "spelling": "borrow",
+      "lexical_status": "not_listed_in_documented_java_reserved_inventory",
+      "suggested_category": "concurrency",
+      "admission": "unverified_contextual_or_target"
+    },
+    {
+      "spelling": "take",
+      "lexical_status": "not_listed_in_documented_java_reserved_inventory",
+      "suggested_category": "concurrency",
+      "admission": "unverified_contextual_or_target"
+    },
+    {
+      "spelling": "copy",
+      "lexical_status": "not_listed_in_documented_java_reserved_inventory",
+      "suggested_category": "concurrency",
+      "admission": "unverified_contextual_or_target"
+    },
+    {
+      "spelling": "share",
+      "lexical_status": "not_listed_in_documented_java_reserved_inventory",
+      "suggested_category": "concurrency",
+      "admission": "unverified_contextual_or_target"
+    },
+    {
+      "spelling": "ref",
+      "lexical_status": "not_listed_in_documented_java_reserved_inventory",
+      "suggested_category": "concurrency",
+      "admission": "unverified_contextual_or_target"
+    },
+    {
+      "spelling": "deref",
+      "lexical_status": "not_listed_in_documented_java_reserved_inventory",
+      "suggested_category": "concurrency",
+      "admission": "unverified_contextual_or_target"
+    },
+    {
+      "spelling": "unref",
+      "lexical_status": "not_listed_in_documented_java_reserved_inventory",
+      "suggested_category": "concurrency",
+      "admission": "unverified_contextual_or_target"
+    }
+  ],
+  "context_sensitive_reserved": [
+    {
+      "spelling": "stop",
+      "admission": "may be callable name, e.g. worker.stop(); cannot be a val name"
+    },
+    {
+      "spelling": "do",
+      "admission": "may be callable name; otherwise structural word"
+    },
+    {
+      "spelling": "done",
+      "admission": "may be callable name; otherwise structural word"
+    }
+  ],
+  "non_keyword_examples": [
+    {
+      "spelling": "|>",
+      "kind": "operator",
+      "note": "value/function pipeline"
+    },
+    {
+      "spelling": "#ready",
+      "kind": "symbol_literal",
+      "note": "not a keyword"
+    },
+    {
+      "spelling": "read_blocking",
+      "kind": "identifier",
+      "note": "blocking suffix does not reserve a word"
+    },
+    {
+      "spelling": "and",
+      "kind": "not_documented_reserved",
+      "note": "use chapter 16 condition grammar"
+    },
+    {
+      "spelling": "or",
+      "kind": "not_documented_reserved",
+      "note": "use chapter 16 condition grammar"
+    },
+    {
+      "spelling": "suspend",
+      "kind": "not_documented_reserved",
+      "note": "do not confuse with suspends"
+    },
+    {
+      "spelling": "critical–read",
+      "kind": "invalid_unicode_dash_compound",
+      "note": "en dash is not ASCII hyphen"
+    }
+  ]
+}

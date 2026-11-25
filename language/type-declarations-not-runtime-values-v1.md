@@ -45,4 +45,4 @@ fnc bad_trait(): void { val escaped = Printable; } // TYPE_NOT_VALUE
 5. For traits, interfaces and aliases, never silently invent reflection, dynamic-witness or existential values; fail closed for still-unimplemented trait-object profiles.
 6. Check that source diagnostics are consistent through `fnc`, `routine`, lambdas and method bodies. Run actual compiler-positive and compiler-negative tests per backend, not just textual contract checks.
 
-This rule is orthogonal to type-first callable syntax, explicit return requirements, generic specialization and checked ownership/borrowing.
+Static namespace aliases (`define alias`, import v2) and compile-time `typeof` queries do not manufacture runtime type values. The implicit borrow profile applies to instance parameters, not declaration identifiers. This rule is orthogonal to type-first callable syntax, explicit return requirements, generic specialization and checked ownership/borrowing.
