@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Recursive layouts and typed identity graphs](language/recursive-layout-graph-wire-v1.md): target independent alias, layout and inhabitation proofs, candidate graph profile distinct from existing tree codecs. No wire or guest admission.
+
 - [Unsafe lexical proof boundary](language/unsafe-blocks-v1.md): fail-closed target for independently authorized trusted host operations, not guest-native admission or a permission grant.
 
 - [Hosted permission policy](language/host-permissions-v1.md): independent ceilings, explicit deny, runtime revocation and fail-closed native admission target.
