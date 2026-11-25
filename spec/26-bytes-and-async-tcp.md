@@ -1,4 +1,4 @@
-# 26 — Bytes and Async TCP v1
+# 26 — Bytes, Async TCP and Async File I/O
 
 **Status: DRAFT / TARGET, 2026-11-13.** This chapter defines the portable byte-string type and the nonblocking TCP surface used by network services (the four broker implementations in particular). **IMPLEMENTED** only where a backend row below names exact evidence. Protocol logic (RESP, AMQP, Kafka, NATS framing) is application code and MUST be written in AttoLang on top of these primitives; a backend MUST NOT add protocol-specific parsing to this surface.
 
@@ -41,6 +41,24 @@ Unknown constructors or members are compile errors.
 * Indexed read `m[k]` stays restricted to copyable value domains.
 * Bytes-keyed maps are data stores with their own bounded quotas (Java: 2^24 entries, 2^32 aggregate key bytes), independent of the symbol-property object limit.
 
+### Binary codec helpers (v1.1)
+
+These are memchr/memcpy-class primitives so binary protocol framing (AMQP, Kafka) does not pay per-byte interpretation cost. Framing logic itself stays in AttoLang. All reads are bounds-checked and never clamp.
+
+| Member | Type | Semantics |
+| --- | --- | --- |
+| `b.read_u16_be(i)` / `b.read_i16_be(i)` | `int` | 16-bit big-endian at offset `i`, unsigned or signed. |
+| `b.read_u32_be(i)` / `b.read_i32_be(i)` | `int` | 32-bit big-endian, unsigned or signed. |
+| `b.read_i64_be(i)` | `int` | 64-bit big-endian, signed. |
+| `b.read_uvarint(i)` | `Tuple[int, int]` | Unsigned LEB128 `(value, next offset)`. At most 10 bytes; truncated or over-63-bit encodings fail. |
+| `b.read_zigzag_varint(i)` | `Tuple[int, int]` | Zigzag-encoded signed varint (Kafka/protobuf). |
+| `b.crc32c(start, end)` / `b.crc32(start, end)` | `int` | CRC-32C (Castagnoli) or CRC-32 (IEEE) of `[start, end)`. |
+| `Bytes.from_u8(n)`, `from_u16_be`, `from_i16_be`, `from_u32_be`, `from_i32_be`, `from_i64_be` | `Bytes` | Big-endian encodings; out-of-range values fail. |
+| `Bytes.from_uvarint(n)` / `Bytes.from_zigzag_varint(n)` | `Bytes` | Varint encodings; `from_uvarint` requires `n >= 0`. |
+| `Bytes.join(List<Bytes> parts)` | `Bytes` | Concatenation in one pass; moves the list. |
+
+Conformance vectors: uvarint 300 = `AC 02`; zigzag −1 = `01`, 1 = `02`, −64 = `7F`; CRC-32C("123456789") = `0xE3069283`; CRC-32("123456789") = `0xCBF43926`.
+
 ## Async TCP v1
 
 All operations are asynchronous and MUST NOT block a scheduler thread. Each returns `Future<T>` and is used with `await`. Synchronous or `_blocking` variants are not part of this surface.
@@ -77,10 +95,38 @@ pub async routine main(): void {
 }
 ```
 
+### Split connections and timers (v1.1)
+
+Push-style protocols (NATS `MSG` fan-out, AMQP `basic.deliver`, Kafka long-poll `Fetch`) must write to a client while also reading from it.
+
+* `conn.split(): Tuple[NioReader, NioWriter]` is synchronous and **consumes** the connection. Each half is affine Send (never Sync/Share), like the connection, so a reader task and a writer task can each own one direction.
+* `NioReader`: `read_owned_bytes_async(int max)`, `read_bytes_async(int max)`, `close_async()` (shuts down input).
+* `NioWriter`: `write_owned_bytes_async(Bytes)`, `write_bytes_async(List<int>)`, `close_async()` (shuts down output).
+* The socket closes when both halves are closed. A half moves into an async callee only through an owned formal of the same direction.
+* `process.sleep_async(int ms): Future<void>` is a nonblocking timer, `0 <= ms <= 86_400_000`. It suspends only the caller, and cancelling the Future cancels the timer. Combine it with `Future.race` for timeouts and heartbeats. Timers are owned by the runtime context and revoked when it closes.
+
+The canonical push-server shape gives each connection a reader task (parses input, sends commands to the state owner), a writer task fed by a bounded `Channel<Bytes>`, and the state owner writing to that channel.
+
+## Async file I/O v1
+
+For logs, journals and append-only stores (Kafka partitions, AMQP durable queues, NATS JetStream, Redis AOF). All blocking work runs off the scheduler threads; guest code sees Futures only.
+
+| Operation | Result |
+| --- | --- |
+| `fs.open_binary_async(string path)` | `BinaryFile`, opened or created. Requires READ and WRITE permission on both the lexical and canonical path; symlinks and non-regular files are refused. |
+| `file.append_async(Bytes data)` | `int`: offset where `data` starts. `data` is moved. |
+| `file.sync_async()` | `void`: file content reaches stable storage (fdatasync semantics). An append is durable only after a later `sync_async` completes. |
+| `file.read_at_async(int offset, int length)` | `Bytes`: up to `length` bytes (≤ 1 MiB) at `offset`; fewer at end of file, empty past it. |
+| `file.size_async()` | `int` |
+| `file.truncate_async(int size)` | `void`: shrink to `size` (e.g. drop a torn tail during recovery). Growing is rejected. |
+| `file.close_async()` | `void`; later use fails. |
+
+`BinaryFile` is affine Send: it may move into one task, never be shared.
+
 ## Backend status
 
 | Backend | Status |
 | --- | --- |
-| Java/GraalVM | `Bytes` v1 and Async TCP v1 IMPLEMENTED: `oreslang-source.java` main, tests `AttoBytesV1GuestTest`, `AttoNioAffineTaskMoveGuestTest`, `AttoAsyncNioTcpGuestTest`. The runtime still carries transitional RESP-specific `read_resp2_*`/`write_resp2_*` members, which are outside this contract and scheduled for removal. |
+| Java/GraalVM | IMPLEMENTED on `oreslang-source.java` main: `Bytes` v1 (#3043, tests `AttoBytesV1GuestTest`), codec helpers v1.1 (#3056, `AttoBytesCodecGuestTest`), Async TCP v1 (#2894, #3042, `AttoNioAffineTaskMoveGuestTest`), split connections and `process.sleep_async` (#3051, `AttoNioSplitAndTimerGuestTest`), async file I/O v1 (#3057, `AttoBinaryFileGuestTest`). The runtime still carries transitional RESP-specific `read_resp2_*`/`write_resp2_*` members, which are outside this contract and scheduled for removal. |
 | LLVM | NOT_IMPLEMENTED. |
 | .NET | NOT_IMPLEMENTED. |

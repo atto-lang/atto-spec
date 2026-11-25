@@ -1,59 +1,118 @@
-# AttoLang Language Specification
+> **AI agent instructions (organization-wide):** Before working on code, issues, or pull requests, read and follow the [organization `AGENTS.md`](https://github.com/atto-lang/.github/blob/main/AGENTS.md), including its **merge-first stealth-development policy**. Honor any repository-local `AGENTS.md`, explicit holds, and GitHub-enforced rules.
 
-> **Draft v0.1 — design and conformance target, not an implementation certification.**
-> AttoLang was formerly called Oreslang. New sources and examples use `.atto`; legacy `.ores` is retained under the [versioned branding compatibility contract](https://github.com/ores-truffle-oreslang/oreslang-common-source/blob/main/contracts/v1/attolang-brand-compat-v1.json).
+# atto-spec
 
-AttoLang is an **actor-first, statically typed systems language** designed for ownership-safe concurrency, bounded asynchronous execution, data-oriented memory layouts, capability-restricted programs, and ahead-of-time compilation. An actor is a special kind of class with confined state and supervised lifecycle; an ordinary class is not an actor.
+Canonical AttoLang language specification, including syntax, semantics, types, ownership, and concurrency.
 
-This repository is the **language-level specification**, not the proof that a particular backend already implements a feature. The five primary backends have the same target observable semantics: Java/GraalVM, native LLVM, WebAssembly, Forge, and .NET Native AOT.
+## Canonical naming and documentation migration
 
-## Read the specification
+[AttoLang](https://github.com/atto-lang) is the sole canonical project name; configure repository remotes as `https://github.com/atto-lang/atto-spec.git` and refer to `.atto` in new examples. [atto-spec](https://github.com/atto-lang/atto-spec) owns normative grammar, ownership, lifetime, effects and actor contracts; [atto-platform-conformance](https://github.com/atto-lang/atto-platform-conformance) tracks executed verification. Distinguish design proposals from tested compiler support and do not advertise zero-step CI as guest conformance.
 
-| Chapter | Subject |
-| --- | --- |
-| [00 — Scope and terminology](spec/00-scope-and-status.md) | Normative language, compatibility, maturity labels |
-| [01 — Source and grammar](spec/01-source-and-syntax.md) | Files, declarations, bindings, control flow, expressions |
-| [02 — Types and patterns](spec/02-types-and-patterns.md) | Nominal/structural typing, ADTs, generics, Option/Result |
-| [03 — Functions and effects](spec/03-functions-and-effects.md) | Calls, effects, critical functions, pipelines |
-| [04 — Ownership and memory](spec/04-ownership-and-memory.md) | Borrowing, moves, arenas, transport |
-| [05 — Actors and state](spec/05-actors-and-state.md) | Actor identity, sealed state, mailbox, supervision |
-| [06 — Async and scheduling](spec/06-async-and-scheduling.md) | Tasks, channels, select, dispatchers, I/O |
-| [07 — Errors and failure](spec/07-errors-and-failure.md) | throw, raise, panic, trap, cancellation |
-| [08 — Isolation and permissions](spec/08-isolation-and-permissions.md) | Trust domains, permissions and security boundaries |
-| [09 — Modules and AOT](spec/09-modules-and-aot.md) | Packages, import resolution, builds, reflection and reload |
-| [10 — DOP and real time](spec/10-dop-and-realtime.md) | Data layouts, affinity, GPU, real-time profiles |
-| [11 — Conformance](spec/11-conformance.md) | Required backend gates and evidence |
-| [12 — Open questions](spec/12-open-questions.md) | Unsettled decisions and compatibility risks |
-| [13 — Hierarchical supervisors](spec/13-supervisor-hierarchies.md) | Nested supervisors, restart boundaries, identity and CONTROL fences |
-| [14 — Actor pipeline factories](spec/14-actor-pipeline-factories.md) | `Actor.pipe(...)` and `Actor.connect(...)`, typed ports, authority and graph admission |
-| [15 — Nested actor pipeline builders](spec/15-nested-actor-pipelines.md) | Recursive pipeline segments, capacity and supervisor scopes, move-only builders and restart fencing |
-| [16 — Lexical and grammar reference](spec/16-lexical-and-grammar-reference.md) | Keywords, literals, operators and the spellings compilers accept today |
-| [17 — Primitives and core types](spec/17-primitives-and-core-types.md) | Scalars, integer rules, aggregates, Option/Result and concurrency primitives |
-| [18 — Runtime guarantees](spec/18-runtime-guarantees.md) | Failure domains, stacks, actor restart, pipeline failure, and what is and is not guaranteed |
-| [25 — Receive-invocation stacks](spec/25-receive-invocation-stacks.md) | Per-receive logical stacks, independent task stacks, quotas, suspension and ownership |
-| [19 — Observed status, 2026-11-03](spec/19-observed-status-2026-11-03.md) | Dated local test results for Java and LLVM. Not conformance evidence |
-| [21 — Semantic floor and parity](spec/21-semantic-floor-and-parity.md) | Independently required semantics and cross-backend evidence |
-| [22 — Concurrency and shared ownership](spec/22-concurrency-and-shared-ownership.md) | Concurrent-default actors, serial opt-in, ref32 arenas, protected pipes, singletons and symbols |
-| [23 — Keyword roles and highlighting](spec/23-keyword-taxonomy-and-highlighting.md) | Linguistic word classes, parser semantics, reserved/contextual distinctions and editor token guidance |
-| [24 — AOT, zero-GC and controlled dynamism](spec/24-aot-zero-gc-controlled-dynamism.md) | Strict profiles, static proxies/reflection, ownership and backend evidence |
-| [26 — Bytes and async TCP v1](spec/26-bytes-and-async-tcp.md) | Move-only immutable Bytes, Bytes-keyed Map, nonblocking listener/connection API and affine connection transfer |
-| [27 — Type-first implicit `const` and explicit `const mut`](spec/27-implicit-const-and-const-mut.md) | Proposed compile-time constant shorthand, scoped mutable instances, diagnostics and parity gates |
-| [28 — Explicit initialization and no implicit default values](spec/28-explicit-initialization-no-implicit-defaults.md) | No implicit zero/null/default values; explicit locals and fully initialized objects, aggregates and collections |
+## Atto Theater application-platform architecture
 
-## Specification interpretation
+The adopted platform names are **Atto Theater** (OTP-style application platform), **Atto Director** (supervision), **Atto Ensemble** (actor groups, typed topics and subscriptions), and **Atto Runtime** (execution engine). These are architectural names, not new language keywords or claims of completed guest support.
 
-A chapter labelled **DRAFT** describes the intended language contract. **TARGET** means a required eventual behavior, not necessarily shipped. **IMPLEMENTED** must always be qualified by a named backend, immutable commit, fixture, and actual execution evidence. **PROPOSED** denotes a design that needs a decision. `MUST` and `SHOULD` have their ordinary normative RFC meaning **inside the draft target**, not as a claim of current parity.
+- [Atto Theater v1 — canonical naming, layering, safety boundaries and conformance plan](architecture/atto-theater-v1.md)
 
-Examples are **illustrative** until associated with independently executed exact-head conformance fixtures. Unsupported syntax must fail closed: accepting a token, parser AST, host-only unit test, or CI job with zero executed steps is not guest execution.
+## Purpose
 
-This first edition deliberately separates **semantic guarantees** from **implementation strategies**. A no-GC target, a two-thread bootstrap goal, or an actor arena does not itself prove memory isolation, OS sandboxing, worst-case execution time, or five-backend equivalence.
+Define normative syntax and semantics; document actor isolation, effects, ownership, and portability requirements.
 
-## Source of truth and contributions
+## Repository responsibilities
 
-The existing implementation/contracts are reference material to reconcile, not automatically incorporated into this draft:
+- Keep interfaces, schemas, and behavior documented in a backend-neutral form where applicable.
+- Use test fixtures and reproducible evidence to distinguish proposed behavior from implemented behavior.
+- Record breaking changes, migration notes, and dependencies on other AttoLang components.
 
-- [Java/GraalVM language design](https://github.com/ores-truffle-oreslang/oreslang-source.java/blob/main/docs/LANGUAGE.md) and [runtime model](https://github.com/ores-truffle-oreslang/oreslang-source.java/blob/main/docs/RUNTIME.md)
-- [LLVM backend](https://github.com/ores-truffle-oreslang/oreslang-source.llvm) and [native exception/supervision contract](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/blob/main/docs/EXCEPTION_SUPERVISION_SEMANTICS.md)
-- [Cross-backend conformance](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance) and its [execution evidence requirements](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/blob/main/docs/FIVE_BACKEND_EXECUTION_EVIDENCE.md)
+## Initialization contracts
 
-Change semantic rules through reviewed amendments, with corresponding positive, negative, ownership and backend execution tests. Keep all new source fixtures in `.atto`; accept `.ores` only through explicit migration compatibility.
+- [27 — Type-first implicit const and explicit const mut](spec/27-implicit-const-and-const-mut.md)
+- [28 — Explicit initialization and no implicit default values](spec/28-explicit-initialization-no-implicit-defaults.md)
+
+## Language contracts
+
+- [TenantVM terminology](spec/tenant-vm-terminology.md): canonical per-tenant execution boundary and historical identifier compatibility; target terminology, not sandbox certification.
+
+- [Ownership vocabulary v1](language/ownership-vocabulary-v1.md): canonical `borrow!`, `take!`, `share!`, `copy!`/`copy!!`; legacy `rt` ownership aliases and independent checked-handle admission.
+
+- [Exceptional bang spellings v1](language/exception-control-bang-spellings-v1.md): canonical `trap!` / `throw!` / `raise!` / `panic!` target spellings with bare migration aliases; no compiler certification.
+
+- [Cross-backend semantics reconciliation v1](language/cross-backend-semantics-reconciliation-v1.md): November 23 target decisions and independent backend admission boundaries.
+
+- [Canonical Boolean operators v1](docs/CANONICAL_BOOLEAN_OPERATORS_V1.md): strict bool `&&`, `||`, and `Xor(bool,bool)`; historical spellings require explicit migration.
+
+- [Checked int.parse Result v1](language/int-parse-result-v1.md): signed-i64 parsing to Result<int,Error> with deterministic bounded ASCII admission; target-only until compiled-guest evidence.
+
+- [Keyword roles and syntax highlighting taxonomy](spec/23-keyword-taxonomy-and-highlighting.md) records proposed editor metadata and links the documented lexer inventory.
+
+- [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^^ ~`, statement-return `^`, checked triple shifts `<<< >>> ashr`, and typed I/O `<< >>`; target semantics, not backend parity.
+
+- [Trap-to-Result v1](language/trap-result-v1.md): caller-side `trap` preserves returned `Result`/`Option` layers and catches ordinary `throw` as `Err(original Error)`; unverified backends must fail closed rather than emit legacy Option results.
+
+- [File/module `define const` v1](language/file-module-const-v1.md): unconditional static immutable bindings using `=` or `as`; constexpr folds at compile time, direct `os.read_env("KEY")` is evaluated exactly once at runtime initialization. **Proposal; backend guest execution not yet verified.**
+
+- [Tuple destructuring, mutability and aliasing v1](language/tuple-destructuring-v1.md): accepted target syntax for mixed per-element `let`/`val`/`const`/`mut` bindings, explicit binder lists and `as foo` root aliases; compiler/guest support not yet verified.
+- [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
+- [Visibility, foreign linkage and final fields v1](language/visibility-linkage-and-final-v1.md): distinguish internal, external, protected and final; includes fail-closed browser frontend matrix. Native link parity remains unverified.
+- [Namespaced and module exports v1](language/namespaced-exports-v1.md): explicit `export pub module`, qualified member access, source namespace identity, package gates and negative cross-file cases. This is a target contract; linker and native guest parity are **not verified**.
+- [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
+- [Shared ownership and explicit guards v1](language/shared-ownership-and-guards-v1.md): TARGET semantics for canonical `share!` (legacy `rt share` is compatibility-only; frozen sharing) and separately synchronized `RwLock<T>` mutation; **not compiler certified**.
+
+- [Class field binding defaults v2](language/class-field-binding-defaults-v2.md): canonical implicit `val` for ordinary class fields, explicit `let` for writable bindings; replaces historical v1 implicit-`let` rule. Focused Rust/browser guest execution verified; cross-backend and package-linker parity remain pending.
+- [Class field binding defaults v1 (historical)](language/class-field-binding-defaults-v1.md): previously adopted `let` default, retained for migration and explicit supersession tracking.
+
+- [Implicit argument borrowing v1](language/implicit-argument-borrow-v1.md): target non-owning default for nonprimitive call arguments, checked mutable loans, explicit ambiguous cases and breaking ownership migration (not yet compiler-certified).
+
+- [Struct field equals initializer v1](language/struct-field-equals-v1.md): restricted `StructName(field=value)` with checked name resolution, ordinary-call rejection, and source-order safety (TARGET / NOT EXECUTED).
+- [Out-of-line receivers, constructors and protected class state v1](language/out-of-line-receivers-constructors-and-state-v1.md): TARGET declaration/linkage semantics for class and struct receiver methods, typed constructors, and guarded per-instance class state. Accompanying source-only cases are **not compiler/guest execution evidence**.
+
+- [Class-field visibility v1](language/class-field-visibility-v1.md): canonical `pub[pkg]`, explicit and implicit `private`, and immutable-by-default class fields; cross-package linker tests and multi-backend guest validation remain pending.
+
+- [Explicit callable return types v1](language/explicit-callable-return-types-v1.md): every named callable declares a concrete result (including `void`) or explicitly opts into `infer`; omissions are errors. Target contract; backend parity unverified.
+
+- [Return-first and begin/end callable syntax v1](language/return-first-and-begin-callables-v1.md): accept `fnc int <- name(args)` and bare `int <- name(args)` plus brace, `begin`/`end`, and statement/`end` bodies (target; backend parity pending).
+
+- [Freestanding core / alloc / std v1](language/freestanding-library-layers-v1.md): proposed three-layer dependency and bare-metal link contract; **not compiled-guest verified**.
+
+- [Identity-free value classes v1](language/value-classes-v1.md): **proposed** nominal value types, immutable construction, equality/copying, AOT and fail-closed gates. No backend guest conformance is verified. See [conformance PR #57](https://github.com/atto-lang/atto-platform-conformance/pull/57).
+
+## Validation
+
+Validation should rely on checked-in tests and exact-commit CI results. When reporting parity, distinguish **passed**, **failed**, **unsupported**, and **not executed**. Avoid inferring guest-runtime support from host-only tests.
+
+## Status and development
+
+This README records the intended role of this repository; it is not a claim of feature completeness. Consult the source tree and workflow files for actual implementation and verified build commands. Contributions should preserve compatibility with the canonical language contract.
+
+## Ecosystem
+
+- [AttoLang](https://github.com/atto-lang)
+- [Language specification](https://github.com/atto-lang/atto-spec)
+- [Cross-platform conformance](https://github.com/atto-lang/atto-platform-conformance)
+
+## Repository ownership and contribution routing
+
+**Belongs in this repository:** Normative AttoLang grammar, types, effects, ownership/borrowing, actors, concurrency, diagnostics and versioned language-change proposals.
+
+**Belongs elsewhere:** Backend-specific implementations or host shims; implement in `atto-source.*`, share cross-backend fixtures with `atto-platform-conformance`.
+
+**Safety and verification boundary:** Require explicit migration and negative cases for no implicit conversions, no operator overloading, forbidden percent/power operators, no auto-flattening of nested Option/Future, and critical/suspends admission.
+
+This repository is the normative AttoLang (`.atto`) specification; migration-era syntax is not automatically part of current supported semantics.
+
+Changes asserting compiler/runtime support must identify the exact source head, target, toolchain, executed positive and negative guest tests, and failure/unsupported status; an empty CI step list is **not executed**. Documentation records responsibility, **not** a claim of feature completion.
+
+## Repository capability inventory v1 (advisory)
+
+This repository defines [the repository-capabilities contract](contracts/repository-capabilities-v1.schema.json) so ecosystem discovery tools can distinguish implemented code from README-only scaffolds without fabricating build or guest-execution claims.
+
+Each participating repository can publish a root-level `atto-capabilities.json` containing its exact `atto-lang/<name>` identity, role, `scaffold` or `implementation` source state, per-feature status and any evidence metadata. A **scaffold must report every feature as `not_executed` with no evidence**. All manifests are `NOT_CERTIFIED`; even a syntactically accepted evidence record is not independently verified.
+
+The offline validator and test suite require only Node.js:
+
+```sh
+node scripts/validate-capabilities.mjs atto-capabilities.json --repo atto-lang/atto-spec
+node --test tests/repository-capabilities.test.mjs
+```
+
+Actual compiler, actor isolation, AOT and multi-backend parity claims require separate exact-commit executed guest receipts and independent review; this inventory never replaces those gates.
