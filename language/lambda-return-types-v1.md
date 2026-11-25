@@ -1,7 +1,7 @@
 # Lambda return type annotations and body syntax (v1)
 
-**Canonical syntax:** `|parameters| : ReturnType -> body`. The optional
-` : ReturnType` annotates the lambda's result, *not* its arguments. Inference
+**Canonical typed inline syntax:** `|parameters| => ReturnType -> expression` (merged #172). The historical colon annotation is a compatible alternative. The optional
+`=> ReturnType` annotates the lambda's result, *not* its arguments. Inference
 is preferred wherever context and the body determine the result type.
 
 ```atto
@@ -20,7 +20,7 @@ val small_doubled = values
 .map(|n| -> return n * 2;)               // inferred, statement body
 .map(|n| : int -> return n * 2;)         // explicit, statement body
 .map(|n| -> int { return n * 2; })       // original braced form
-.map(|n| => int -> return n * 2;)        // legacy, still accepted
+.map(|n| => int -> return n * 2;)        // canonical annotation; statement body remains separately admitted
 ```
 
 A braceless `return` statement requires its semicolon **inside** an enclosing
@@ -35,19 +35,19 @@ is accepted; a newline or a closing block delimiter may also terminate the
 binding under the ordinary statement-boundary rules.
 
 ```atto
-const v = |int foo, string x| -> {
+val v = |int foo, string x| -> {
     return;
 };
 
-const v = |foo: int, x: string| -> {
+val v = |foo: int, x: string| -> {
     return;
 }
 
-const v = |foo: int, x: string| -> void {
+val v = |foo: int, x: string| -> void {
     return;
 }
 
-const v = |foo: int, x: string| : void -> {
+val v = |foo: int, x: string| : void -> {
     return;
 }
 ```
@@ -60,11 +60,9 @@ The first two forms infer `void` from a body whose reachable returns are all
 bare `return;` (or normal `void` fallthrough). The latter two explicitly
 annotate `void`. The `-> void {` form is recognized as a result annotation
 **only when the type is immediately followed by a braced body**, not an
-expression returning a variable named `void`. The `: void ->` form is the
-preferred explicit spelling; formatters may normalize provably equivalent
-signatures to `|int foo, string x| : void -> {` without altering statements.
+expression returning a variable named `void`. The `: void ->` form is a compatibility spelling for a braced statement body. Preserve the author’s body kind and only normalize provably equivalent signatures. Typed inline expression bodies prefer `=> T ->`; see [chapter 03](../spec/03-functions-and-effects.md#lambda-bodies-explicit-results-and-comma-sequencing).
 
-Local `const v` is an immutable binding. This **grammar contract is not a
+Local `val v` is a fixed runtime binding. A typed `const` initializer requires compile-time proof under [chapter 27](../spec/27-implicit-const-and-const-mut.md); this grammar does not authorize runtime const fallback. This **grammar contract is not a
 claim** that every backend currently supports first-class closure storage,
 escaping captures, or a file-scope `const v` declaration. Static callable
 module declarations and their permitted initializers remain subject to the
@@ -87,9 +85,7 @@ block             = "{", {statement}, "}" ;
 The opening and closing parameter pipes and the following `->` distinguish
 lambdas from the `|` conditional OR operator; parsing does not depend on type
 name capitalization or symbol-table lookups. Qualified and nested generic
-return types are admitted syntactically. A formatter should canonicalize the
-legacy `=>` typed form to the colon typed form, while preserving inferred
-annotations and braced versus braceless bodies where possible.
+return types are admitted syntactically. For inline expression bodies, a formatter prefers `=> T ->` under #172; preserve braced/statement bodies and inferred annotations. The candidate comma-body grammar is separately profile-gated.
 
 ## Typing and safety contracts
 

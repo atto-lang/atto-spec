@@ -1,5 +1,7 @@
 # File/module `define const` v1: constexpr and non-throwing environment-backed constants
 
+> **2026-11-24 v2 target:** [Static imports v2](static-imports-v2.md#7-compile-time-namespace-aliases) uses `define alias` for static namespace bindings. `define const` remains value-only; its typed constexpr and startup-once environment rules are unchanged.
+
 Status: **User-approved target semantics; backend implementation and executed conformance pending.** Supersedes the old file/module compile-time-only `define const` interpretation. Local function-scope `const` still requires compile-time evaluation; this extension is deliberately scoped to file and module declarations.
 
 ## Syntax and constant classes

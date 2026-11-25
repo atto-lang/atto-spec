@@ -2,14 +2,14 @@
 
 **Status: DRAFT.**
 
-## Class field declaration defaults: implicit `let` (accepted target)
+## Class field declaration defaults: implicit `val` (accepted target)
 
-In **ordinary class fields only**, a type-first declaration without an explicit binding modifier means `let`, **independent of the field's type**: `pub int count = 0;` means `pub let int count = 0;`, and `pub Foo child = new Foo();` means `pub let Foo child = new Foo();`. This also applies to generic `T` fields at the declaration site; do not infer `val` for nonprimitives.
+In **ordinary class fields only**, a type-first declaration without an explicit binding modifier means `val`, **independent of the field's type**: `pub int count = 0;` means `pub val int count = 0;`, and `pub Foo child = new Foo();` means `pub val Foo child = new Foo();`. This applies to generic `T` fields too. Explicit `let` permits rebinding; `mut` independently requests writable referent access. Historical implicit-`let` is migration-only.
 
 ```atto
 define class Person as
-  pub string name = "Alice"; // let: rebindable, read-only referent
-  pub mut List<string> items = []; // let mut: rebindable, writable referent if safe
+  pub string name = "Alice"; // implicit val: fixed binding
+  pub mut List<string> items = []; // implicit val mut: fixed binding; writable referent if safe
   pub val int id = 42; // stable binding, no referent writes by default
   pub val mut List<int> scores = []; // stable binding, writable referent if safe
   pub final int birth_year = 1996; // exactly once (checked definite assignment)
@@ -19,14 +19,16 @@ end
 
 `let` and `val` govern **rebinding**; `mut` independently governs requested write access through an object reference, subject to ownership, readonly receivers, existing borrows and actor boundaries. `const` prevents rebinding and requires compile-time evaluation for ordinary class fields; the runtime-once `os.read_env` exception is **only** for file/module-level `define const` declarations. `final` requires exactly one assignment and may permit checked deferred construction-time initialization only where a backend can prove it; this differs from a `val` initialized at declaration/construction. No combination may evade the borrow checker. A bare local `int x = 5;` keeps its existing meaning of `const int x = 5;`, rather than the class-field default.
 
-This is an accepted *semantic target*, not a claim that every backend already distinguishes `final`, `val`, `const` and `mut` in typed IR. Native/independent backend parity is pending. Normative implementation guide: [atto-spec class field binding defaults v1](https://github.com/atto-lang/atto-spec/blob/main/language/class-field-binding-defaults-v1.md); executable requirements: [atto-platform-conformance registry](https://github.com/atto-lang/atto-platform-conformance/blob/main/contracts/class-field-binding-defaults-v1.json).
+This is an accepted *semantic target*, not a claim that every backend already distinguishes `final`, `val`, `const` and `mut` in typed IR. Native/independent backend parity is pending. Normative implementation guide: [atto-spec class field binding defaults v2](https://github.com/atto-lang/atto-spec/blob/main/language/class-field-binding-defaults-v2.md); executable requirements: [atto-platform-conformance v2 registry](https://github.com/atto-lang/atto-platform-conformance/blob/main/contracts/class-field-binding-defaults-v2.json).
 
+
+A runtime `val` binding is not by itself deep immutability. Typed local `const` requires compile-time evaluation and frozen constant data; explicit `const mut` materializes a fresh owned mutable instance per execution, never a mutable pooled alias. See [chapter 27](27-implicit-const-and-const-mut.md).
 
 ## Type system
 
 AttoLang is statically typed and **nominal by default**. Two classes with the same fields are not automatically interchangeable. Explicit structural compatibility is permitted at designated call boundaries using `structural` or `struct{...}` / `structural {...}` forms after type-checker admission; structural typing is not a universal runtime cast.
 
-Primitive families include booleans, signed/unsigned integral types, floating-point types, strings, bytes, arrays, records, enums, function references and typed handles. Exact widths, overflow modes, numeric promotion, float corner cases, and ABI packing require cross-backend tests. No backend may rely on host-language unchecked overflow. Integer overflow panics the actor; see [integer rules](17-primitives-and-core-types.md#integer-rules).
+Primitive families include booleans, signed/unsigned integral types, floating-point types, strings, bytes, arrays, records, enums, function references and typed handles. Exact widths, overflow modes, numeric promotion, float corner cases, and ABI packing require cross-backend tests. No backend may rely on host-language unchecked overflow. Dynamic integer overflow is an ordinary thrown guest error under the November 23 target; see [integer rules](17-primitives-and-core-types.md#integer-rules).
 
 An immutable binding does not imply deep immutability of every reachable object. The ownership model controls mutation, copying, sharing and lifetime separately.
 
@@ -45,13 +47,13 @@ define enum Status as
   Failed
 end
 
-fnc describe(Status status) -> string ::
+fnc describe(Status status) -> string {
   return match status over
-    Status.Pending -> "pending"
-    Status.Ready   -> "ready"
-    Status.Failed  -> "failed"
-  end
-end
+    on Status.Pending -> { return "pending"; }
+    on Status.Ready   -> { return "ready"; }
+    on Status.Failed  -> { return "failed"; }
+  end;
+}
 ```
 
 This is an intended idiom, **not** an assertion that each enum and match spelling already executes in every backend.
