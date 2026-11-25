@@ -39,7 +39,7 @@ logical task**, never blocking the underlying actor/scheduler worker.
 | `nb readch ch` | `Future<T>` | Atomically register a pending read and return immediately |
 | `nb writech ch, value` | `Future<void>` | Atomically register a pending write and return immediately |
 | `try readch ch` | `Option<T>` | Return `None`, **without registering** |
-| `try writech ch, value` | `bool` | Return `false`, **without registering** |
+| `try writech ch, value` | `TryWriteResult<T>` | Return `Accepted`, `Full(original)` or `Closed(original)` **without registering** |
 | `do readch ch` | `void` statement | Exactly `readch`, but discard the received value |
 | `do writech ch, value` | `void` statement | Exactly `writech`, but discard the unit result |
 
@@ -137,6 +137,8 @@ end
 This is proposed syntax; exact arm grammar and timeout handling need compiler fixtures. Blocking `readch` is not allowed inside a nonblocking select arm unless an explicit typed adapter exists.
 
 `process.stdout` / `stderr` / `stdin` and `stdio.out` / `err` / `in` are channel-style standard streams by design; `stdio.in.stream()` and `Observable.from_ch(stdio.in)` are target adapters. Network stream framing and backpressure are part of the contract, not consequences of merely using a Channel type.
+
+The [immediate channel probe target](27-channel-immediate-probes.md) replaces the historical Boolean guest-write probe with a typed recoverable ownership result; `try readch` remains `Option<T>` with closed/drained failure. This is a target, not cross-backend proof.
 
 ## Scheduling guarantees
 
