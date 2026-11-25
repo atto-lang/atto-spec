@@ -9,12 +9,12 @@ const fields=['stage','owner','unitKind','unit',...digestFields,'generated','dep
 function fail(message){throw new TypeError(message);}
 function u32(value){const b=Buffer.alloc(4);b.writeUInt32BE(value);return b;}
 function ident(value){
-  if(typeof value!=='string'||value.length<1||value.length>512||!/^[\x21-\x7e]+$/.test(value))
+  if(typeof value!=='string'||value.length<1||value.length>512||/[^\x21-\x7e]/.test(value))
     fail('invalid bounded ASCII identity');
   const b=Buffer.from(value,'ascii');return Buffer.concat([u32(b.length),b]);
 }
 function digest(value){
-  if(typeof value!=='string'||!/^[0-9a-f]{64}$/.test(value))fail('invalid digest');
+  if(typeof value!=='string'||value.length!==64||/[^0-9a-f]/.test(value))fail('invalid digest');
   return Buffer.from(value,'hex');
 }
 export function cacheKey(input){
@@ -47,7 +47,7 @@ assert.notEqual(cacheKey({...base,dependencies:[]}),expected);
 assert.notEqual(cacheKey({...base,dependencies:[{...base.dependencies[0],digest:h(9)},base.dependencies[1]]}),expected);
 assert.notEqual(cacheKey({...base,owner:'ab',unit:'c'}),cacheKey({...base,owner:'a',unit:'bc'}));
 for(const malformed of [
-  {...base,generated:''},{...base,compiler:'F'.repeat(64)},{...base,owner:'a\0b'},
+  {...base,generated:''},{...base,compiler:'F'.repeat(64)},{...base,compiler:h(1)+'\n'},{...base,owner:'a\n'},{...base,owner:'a\0b'},
   {...base,unit:'\ud800'},{...base,unit:'x'.repeat(513)},{...base,unitKind:'package'},
   {...base,dependencies:[base.dependencies[0],base.dependencies[0]]},
   {...base,dependencies:Array.from({length:129},(_,i)=>({identity:'p'+i,digest:h(1)}))},
