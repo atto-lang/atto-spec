@@ -1,0 +1,11 @@
+fnc dynamic(): int {
+  return 42;
+}
+
+fnc invalid(int x? = dynamic()): int {
+  return x;
+}
+
+pub fnc main(): int {
+  return invalid();
+}
