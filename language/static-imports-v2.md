@@ -230,7 +230,9 @@ import namespace http, http3, c from pkg '@org/project/package';
 import namespace c from pkg '@org/project/package/a/b/c';
 ```
 
-Illustrative proposed .atto.pkg.toml extension (schema to be reconciled with the actual package manager before implementation):
+### 3.1 Namespace manifest contract
+
+The package root contains `.atto.pkg.toml`. Keep the existing `[package]` name/version table and extend it with optional `[namespaces]` and `[exports]` tables:
 
 ```toml
 [package]
@@ -238,15 +240,23 @@ name = "@org/project/package"
 version = "1.0.0"
 
 [namespaces]
-c = "src/a/b/c/"
+c = "src/a/b/c.atto"
 http = "src/network/http/"
-http3 = "src/network/protocols/http3/"
+http3 = "src/network/protocols/http3/namespace.atto"
+"network.tools" = "src/tools.atto"
 
 [exports]
-"a/b/c" = "src/a/b/c/"
+"a/b/c" = "c"
+"network/http" = "http"
 ```
 
-Namespace paths map to declared public namespace export tables, not every file in a directory. Public subpaths must be expressly exported; path traversal, symlink escapes, private modules and ambiguous/missing exports fail closed. Resolve public namespace by exact selector first; for a dotted requested binding, a final-component match is permitted only if unique in the manifest (e.g. `std.http` binding selecting exported `http`). If no such selector exists, allow a matching natural package basename to bind its root public tree; an explicitly exported subpath or direct source supplies one static namespace view and may be bound under any valid requested name. For other renaming use `as`. Never silently select a different namespace or invent exports. This exact-match/final-component/root selection rule is a draft implementation clarification, subject to review. The manifest and lockfile pin package identity, version, source digest and dependency graph. No implicit re-export.
+- `[namespaces]` keys are exact public logical namespace names, case-sensitive; quote dotted names so TOML does not interpret them as nested keys. Values are canonical package-relative .atto entry files. A trailing slash is shorthand for exactly `namespace.atto` within that directory (e.g. `src/network/http/namespace.atto`); no enumeration, globbing, filename inference or implicit exports. That provider must declare the exact namespace name (explicit or deterministically derived) and publish members using their normal visibility rules. One provider cannot own two distinct manifest namespaces.
+- `[exports]` maps a quoted public slash subpath to a declared namespace key, not a filesystem path. Multiple subpaths may intentionally refer to the same namespace identity. Dangling targets, duplicate keys/tables, invalid/reserved identifiers, traversal, symlink escapes, hidden/internal paths and undeclared subpaths fail closed. A manifest is metadata, not authority to access private members or compiler-owned capabilities.
+- Manifest resolution is independent of working directory, import order, and incidental layout. The package identity and version, manifest bytes, and every reachable original source file must be pinned by the authenticated lock for frozen dependency compilation. A transformed source edge never substitutes for checking the original source digest.
+- Resolve public namespace by exact selector first; for a dotted requested binding, a final-component match is permitted only if unique in the manifest. If no selector exists, allow a matching natural package basename to bind the root public tree if declared. An explicitly exported subpath or direct source supplies one static namespace view and may be bound under any valid requested name. Other renaming uses `as`. Never silently select another namespace or invent exports.
+- Shorthand namespace selection: `import http from pkg '@org/project/package/network/http';` and `import namespace http from pkg '@org/project/package/network/http';` must select the identical namespace when authenticated manifest metadata unambiguously declares that export as a namespace. The same rule applies to a package-root namespace selector and homogeneous lists (e.g. `import http, http3, c from pkg '@org/project/package';`). Never infer kind from a filename, directory name or member usage. In the full typed resolver, ambiguity across kinds requires an explicit kind. A namespace-only backend must not guess the kind of any unrepresented export.
+- Initial Rust host resolver profile: bounded strict TOML subset (8 KiB, up to 64 namespace and 64 subpath entries, ASCII strings, no escapes/arrays/inline tables); exact natural namespace selections, explicit or shorthand, including homogeneous comma lists within the selected local package and its explicit subpaths. Scoped names require three components. Existing unscoped manifests remain supported. Dotted logical names are representable in manifest metadata, but executable qualified aliases, root-tree imports, external package acquisition and dependency graph linking need further backend support and must reject unsupported forms rather than downgrade to local lookup.
+
 
 ## 4. URL dependencies
 
