@@ -1,0 +1,3 @@
+// REJECT: names are unique even across mixed parameter styles.
+fnc invalid(x: int, int x): int { return 42; }
+pub fnc main(): int { return 42; }

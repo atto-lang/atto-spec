@@ -79,7 +79,7 @@ test('all source cases specify target outcomes and negative diagnostics', () => 
   const expectedCodes = new Set([
     'E_SPAWNS_REQUIRED', 'E_PURE_SPAWNS',
     'E_SPAWNS_DUPLICATE', 'E_SPAWNS_EFFECT_MISMATCH',
-    'E_SPAWN_IN_CRITICAL'
+    'E_SPAWN_IN_CRITICAL', 'E_SUSP_REQUIRED'
   ]);
   for (const c of registry.source_cases) {
     assert.ok(c.id && c.source && c.rationale);
@@ -91,7 +91,10 @@ test('all source cases specify target outcomes and negative diagnostics', () => 
   for (const required of ['reject-unmarked-main', 'reject-unmarked-handler',
     'reject-indirect-helper', 'reject-callback-erasure',
     'reject-inside-critical', 'accept-actor-receive',
-    'accept-suspends-alias', 'accept-mailbox-effect-boundary',\n    'accept-await-spawn', 'reject-await-spawn-without-susp',\n    'reject-await-spawn-without-spawns', 'reject-indirect-spawn-in-critical',\n    'accept-effect-typed-callback']) {
+    'accept-suspends-alias', 'accept-mailbox-effect-boundary',
+    'accept-await-spawn', 'reject-await-spawn-without-susp',
+    'reject-await-spawn-without-spawns', 'reject-indirect-spawn-in-critical',
+    'accept-effect-typed-callback']) {
     assert.ok(registry.source_cases.some(c => c.id === required), required);
   }
 });
@@ -154,7 +157,8 @@ test('declarations cannot bypass purity, duplicates or critical safeguards', () 
 test('runtime matrix is explicitly unexecuted and fail closed', () => {
   const ids = new Set(registry.runtime_cases.map(c => c.id));
   for (const id of ['tenant-denied','tenant-cross-boundary',
-    'quota-exhaustion','parent-retire-race','delivered-not-completed',\n    'await-ready-failure','cancel-before-ready']) {
+    'quota-exhaustion','parent-retire-race','delivered-not-completed',
+    'await-ready-failure','cancel-before-ready']) {
     assert.ok(ids.has(id),id);
   }
   for (const c of registry.runtime_cases) {

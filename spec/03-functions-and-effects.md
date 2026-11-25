@@ -141,7 +141,9 @@ In the opt-in borrow-default profile, parameters have fixed local bindings unles
 
 ## Named function, method and constructor arguments (v1 target)
 
-Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
+The detailed normative distinction between **`T? name`**, **`T name?`**, and **`T? name?`**, including omission provenance and negative conformance cases, is in [chapter 27](27-optional-and-named-arguments.md). This section is a summary and must not be read as a separate lowering rule.
+
+Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. The dedicated `StructName(field=value)` target applies only to statically resolved implicit nominal struct fieldwise initialization, not ordinary callable arguments (see [layout chapter](27-collection-layout-named-generics.md)). This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
 
 ```atto
 fnc combine(int first, int second) -> int ::
@@ -214,3 +216,94 @@ val connection = Actor.connect(reader, writer)
 ## Macros and compile-time evaluation
 
 `define macro` must expand or lower ahead of target runtime execution, be hygienic or explicitly expose controlled capture, produce source-mapped diagnostics, and be deterministic under a pinned toolchain. Macros cannot manufacture permissions or bypass import boundaries. Runtime reflection and runtime code evaluation are not implicit substitutes for macros. Cross-backend macro compilation and behavior require independent executable fixtures.
+
+## Existing `using` keyword: deterministic scoped resources (v1 target)
+
+**Decision:** make the spelling `using telemetry.span("checkout") as span { ... }`
+a first-class, compiler-checked AttoLang construct. This **reuses the existing
+`using` keyword**, not a new telemetry-specific keyword, decorator, macro
+or application instrumentation wrapper. The LLVM hosted-AOT subset has restricted guest execution evidence.
+Java's compiler-owned guest scope implementation has separate candidate
+tests; this amendment does not certify their execution.
+
+```atto
+using telemetry.span("checkout") as span {
+    span.set_attribute("order.type", order.kind)
+    let result = await process_order(order)
+    return result
+}
+```
+
+Proposed grammar addition for a `using` statement (integrate with any other
+existing uses of that keyword, do not reject them):
+```ebnf
+using_statement = "using" expression "as" identifier block ;
+block           = "{" statement* "}" ;    (* existing brace scope *)
+```
+The body and binding use ordinary lexical scoping. Evaluate the resource
+expression exactly once. The compiler requires an admitted scoped-resource
+protocol (provisional contract name `ScopedResource` with deterministic
+`close_scope`). The acquired resource is bound in the body; neither the
+unique handle nor its mutable borrowed view may escape the lexical scope.
+It cannot be sent through channels or actor mailboxes. Immutable,
+capability-free trace context may be propagated independently.
+
+**Verified implementation boundary (12 November 2026):** the native
+LLVM hosted-AOT parser, compiler and Clang-linked runtime have an executed
+non-suspending `telemetry.span("literal")` scope subset (five native
+guest cases at `-O0` and `-O2`, five compiler-denial cases on the
+[approved source-blob carrier](https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43324098880)).
+That subset intentionally forbids observable scope-handle methods and
+suspension. Java main uses a compiler-owned lexical span and a trusted
+runtime provider. Its checked-in guest tests target nesting, `await`, cancellation
+and host-controlled recording; exact executed receipts are required. Full guest AOT, live JIT attach, and
+asynchronous scope parity across backends require independent execution
+evidence. See the [Java guest tests](https://github.com/atto-lang/atto-source.java/blob/b02efee4c036557278284ca444655e19cd0adc64/src/test/java/dev/oreslang/TelemetryUsingSpanLanguageTest.java)
+and the [shared telemetry contract](https://github.com/atto-lang/atto-common-source/pull/122).
+
+
+`close_scope` executes exactly once **after the body terminates** by
+fallthrough, `return`, `?` early propagation, `trap`, `throw`,
+`raise`, `panic`, cancellation or exceptional unwind. `using` is
+a proper-tail-call cleanup barrier. A legal `await` or `select`
+suspension does **not** end the scope: its resource token and immutable
+parent context are kept in the continuation and completed when the body
+actually exits. Resource acquisition failure follows the expression's
+ordinary error semantics and cannot close a never-acquired resource.
+
+A `SpanScope` is **runtime-owned and nominally sealed at the trust
+boundary**: a guest module or class with the same names
+(`telemetry.span`, `SpanScope`, or `close_scope`) cannot impersonate
+the built-in tracing capability. The public source-level contract is one
+affine `ScopedResource<SpanScope>` abstraction, not a `uint64` token,
+heap object identity, or user-implementable duck-typed interface.
+A backend may implement its internal handle as a compiler-owned opaque
+token, a proven heap value, or a continuation-owned frame provided the
+*observable* lifetime, observer operations, and effects are equivalent.
+The scope alias cannot shadow another live owned scope. Guest calls to
+`close_scope` are forbidden; closure is generated and enforced by the
+compiler, not delegated to an ordinary method lookup.
+
+A telemetry `SpanScope` is a specialized scoped resource whose cleanup is
+non-throwing, non-suspending, nonblocking and cannot alter guest-visible
+effects, exceptions, cancellation, or supervisor CONTROL priorities. The
+underlying native recorder/collector may drop events under bounded pressure.
+Disabled instrumentation yields a clock-free, allocation-free no-op span
+scope; ordinary argument and attribute expressions still run with their
+normal evaluation effects. Guard expensive attribute construction using
+`span.is_recording()` when needed.
+
+`using` scopes and automatic compiler/runtime/stdlib spans share one
+logical context, preserve parentage across `await`/actor handoffs, and
+avoid duplicate semantic HTTP server spans. A non-recording context may
+remain valid for propagation when explicit propagators are enabled.
+
+**Mandatory compiler and execution gates:** parse and format round-trip;
+wrong resource/cleanup protocol; scope escape/borrow and actor transport
+rejection; normal return/early exit/exception/panic/cancel exactly-once
+cleanup; suspension/resume and scheduler migration; disabled-path purity;
+telemetry failure isolation. All must be independently proven on each
+supported backend before implementation labels are upgraded.
+
+See [common-source native auto-instrumentation v1](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/279)
+for the versioned event ABI and conformance targets.

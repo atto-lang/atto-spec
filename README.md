@@ -31,6 +31,66 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Checked directional I/O](language/io-direction-shorthand-v1.md), [prefix/postfix reads](language/postfix-channel-read-expression-v1.md), and [mixed endpoint pipes](language/mixed-endpoint-pipe-v1.md): single-operation and continuous graph contracts; host models only, not portable guest certification.
+- [Pipeline failure accounting](language/pipeline-effect-proof-v1.md), [handler boundaries](language/pipeline-handler-boundaries-v1.md), and [declared actor ingress](language/declared-actor-pipe-signatures-v1.md): checked effects and lifecycle targets with independently gated compiler/runtime evidence.
+
+- [Type tests, conversion and scoped using](language/type-tests-casts-and-using-v1.md): candidate explicit type predicates, branch-local capture and checked conversion; no universal execution claim.
+
+- [Adversarial sequence conformance](language/seq-adversarial-conformance-v1.md) and [void return vectors](conformance/void-early-return-v1.json): target tests, not portable execution certification.
+
+- [Field-sensitive borrowing and projected actor-state receivers v1](language/field-sensitive-borrow-effects-v1.md): target typed disjoint places/NLL, authenticated method effects, and projected receiver write ceilings; not guest-certified.
+
+- [Caret return and scoped sequences](language/return-shorthand-and-sequences-v1.md): contextual return syntax and comma sequences; portable execution independently gated.
+- [Opt-in v2 callable-body migration](language/callable-body-migration-v2.md): v1 remains the default; draft version selector and checked migration only.
+
+- [Result/Option payload discard patterns v1](language/adt-payload-discard-patterns-v1.md): `Ok()` / `Err()` / `Some()` and `(_)` wildcard patterns discard payloads without inventing bindings, with guarded/exhaustive matching and AOT verification requirements. **Proposal only**; no universal backend parity claimed.
+
+- [Typed match/switch arms v1](language/typed-match-switch-arms-v1.md): candidate `case Pattern : Type -> body` and `on Pattern : Type -> body` grammar, switch defaults, no implicit fallthrough, and async/error typing. **Proposal only**; guest implementation and parity are tracked separately.
+
+- [Immutable `with` copy-and-update v1](language/with-copy-update-v1.md): candidate Record field addition/type change and nominal Struct same-type reconstruction with strict ownership gates. Guest and backend parity are not yet verified.
+
+- [Inline collections and nominal Entry/Map mutation (candidate)](language/inline-collection-literals-v1.md): `key => value` Entry literal, `{key => value}` Map literal, checked mutable upserts, `get(): Option<V>`; target only, not guest-certified ([conformance #99](https://github.com/atto-lang/atto-platform-conformance/pull/99)).
+
+- [Named-generic collection layouts](spec/27-collection-layout-named-generics.md): target layout and nominal struct field initialization; host reference only.
+
+- [Telemetry source identity and tracing](spec/27-telemetry-source-identity-and-tracing.md): target contract; host reference checks do not establish guest execution.
+
+- [Virtual actor identity and directory](spec/20-virtual-actors-directory-inspection.md): target contract; host reference checks do not establish guest execution.
+
+- [Collection slicing, spread and Unicode](language/collection-slice-spread-v1.md): target contract; host reference checks do not establish guest execution.
+
+- [Interface and trait receiver conformance](language/implements-receiver-conformance-v1.md): target contract; host reference checks do not establish guest execution.
+
+- [Loops and iteration](spec/27-loops-and-iteration.md): target contract; host reference checks do not establish guest execution.
+
+- [Checked i64 edition and migration](language/checked-i64-arithmetic-v1.md): target contract; host reference checks do not establish guest execution.
+
+- [Numerical semantics v1](language/numeric-semantics-v1.md): exact integer, decimal, fixed-point, vector and dimension targets; source-free reference checks only.
+
+- [Optional types and named/omittable call arguments](spec/27-optional-and-named-arguments.md): independent `?` positions, defaults, named binding and provenance; host tests do not certify guest support.
+
+- [Immediate channel probes](spec/27-channel-immediate-probes.md): recoverable `Accepted`/`Full(T)`/`Closed(T)`, no waiter registration and affine ownership; host reference only.
+
+- [Effects and lifetimes](spec/23-effects-and-lifetimes.md): typed CFG loans, latent effects, actor-domain retirement and proof gates; canonical bang ownership syntax and host-only contract evidence.
+
+- [Structural tilde shorthand v1](language/structural-tilde-v1.md): candidate `~` synonym for `structural`, typed pattern matching and named/positional delimiter safety (**not guest-verified**).
+
+- [Structural member witness matrix](language/structural-member-witness-v1.md): proposed interface, trait, class, struct, Record, Tuple and Map contracts; [43 host-only cases](conformance/structural-member-witness-v1.json) (not backend-executed).
+
+- [Statement match arm delimiters v1](language/match-arm-delimiters-v1.md): per-arm `end` or braces, plus the outer match `end`; source-only structural cases remain unexecuted.
+
+- [Anonymous structural shape types, singleton and union field values (proposed)](language/anonymous-structural-shapes-v1.md)
+
+- [Anonymous structural shapes: source-only 50-case registry](conformance/anonymous-structural-shapes-v1.json) — proposed, not compiler-executed.
+
+- [Atomics and receive-only serialization](spec/27-atomics-and-receive-only-serialization.md): `Atomic<T>`, memory order, concurrent receiver methods and serial receive admission; target only.
+
+- [Typed enum patterns and aliases](spec/27-typed-enum-pattern-aliases.md): canonical target `on Run { ... } as r`, scoped type narrowing and borrows; no guest proof claimed.
+
+- [AOT overloads, nested and binary patterns](spec/27-aot-overloads-nested-and-binary-patterns.md): static callable/class constructor selection, head/tail and byte/bit/packet matching; target contract, not guest parity.
+
+- [Root Object and Actor lifecycle](spec/27-root-object-actor-lifecycle.md): target root APIs, deterministic cleanup, shutdown quiescence and no-GC limitations; host contract only.
+
 - [Actor creation effect `spawns` v1](language/actor-spawns-effect-v1.md): explicit spawn-capable callable effects, nested actor parentage, tenant-scoped authorization, quotas, lifecycle fencing and 26 proposed conformance cases (19 source / 7 runtime). **Target proposal; no compiler or guest parity certified.**
 
 - [Actor self-organization and telemetry sidecars v1](language/actor-self-organization-v1.md): proposed capability-scoped discovery, atomic child reconciliation, graph transactions and isolated observability sidecars. Bounded Node model tests are **HOST_ONLY**; compiler and runtime guest support remains unverified.
