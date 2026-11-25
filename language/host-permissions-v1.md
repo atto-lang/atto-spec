@@ -47,7 +47,7 @@ Revocation takes effect before **new admissions**. Pre-existing handles and in-f
 ## Guest program and failure semantics
 
 ```atto
-import * as fs from pkg "std.fs";
+import namespace fs from std.fs;
 
 pub susp fnc main(): int {
   val content = await fs.read_text("./data/input.txt");
@@ -56,9 +56,9 @@ pub susp fnc main(): int {
 }
 ```
 
-For this invocation `atto run --allow-net=example.com --allow-read=./data --allow-write=./out main.atto`, the **successful expected behavior** is a byte-equivalent UTF-8 copy. `--allow-net` is unused by this program. A read outside `./data`, write outside `./out`, or any network call other than the authorized destination must fail before its privileged side effect. Hosted I/O must raise the ordinary typed permission error according to `hosted-async-http-fs-v1` and `trap-result-v1`; it must not panic, silently succeed, truncate a denied output, log secrets, or emit a fake guest success. In `os.read_env`, preserve the separately specified total-empty-string result on denial.
+For this invocation `atto run --allow-net=example.com --allow-read=./data --allow-write=./out main.atto`, the **successful expected behavior** is a byte-equivalent UTF-8 copy. `--allow-net` is unused by this program. A read outside `./data`, write outside `./out`, or any network call other than the authorized destination must fail before its privileged side effect. Hosted I/O must throw the ordinary typed permission error according to `hosted-async-http-fs-v1` and `trap-result-v1`; it must not panic, silently succeed, truncate a denied output, log secrets, or emit a fake guest success. In the qualified static initializer `std.env.read_env` and legacy `os.read_env`, preserve the separately specified total-empty-string result on denial.
 
-Explicit package imports are required for `fs` and `http`; the abbreviated user preview without an import is not yet canonical syntax. Unsupported freestanding targets must issue a deterministic no-artifact diagnostic rather than accepting a flag or silently implementing a no-op.
+Explicit static namespace imports are required for `fs` and `http`; the abbreviated user preview without an import is not yet canonical syntax. Unsupported freestanding targets must issue a deterministic no-artifact diagnostic rather than accepting a flag or silently implementing a no-op.
 
 ## Security conformance and release gate
 

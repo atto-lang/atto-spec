@@ -1,0 +1,11 @@
+// Candidate negative fixture: unpinned owner loan remains live across await.
+define class Box as
+  pub let int value = 42;
+end
+pub suspends fnc main(): int {
+  let Box owner = new Box();
+  val view = borrow! owner;
+  val work = task { return 1; };
+  await work;
+  return view.value;
+}

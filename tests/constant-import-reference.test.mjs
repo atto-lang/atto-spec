@@ -1,0 +1,6 @@
+// Host-only declaration and snapshot model; does not access the host environment.
+import test from 'node:test';import assert from 'node:assert/strict';
+function launch(decls,allowed,lookup){const vals=new Map();for(const d of decls){if(vals.has(d.id))throw Error('duplicate');vals.set(d.id,allowed.has(d.key)?lookup(d.key)??'':'')}return vals}
+function bind(decls,vals,name){const d=decls.find(x=>x.id===name);if(!d)throw Error('unbound');if(!d.pub)throw Error('private');if(d.kind!=='const')throw Error('kind');return vals.get(name)}
+test('per-declaration snapshot, repeated aliases never reread',()=>{const ds=[{id:'a',key:'K',pub:true,kind:'const'},{id:'b',key:'K',pub:true,kind:'const'}];let calls=0;const v=launch(ds,new Set(['K']),()=>{calls++;return 'one'});assert.equal(calls,2);assert.equal(bind(ds,v,'a'),'one');assert.equal(bind(ds,v,'a'),'one');assert.equal(calls,2);assert.equal(launch(ds,new Set(['K']),()=> 'two').get('a'),'two')});
+test('denied key never invokes lookup; kind and visibility remain checked',()=>{const ds=[{id:'a',key:'K',pub:true,kind:'const'},{id:'b',key:'K',pub:false,kind:'const'},{id:'f',key:'K',pub:true,kind:'fnc'}];const v=launch(ds,new Set(),()=>{throw Error('unexpected lookup')});assert.equal(bind(ds,v,'a'),'');assert.throws(()=>bind(ds,v,'b'),/private/);assert.throws(()=>bind(ds,v,'f'),/kind/)});
