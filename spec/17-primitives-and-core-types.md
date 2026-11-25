@@ -20,7 +20,7 @@
 
 AttoLang has **no `null` value** and **no truthiness**. Absence is `Option<T>`, and conditions must have type `bool`.
 
-Boolean logic uses the operators `&&` (short-circuit AND), `^^` (eager XOR) and `||` (short-circuit OR), whose operands must all be `bool`. The built-in `And`, `Or` and `Xor` functions, such as `And(true, true)`, remain available. See [chapter 16](16-lexical-and-grammar-reference.md#operators) for precedence and backend status. Inside conditions, `,` and `|` are still accepted as AND and OR.
+Boolean logic uses `&&` and `||` with strict `bool` operands and short-circuit evaluation. Boolean exclusive OR uses `Xor(bool,bool)`, not `^^`, which is reserved for integer bitwise XOR. The built-in `And`, `Or` and `Xor` functions remain available; historical condition-only comma/pipe forms require explicit migration and must not be silently rewritten if effects differ. See [operator contract](../language/bitwise-and-stream-operators-v1.md).
 
 ## Integer rules
 

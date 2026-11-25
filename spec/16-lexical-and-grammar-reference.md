@@ -57,7 +57,7 @@ Keywords may also be described linguistically as nouns (e.g. `actor`), relationa
 
 ## Operators
 
-From lowest to highest precedence, following the v0.6 grammar:
+Historical v0.6 operator table (not current target precedence; see the operator contract below):
 
 | Level | Operators | Associativity |
 | --- | --- | --- |
@@ -77,9 +77,9 @@ From lowest to highest precedence, following the v0.6 grammar:
 - `eq` and `neq` are the canonical comparisons. `==` and `!=` are accepted aliases.
 - `is` tests identity. Type tests use `is type`, as in `if animal is type Dog dog then`.
 - Inside an `if` or `while` condition, `,` means AND and `|` means OR, and comma binds tighter.
-- **TARGET (decided, 2026-11-14):** `&&` is short-circuit boolean AND, `^^` is boolean XOR, and `||` is short-circuit boolean OR. `^^` is eager: it evaluates both operands exactly once, left to right. Precedence is `&&` above `^^` above `||`. Every operand must have static type `bool`, and there is no truthiness conversion. The built-in `And`, `Or` and `Xor` functions stay valid.
+- **SUPERSEDED TARGET (2026-11-14):** the former Boolean `^^` proposal is historical. The 2026-11-20 owner decision reserves `^^` for integer XOR; Boolean XOR uses `Xor(bool,bool)`. Boolean `&&` and `||` retain strict bool operands and left-to-right short circuit. See [operator contract](../language/bitwise-and-stream-operators-v1.md).
 - Backend status on 2026-11-14: Java main and LLVM main accept `&&` and `||`. .NET main accepts only the `and`/`or`/`xor` words. All three mains still reject `^^` as reserved. The fixes are oreslang-source.java#3009, oreslang-source.llvm#1728 / #1739 and oreslang-source.net#521, which adds `&&`, `^^` and `||` to the structured frontend.
-- Single `^` and the bitwise and shift operators are not in the grammar. Integer bit operations use named functions such as `Integer.bitXor(a, b)`.
+- The current target uses statement-leading `^` for return, not infix XOR or exponentiation. Integer `^^`, `&`, `|`, `~`, and checked `<<<`, `>>>`, `ashr` follow the separate operator contract; `<<` and `>>` are typed I/O.
 - Open: whether the condition-only `,` and `|` spellings stay. oreslang-source.java#3009 proposes removing them in favor of `&&` and `||`.
 - Assignment is an expression, but `if x = y then` is rejected.
 - `name = value` in a call is never a named argument. Named value arguments use `name: value` ([chapter 03](03-functions-and-effects.md)).

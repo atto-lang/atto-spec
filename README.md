@@ -30,7 +30,7 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Keyword roles and syntax highlighting taxonomy](spec/23-keyword-taxonomy-and-highlighting.md) records proposed editor metadata and links the documented lexer inventory.
 
-- [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^ ~`, `<<< >>> ashr`, compound updates, and typed-I/O `<< >>`, with context-sensitive caret/structural-tilde parsing; target semantics, not backend parity.
+- [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): integer `^^`, statement-return `^`, checked triple shifts `<<< >>> ashr`, and typed I/O `<< >>`; target semantics, not backend parity.
 
 - [Trap-to-Result v1](language/trap-result-v1.md): caller-side `trap` preserves returned `Result`/`Option` layers and catches ordinary `throw` as `Err(original Error)`; unverified backends must fail closed rather than emit legacy Option results.
 
