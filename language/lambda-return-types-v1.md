@@ -12,6 +12,41 @@ val small_doubled = values
     .take(2);
 ```
 
+## Mandatory pipe delimiters (normative)
+
+Every lambda or anonymous function **expression** MUST start with the opening
+`|` token and MUST close its parameter list with the matching `|` token.
+This applies equally in `const fnc` bindings, ordinary expression bindings,
+call arguments, return expressions, and the bodies/arms of `match`, `switch`,
+and `select`. Neither the annotation `=> ReturnType` (or compatibility `: ReturnType`), the `->` body marker,
+nor a surrounding expected callable type may substitute for either pipe.
+
+```atto
+const fnc exactly_one = |_| => int -> 5;       // valid: one ignored parameter
+const fnc exactly_zero = || => int -> 5;        // valid: zero parameters
+const fnc named = |x: int| => int -> x + 5;    // valid: named typed parameter
+const fnc typed = |int x| => int -> x + 5;     // valid: type-first parameter
+```
+
+The following MUST be **syntax errors**, including when the lambda would be
+otherwise well-typed:
+
+```atto
+const fnc invalid_one = _ : int -> 5;          // missing both pipes
+const fnc invalid_two = _ -> 5;                // missing both pipes
+const fnc invalid_three = x : int -> x + 5;   // missing both pipes
+const fnc invalid_four = x -> x + 5;          // missing both pipes
+```
+
+The standalone `_` remains a wildcard *parameter* only inside a pipe-delimited
+parameter list; it is not an arity-polymorphic lambda head. `|_|` accepts
+**exactly one** ignored parameter; `||` accepts **exactly zero**; `|_, _|`
+accepts **exactly two**. The type checker must not reinterpret a missing-pipe
+expression as a callable, and the formatter must not silently repair it.
+Ordinary uses of `_` outside the lambda-head grammar remain governed by their
+own syntax rules. This is a syntax acceptance requirement, not evidence that
+any backend currently executes closures.
+
 ## Accepted forms
 
 ```atto
