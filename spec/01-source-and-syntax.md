@@ -44,7 +44,7 @@ The samples use one of several valid function forms: `: T` and `-> T` are both r
 
 ## Bindings and fields
 
-`val` declares an immutable binding, `let` a mutable binding, and `const` requires a compile-time constant. A `final` class field is single-assignment; a compile-time constant final initializer can be canonicalized from `final const` to `final` when proven constant. Instance field declarations default to immutable value slots unless explicit mutation is declared; the exact implicit-`val` grammar is a migration target.
+`val` declares an immutable binding, `let` a mutable binding, and `const` requires a compile-time constant. A `final` class field is single-assignment; a compile-time constant final initializer can be canonicalized from `final const` to `final` when proven constant. Unqualified ordinary class fields default to **`val`**, independent of type. Explicit `let` permits rebinding, and `mut` independently requests referent-write authority. Historical implicit-`let` is migration-only.
 
 ```atto
 val answer = 42
@@ -52,7 +52,7 @@ let counter = 0
 const max_retries = 3
 
 define class Session as
-  int id: 7             // implicit immutable field (target)
+  int id: 7             // implicit val: fixed binding
   let int attempts: 0   // explicitly mutable field
   final int epoch: 1    // assigned exactly once
 end
@@ -98,7 +98,7 @@ The **target** early-exit syntax admits both `guard condition { terminal_failure
 
 An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.
 
-`match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. An expression-form `return match ...` must infer its enclosing return type where admitted. Typed variants such as `match<int>` and `select<int>` constrain arm results. Duplicate and unreachable arms should be compile errors; exhaustive/disjoint-vs-priority matching is still subject to [open questions](12-open-questions.md).
+`match ... over ... end`, `do match ... over ... end`, `switch` and `select` are distinct constructs. Every `match ... over` arm requires contextual `on`, including `on Ok(ack)`, `on Err(err)` and `on _`; bare patterns, `else`, `default` and `on default` are invalid match arms. `default` belongs to `switch`. An expression-form `return match ...` must infer its enclosing return type where admitted. Typed variants such as `match<int>` and `select<int>` constrain arm results. Duplicate and unreachable arms should be compile errors; exhaustive/disjoint-vs-priority matching is still subject to [open questions](12-open-questions.md).
 
 ## Call syntax and operators
 

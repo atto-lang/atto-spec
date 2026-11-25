@@ -28,7 +28,7 @@ The signed 64-bit `int` operations `& | ^^ ~ <<< >>> ashr` act on two's-compleme
 
 ## Integer rules
 
-The chapter 02 rule is that no backend may rely on unchecked host overflow when the source specifies checked arithmetic. The backends do not agree on what happens today:
+The chapter 02 rule is that no backend may rely on unchecked host overflow when the source specifies checked arithmetic. The following table is historical observation, not current language semantics:
 
 | Program | Java | LLVM |
 | --- | --- | --- |
@@ -41,11 +41,11 @@ The chapter 02 rule is that no backend may rely on unchecked host overflow when 
 | `5 % 0` | Fails with a host `ArithmeticException` | Rejected unless the divisor is a nonzero literal |
 | `1 eq 1.0` | True | Rejected: operands must have the same scalar type |
 
-**TARGET (decided):** integer arithmetic is checked. Overflow is a panic, so it fails the actor, which is then restarted under [chapter 18](18-runtime-guarantees.md). It never wraps silently. Wrapping happens only through explicitly named operations, whose names are not chosen yet.
+**TARGET (decided 2026-11-23):** integer arithmetic is checked. Dynamic overflow produces an ordinary thrown `ArithmeticOverflowError`, caught by ordinary catch or `trap!`, not source raise/panic. Unhandled errors follow [chapter 07](07-errors-and-failure.md) and [chapter 18](18-runtime-guarantees.md). No silent wrapping.
 
 This has a direct consequence: sized types must be real types with enforced ranges, not aliases of `int`, or `i8` could never overflow.
 
-Java needs real changes to meet this, and LLVM's trap needs to become an actor-level failure. Checks add some cost to arithmetic.
+Backends must emit the checked guest-error path or reject operations whose safety cannot be established.
 
 **PROPOSED** (S-24):
 
@@ -53,9 +53,9 @@ Java needs real changes to meet this, and LLVM's trap needs to become an actor-l
 2. `bigint` is either truly arbitrary precision or rejected. It must not silently act as 64-bit.
 3. Division by zero is a language-level failure with a defined class, never a host exception.
 
-Outside an actor, an overflow panic ends the root invocation as described in [chapter 07](07-errors-and-failure.md).
+Outside an actor, unhandled overflow ends the root invocation as described in [chapter 07](07-errors-and-failure.md).
 
-Whether `int / int` gives a `float` or an integer is a separate decision (S-25). Java's current behavior surprises anyone coming from C, Rust or Java itself.
+**DECIDED (2026-11-23):** `int / int` truncates toward zero and returns an `int`. Explicit floating operands select floating division. Zero division and signed minimum divided by minus one are distinct ordinary guest errors; see the [numeric reconciliation](../language/cross-backend-semantics-reconciliation-v1.md#numeric-semantics).
 
 ## Equality and identity
 
