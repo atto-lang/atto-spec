@@ -76,3 +76,47 @@ Record field identifiers are fixed by the syntax and checked against the canonic
 Positive once implemented: `foo => 5` with `foo:string` infers `Entry<string,int>`; `(foo) => 5` identical; `#foo => 5` infers `Entry<Symbol,int>`; `["foo"] => 5` infers `Entry<List<string>,int>` without Map insertion; `[true] => 5` infers `Entry<List<bool>,int>`; contextual `Array<string>` changes the key collection type, not the arrow semantics; `["foo" => 5, "bar" => 6]` infers a List of Entries. `({foo:1})` and `(foo=1)` remain Records, not collection entries.
 
 Negative cases: `bar :: 5` standalone, duplicate Record field names, `{"foo":1,bar:2}` mixed Map/Record, computed Record `{[foo]:5}`, unsafe mutable List/Array Map key insertion, wrong `Entry<K,V>` generic ascription, Map value type mismatches, unhashable nested key contents, moved/borrowed alias escape, source-order side effects duplicated or reordered, and any unproven Symbol/key identity crossing a TenantVM boundary. Track results per compiler with an exact source SHA and distinguish `PARSED`, `TYPE_CHECKED`, `COMPILED_GUEST_EXECUTED`, and `REJECTED_NO_ARTIFACT`.
+
+
+## Parentheses and Record constructor interoperability (v2 proposed)
+
+Status: TARGET / NOT_EXECUTED. This section proposes a narrowly scoped extension to v1; ordinary Entry expressions and named calls retain their existing semantics. Do not silently enable this in older profiles.
+
+In expression-primary position, classify at the current delimiter depth using tokens, not whitespace, regex, or expected type: `()` is an empty Tuple, `(expr)` is grouping, `(expr,)` and `(expr, expr, ...)` are Tuples, and `(identifier=expr, ...)` is a Record. Each record item must have an identifier and a single assignment token; `==`, nested delimiters, strings and comments do not trigger this classification. One trailing comma is legal; leading/double commas, unbalanced delimiters and mixed positional/field items reject. Parentheses preserve nested shape, type, ownership, effects and source-order evaluation; they neither flatten tuples nor introduce assignment, argument expansion or extra evaluation. `(5,6.true)` is not the spelling of a three-item tuple; use `(5,6,true)`. Ordinary valid member access remains unchanged.
+
+The authenticated compiler-owned `Record.of` constructor admits four equivalent static field sources:
+
+```atto
+let Record r1 = (a=5, b=6);
+let Record r2 = Record.of(a=5, b=6);
+let Record r3 = Record.of(a => 5, b => 6);
+let Record r4 = Record.of(Entry.of("a", 5), Entry.of("b", 6));
+let Record r5 = Record.of(Pair.of("a", 5), Pair.of("b", 6));
+let Tuple t = (5, 6, true);
+```
+
+The direct bare-label arrow in this specific intrinsic is a static field descriptor, not a general Entry expression; `a => 5` elsewhere still evaluates binding a. Only the authenticated builtin, not a user-defined or shadowed Record/of, receives this grammar. For Entry.of/Pair.of, require a compile-time-proven valid identifier string, and authenticate constructor identity. Reject dynamic keys, duplicate names across all admitted forms, invalid identifiers, unproven shape, incompatible field types and unsupported ownership before emitting an artifact. No implicit stringification or Map-to-Record conversion. Normalize to the same typed Record construction; preserve the original expression spans and source evaluation order independently of canonical field ordering. Ordinary calls still use label: expression for named arguments; `f(a=5)` does not become a named call. A grouped Record argument `f((a=5))` is one value. `f((5,6))` is one Tuple argument; `f(5,6)` is two arguments.
+
+Grouping overrides the existing operator precedence without changing its tiers (see [bitwise and stream operators](bitwise-and-stream-operators-v1.md)). Preserve short-circuiting, checked arithmetic, ownership unary operators, postfix call/index/member/cast binding and nonassociative Entry arrows. Grouped import selectors are a separate static declaration grammar under [static imports v2](static-imports-v2.md), including its distinct delimiter/trailing-comma rules, atomic binding, and visibility checks. No expression evaluation or aggregate allocation in import clauses.
+
+### Required independent conformance
+
+| Source fragment | Expected |
+| --- | --- |
+| `2 + 3 * 4` / `(2 + 3) * 4` | 14 / 20 |
+| `20 - 5 - 3` / `20 - (5 - 3)` | 12 / 18 |
+| `(5)` / `(5,)` / `()` | scalar / tuple arity 1 / tuple arity 0 |
+| `(5,6,true)` | ordered heterogeneous tuple |
+| `((a=5),6)` / `(a=(5,6))` | nested tuple/record, no flattening |
+| `(a==5)` | grouped comparison |
+| `(a=5,6)`, `(5,,6)`, `(a=5,a=6)` | reject, no artifact |
+| All five Record constructions above | same shape, field values and source-order effects |
+| `Record.of(Entry.of(dynamic_key,5))` | reject if key not statically proved |
+| `Record.of(a=5, a => 6)` | duplicate rejection |
+| `false && (trap_expression)`, `true || (trap_expression)` | right operand not evaluated (with bool-typed trap expression) |
+| `(key) => 5` | ordinary evaluated Entry key |
+| `import (class C, fnc f) from pkg 'x';` | static mixed selector, no tuple |
+| `import class (C, D) from pkg 'x';` | static same-kind group |
+| `import class (C,) from pkg 'x';` | reject under import v2, unlike tuple trailing comma |
+
+Add actual compiler/guest tests for left-to-right side effects, exactly-once construction, static and dynamic key rejection, shadowed constructors, nested groups, strings/comments, malformed delimiters, resource-bounded nesting and parse-format-parse equivalence. Test JVM/Graal Native Image, .NET NativeAOT, LLVM native, Rust/Wasm, standalone Wasm, JS, Forge, Cranelift and the Atto bootstrap independently; distinguish parser-only, host-only and compiled guest evidence. No unsupported feature may silently emit an artifact. Pin exact head/tree, steps and toolchain. This proposal has no execution receipts yet.
