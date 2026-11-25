@@ -1,0 +1,10 @@
+// expect-exit: 42
+// java: rejects
+// Regression: an unused match-only tagged-ADT function must still emit Wasm memory.
+fnc inspect(int? x): int {
+  match x over
+    on None -> { return 42; }
+    on Some(n) -> { return n; }
+  end
+}
+pub fnc main(): int { return (42); }

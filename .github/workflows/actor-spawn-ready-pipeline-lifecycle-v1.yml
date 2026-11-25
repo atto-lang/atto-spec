@@ -1,0 +1,21 @@
+name: Actor READY pipe lifecycle contract (source only)
+on:
+  pull_request:
+    paths:
+      - 'language/actor-spawn-ready-pipe-lifecycle-v1.md'
+      - 'contracts/actor-spawn-ready-pipeline-lifecycle-v1.json'
+      - 'tests/actor-spawn-ready-pipeline-lifecycle-v1.test.mjs'
+      - '.github/workflows/actor-spawn-ready-pipeline-lifecycle-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate proposed source-only contract (not guest execution)
+        run: node --test tests/actor-spawn-ready-pipeline-lifecycle-v1.test.mjs

@@ -1,6 +1,6 @@
 # 28 — Fatal-fault containment and evidence classes
 
-**Status: DRAFT / TARGET, not implemented or certified on any backend.** This is an additive admission policy for [runtime guarantees](18-runtime-guarantees.md), [failure effects](07-errors-and-failure.md), [isolation](08-isolation-and-permissions.md), and [execution evidence](11-conformance.md). It does not change `throw`/`raise`/`panic`, automatically promise restarts, or make unsafe host code recoverable.
+**Status: TARGET evidence policy, not implemented or certified on any backend by this amendment.** This is an additive admission policy for [runtime guarantees](18-runtime-guarantees.md), [failure effects](07-errors-and-failure.md), [isolation](08-isolation-and-permissions.md), and [execution evidence](11-conformance.md). It does not change `throw`/`raise`/`panic`, automatically promise restarts, or make unsafe host code recoverable.
 
 ## Do not conflate language failures with host faults
 

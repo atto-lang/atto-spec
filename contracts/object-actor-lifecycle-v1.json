@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "id": "atto-object-actor-lifecycle-v1",
+  "status": "AUTHORED_NOT_EXECUTED",
+  "releaseQualified": false,
+  "compilerBackedPassingCases": 0,
+  "artifactVerifiedCases": 0,
+  "guestRuntimePassingCases": 0,
+  "backends": [
+    "java-graalvm",
+    "llvm",
+    "net-nativeaot",
+    "wasm",
+    "forge"
+  ],
+  "cases": [
+    {
+      "id": "reject-actor-constructor",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject actor constructor declarations; actor state initialization is runtime-reserved.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-direct-tear-down",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject direct invocation and reflection-based dispatch of actor tear_down hook.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-child-on-panic",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject guest actor-local on_panic, including inherited or alias declarations.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-drop-await",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject await/suspend and blocking I/O in proposed class on_drop hook.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-drop-resurrection",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject escape, resurrection or publication of self inside class drop.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-state-loan-escape",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject actor critical-write/critical-read loans escaping hook or await.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-dynamic-hook-aot",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject lifecycle hooks resolved by runtime reflection in sealed full guest AOT.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-double-drop",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject explicit duplicate owned-resource drop or use after ownership transfer.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-unproven-strict-no-gc",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject strict no-tracing-GC mode when any relevant source allocation remains unproved.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "constructor-partial-unwind",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Construct partially initialized class, fail, and drop only initialized owned fields.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "class-move-and-drop-once",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Move ownership of class values and verify exactly one terminal destruction by last owner.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "actor-on-start-before-ready",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Observe state initialization and on_start before ready and any DATA receive starts.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "actor-graceful-tear-down-once",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Race internal and external stop and invoke permitted tear_down at most once.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "concurrent-receive-shutdown",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Admit two concurrent receives with distinct stacks; quiesce both before teardown and free.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "serial-receive-suspended",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Suspend serial actor receive and show following DATA cannot start before the first retires.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "throw-local-hook-fail-closed",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Uncaught throw runs one actor-local disposition only after exclusive failure admission.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "panic-supervisor-only",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Panic skips local hooks and guest tear_down; supervisor receives one authenticated CONTROL event.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "stop-queued-mail-accounting",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Seal sends and account for queued never-started mail without silent loss or double drop.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "restart-incarnation-generation",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Restart failed actor from permitted stored state and queued mail; stale old guest handles fail.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "pinned-io-ffi-retirement",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Do not physically release actor memory while native callbacks or pinned I/O loans persist.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "long-lived-actor-scratch-churn",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Exercise repeated receives and prove bounded scratch reclamation before final actor stop.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "late-resume-after-stop",
+      "stage": "GUEST_RUNTIME",
+      "witness": "EXECUTED_GUEST_NONZERO_STEPS",
+      "scenario": "Reject stale wakes, duplicated completion tickets and resumed continuations after retirement.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "drop-glue-control-flow-edges",
+      "stage": "LOWERING_ARTIFACT",
+      "witness": "ARTIFACT_AND_RUNTIME_DIGEST",
+      "scenario": "Inspect compiler artifact for cleanup on normal, exceptional, cancellation and partial-init exits.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "full-aot-hook-closure",
+      "stage": "LOWERING_ARTIFACT",
+      "witness": "ARTIFACT_AND_RUNTIME_DIGEST",
+      "scenario": "Prove every lifecycle hook target resolves through finite AOT descriptors without interpreter fallback.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "guest-gc-collector-absence",
+      "stage": "LOWERING_ARTIFACT",
+      "witness": "ARTIFACT_AND_RUNTIME_DIGEST",
+      "scenario": "Demonstrate admitted native guest path has no tracing collector with independent allocation evidence.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    }
+  ]
+}
