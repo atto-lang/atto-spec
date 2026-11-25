@@ -95,9 +95,9 @@
     },
     {
       "id": "map-pair",
-      "kind": "reject",
+      "kind": "accept",
       "source": "let Map m = Map.of(Pair.of(\"a\",5));",
-      "expect": "Pair is not Entry"
+      "expect": "Pair supplies ordinary key and value"
     },
     {
       "id": "map-flat-v2",
@@ -200,6 +200,60 @@
       "kind": "reject",
       "source": "import (class C] from pkg 'x';",
       "expect": "mismatched delimiter"
+    },
+    {
+      "id": "map-pair-multiple",
+      "kind": "accept",
+      "source": "let Map m = Map.of(Pair.of(1,5), Pair.of(2,6));",
+      "expect": "two integer keys"
+    },
+    {
+      "id": "map-mixed-pair-entry",
+      "kind": "accept",
+      "source": "let Map m = Map.of(Pair.of(\"a\",5), Entry.of(\"b\",6), \"c\" => 7);",
+      "expect": "same K,V across nominal item kinds"
+    },
+    {
+      "id": "map-pair-nonidentifier",
+      "kind": "accept",
+      "source": "let Map m = Map.of(Pair.of(\"first-name\",5));",
+      "expect": "ordinary Map key, not Record field"
+    },
+    {
+      "id": "map-mixed-duplicate",
+      "kind": "reject",
+      "source": "let Map m = Map.of(Pair.of(\"a\",5), Entry.of(\"a\",6));",
+      "expect": "duplicate constant key across item kinds"
+    },
+    {
+      "id": "map-pair-unhashable",
+      "kind": "reject",
+      "source": "let m = Map.of(Pair.of([1,2],5));",
+      "expect": "no proven stable Hash/Eq"
+    },
+    {
+      "id": "map-entries-pair",
+      "kind": "reject",
+      "source": "let m = Map.of_entries(Pair.of(\"a\",5));",
+      "expect": "dedicated Entry-only factory"
+    },
+    {
+      "id": "map-pair-empty",
+      "kind": "reject",
+      "source": "let m = Map.of(Pair.of());",
+      "expect": "Pair factory requires two arguments"
+    },
+    {
+      "id": "record-entry-empty",
+      "kind": "reject",
+      "source": "let Record r = Record.of(Entry.of());",
+      "expect": "invalid Entry arity and Entry inputs not admitted"
+    },
+    {
+      "id": "map-mixed-type",
+      "kind": "reject",
+      "source": "let Map<string,int> m = Map.of(Pair.of(\"a\",5), Entry.of(true,6));",
+      "expect": "key type mismatch"
     }
   ]
 }
