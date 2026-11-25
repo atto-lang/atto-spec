@@ -78,6 +78,22 @@ while should_continue() do
 done
 ```
 
+Both `ifnot` and `unless` negate the **first** boolean condition and evaluate it exactly once. They follow the same expression-versus-statement distinction as `if`: a value form has **mandatory** `else` and `fi` with compatible arm types; a `do ifnot/unless ... then` statement has **optional** `else` and closes with `fi`; a braced imperative form has optional `else` and **no `fi`**. The resulting `elif` conditions, if any, are not implicitly negated. Neither keyword supports postfix `unless`. Refutable pattern heads and conditional `as let` bindings in the negated head remain rejected until sound narrowing is implemented. See [the semantic contract](../contracts/ifnot-unless-v1.json) and [conditional-expression grammar PR #183](https://github.com/atto-lang/atto-spec/pull/183).
+
+```atto
+do ifnot ready then
+  start_worker();
+else
+  notify_ready();
+fi
+
+unless should_stop {
+  process_next();
+}
+
+val int selected = unless ready then 5 else 6 fi;
+```
+
 The **target** early-exit syntax admits both `guard condition { terminal_failure_path }` and `guard condition else terminal_failure_path end`. The guard condition expresses what must hold to continue; a failing condition runs the failure path, which MUST explicitly return from the enclosing function on every possible path (`return value` or `return;` for void; verified lexical `^` is equivalent). `throw`, `raise`, `panic`, `break`, and `continue` cannot discharge this return requirement. The two forms must lower identically, and the formatter preserves the authored block style. A comma-separated guard list checks each clause once, left to right. The brace form has no owned `else`; the keyword form owns `else ... end`, never `fi`. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
 
 An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.

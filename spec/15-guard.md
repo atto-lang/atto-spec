@@ -82,7 +82,7 @@ With the brace form, an outer keyword-delimited `if` can still own
 its following `else` or `fi`:
 
 ```atto
-if ready then
+do if ready then
   guard x > 0 { return 1; }
 else
   return 2;
@@ -133,7 +133,7 @@ guard x > 0 { return; } else return; end   // reject: mixed delimiters
 guard x > 0 else return; fi               // reject: guard closes with end
 guard x > 0 { break; }                   // reject: loop break is not return
 guard x > 0 else continue; end          // reject: loop continue is not return
-guard x > 0 { throw new Error("bad"); }  // reject: throw is not return
+guard x > 0 { throw! Error("bad"); }  // reject: throw is not return
 ```
 
 An implementation may initially support **only a stricter, statically
@@ -201,10 +201,14 @@ must produce diagnostics rather than runtime panics.
   relevant frontend/parser, formatter and runtime path has separate
   executed conformance receipts; existing guard-v1 fixtures and their
   pinned Git blob IDs MUST remain unchanged. Adding this spelling
-  requires additive fixtures and versioned contract updates.
+  requires additive fixtures and versioned contract updates. The historical
+  v1 model and tests remain unchanged; they do not define v2 admission.
 
 All backends must check strict `bool` conditions, one-time evaluation,
 short circuit, nested/void function returns, invalid loop exits and throw-only branches, malformed syntax, guard scope
 and cleanup ordering. Exact source SHA, compiled guest execution
 and nonempty CI steps are required for parity claims. Source-free
 reference tests are useful but are **not** backend conformance.
+
+## Guard v2 reference model
+`node tests/guard-v2-reference.mjs` checks explicit-return paths, invalid exceptional/loop exits and once-only short-circuit evaluation for both spellings. It is an abstract CFG oracle; guest admission and exact formatter tests remain NOT_EXECUTED.
