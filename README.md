@@ -63,6 +63,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Tuple destructuring, mutability and aliasing v1](language/tuple-destructuring-v1.md): accepted target syntax for mixed per-element `let`/`val`/`const`/`mut` bindings, explicit binder lists and `as foo` root aliases; compiler/guest support not yet verified.
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
+- [AOT compile-time reflection, C layout and safe FFI v1 candidate](language/compile-time-reflection-ffi-layout-v1.md): bounded compile-time-only descriptors, static serializer generation, target-specific C ABI layout checks, explicit FFI ownership/effects and callback prohibition in v1. **Proposal / source-free tests only; no compiler or guest-AOT verification.**
+
 - [Visibility, foreign linkage and final fields v1](language/visibility-linkage-and-final-v1.md): distinguish internal, external, protected and final; includes fail-closed browser frontend matrix. Native link parity remains unverified.
 - [Namespaced and module exports v1](language/namespaced-exports-v1.md): explicit `export pub module`, qualified member access, source namespace identity, package gates and negative cross-file cases. This is a target contract; linker and native guest parity are **not verified**.
 - [Duration, timers and sleep v1](language/timers-and-sleep-v1.md): target `Duration`, `await sleep(...)`, `sleep_blocking(...)`, monotonic deadlines, cancellation and fiber-admission. Host-only reference tests; no compiler or guest execution claim.
