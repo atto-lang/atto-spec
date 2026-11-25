@@ -1,0 +1,171 @@
+{
+  "schema": "attolang-atomic-receive-v1",
+  "status": "TARGET",
+  "version": 1,
+  "decision_date": "2026-11-14",
+  "standard_library": {
+    "type": "Atomic<T>",
+    "default_order": "seq_cst",
+    "supported_scalar_target": [
+      "bool",
+      "int",
+      "i8",
+      "i16",
+      "i32",
+      "i64",
+      "u8",
+      "u16",
+      "u32",
+      "u64"
+    ],
+    "unsupported": [
+      "String",
+      "Pointer<T>",
+      "aggregate"
+    ],
+    "checked_integer_rmw": true
+  },
+  "memory_orders": {
+    "load": [
+      "relaxed",
+      "acquire",
+      "seq_cst"
+    ],
+    "store": [
+      "relaxed",
+      "release",
+      "seq_cst"
+    ],
+    "rmw": [
+      "relaxed",
+      "acquire",
+      "release",
+      "acq_rel",
+      "seq_cst"
+    ],
+    "cas_failure": [
+      "relaxed",
+      "acquire",
+      "seq_cst"
+    ]
+  },
+  "scheduling": {
+    "default_actor_receive": "concurrent_bounded",
+    "default_actor_methods": "concurrent_bounded",
+    "serial_actor_receive": "one_live_invocation_including_suspension",
+    "serial_actor_other_methods": "logically_independent_physical_max_one",
+    "state": "compiler_verified_critical_readers_exclusive_writer",
+    "stack": "one_stack_per_independent_invocation",
+    "serial_actor_max_running_carriers": 1,
+    "serial_actor_suspended_receive_releases_physical_lease": true,
+    "serial_actor_pinned_migration_after_worker_retirement": true
+  },
+  "fixtures": [
+    {
+      "id": "atomic_i64_sequential",
+      "file": "tests/fixtures/atomic-v1/atomic_i64_sequential.atto",
+      "kind": "compile_and_execute",
+      "expected_exit": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic_reject_string",
+      "file": "tests/fixtures/atomic-v1/atomic_reject_string.atto",
+      "kind": "compile_reject",
+      "expected_diagnostic_category": "ATOMIC_UNSUPPORTED_ELEMENT_TYPE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic_reject_load_release",
+      "file": "tests/fixtures/atomic-v1/atomic_reject_load_release.atto",
+      "kind": "compile_reject",
+      "expected_diagnostic_category": "ATOMIC_INVALID_MEMORY_ORDER",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "serial_receiver_methods",
+      "file": "tests/fixtures/atomic-v1/serial_receiver_methods.atto",
+      "kind": "runtime_harness_required",
+      "required_observations": [
+        "one_live_receive_through_await",
+        "independent_method_runs_while_receive_suspended",
+        "critical_loans_arbitrate_state",
+        "serial_max_one_running_guest_carrier",
+        "method_interleaves_during_suspended_receive_no_overlap"
+      ],
+      "status": "NOT_EXECUTED"
+    }
+  ],
+  "additional_required_evidence": [
+    "eight-thread_atomic_fetch_add_no_lost_updates",
+    "strong_compare_exchange_success_failure",
+    "atomic_overflow_no_partial_publication",
+    "release_acquire_publication",
+    "illegal_shared_actor_heap_reference_rejected",
+    "conflicting_critical_write_waits_for_readers",
+    "ordinary_actor_two_receives_distinct_stacks",
+    "serial_actor_stale_wake_cannot_release_new_receive_permit",
+    "cross_tenant_capability_checks",
+    "AOT_and_native_guest_execution_receipts"
+  ],
+  "backends": {
+    "java": {
+      "guest_status": "NOT_EXECUTED",
+      "compiler_sha": null,
+      "fixture_sha": null
+    },
+    "llvm": {
+      "guest_status": "NOT_EXECUTED",
+      "compiler_sha": null,
+      "fixture_sha": null
+    },
+    "net": {
+      "guest_status": "NOT_EXECUTED",
+      "compiler_sha": null,
+      "fixture_sha": null
+    },
+    "wasm": {
+      "guest_status": "NOT_EXECUTED",
+      "compiler_sha": null,
+      "fixture_sha": null
+    },
+    "forge": {
+      "guest_status": "NOT_EXECUTED",
+      "compiler_sha": null,
+      "fixture_sha": null
+    }
+  },
+  "verified_slices": {
+    "java_atomic_i64_interpreter": {
+      "status": "PASS",
+      "scope": "Java/GraalVM interpreter-backend Atomic<int> guest execution and compiler/ownership negative tests; not combined actor concurrency contract",
+      "source_commit": "27bc2d949ebfe500d0b16edf4551abadd76731ba",
+      "source_main_java_tree_sha": "f7a6094e8ec7625f8d3d8269800be2e1ce90a7e4",
+      "executed_fixture": "ores-truffle-oreslang/oreslang-source.java/tests/fixtures/atomic-v1/atomic_i64_guest.atto",
+      "fixture_blob_sha": "c52c4cb6436ac76c3089e0b18bd3907db9217d29",
+      "junit_tests_passed": 31,
+      "github_actions_url": "https://github.com/athlet-o/athleto-docs/actions/runs/43646372081",
+      "native_image_status": "NOT_EXECUTED"
+    },
+    "java_actor_regression": {
+      "status": "PASS",
+      "scope": "Existing Java actor runtime, source spawn/cleanup, state-region and loan JUnit regression tests (not physical parallel receive dispatch)",
+      "source_commit": "27bc2d949ebfe500d0b16edf4551abadd76731ba",
+      "tests_passed": 104,
+      "github_actions_url": "https://github.com/athlet-o/athleto-docs/actions/runs/43646666902"
+    },
+    "java_native_host_atto_interpreter": {
+      "status": "PASS",
+      "scope": "GraalVM 25.3.4.1 Native Image AOT host executable runs checked-in Atomic<int> .atto source in interpreter-no-jit guest mode; not sealed statically AOT-compiled guest",
+      "source_commit": "27bc2d949ebfe500d0b16edf4551abadd76731ba",
+      "source_main_java_tree_sha": "f7a6094e8ec7625f8d3d8269800be2e1ce90a7e4",
+      "fixture_blob_sha": "c52c4cb6436ac76c3089e0b18bd3907db9217d29",
+      "expected_stdout": "42:42:44",
+      "actual_stdout_verified_byte_equal": true,
+      "host_build_mode": "aot",
+      "guest_execution_mode": "interpreter-no-jit",
+      "sealed_guest_aot_status": "NOT_EXECUTED",
+      "github_actions_url": "https://github.com/athlet-o/athleto-docs/actions/runs/43647843652"
+    }
+  }
+}

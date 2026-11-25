@@ -1,0 +1,86 @@
+{
+  "schema": "atto.typeclass.associated-v2.contract",
+  "status": "PROPOSED_SOURCE_FREE_ONLY",
+  "witnessCatalog": {
+    "schema": "atto.typeclass.witness.v1",
+    "closedWorld": true,
+    "runtimeReflection": false,
+    "types": [
+      {
+        "name": "math.Vector",
+        "owner": "math"
+      }
+    ],
+    "typeclasses": [
+      {
+        "name": "ops.Mapper",
+        "owner": "ops",
+        "methods": [
+          "map"
+        ]
+      }
+    ],
+    "implementations": [
+      {
+        "module": "math",
+        "typeclass": "ops.Mapper",
+        "forType": "math.Vector",
+        "bindings": [
+          {
+            "method": "map",
+            "symbol": "math.map_vector"
+          }
+        ]
+      }
+    ]
+  },
+  "typeclassSignatures": [
+    {
+      "typeclass": "ops.Mapper",
+      "associatedTypes": [
+        "Item"
+      ],
+      "methods": [
+        {
+          "name": "map",
+          "params": [
+            "Self",
+            "Assoc.Item"
+          ],
+          "returns": "Assoc.Item"
+        }
+      ]
+    }
+  ],
+  "associatedBindings": [
+    {
+      "module": "math",
+      "typeclass": "ops.Mapper",
+      "forType": "math.Vector",
+      "bindings": [
+        {
+          "name": "Item",
+          "type": "int"
+        }
+      ]
+    }
+  ],
+  "functionSignatures": [
+    {
+      "symbol": "math.map_vector",
+      "module": "math",
+      "params": [
+        "math.Vector",
+        "int"
+      ],
+      "returns": "int"
+    }
+  ],
+  "request": {
+    "typeclass": "ops.Mapper",
+    "nominalType": "math.Vector",
+    "visibleModules": [
+      "math"
+    ]
+  }
+}

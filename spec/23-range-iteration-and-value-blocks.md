@@ -1,10 +1,10 @@
 # Range iteration and value-producing blocks (DRAFT / TARGET)
 
-**Status: proposed semantic contract, NOT executable compiler admission.** This chapter is a design target for all supported AttoLang backends. Do not mark parity as implemented until compiled-guest tests pass independently in Java, LLVM, .NET, WASM, and Forge. Preserve existing `if ... then ... fi`, `for (...)`, and `for ... of ...` syntax.
+**Status: proposed semantic contract, NOT executable compiler admission.** This chapter is a design target for all supported AttoLang backends. Do not mark parity as implemented until compiled-guest tests pass independently in Java, LLVM, .NET, WASM, and Forge. Preserve value `if ... then ... else ... fi`, imperative `do if ... then ... fi`, and legacy `for (...)` / `for ... of ...` syntax.
 
 ## Motivation
 
-AttoLang's `if` is a statement, while its existing ternary `condition ? a : b` is an expression. Allow compound value-producing `{ ... }` blocks anywhere expressions are admitted so the ternary remains concise even when an arm requires multiple statements. Introduce an `in` loop syntax and an efficient integral `..` / `..=` range value. No new keywords for value blocks.
+AttoLang distinguishes imperative `do if` and brace statements from value-producing keyword conditionals and ternaries. Allow compound value-producing `{ ... }` blocks anywhere expressions are admitted so the ternary remains concise even when an arm requires multiple statements. Introduce an `in` loop syntax and an efficient integral `..` / `..=` range value. No new keywords for value blocks.
 
 ```atto
 for id in 1..1024 {
@@ -29,11 +29,11 @@ block_expr = "{" { statement } [tail_expression] "}" ;
 ternary_expr = range_expr [ "?" expression ":" ternary_expr ] ;
 ```
 
-- An expression-position `{ ... }` is an `Ast.BlockExpr(statements, tail_expression?)`, never a record/map/struct literal. The separately prefixed `record{...}`, `struct{...}` and `~(...)` forms keep their own grammars. Statement-position `{ ... }` remains a statement block.
+- A brace block in an admitted block-expression grammar context is an `Ast.BlockExpr(statements, tail_expression?)`. Do not globally classify braces in expression positions: preserve the existing Map literal and empty collection rules; ambiguous standalone syntax must reject until explicit disambiguation is verified. The separately prefixed `record{...}`, `struct{...}` and `~(...)` forms keep their own grammars. Statement-position `{ ... }` remains a statement block.
 - A value block is an **eager, lexical expression**, **not a function object or closure**: it captures the surrounding lexical environment by ordinary access, but does not allocate a closure, acquire its own function return boundary or create an implicit asynchronous task.
 - All non-tail statements are ordinary statements and terminate normally. The **final expression without a semicolon** yields the block's value. A semicolon explicitly discards a value: `{ 42 }` is `int`; `{ 42; }` and `{}` have `Unit` type. Do not apply the usual optional-before-`}` semicolon rule to turn a terminated expression into an implicit tail.
 - In a value-required context, an absent tail expression fails type checking rather than returning a made-up default. A statement-context block may have `Unit`. An unreachable terminal statement (`throw`, `raise`, `panic`, `return`) has `Never` flow and can coexist with value-producing paths where the surrounding effect rules allow it.
-- `return` exits the nearest enclosing **function/method/lambda**, not the value block. `break` / `continue` target the nearest compatible enclosing loop; neither returns a block value. `yield` retains its generator-specific meaning.
+- In a general standalone value block, `return` exits the nearest enclosing **function/method/lambda**, not the block. In a conditional arm block the separately ratified v2 contract permits a final arm-local `return expression`; that exception does not extend to standalone blocks. `break` / `continue` target the nearest compatible enclosing loop; neither returns a block value. `yield` retains its generator-specific meaning.
 - Each block opens a lexical scope. Bindings do not escape; only a value that satisfies normal move/borrow/lifetime rules may escape. An inner reference to a block-local must not be returned. Defer/resource cleanup runs exactly once on every exit path, after a movable result has been secured.
 - Nested blocks work and may appear in arguments, assignments, interpolations (where expression parsing is admitted), nested ternaries and match-value arms. Source spans must identify both a failed tail and the corresponding enclosing expected type.
 - Side effects, throws/raises, panics, suspension and ownership moves are checked with the established effect and borrow checker. A value block does not silently authorize `await` or a borrow across `await`/critical sections.
@@ -45,11 +45,11 @@ ternary_expr = range_expr [ "?" expression ":" ternary_expr ] ;
 Examples:
 
 ```atto
-const int answer = ready
-    ? { const int x = expensive(); x + 2 }
+val int answer = ready
+    ? { val int x = expensive(); x + 2 }
     : { 0 };
 
-const int answer2 = ready ? { 42 } : { 7 };
+val int answer2 = ready ? { 42 } : { 7 };
 
 // Not 42: trailing semicolon discards the value.
 const int rejected = ready ? { 42; } : { 7 };
@@ -89,10 +89,6 @@ The machine-readable acceptance vectors live in `contracts/atto-value-block-rang
 
 Do not collapse a passing syntax-only test or a host-language model into full guest conformance.
 
-## Existing compiler-draft semantic discrepancies (non-promoting)
+## Reconciliation with conditional arm blocks
 
-AttoLang Java [draft #2797](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/2797) is an important **implementation candidate**, not yet compliant with this contract. As of the audited branch head, it accepts `BlockValueExpr` only as an immediate `ConditionalExpr` arm, normalizes `return expr;` inside those arms to an **arm-local** result, and auto-invokes a bare zero-argument `|| -> { ... }` arm lambda. Those are deliberate implementation behaviors but **not** the generic lexical-block semantics specified above. [Formatter #133](https://github.com/ores-truffle-oreslang/oreslang-format/pull/133) tests the narrower Java draft.
-
-For v0, the canonical target remains: a value block is a normal lexical **expression** allowed anywhere an expression is valid; it evaluates its last unterminated expression; `return` is not redefined and exits the enclosing callable; a lambda is a value unless the source explicitly calls it. Parser/AST checkers must reject unsupported forms rather than silently accepting a different meaning. Additional ternary-only arm-local-return or thunk sugar requires a separate versioned extension with user-facing syntax and corresponding conformance vectors. Do not mark divergent PRs as interoperable without an explicit spec update and compiled guest tests.
-
-The parity ledger is [platform conformance PR #697](https://github.com/ores-truffle-oreslang/oreslang-platform-conformance/pull/697), which audits all **nine** `oreslang-source.*` toolchains and ten guest execution lanes, including the restricted HDL RTL simulation profile.
+The [v2 arm-block contract](27-conditional-expression-modes.md) is authoritative for the contextual final arm-local return. Do not auto-invoke bare lambdas. Standalone value blocks, range types and iteration are independent candidate features, requiring disambiguation from canonical Map/Record collection literals before parser admission. The host reference validates finite range exhaustion and candidate corpus invariants only. Keep the original compiler and guest gates unchanged.

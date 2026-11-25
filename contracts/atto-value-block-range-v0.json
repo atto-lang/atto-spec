@@ -5,7 +5,7 @@
   "requires_compiled_guest_for_pass": true,
   "frontend_expectations": {
     "ternary": "strict_bool_right_associative_single_selected_arm",
-    "block_tail": "unterminated_final_expression_returns_value;terminated_final_expression_is_Unit",
+    "block_tail": "unterminated_final_expression_returns_value;terminated_final_expression_is_Unit;conditional_arm_final_return_is_separate_v2",
     "range": "exclusive_or_inclusive_fixed_width_integral_bounds_only",
     "iterator_binding": "fresh_immutable_per_iteration_by_default",
     "effects": "borrow_and_effect_checks_not_bypassed",
@@ -15,7 +15,7 @@
     {
       "id": "block_tail_returns_value",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int { const int value = { const int x = 20; x + 22 }; return value; }",
+      "source": "pub fnc main(): int { val int value = { const int x = 20; x + 22 }; return value; }",
       "expect": {
         "exit_code": 42
       }
@@ -47,7 +47,7 @@
     {
       "id": "range_exclusive_count",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int {\n  let int sum = 0;\n  let int needs_comma = 0;\n  stdio.stdout.write(\"[\");\n  for id in 1..5 {\n    if needs_comma eq 1 then\n      stdio.stdout.write(\",\");\n    fi\n    stdio.stdout.write(id);\n    needs_comma = 1;\n    sum = sum + id;\n  }\n  stdio.stdout.write(\"]\");\n  return sum;\n}",
+      "source": "pub fnc main(): int {\n  let int sum = 0;\n  let int needs_comma = 0;\n  stdio.out.write(\"[\");\n  for id in 1..5 {\n    do if needs_comma eq 1 then\n      stdio.out.write(\",\");\n    fi\n    stdio.out.write(id);\n    needs_comma = 1;\n    sum = sum + id;\n  }\n  stdio.out.write(\"]\");\n  return sum;\n}",
       "expect": {
         "exit_code": 10,
         "visited": [
@@ -61,7 +61,7 @@
     {
       "id": "range_inclusive_count",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int {\n  let int sum = 0;\n  let int needs_comma = 0;\n  stdio.stdout.write(\"[\");\n  for id in 1..=5 {\n    if needs_comma eq 1 then\n      stdio.stdout.write(\",\");\n    fi\n    stdio.stdout.write(id);\n    needs_comma = 1;\n    sum = sum + id;\n  }\n  stdio.stdout.write(\"]\");\n  return sum;\n}",
+      "source": "pub fnc main(): int {\n  let int sum = 0;\n  let int needs_comma = 0;\n  stdio.out.write(\"[\");\n  for id in 1..=5 {\n    do if needs_comma eq 1 then\n      stdio.out.write(\",\");\n    fi\n    stdio.out.write(id);\n    needs_comma = 1;\n    sum = sum + id;\n  }\n  stdio.out.write(\"]\");\n  return sum;\n}",
       "expect": {
         "exit_code": 15,
         "visited": [
@@ -84,7 +84,7 @@
     {
       "id": "block_lexical_shadowing",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int { const int x = 2; const int y = { const int x = 40; x + 2 }; return y; }",
+      "source": "pub fnc main(): int { const int x = 2; val int y = { const int x = 40; x + 2 }; return y; }",
       "expect": {
         "exit_code": 42
       }
@@ -92,7 +92,7 @@
     {
       "id": "unselected_arm_not_evaluated",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int { let int n = 0; const int a = true ? { n = n + 1; 42 } : { n = n + 100; 7 }; return a + n; }",
+      "source": "pub fnc main(): int { let int n = 0; val int a = true ? { n = n + 1; 42 } : { n = n + 100; 7 }; return a + n; }",
       "expect": {
         "exit_code": 43
       }
@@ -100,7 +100,7 @@
     {
       "id": "empty_collection_context",
       "kind": "accept_typecheck",
-      "source": "pub fnc main(): int { const Array<int> xs = true ? { [] } : { [1,2] }; return xs.size(); }",
+      "source": "pub fnc main(): int { val Array<int> xs = true ? { [] } : { [1,2] }; return xs.size(); }",
       "expect": {
         "result_type": "Array<int>"
       }
@@ -116,7 +116,7 @@
     {
       "id": "block_local_reference_escape",
       "kind": "reject_typecheck",
-      "source": "pub fnc main(): ref int { return { const int local = 42; &local }; }",
+      "source": "pub fnc main(): Borrow<int> { return { val int local = 42; borrow! local }; }",
       "expect": {
         "diagnostic": "borrow_does_not_outlive_block"
       }
@@ -167,7 +167,7 @@
     {
       "id": "range_bounds_eval_once",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int { let int x = 0; const int low = { x = x + 1; 1 }; const int high = { x = x + 1; 3 }; for id in low..=high { } return x; }",
+      "source": "pub fnc main(): int { let int x = 0; val int low = { x = x + 1; 1 }; val int high = { x = x + 1; 3 }; for id in low..=high { } return x; }",
       "expect": {
         "exit_code": 2
       }

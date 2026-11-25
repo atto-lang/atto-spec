@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "contract_id": "atto-explicit-initialization-v1",
+  "status": "PROPOSED_NOT_VERIFIED",
+  "spec_chapter": "28",
+  "source_extension": ".atto",
+  "required_backends": [
+    "java",
+    "llvm",
+    "wasm",
+    "dotnet",
+    "forge",
+    "cranelift"
+  ],
+  "evidence_policy": {
+    "baseline": "NOT_EXECUTED",
+    "positive_cases_require": "REAL_GUEST_COMPILE_AND_EXECUTE",
+    "negative_cases_require": "TARGETED_SEMANTIC_DIAGNOSTIC_AND_NO_ARTIFACT",
+    "reject_evidence": [
+      "source_only_contract_test",
+      "host_only_model",
+      "generic_parser_error",
+      "simulated_guest_result",
+      "zero_step_ci",
+      "unverified_cross_org_mirror"
+    ]
+  },
+  "rules": {
+    "implicit_zero_value": "reject",
+    "implicit_null_or_none": "reject",
+    "local_without_initializer": "reject_even_if_assigned_later",
+    "field_initialization": "explicit_field_initializer_or_proven_exactly_once_constructor_assignment",
+    "aggregate_missing_field": "reject_unless_declaration_has_explicit_default_initializer",
+    "collection_elements": "initialize_all_elements_before_exposure",
+    "implicit_default_constructor_or_trait": "never_synthesize_or_invoke_implicitly",
+    "explicit_default_factory_call": "allowed_only_if_it_returns_fully_initialized_value",
+    "binding_modifiers": "do_not_supply_values",
+    "backend_uninitialized_storage": "unobservable_until_fully_initialized"
+  },
+  "fixtures": [
+    {
+      "id": "explicit-scalar-initializers-positive",
+      "path": "contracts/explicit-initialization-v1/fixtures/explicit-scalar-initializers-positive.atto",
+      "kind": "compile_and_execute",
+      "expected_exit": 42,
+      "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "explicit-optional-values-positive",
+      "path": "contracts/explicit-initialization-v1/fixtures/explicit-optional-values-positive.atto",
+      "kind": "compile_and_execute",
+      "expected_exit": 42,
+      "expected_diagnostic_category": null,
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "uninitialized-let-reject",
+      "path": "contracts/explicit-initialization-v1/fixtures/uninitialized-let-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "missing_initializer",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "uninitialized-type-first-reject",
+      "path": "contracts/explicit-initialization-v1/fixtures/uninitialized-type-first-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "missing_initializer",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "missing-struct-field-reject",
+      "path": "contracts/explicit-initialization-v1/fixtures/missing-struct-field-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "missing_field_initializer",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "incomplete-constructor-reject",
+      "path": "contracts/explicit-initialization-v1/fixtures/incomplete-constructor-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "incomplete_initialization",
+      "status": "AUTHORED_NOT_EXECUTED"
+    }
+  ],
+  "future_required_proofs": [
+    "constructor_cfg_all_successful_paths",
+    "class_and_actor_state_initialization",
+    "collection_full_element_initialization",
+    "ffi_deserialization_and_arena_initialization_boundary",
+    "source_order_and_exactly_once_initializers",
+    "formatter_and_ast_round_trip",
+    "all_required_backend_guest_execution"
+  ]
+}
