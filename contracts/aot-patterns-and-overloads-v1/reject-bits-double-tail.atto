@@ -1,0 +1,7 @@
+pub fnc main(): int {
+    val data = Bytes.from_list([1]);
+    match data over
+        on bits[1 | first | second] -> { return 42; }
+        on _ -> { return 0; }
+    end
+}

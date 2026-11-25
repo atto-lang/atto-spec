@@ -2,6 +2,10 @@
 
 **Status: DRAFT; largely an optimization/profile target, not universal runtime evidence.**
 
+For the inverted struct/class value-versus-identity split and optimization legality, see [chapter 27](27-inverted-structs-classes-aot-jit.md). It is a proposed contract, not implemented guest parity.
+
+Strict vector kernels preserve logical scalar evaluation order and first failing index irrespective of storage layout; see [numerical semantics v1](../language/numeric-semantics-v1.md). Approximate modes require separate explicit admission.
+
 ## Data-layout semantics
 
 AttoLang targets efficient arrays/records and explicit or compiler-selected AoS, SoA, AoSoA, and SoAoS layouts. Inverted classes, field-column storage and ECS-like iteration are performance representations. They MUST preserve declared value/ownership semantics, including identity, deterministic drop, bounds checking, mutation rights and actor state isolation.
@@ -17,6 +21,8 @@ These rules close gaps found in the Java and LLVM DOP reference code. They const
 5. **Amortized growth.** Owning columnar stores MUST grow capacity geometrically. All-or-nothing `push` (pre-reserve, then commit) must not be implemented by reserving exactly `len + 1`, which makes bulk construction quadratic.
 
 A layout annotation is not a promise of speedup. The compiler should select layout using access-pattern evidence and report effective layout with build-time diagnostics. Vectorization, SIMD and zero-copy transfers must be proven against scalar and copy baselines.
+
+The [named-generic layout target](27-collection-layout-named-generics.md) defines physical layout identity and safe nominal field initialization without claiming guest parity.
 
 ## Cache and CPU locality
 

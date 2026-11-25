@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "id": "type-declaration-not-runtime-value-v1",
+  "status": "normative-unverified-backend-parity",
+  "requirements": {
+    "diagnostic_category": "TYPE_NOT_VALUE",
+    "types": [
+      "class",
+      "trait",
+      "interface",
+      "type_alias"
+    ],
+    "allowed": [
+      "class-typed instance return",
+      "class-typed instance argument",
+      "static member call",
+      "trait generic bound",
+      "lexical value shadowing of class names"
+    ],
+    "rejected": [
+      "bare class return",
+      "bare class argument",
+      "bare class local initializer",
+      "bare class expression statement",
+      "bare trait argument",
+      "bare trait return",
+      "bare alias as value",
+      "type namespace as actor message",
+      "type declaration in unknown-generic value slot",
+      "class declaration nested in aggregate elements",
+      "type namespace used in equality operands",
+      "bare interface value"
+    ]
+  },
+  "cases": [
+    {
+      "id": "class-return",
+      "expect": "reject",
+      "code": "define class Person as end\nfnc bad(): Person { return Person; }"
+    },
+    {
+      "id": "class-argument",
+      "expect": "reject",
+      "code": "define class Person as end\nfnc inspect(Person p): void { return; }\nfnc bad(): void { inspect(Person); }"
+    },
+    {
+      "id": "class-inferred",
+      "expect": "reject",
+      "code": "define class Person as end\nfnc bad(): void { val x = Person; }"
+    },
+    {
+      "id": "class-expression",
+      "expect": "reject",
+      "code": "define class Person as end\nfnc bad(): void { Person; }"
+    },
+    {
+      "id": "trait-bare-value",
+      "expect": "reject",
+      "code": "define trait Printable as end\nfnc bad(): void { val x = Printable; }"
+    },
+    {
+      "id": "alias-bare-value",
+      "expect": "reject",
+      "code": "define type Code = int;\nfnc bad(): void { val x = Code; }"
+    },
+    {
+      "id": "class-instance-return",
+      "expect": "accept",
+      "code": "define class Person as end\nfnc make(): Person { return new Person(); }"
+    },
+    {
+      "id": "class-instance-argument",
+      "expect": "accept",
+      "code": "define class Person as end\nfnc inspect(Person p): int { return 42; }\nfnc main(): int { return inspect(new Person()); }"
+    },
+    {
+      "id": "static-class-member",
+      "expect": "accept",
+      "code": "define class Person as\n pub static fnc answer(): int { return 42; }\nend\nfnc main(): int { return Person.answer(); }"
+    },
+    {
+      "id": "class-list-element",
+      "expect": "reject",
+      "code": "define class Person as end\nfnc bad(): void { val values = [Person]; }"
+    },
+    {
+      "id": "class-generic-value",
+      "expect": "reject",
+      "code": "define class Person as end\nfnc identity<T>(T value): T { return value; }\nfnc bad(): void { val escaped = identity(Person); }"
+    },
+    {
+      "id": "class-equality-operand",
+      "expect": "reject",
+      "code": "define class Person as end\nfnc bad(): bool { return Person eq Person; }"
+    },
+    {
+      "id": "interface-bare-value",
+      "expect": "reject",
+      "code": "define interface Endpoint as end\nfnc bad(): void { val escaped = Endpoint; }"
+    },
+    {
+      "id": "value-name-shadows-class",
+      "expect": "accept",
+      "code": "define class Person as end\nfnc echo(int Person): int { return Person; }\nfnc main(): int { return echo(42); }"
+    }
+  ]
+}

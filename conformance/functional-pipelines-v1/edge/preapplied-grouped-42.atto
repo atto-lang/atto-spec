@@ -1,0 +1,4 @@
+// expect-main-value: 42; reverse calls prepend to explicit arguments
+fnc double(int x): int -> x * 2;
+fnc sum(int value, int offset): int -> value + offset;
+pub fnc main(): int -> sum(2) <| (20 |> double);

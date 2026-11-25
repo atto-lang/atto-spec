@@ -1,0 +1,6 @@
+// TARGET only — NOT_EXECUTED. Pure updates do not alter the original Vector.
+fnc main() -> int {
+  val Vector<int> original = [10, 20, 30];
+  val Vector<int> changed = original.updated(1, 42);
+  return original[1] + changed[1]; // 62
+}

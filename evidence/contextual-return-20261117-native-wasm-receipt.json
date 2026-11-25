@@ -1,0 +1,492 @@
+{
+  "kind": "AttoLang return comma/caret conformance execution receipt",
+  "dated": "2026-11-17",
+  "status": "verified-where-supported",
+  "scope": "Exact Rust compiler src subtree + 31 SHA-pinned source/spec/formatter blobs; not a full repository mirror",
+  "source": {
+    "atto-source.rs": {
+      "commit": "615c7ae29fc2117db9ed1e455cb6d5bcf5ef044e",
+      "source_subtree_sha": "7aa2776616b8df551f2da103cb42b338293e6144"
+    },
+    "atto-spec": {
+      "commit": "43cc4925996dc8bbcd27898669717e6502b2d1cd",
+      "corpus_blob_sha": "4606687b084243281765ad9e98729919cb24dcc5"
+    },
+    "atto-format": {
+      "commit": "68e656a8582a64d46a3f7c56e2ee772ec8b37b8"
+    }
+  },
+  "execution": {
+    "carrier_repository": "gha-indie-worker/atto-ci",
+    "carrier_commit": "8007f0b78cbdd49f04447575661cb39835f8ebec",
+    "workflow_run_url": "https://github.com/gha-indie-worker/atto-ci/actions/runs/44136501221",
+    "workflow_job_id": 134227360354,
+    "workflow_conclusion": "success",
+    "checkout_credentials_persisted": false,
+    "cross_org_checkout": false,
+    "runner": "ubuntu-24.04",
+    "toolchain": "Rust 1.99.1 / wasm32-unknown-unknown",
+    "rust_regressions": {
+      "passed": 12,
+      "failed": 0
+    },
+    "node_host_structure": {
+      "passed": 29,
+      "skipped": 1,
+      "failed": 0
+    },
+    "formatter_exact_compiler": {
+      "passed": 27,
+      "skipped": 0,
+      "failed": 0
+    },
+    "direct_guest_return_cases": {
+      "passed": 19,
+      "failed": 0
+    },
+    "wasm32_compiler_direct": {
+      "positive_guest_returns": 4,
+      "empty_sequence_rejections": 1
+    },
+    "corpus": {
+      "total": 38,
+      "passed": 35,
+      "unsupported": 3,
+      "failed": 0
+    }
+  },
+  "unsupported_target_language_cases": [
+    "tuple-ordinary",
+    "tuple-caret-statement",
+    "tuple-last-value"
+  ],
+  "case_results": [
+    {
+      "id": "one-value",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "ed0322f693f2f28af729fc11f1664b69c89e6e714c584b82d0c08aee3c2833b1",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "d9672dd2d55e890087257b4897d44e005bdbbcb2d52fdc7ddeff7cc1ca5e7a50"
+    },
+    {
+      "id": "two-values",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "f5c913840354fe05e330f1374caa342526a192c21258e5636fd2b6b9b63a30c4",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "7a370ff9eed9444589dc1dcaa91fce21d3313751c884afb49ccb3353f8233d33"
+    },
+    {
+      "id": "three-values",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "6fbdcb4d39c61a62057a1d8f3b482e084c065537e18971e502bf9308a0568cea",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "c8dd715740b0065ca881fd78fbe4fd433acd6ff86ede17856eaba17807ef1e02"
+    },
+    {
+      "id": "adjacent-caret",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "e8f73ebf0cb8466e0112bc32c22e714cad36fda71f4193e3300569a98392993f",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "7a370ff9eed9444589dc1dcaa91fce21d3313751c884afb49ccb3353f8233d33"
+    },
+    {
+      "id": "nested-sequence",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "26962be8b4c99bba73f2350c85a54a5a475d70cde6e987c831159e773d9bf05b",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "313bd30a3e4edcefeb3ceb727ddd52a7ddb0b1e2e088a4a7e5485e4fb9e9d9ba"
+    },
+    {
+      "id": "seq-return-equivalent",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "7288b9b19f060d688cf9427a73296d36cb74e76ebbf0a740206a0818edbe5533",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "b0619be6df0d4e2e43135f7fc56529c90c4e8b24ac737365d6c3bc02167ff890"
+    },
+    {
+      "id": "caret-seq-equivalent",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "83ea04e4a4e001057ee02efb021ef27490efd75c4ce7c54cfacda42b5766c7c4",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "b0619be6df0d4e2e43135f7fc56529c90c4e8b24ac737365d6c3bc02167ff890"
+    },
+    {
+      "id": "named-binding",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "ff03ed6e4359cd3aafb55854350578c62ede483c34856259294e8f098119534f",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "b0619be6df0d4e2e43135f7fc56529c90c4e8b24ac737365d6c3bc02167ff890"
+    },
+    {
+      "id": "nested-call-commas",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "03bba218bafd14c7aad291164c83f9c65ab4f11494bfa34a6f2d4c0bf346ef64",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "7de23881f05cd1363de6c1bde2d35ba8673ee56788e65605eb6153b364b4ea80"
+    },
+    {
+      "id": "grouped-final",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "5e4bc3eeeeb785b859945551ac8a52e1a9d7db877d72a2377c6fb31fe6ff9816",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "7a370ff9eed9444589dc1dcaa91fce21d3313751c884afb49ccb3353f8233d33"
+    },
+    {
+      "id": "tuple-ordinary",
+      "status": "unsupported",
+      "phase": "compile",
+      "expect": "accept",
+      "source_sha256": "ae7d687806b033635f5f11a7135edada193f96dbaeaa7eab563e4148a41f507c",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_UNSUPPORTED_TYPE",
+      "wasm_diagnostic": "E_UNSUPPORTED_TYPE",
+      "unsupported_reason": "E_UNSUPPORTED_TYPE"
+    },
+    {
+      "id": "tuple-caret-statement",
+      "status": "unsupported",
+      "phase": "compile",
+      "expect": "accept",
+      "source_sha256": "8466a4921f46e873bf6b4f4f359f4734ba4bf3f4eeff0108293d5794b67fbabf",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_UNSUPPORTED_TYPE",
+      "wasm_diagnostic": "E_UNSUPPORTED_TYPE",
+      "unsupported_reason": "E_UNSUPPORTED_TYPE"
+    },
+    {
+      "id": "tuple-last-value",
+      "status": "unsupported",
+      "phase": "compile",
+      "expect": "accept",
+      "source_sha256": "68453e7c5f49ce47d1f219b6c2f6ca5decb9013317459bf1b2b12962584a9f19",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_UNSUPPORTED_TYPE",
+      "wasm_diagnostic": "E_UNSUPPORTED_TYPE",
+      "unsupported_reason": "E_UNSUPPORTED_TYPE"
+    },
+    {
+      "id": "empty",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "5080e3fd6948ecb99735d9f104fc0435cb0a89c8bf91160072d709b233760d7a",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_EMPTY_SEQUENCE",
+      "wasm_diagnostic": "E_EMPTY_SEQUENCE"
+    },
+    {
+      "id": "empty-whitespace",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "f2afc847940c49ec50e6bd3051ff1a3cae4b632daaa5fbfaa9586787ddf58f42",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_EMPTY_SEQUENCE",
+      "wasm_diagnostic": "E_EMPTY_SEQUENCE"
+    },
+    {
+      "id": "trailing-comma",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "0093f4f0841f32e937bafe6763e28afd846a00e62c8be4ab2b93f02e7b078947",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "leading-comma",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "2d7e5f82f93dbd8f669581f4a07bcba10bb51ab39dab88b86c7180c08c5903a5",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "double-comma",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "15d35ed69291186d87ac1b0b75b10867d2861df2f3af8f3c304168d6c9a1f904",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "no-parens",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "b84763931ae71da444059cdd72d1e48d59a1c0e06c5fc1da0aad3163f6acf132",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "no-caret-seq",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "e33d3578a0d9e9b124eba34c4a28a93ae49f676593edc9e0221f94e887c55955",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "extra-operator",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "009d96c543428650a52e0c4bc786d7426b39b7b629643b24a9a5f433d3452f64",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SEMICOLON",
+      "wasm_diagnostic": "E_SEMICOLON"
+    },
+    {
+      "id": "implicit-comma",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "6f2b183b7a05adae09f910e8fc3a6b9ac11ce21fdd3018b8ba4f2284850cfcaf",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "7a370ff9eed9444589dc1dcaa91fce21d3313751c884afb49ccb3353f8233d33"
+    },
+    {
+      "id": "selector-in-expression",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "364d93a6dc065465f76433c042429a778faea0a18796f6b12784975fccd83e4e",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "wrong-final-type",
+      "status": "passed",
+      "phase": "typecheck",
+      "expect": "reject",
+      "source_sha256": "db37e0bef7d2fdab648e17a4405f787280366fa5cd23ebf19033abb583cfef48",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_TYPE",
+      "wasm_diagnostic": "E_TYPE"
+    },
+    {
+      "id": "binding-as-final",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "de93c02a9f57f576a65cc6b90ff4a149100982528e6a25304f55af6ad04fe569",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "effect-in-pure",
+      "status": "passed",
+      "phase": "typecheck",
+      "expect": "reject",
+      "source_sha256": "3bf1f2196289b6b1ed817910bbf55606542695f2d4b555c88193fec92daacb6e",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_PURE",
+      "wasm_diagnostic": "E_PURE"
+    },
+    {
+      "id": "double-caret-statement",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "b635d117537b3a4197e63c6ca7dfdaa001a0a48c60b0c76128a64764c22026eb",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "unclosed",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "2460870c81921d00ebad00d99a553b8865827d7f5cb90ca03097df3500a90748",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "bare-three-values",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "360329ae6892e2e1e3498d66fe3e9201bd35f00fe8787bf2c9709f2785470b50",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "c8dd715740b0065ca881fd78fbe4fd433acd6ff86ede17856eaba17807ef1e02"
+    },
+    {
+      "id": "caret-bare-comma-values",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "143d341ece85e647850110af0610aa57becc8bccb24f5bbce3a2a60b3e92fedd",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "7a370ff9eed9444589dc1dcaa91fce21d3313751c884afb49ccb3353f8233d33"
+    },
+    {
+      "id": "bare-nested-calls",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "29a65a9b5eedcb8720e10d16d43eb7b02cb58195e1aacbb9029cfaaf9ea47826",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "7de23881f05cd1363de6c1bde2d35ba8673ee56788e65605eb6153b364b4ea80"
+    },
+    {
+      "id": "bare-sequence-first",
+      "status": "passed",
+      "phase": "execute",
+      "expect": "accept",
+      "source_sha256": "f191dfa62423b7f615f1d1d18cba8cb4fe9ac673d090162382f23a40acde84eb",
+      "native_exit": 0,
+      "wasm_host_ok": true,
+      "guest_return_value": "42",
+      "guest_sha256": "b578791067737cba456a98c090a3d0aa5c0e91adc0f5a2dea6ee6415b478d762"
+    },
+    {
+      "id": "reject-bare-trailing-comma",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "007f6e8008ca3301c2735d96ff6a59e6d6ea4765ce5dac764651a639c7f3b84a",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "reject-bare-double-comma",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "bf704d0f604a6fa7794075218da9a10034fa5a3a1a2152dd880c08d8d5afb9ba",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "reject-bare-final-declaration",
+      "status": "passed",
+      "phase": "parse",
+      "expect": "reject",
+      "source_sha256": "fd36003dc3a8f9810c0d133f7f2615a2013901ac931ec8f403f84046aa0d0416",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_SYNTAX",
+      "wasm_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "reject-bare-final-type-mismatch",
+      "status": "passed",
+      "phase": "typecheck",
+      "expect": "reject",
+      "source_sha256": "bc578093dfee60e4c24ae946eba97e4485d731bb933b6b2ff9931a919f7a0556",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_TYPE",
+      "wasm_diagnostic": "E_TYPE"
+    },
+    {
+      "id": "reject-bare-pure-effect",
+      "status": "passed",
+      "phase": "typecheck",
+      "expect": "reject",
+      "source_sha256": "aa5d0df12b13598ff38b5cafd6c6144f8d901b12a440c171a69109a44b2fe64e",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_PURE",
+      "wasm_diagnostic": "E_PURE"
+    },
+    {
+      "id": "reject-bare-move-after-prefix",
+      "status": "passed",
+      "phase": "typecheck",
+      "expect": "reject",
+      "source_sha256": "51d802e5220c1c9e5336631b0cd9f78ed8246f0912d27a2b990d05317ecc18a9",
+      "native_exit": 1,
+      "wasm_host_ok": false,
+      "native_diagnostic": "E_MOVED",
+      "wasm_diagnostic": "E_MOVED"
+    }
+  ],
+  "limitations": [
+    "No other AttoLang backend compilation or AOT parity is implied",
+    "Tuple results are intentionally unsupported by this scalar browser compiler",
+    "The parent :: callable-body migration still requires a version/edition gate",
+    "The full repository Git tree was not mirrored; the entire compiler src subtree and all inputs to these focused tests were SHA-verified"
+  ]
+}
