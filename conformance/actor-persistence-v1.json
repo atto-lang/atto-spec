@@ -1,0 +1,112 @@
+{
+  "schema": "atto.actor-persistence.spec-cases.v1",
+  "status": "TARGET_ONLY_NOT_EXECUTED_BY_BACKEND",
+  "cases": [
+    {
+      "id": "durable-actor-marker",
+      "phase": "parse",
+      "expect": "accept",
+      "source": "define durable actor Counter as\nend\n"
+    },
+    {
+      "id": "persistent-actor-marker",
+      "phase": "parse",
+      "expect": "accept",
+      "source": "define persistent actor Cart as\nend\n"
+    },
+    {
+      "id": "pub-durable-actor",
+      "phase": "parse",
+      "expect": "accept",
+      "source": "define pub durable actor Cart as\nend\n"
+    },
+    {
+      "id": "both-modifiers",
+      "phase": "typecheck",
+      "expect": "reject",
+      "diagnostic": "E_ACTOR_PERSISTENCE_MODIFIER",
+      "source": "define persistent durable actor Cart as\nend\n"
+    },
+    {
+      "id": "non-actor-modifier",
+      "phase": "typecheck",
+      "expect": "reject",
+      "diagnostic": "E_ACTOR_PERSISTENCE_MODIFIER",
+      "source": "define durable class Cart as\nend\n"
+    },
+    {
+      "id": "persistent-missing-hooks",
+      "phase": "typecheck",
+      "expect": "reject",
+      "diagnostic": "E_PERSIST_HOOKS",
+      "source": "define persistent actor Cart as\nend\n"
+    },
+    {
+      "id": "durable-hook-override",
+      "phase": "typecheck",
+      "expect": "reject",
+      "diagnostic": "E_DURABLE_HOOK_OVERRIDE",
+      "source": "define durable actor Cart as\n    susp fnc save_state(ctx: PersistenceContext, snapshot: ActorStateSnapshot<Cart>): Result<CheckpointReceipt, PersistenceError>;\nend\n"
+    },
+    {
+      "id": "non-persistable-field",
+      "phase": "typecheck",
+      "expect": "reject",
+      "diagnostic": "E_NON_PERSISTABLE_STATE",
+      "source": "define durable actor Cart as\n    state socket: Socket;\nend\n"
+    },
+    {
+      "id": "wrong-hook-effect",
+      "phase": "typecheck",
+      "expect": "reject",
+      "diagnostic": "E_PERSIST_SIGNATURE",
+      "source": "define persistent actor Cart as\n    fnc save_state(ctx: PersistenceContext, snapshot: ActorStateSnapshot<Cart>): Result<CheckpointReceipt, PersistenceError>;\nend\n"
+    },
+    {
+      "id": "checkpoint-in-critical-section",
+      "phase": "typecheck",
+      "expect": "reject",
+      "diagnostic": "E_CHECKPOINT_BOUNDARY",
+      "source": "// Checkpoint cannot be invoked inside handle_state(critical-write |s| -> ...).\n"
+    },
+    {
+      "id": "stale-epoch-commit",
+      "phase": "runtime",
+      "expect": "reject",
+      "diagnostic": "E_STALE_ACTOR_EPOCH",
+      "scenario": "Actor incarnation 4 must not commit after incarnation 5 is active"
+    },
+    {
+      "id": "durable-restart-after-commit",
+      "phase": "runtime",
+      "expect": "recover",
+      "scenario": "Fsync completed then process was killed; recover exact committed state and fence prior incarnation"
+    },
+    {
+      "id": "durable-restart-before-commit",
+      "phase": "runtime",
+      "expect": "rollback",
+      "scenario": "Process killed before durable commit; do not publish partially written state"
+    },
+    {
+      "id": "persistent-save-hook-error",
+      "phase": "runtime",
+      "expect": "reject",
+      "diagnostic": "E_PERSISTENCE_IO",
+      "scenario": "Failed developer-provided SQLite save must not be acknowledged as committed"
+    },
+    {
+      "id": "corrupt-checkpoint",
+      "phase": "runtime",
+      "expect": "reject",
+      "diagnostic": "E_PERSISTENCE_IO",
+      "scenario": "Bad checksum/schema requires a recovery error, not fresh default state"
+    },
+    {
+      "id": "external-effect-replay",
+      "phase": "runtime",
+      "expect": "guard",
+      "scenario": "Replayed handler cannot assume exactly-once external effects"
+    }
+  ]
+}
