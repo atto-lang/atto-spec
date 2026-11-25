@@ -33,14 +33,12 @@ An entry appearing in two rows is intentional: this is a set of *explanatory* fa
 
 `blocking` in an API name such as `read_blocking` is **not** thereby a standalone keyword. `suspends` is the documented effect modifier; do not silently substitute a hypothetical `suspend` keyword. Likewise, `pipe` is a target/contextual actor connection word in chapter 01, not a documented reserved Java keyword; `|>` remains a separate operator. An ordinary hyphenated word is not an identifier: only grammar-enumerated compound spellings may include ASCII `-`.
 
-## New contextual ownership operators (TARGET)
+## Contextual ownership operators (TARGET)
 
-`freeze!`, `weak!`, and `pin!` are prefix **operator forms**,
-distinct from the ordinary identifiers `freeze`, `weak` and `pin`.
+`borrow!`, `take!`, `share!`, `copy!`, `copy!!`, `freeze!`, `weak!`, and `pin!` are contextual prefix **operator forms**; `drop!` remains a separately gated resource-release target.
 The lexer may emit an identifier followed by `!`; the parser must recognize
 the pair only in a valid expression position. Tooling SHOULD highlight the
-whole parsed operator as an ownership operation. Do **not** add the three
-bare words to the historical Java reserved-keyword inventory or infer that
+whole parsed operator as an ownership operation. Do **not** add their bare identifier words to the historical Java reserved-keyword inventory or infer that
 every backend has implemented these capabilities.
 
 `freeze!` is consuming deep immutability, `weak!` constructs non-owning
@@ -48,6 +46,8 @@ generation-fenced handles, and `pin!` pins pointee storage rather than OS
 threads. Their semantic and runtime admission requirements are in
 [chapter 04](04-ownership-and-memory.md). Simple lexical highlighting does
 not prove any ownership invariant.
+
+The older `rt take/copy/borrow/share` spellings are migration aliases with identical proof obligations, events, diagnostics and lowering. `rt ref/deref/unref` remain separate checked-handle operations, not newly admitted bang aliases.
 
 ### Full ownership prefix classification
 
@@ -77,7 +77,7 @@ These are **proposed descriptive scopes**, not mandatory colors and not a replac
 | Visibility and binding qualifiers | `pub`, `private`, `static`, `const`, `mut`, TARGET `sealed`/`final` | `storage.modifier.atto` |
 | Control and structure | `if`, `ifnot`, `unless`, `match`, `select`, `return`, `fi`, `end` | `keyword.control.atto` |
 | Concurrency and scheduling | `spawn`, `await`, `suspends`, `nb-select` | `keyword.concurrency.atto` |
-| Ownership operations | `rt` with context-proven ownership constructs such as `borrow` or `take` | `keyword.ownership.atto` |
+| Ownership operations | Contextual `borrow!`, `take!`, `share!`, `copy!`, `copy!!`, `freeze!`, `weak!`, `pin!`, gated `drop!`; legacy `rt` forms | `keyword.ownership.atto` |
 | Effects and failure | `trap`, `throw`, `raise`, `panic`, `recover` | `keyword.effect.atto` |
 | Grammar connectives | `as`, `then`, `over`, `from` | `keyword.grammar.atto` |
 | Literal tokens | `true`, `false` | `constant.language.atto` |

@@ -40,6 +40,18 @@ Some of these are narrower than the table suggests:
 - `critical-read`, `critical-write` and `transform-pipe` are recognized by the parser only in declaration context, so `a-b` stays subtraction. Only `nb-select` is handled by the lexer.
 - These words are not reserved by the Java lexer: `enum`, `supervisor`, `state`, `pipe`, `final`, `on`, `when`, `case`, `first`, `infer`, `record` and `tuple`. Some have contextual meaning in the grammar, and others are target features that compilers reject with a diagnostic.
 
+## Contextual ownership prefix operators
+
+| Operation | Canonical spelling | Legacy compatibility spelling |
+| --- | --- | --- |
+| Transfer unique owner | `take! value` | `rt take value` |
+| Shallow/value copy | `copy! value` | `rt copy value` |
+| Shared read loan | `borrow! value` | `rt borrow value` |
+| Exclusive mutable loan | `borrow! mut value` | `rt borrow mut value`, `rt mut borrow value` |
+| Share/freeze admission | `share! value` | `rt share value` |
+
+These are parser-contextual **operator forms**, not new reserved words. The parser recognizes adjacent word and `!` only in a valid prefix-expression or parameter-ownership context. No whitespace or comment between verb and `!`; never consume `!=` or `!eq` as a suffix. The operand can immediately follow the bang; formatters emit the bang forms with one separating space. `copy!!` is one deep-copy operator, not shallow copy followed by logical NOT. Legacy aliases have identical typed ownership checks, diagnostics and lowering. Do not add `ref!`, `deref!` or `unref!`; `rt ref`, `rt deref` and `rt unref` remain separate checked-handle operations pending a separate decision.
+
 ## Linguistic keyword roles and editor highlighting
 
 Keywords may also be described linguistically as nouns (e.g. `actor`), relational verbs (e.g. `implements`), adjectives (e.g. `pub`), or execution qualifiers (e.g. `suspends`). These analogies are for readers and editor tooling, not additional syntax rules. The proposed taxonomy, semantic scopes, reserved-versus-contextual distinctions, and conformance gates appear in [chapter 23](23-keyword-taxonomy-and-highlighting.md).
