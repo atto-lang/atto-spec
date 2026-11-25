@@ -42,6 +42,10 @@ Reserved implementation names (OresVM, OresForge and similar engines) remain dis
 
 A **language guarantee** must be implementable without assumptions about the host scheduler or garbage collector. A **profile guarantee** (hard real-time, isolated guest, full AOT, no tracing GC) is conditional on a validated target/profile. Optimization goals are not universal semantics. Fatal host faults and OS termination may bypass guest cleanup.
 
+## Temporary behavioral reference
+
+Use atto-source.java as the temporary reference implementation for unsettled semantic disagreements, with exact revision and profile identified. Explicit language-owner decisions and verified full guest AOT and zero guest tracing-GC requirements constrain that reference: incidental Java host behavior, interpreter fallback, managed allocation, and legacy syntax are not portable normative requirements. Record divergences rather than silently importing them. See [reference baseline](../language/java-reference-baseline-v1.md).
+
 ## Specification process
 
 A decision requires: canonical source example; static semantics; failure conditions; transport and ownership consequences; runtime effect; supported targets; negative tests; executable cross-backend evidence. Record contradictions in [open questions](12-open-questions.md), rather than selecting a silently incompatible interpretation.

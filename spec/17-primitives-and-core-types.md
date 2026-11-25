@@ -64,7 +64,7 @@ Outside an actor, unhandled overflow ends the root invocation as described in [c
 - `a eq b` compares values, using AttoLang's rules and never host `equals()`. Records, tuples, arrays, `Option` and `Result` compare by content. Class and actor instances compare by identity unless a future protocol says otherwise.
 - `a is b` compares identity. It needs reference or handle values, and scalars are rejected.
 - `switch` constants and literal `match` patterns use the same value equality as `eq`.
-- Whether numbers of different types can be equal is open. See the `1 eq 1.0` row above.
+- Cross-type numeric equality remains profile-dependent: the Java strict Atto profile requires identical statically resolved numeric types; historical legacy behavior is not silently changed. See the `1 eq 1.0` row above and [reference baseline](../language/java-reference-baseline-v1.md).
 
 ## Aggregates
 

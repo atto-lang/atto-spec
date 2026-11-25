@@ -10,7 +10,7 @@ A program admitted for a **full-AOT target** must compile, link and execute with
 
 "Full AOT" is **target-specific**, not synonymous with zero GC:
 - **LLVM / Forge / .NET Native AOT:** emitted native executables or libraries with no target runtime JIT; .NET may retain a managed memory collector unless separately constrained.
-- **Java:** GraalVM **Native Image** is the full-native-AOT profile; ordinary JVM bytecode execution is a distinct non-native-AOT profile. An Epsilon collector avoids collections but does not prove bounded memory or reclamation.
+- **Java:** GraalVM **Native Image** can supply full native guest AOT only when the application guest itself is statically lowered and linked without interpreter/JIT fallback; an AOT host image alone is insufficient. Ordinary JVM bytecode execution is a distinct non-native-AOT profile. An Epsilon collector avoids collections but does not prove bounded memory or reclamation.
 - **Rust-to-Wasm:** source-to-Wasm code generation is ahead of time, but browsers may internally JIT Wasm machine code. Native precompiled Wasm engines require a separate precompiled-AOT profile and evidence; do not falsely advertise browser engine internals as "no JIT".
 - **JavaScript output:** statically emitting JavaScript does not establish no-JIT native execution when run inside a JIT engine. This is an explicit separate deployment profile, not proof of native AOT.
 - **Optional LLVM tracing, speculative AoS/SoA selection and profile-guided specialization:** may optimize an AOT binary, but the complete semantic baseline must remain available with tracing disabled.
