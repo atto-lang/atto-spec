@@ -4,6 +4,8 @@
 
 For the inverted struct/class value-versus-identity split and optimization legality, see [chapter 27](27-inverted-structs-classes-aot-jit.md). It is a proposed contract, not implemented guest parity.
 
+Strict vector kernels preserve logical scalar evaluation order and first failing index irrespective of storage layout; see [numerical semantics v1](../language/numeric-semantics-v1.md). Approximate modes require separate explicit admission.
+
 ## Data-layout semantics
 
 AttoLang targets efficient arrays/records and explicit or compiler-selected AoS, SoA, AoSoA, and SoAoS layouts. Inverted classes, field-column storage and ECS-like iteration are performance representations. They MUST preserve declared value/ownership semantics, including identity, deterministic drop, bounds checking, mutation rights and actor state isolation.
