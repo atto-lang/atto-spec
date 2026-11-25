@@ -1,0 +1,21 @@
+name: Persistent immutable collections proposal (source-only)
+
+on:
+  pull_request:
+    paths:
+      - 'language/persistent-immutable-collections-v1.md'
+      - 'contracts/persistent-immutable-collections-v1/**'
+      - 'tests/persistent-immutable-collections-contract.test.mjs'
+      - '.github/workflows/persistent-immutable-collections-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-integrity-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check proposed contract, fixtures, and NOT_EXECUTED statuses
+        run: node --test tests/persistent-immutable-collections-contract.test.mjs

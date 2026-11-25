@@ -2,26 +2,36 @@
 
 **Status: DRAFT.** The ownership contract applies to objects, collections, actor state, closure captures, task frames, and transport.
 
+Under [chapter 27](27-implicit-const-and-const-mut.md), `const mut` means an unrebindable local owning a fresh mutable instance from a constant template. Ordinary borrowing, sealed state and isolation checks still apply; global `const mut` is not admitted.
+
 ## Ownership operations
 
-AttoLang uses explicit rights operations, expressed as reserved `rt` forms:
+**Canonical source spelling for new AttoLang code uses the contextual bang forms**, not the legacy `rt` prefix. These are prefix ownership operators: the operation name is immediately followed by `!`, then its operand. The bang forms are the preferred and formatter-emitted spelling.
 
-| Operation | Intended meaning |
-| --- | --- |
-| `rt take value` | Move exclusive ownership; subsequent use of the old place is invalid |
-| `rt copy value` | Duplicate only when the type proves it is Copy |
-| `rt borrow value` | Acquire a bounded immutable loan |
-| `rt borrow mut value` | Acquire a bounded exclusive mutable loan |
-| `rt share value` | Convert to explicitly authorized shared/frozen ownership |
-| `rt ref` / `rt deref` / `rt unref` | Managed or checked handle operations, never unchecked cross-isolate escape |
+| Intent | Canonical spelling | Legacy compatibility spelling | Intended meaning |
+| --- | --- | --- | --- |
+| Transfer unique ownership | `take! value` | `rt take value` | Move exclusive ownership; subsequent use of the old place is invalid |
+| Shallow/value copy | `copy! value` | `rt copy value` | Fresh root/value; aliasing children requires proved sharing or immutable storage |
+| Deep graph copy | `copy!! value` | none | Distinct maximal-munch operation; preserve internal alias/cycle topology and reject unproved ownership |
+| Shared read loan | `borrow! value` | `rt borrow value` | Acquire a bounded immutable loan |
+| Exclusive mutable loan | `borrow! mut value` | `rt borrow mut value`, `rt mut borrow value` | Acquire a bounded exclusive mutable loan |
+| Shared ownership | `share! value` | `rt share value` | Convert to explicitly authorized shared/frozen ownership |
+
+The legacy forms have **the same typing, ownership effects, proof obligations, diagnostics and lowering** as their canonical bang equivalents. They are accepted only for source compatibility; formatters and new examples MUST emit the bang forms. A backend MUST NOT give the legacy spelling weaker checks or a different runtime representation.
+
+This preference does not invent `ref!`, `deref!` or `unref!`. The existing `rt ref`, `rt deref` and `rt unref` operations remain separately specified checked-handle operations until a future language decision defines alternatives. It also does not make `rt` a general ownership escape hatch: unlisted `rt` operations are not authorized by this table.
 
 ```atto
 val packet = make_packet()
-val owned = rt take packet
+val owned = take! packet
 // using packet here is a compile-time use-after-move error
 ```
 
+**Migration and conformance:** New code and formatter output use `take!`, `copy!`, `borrow!`, `borrow! mut` and `share!`. Existing `rt take/copy/borrow/share` source remains accepted only as a compatibility spelling while a versioned migration profile exists. A compiler may warn on legacy source, but MUST NOT silently reinterpret it or allow it to bypass ownership checks. Positive and negative fixtures must exercise both spellings and prove identical typed ownership events.
+
 Borrow checking is not optional for a native backend. Aliased writes, use-after-take, escaping stack borrows, double-drops, stale actor references, and mutable aliases crossing isolation domains MUST be rejected or safely represented with explicit runtime guards, never silently trusted.
+
+Compact operands (`copy!value`, `borrow!mut value`) normalize to one ASCII space after the bang. The historical `mut borrow! value` is a migration alias for `borrow! mut value`. Prefix precedence is unary with postfix member/index expressions binding tighter; evaluate each operand once. Duplicate `mut` qualifiers reject. The [checked-handle call-loan profile](../language/checked-handle-call-loans-v1.md) defines all-path retirement, explicit lexical `block` scopes and versioned borrow-default call proof boundaries.
 
 ## Explicit capability extensions: `freeze!`, `weak!`, and `pin!` (TARGET)
 
@@ -192,7 +202,7 @@ The target actor-heap reference representation uses checked **32-bit arena-relat
 
 Each message transfer must have a provable ownership action (`take`, `copy`, or permitted `share`), validated payload graph, bounded bytes/depth/nodes, and type-correct domain admission. A mutable pointer, synchronized cell, closure with host capability, or foreign pointer cannot be smuggled across isolation merely because its in-memory representation is small.
 
-`Pointer<T>` transport is only admissible under a proof of pointee safety and a domain-specific copy, move, or immutable share strategy; a raw address is never a portable wire representation. `Sendable` and `Serializable` are distinct properties.
+`Pointer<T>` capability transport or serialization across actors, tenants, isolates or networks is forbidden, even if `T` is Sendable or Serializable. An authorized transfer may copy, move or serialize the **pointee data** under its own proof and receiving-domain ownership, never the pointer token. Same-domain owner transfer requires separate proof. `Sendable` and `Serializable` are distinct properties.
 
 ## Resource lifecycle
 
