@@ -22,6 +22,8 @@ test('v2 constructor split preserves Entry arrow semantics and static Record nam
     'The first component MUST be string at the Pair type and factory boundary',
     'Pair.of(42,5)',
     'Pair inputs therefore require K=string',
+    'The canonical type spelling is `Pair<V>`',
+    '`Pair<string,V>` remains a compatibility spelling of the same nominal type',
     'reject Entry inputs',
     'Entry.of(non_hashable_key,5)',
     'TARGET / NOT_EXECUTED',
@@ -38,13 +40,13 @@ test('portable aggregate v2 fixture registry records target expectations only',(
   assert.equal(fixture.schema,'atto.aggregate-constructor-v2');
   assert.equal(fixture.status,'TARGET_NOT_EXECUTED');
   assert.equal(new Set(fixture.vectors.map(v=>v.id)).size,fixture.vectors.length);
-  assert.ok(fixture.vectors.filter(v=>v.kind==='accept').length>=21);
+  assert.ok(fixture.vectors.filter(v=>v.kind==='accept').length>=23);
   assert.ok(fixture.vectors.filter(v=>v.kind==='reject').length>=30);
   for(const v of fixture.vectors){
     assert.ok(v.source && v.expect,v.id);
     assert.ok(['accept','reject'].includes(v.kind),v.id);
   }
-  for(const id of ['map-pair','map-pair-multiple','map-mixed-pair-entry','map-pair-nonidentifier','pair-runtime-string','pair-nonidentifier','entry-int','map-entry-int']) assert.equal(fixture.vectors.find(v=>v.id===id)?.kind,'accept',id);
+  for(const id of ['map-pair','map-pair-multiple','map-mixed-pair-entry','map-pair-nonidentifier','pair-runtime-string','pair-nonidentifier','entry-int','map-entry-int','pair-canonical-type','pair-compatibility-type']) assert.equal(fixture.vectors.find(v=>v.id===id)?.kind,'accept',id);
   for(const id of ['record-escape-duplicate','record-dynamic-val','record-nul','record-entry','map-mixed-duplicate','map-pair-unhashable','map-entries-pair','map-pair-empty','record-entry-empty','pair-standalone-int','pair-standalone-bool','pair-nonstring-type','map-pair-int','pair-tuple-first','map-mixed-type','map-flat-v2','tuple-crossed','entry-nonassociative','import-crossed']){
     assert.equal(fixture.vectors.find(v=>v.id===id)?.kind,'reject',id);
   }
