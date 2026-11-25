@@ -45,7 +45,7 @@ test("every documented reserved word is classified once, with no invented reserv
   assert.ok(distinct(ids));
   const words = groups.flatMap(g => g.words);
   assert.ok(distinct(words));
-  assert.equal(words.length, 93, "update audited inventory count if chapter 16 intentionally changes");
+  assert.equal(words.length, 95, "update audited inventory count if chapter 16 intentionally changes");
   assert.deepEqual(sorted(words), sorted(documentedReserved()));
   for (const g of groups) {
     assert.equal(g.lexical_status, "documented_java_reserved");

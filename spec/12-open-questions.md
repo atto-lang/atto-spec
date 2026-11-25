@@ -35,6 +35,7 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 | S-27 | Stored state for heap-backed actors | Fixed-size state is simple to commit, while arena memory can be half-written at a crash. Choose persistent structures, a per-turn scratch arena or another design, and check it against the zero-GC goal; see [chapter 18](18-runtime-guarantees.md) |
 | S-28 | What a reference from `spawn` means across a restart | **Decided 2026-11-05:** it addresses the actor instance and survives restarts, and it fails as `TERMINATED` once the instance has ended; see [chapter 18](18-runtime-guarantees.md) |
 | S-29 | Per-actor stack quota and proper tail calls | Chapter 18 requires both. Open: how a quota is enforced without a probe on every call, and whether to admit the Wasm tail-call proposal or have the compiler turn tail calls into loops |
+| S-30 | Typed local const and explicit initialization | Proposed target: [chapter 27](27-implicit-const-and-const-mut.md) and [chapter 28](28-explicit-initialization-no-implicit-defaults.md); actual backend admission remains unverified. |
 
 **Observed on 2026-11-03** ([chapter 19](19-observed-status-2026-11-03.md)): for S-01, both Java and LLVM accept only `: T { }` and `-> T { }` on free functions. For S-14, the Java launcher refuses `.atto` files.
 
