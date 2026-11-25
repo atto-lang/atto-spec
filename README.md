@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Checked i64 edition and migration](language/checked-i64-arithmetic-v1.md): target contract; host reference checks do not establish guest execution.
+
 - [Numerical semantics v1](language/numeric-semantics-v1.md): exact integer, decimal, fixed-point, vector and dimension targets; source-free reference checks only.
 
 - [Optional types and named/omittable call arguments](spec/27-optional-and-named-arguments.md): independent `?` positions, defaults, named binding and provenance; host tests do not certify guest support.
