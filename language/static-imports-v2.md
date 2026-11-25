@@ -296,7 +296,7 @@ Each explicit alias is an exact qualified binding, replacing automatic suffix ca
 
 For a given lexical scope/path resolve the highest populated tier:
 
-1. Explicit lexical declarations and explicit `as` aliases (including namespace constants).
+1. Explicit lexical declarations and explicit `as` aliases (including namespace aliases).
 2. Deliberate unaliased imports and their generated candidates, including explicitly imported built-in namespaces.
 3. Implicit compiler-provided namespace/prelude candidates **only where the target/profile admits them**. This amendment does not make every hosted std unit ambient or bypass an explicit admission requirement.
 
@@ -326,25 +326,25 @@ import namespace std.http from pkg '@std/network/http';
 
 Here std.http is the external binding, shadowing an implicit builtin only; its identity is still external. To access the official unit simultaneously, give it a distinct explicit alias, e.g. `import namespace http as official_http from std.http;`. The right-hand source resolves in the builtin domain independently of lexical shadowing. If the official std.http is explicitly admitted under the same qualified name, report a collision/ambiguous reference rather than choose a winner. No import grants network, filesystem, allocator or privileged intrinsic rights. Compiler-owned privileged operations must check authenticated symbol identity and target/capability policy.
 
-## 7. Compile-time namespace constants
+## 7. Compile-time namespace aliases
 
 ```atto
 import pkg '@atto-lang/network/http';
 import pkg '@acme/network/http';
 
-define const atto_http = atto_lang.network.http;
-define const acme_http = acme.network.http;
+define alias atto_http = atto_lang.network.http;
+define alias acme_http = acme.network.http;
 
 atto_http.get(url);
 acme_http.get(url);
 ```
 
-The untyped `define const name = qualified_name;` form may bind a statically resolved package/namespace reference, including an interior public namespace. It is an immutable lexical alias, not a first-class runtime value; it allocates no object, adds no initialization, cannot be passed or returned as a runtime value, mutated, reflected into runtime data or used to bypass public exports. Alias chains must resolve without cycles; reject unresolved/ambiguous references, duplicate declarations and attempts to alias runtime object members as namespaces. Original imports remain available; `define const` does not remove their candidate suffixes. A namespace alias is not a value for `import const`; namespace re-export is governed separately by public export rules, not implicitly enabled by this draft. Existing typed constexpr and startup-once env-backed static constants keep their existing type and initialization rules. This new branch of const grammar does not broaden arbitrary runtime static initialization.
+The canonical `define alias name = qualified_name;` declaration may bind a statically resolved package/namespace reference, including an interior public namespace. It is an immutable lexical alias, not a first-class runtime value; it allocates no object, adds no initialization, cannot be passed or returned as a runtime value, mutated, reflected into runtime data or used to bypass public exports. Alias chains must resolve without cycles; reject unresolved/ambiguous references, duplicate declarations and attempts to alias runtime object members as namespaces. Original imports remain available; `define alias` does not remove their candidate suffixes. A namespace alias is not a value for `import const`; namespace re-export is governed separately by public export rules, not implicitly enabled by this draft. Existing typed constexpr and startup-once env-backed static constants keep their existing type and initialization rules. The declaration is distinct from constant and module grammar: `define const` remains for value constants; `define namespace const` and the earlier untyped namespace-constant spelling are not accepted as alias declarations. No type-alias or general runtime value-alias semantics are implied by this amendment. Grammar: `namespace_alias = "define", "alias", identifier, "=", qualified_name, ";" ;`. The alias is file-scoped, not public or re-exported by default.
 
 ## 8. AOT, tooling and evidence
 
 One static export graph after authenticated source resolution. Nominal identity includes resolved package instance/version/source identity plus declaration identity; normalized spelling and aliases do not merge separate types. Preserve overload sets, effects, ownership/borrow constraints, actor capabilities, initialization/SCC and side-effect-safe reachability. Selective compilation by file/namespace/package; no runtime downloads, dynamic module lookup or namespace object. Target unsupported import kinds fail before artifact emission. Formatter prefers explicit `import namespace` without stars or manufactured aliases, preserves author quote choice and meaningful qualification; no identity-changing migration without resolved proof. LSP should report ambiguous candidate identities and offer shortest unambiguous or explicit qualified alternatives, never silently rewrite. Diagnostics must be deterministic across import order and backends.
 
-Required acceptance matrix (all NOT_EXECUTED): quoted/bare builtin identity equivalence for all three layers; actual registered exports and denied unknown names; local vs package vs URL domains; namespace vs fnc/const/module kind checks; public manifest lookup and exported subpath; hidden/traversal/symlink rejection; alias and suffix equivalence; two-package and three-way explicit builtin collisions; different project suffixes; normalization collisions; implicit vs explicit priority; no fallback on ambiguity/missing members; qualified external builtin-like name and authenticated intrinsic denial; const aliases, chains, cycles, runtime misuse; URL lock/hash/redirect/offline negatives; file namespace header rules; same resolved nominal type across aliases and distinct type across dependencies; identical AOT results and no runtime networking. Test import permutations, prefix conflicts, target layering and side effects.
+Required acceptance matrix (all NOT_EXECUTED): quoted/bare builtin identity equivalence for all three layers; actual registered exports and denied unknown names; local vs package vs URL domains; namespace vs fnc/const/module kind checks; public manifest lookup and exported subpath; hidden/traversal/symlink rejection; alias and suffix equivalence; two-package and three-way explicit builtin collisions; different project suffixes; normalization collisions; implicit vs explicit priority; no fallback on ambiguity/missing members; qualified external builtin-like name and authenticated intrinsic denial; namespace aliases, chains, cycles, runtime misuse; URL lock/hash/redirect/offline negatives; file namespace header rules; same resolved nominal type across aliases and distinct type across dependencies; identical AOT results and no runtime networking. Test import permutations, prefix conflicts, target layering and side effects.
 
 Implementation follow-up: reconcile spec #217 (const imports) and #114 (assert module), package/common-source export contracts, formatter, LSP, all compiler backends and conformance. Add executable positive/negative .atto guests with exact head/tree receipts, independent review and stepful CI. Parser acceptance, source checks and zero-step runner runs do not establish linker or guest parity. Do not mark ready or merge based on this document alone.
