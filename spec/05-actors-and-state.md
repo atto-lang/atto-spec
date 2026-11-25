@@ -86,3 +86,7 @@ The proposed `Actor.pipe(A(), B(), ...)` and zero-argument-type `Actor.pipe(A, B
 In addition to message types, an actor may declare a type-level protocol with state-specific legal messages, required replies and explicit terminal completion. This refines the **same actor kind** and never exposes its sealed mutable state. The static guarantee requires an affine, incarnation-fenced `ProtocolHandle` rather than an aliasable `ActorRef`; unproven or remotely mutable state must be checked dynamically or rejected. A successful state transition is proved only after a matched reply and runtime state commitment; `get_done()` still means physical completion, not merely terminal protocol state.
 
 See [actor protocol typestate v1](../language/actor-protocol-typestate-v1.md). **TARGET / NOT_VERIFIED**: the linked source-free checker and tests are not parser, formatter, backend or guest-execution evidence.
+
+## Typed group pub/sub (TARGET)
+
+ActorGroup membership does not automatically subscribe an actor to any message topic. Typed `Topic<T>` and affine `Subscription<T>` introduce explicit bounded fan-out without changing direct actor DATA send, sealed state, or supervisor CONTROL delivery. The portable core requires atomic `RELIABLE` reservation, per-topic sequencing and generation-fenced cancellation; lossy/latest policies and membership monitors are separately versioned. See [actor pub/sub v1](../language/actor-pubsub-v1.md) for the proposed language contract, conformance gaps and executable **source-free** model.
