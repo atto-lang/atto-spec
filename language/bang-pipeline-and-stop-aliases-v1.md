@@ -50,7 +50,7 @@ consumer rpipe transform rpipe! producer;     // same as all-bare reverse
 
 For a **recognized graceful-stop operation** in an actor/graph lifecycle
 context, `stop!` means exactly what `stop` means. Where the existing
-lifecycle API admits `worker.stop()`, `worker.stop!()` is a contextual alias
+lifecycle API admits `worker.stop()`, `worker.stop! ()` is a contextual alias
 for that same invocation; it is not a new method declaration, a method named
 `stop!`, or an automatic rewrite of arbitrary user-defined `stop()`
 methods. If a backend supports a standalone `stop target` statement, it
@@ -75,7 +75,7 @@ missing stop capability or an already-closing actor/graph state.
   synthetic `rpipe!`/ `stop!` exported function name.
 - `worker.stop()` remains a legal callable/member spelling, where already
   admitted; a parser must distinguish it from an admitted built-in
-  lifecycle call before treating `worker.stop!()` as an alias.
+  lifecycle call before treating `worker.stop! ()` as an alias.
 - `a pipe! b rpipe! c` is rejected for mixed direction, just as
   `a pipe b rpipe c` is. `pipe!foo` is not a pipe operator.
 - Do not reinterpret `!=`, logical `!expression`, ownership `take!`,
@@ -100,3 +100,6 @@ an explicit diagnostic rather than silently changing their meaning.
 Related staged work: [atto-spec #45](https://github.com/atto-lang/atto-spec/pull/45),
 [atto-source.rs #224](https://github.com/atto-lang/atto-source.rs/pull/224),
 and [atto-platform-conformance #102](https://github.com/atto-lang/atto-platform-conformance/pull/102).
+
+
+Bang-suffixed keyword operators require at least one ASCII whitespace character immediately after the complete suffix (`!` or `!!`). No whitespace or comment is allowed between the keyword and its suffix. A comment alone does not satisfy the following whitespace requirement. Formatters emit one separating space. This does not change `!=`, `!eq`, or ordinary logical NOT. Reject a missing separator rather than interpreting Rust-style keyword invocations. The prior no-space lifecycle member spelling is superseded; where that contextual form is supported, use `worker.stop! ()`.

@@ -46,7 +46,7 @@ qualified_macro_name ::= identifier (("." | "::") identifier)*
 
 `expand` is **contextual** rather than globally reserved. `!` MUST be directly
 adjacent to `expand` (same source line, no whitespace/comments), as in
-`expand!`; the following macro name may be separated by ordinary whitespace.
+`expand!`; the following macro name must be separated by whitespace.
 There is no extra `!` on the macro name. The invocation has ordinary
 expression or declaration site delimiters, including `;` where applicable.
 
@@ -115,3 +115,6 @@ compatibility inputs while the new canonical vectors are admitted.
 
 ## Host reference checks
 `node tests/macro-expand-prefix-reference.mjs` checks contextual invocation prefixes and disambiguation from neighboring punctuation and other bang operators. It does not scan comments/string bodies, parse macro arguments, expand ASTs or certify any compiler.
+
+
+Bang-suffixed keyword operators require at least one ASCII whitespace character immediately after the complete suffix (`!` or `!!`). No whitespace or comment is allowed between the keyword and its suffix. A comment alone does not satisfy the following whitespace requirement. Formatters emit one separating space. This does not change `!=`, `!eq`, or ordinary logical NOT. Reject a missing separator rather than interpreting Rust-style keyword invocations.
