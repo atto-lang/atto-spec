@@ -1,0 +1,33 @@
+name: Iterator and stream host-reference contract
+on:
+  pull_request:
+    paths:
+      - 'language/iterator-stream-lazy-v1.md'
+      - 'contracts/iterator-stream-lazy-v1.json'
+      - 'src/iterator-stream-lazy-reference.mjs'
+      - 'tests/iterator-stream-lazy-reference.test.mjs'
+      - '.github/workflows/iterator-stream-lazy-contract.yml'
+  push:
+    paths:
+      - 'language/iterator-stream-lazy-v1.md'
+      - 'contracts/iterator-stream-lazy-v1.json'
+      - 'src/iterator-stream-lazy-reference.mjs'
+      - 'tests/iterator-stream-lazy-reference.test.mjs'
+      - '.github/workflows/iterator-stream-lazy-contract.yml'
+permissions:
+  contents: read
+jobs:
+  host-model-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Record exact checkout
+        run: |
+          git rev-parse HEAD
+          git rev-parse HEAD^{tree}
+          node --version
+      - name: Run source-free reference tests (NOT guest compiler parity)
+        run: node --test tests/iterator-stream-lazy-reference.test.mjs
