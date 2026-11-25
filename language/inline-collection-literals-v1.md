@@ -2,7 +2,7 @@
 
 **Status:** candidate language contract. This document defines intended portable semantics; no backend is considered conformant without successful guest execution and negative cases at an exact commit. It does not reinstate removed \`~map(...)\`, \`~array(...)\`, \`~record(...)\`, or other tilde-prefixed constructors.
 
-> **Normative quoted-key correction (2026-11-20):** Identifier-colon and parenthesized identifier-equals fields construct Records. Quoted string keys with `:` or `=>` and expression arrows construct Maps; mixed Map/Record items fail closed. See [quoted Map keys versus Record fields](quoted-map-vs-record-literals-v1.md) and [Record layout #72](https://github.com/atto-lang/atto-spec/pull/72) for downstream implementation constraints.
+> **Normative quoted-key correction (2026-11-20):** Identifier-colon and parenthesized identifier-equals fields construct Records. Quoted string keys with `:` or `=>` and expression arrows construct Maps; mixed Map/Record items fail closed. See [quoted Map keys versus Record fields (atto-spec #133)](quoted-map-vs-record-literals-v1.md) and [Record layout #72](https://github.com/atto-lang/atto-spec/pull/72) for downstream implementation constraints.
 
 ## Spelling and grammar
 
