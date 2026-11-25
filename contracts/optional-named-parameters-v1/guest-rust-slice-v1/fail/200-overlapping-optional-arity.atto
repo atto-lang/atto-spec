@@ -1,0 +1,4 @@
+// expect-error: E_AMBIGUOUS
+fnc f(int x): int { return x; }
+fnc f(int x, int? y?): int { return x; }
+pub fnc main(): int { return f(42); }

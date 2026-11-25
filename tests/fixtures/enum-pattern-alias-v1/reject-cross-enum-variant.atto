@@ -1,0 +1,12 @@
+use namespace jobs;
+
+define enum WorkerMsg { Run { job_id: u64 }, Stop }
+define enum ServerMsg { Stop }
+
+fnc bad_case(msg: WorkerMsg): u64 {
+    return match msg over
+        on ServerMsg.Stop -> 0
+        on Run as r -> r.job_id
+        on Stop -> 1
+    end;
+}

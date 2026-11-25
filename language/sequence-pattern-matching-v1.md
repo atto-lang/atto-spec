@@ -1,6 +1,9 @@
 # AttoLang structural sequence patterns v1
 
-Status: **accepted target syntax; compiler execution NOT_VERIFIED** (2026-11-14).
+Status: **historical v1 target, superseded by [v2](sequence-pattern-matching-v2.md); compiler execution NOT_VERIFIED** (2026-11-16).
+
+The `..._` / `_...` forms below document the original v1 proposal, not canonical
+syntax for new code. v2 uses bare `...` and adds bounded counted repetition.
 
 This is a backend-neutral **language contract**, not a claim that current compilers
 parse, typecheck, lower, or execute the feature. In particular, the Rust browser

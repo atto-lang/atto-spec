@@ -1,0 +1,9 @@
+// expect-exit: 42
+// java: rejects
+routine read_value(v?: int?): int {
+  match v over
+    on None -> { return 42; }
+    on Some(n) -> { return n; }
+  end
+}
+pub fnc main(): int { return read_value(); }
