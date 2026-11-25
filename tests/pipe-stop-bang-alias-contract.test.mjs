@@ -25,7 +25,7 @@ test('positive cases preserve original operands and keyword direction', () => {
   for (const fixture of contract.positive_fixtures) {
     assert.match(fixture.input, /(?:pipe!|rpipe!|stop!)/);
     const normalized = fixture.input.replace(/\b(?:rpipe!|pipe!|stop!)(?![\w])/g,
-      found => indexed.get(found));
+      found => indexed.get(found)).replace(/\.stop \(/g, '.stop(');
     assert.equal(normalized, fixture.equivalent, fixture.id);
     assert.notEqual(fixture.context, '');
   }
@@ -36,7 +36,7 @@ test('negative cases protect lexing, method names and security boundaries', () =
   assert.deepEqual(ids, [
     'mixed_directions', 'split_bang', 'split_stop', 'prefix_identifier',
     'suffix_identifier', 'fabricated_factory', 'unrelated_method', 'comment',
-    'string', 'quoted_symbol'
+    'string', 'quoted_symbol', 'stop_member_missing_space'
   ]);
   for (const fixture of contract.negative_fixtures)
     assert.ok(fixture.input && fixture.reason, fixture.id);

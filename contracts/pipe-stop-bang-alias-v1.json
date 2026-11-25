@@ -17,7 +17,8 @@
     "no_implicit_force_stop": true,
     "no_global_identifier_rewrites": true,
     "no_new_factory_methods": true,
-    "mixed_pipeline_direction_still_rejected": true
+    "mixed_pipeline_direction_still_rejected": true,
+    "whitespace_after_complete_bang": true
   },
   "aliases": [
     {
@@ -66,7 +67,7 @@
     },
     {
       "id": "stop_member",
-      "input": "actor_ref.stop!()",
+      "input": "actor_ref.stop! ()",
       "equivalent": "actor_ref.stop()",
       "context": "recognized_lifecycle_call_only"
     },
@@ -127,6 +128,11 @@
       "id": "quoted_symbol",
       "input": "#\"pipe!\"",
       "reason": "symbol is opaque"
+    },
+    {
+      "id": "stop_member_missing_space",
+      "input": "actor_ref.stop!()",
+      "reason": "missing separator"
     }
   ]
 }

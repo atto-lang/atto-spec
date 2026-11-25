@@ -6,7 +6,7 @@ import test from 'node:test';
 
 const fixture = JSON.parse(readFileSync(fileURLToPath(new URL('./fixtures/ownership-bang-aliases-v1.json', import.meta.url)), 'utf8'));
 function reference_recognize(source) {
-  const bang = /^(mut\s+borrow|copy|take|borrow|share)!(?!=|eq(?![\p{L}0-9_]))([\s\S]*)$/u.exec(source);
+  const bang = /^(mut\s+borrow|copy|take|borrow|share)!(?!=|eq(?![\p{L}0-9_]))[ \t\r\n\v\f]+([\s\S]*)$/u.exec(source);
   if (bang && bang[2].trim()) {
     let operand = bang[2].trim();
     const trailingMut = bang[1] === 'borrow' && /^mut(?=\s|\(|$)/.test(operand);
@@ -27,7 +27,7 @@ function reference_recognize(source) {
   const name = op === 'borrow mut' || op === 'mut borrow' ? 'mut borrow' : op;
   return { operation: name === 'mut borrow' ? 'mut_borrow' : name, canonical: name === 'mut borrow' ? 'borrow! mut ' + legacy[2].trim() : (['ref','deref','unref'].includes(name) ? 'rt ' + name + ' ' : name + '! ') + legacy[2].trim() };
 }
-test('preferred spaced/compact ownership forms and legacy spelling normalize', () => {
+test('preferred spaced ownership forms and legacy spelling normalize', () => {
   for (const c of fixture.accepted) assert.deepEqual(reference_recognize(c.input), {operation:c.operation, canonical:c.canonical}, c.input);
 });
 test('a gap before the bang, other verbs, inequality, and missing operands are not ownership aliases', () => {
@@ -39,7 +39,7 @@ test('source-only fixture cannot be interpreted as backend execution evidence', 
 });
 
 test('mutable borrows canonically place mut after borrow! while preserving old aliases', () => {
-  for (const source of ['borrow! mut value', 'borrow!mut value', 'mut borrow! value', 'rt borrow mut value', 'rt mut borrow value']) {
+  for (const source of ['borrow! mut value', 'mut borrow! value', 'rt borrow mut value', 'rt mut borrow value']) {
     assert.deepEqual(reference_recognize(source), { operation: 'mut_borrow', canonical: 'borrow! mut value' }, source);
   }
   assert.equal(reference_recognize('borrow! mut'), null);

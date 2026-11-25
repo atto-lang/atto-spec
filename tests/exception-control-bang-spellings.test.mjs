@@ -61,7 +61,7 @@ function referenceExceptionBangs(source) {
           !/^!eq(?![\p{L}\p{N}_])/u.test(source.slice(i))) {
         const keyword=word[0]+'!';
         assert.ok(bangNames.has(keyword));
-        bangTokens.push(keyword);
+        if (/[ \t\r\n\v\f]/.test(source[i+1] ?? '')) bangTokens.push(keyword);
         i++;
       }
       continue;
@@ -90,15 +90,16 @@ test('reference lexical vectors distinguish canonical bangs, bare migration and 
     assert.deepEqual(referenceExceptionBangs(c.source),c.exceptional_tokens,c.id);
     if(c.exceptional_tokens.length)positive++;else negative++;
   }
-  assert.equal(positive,6);
-  assert.equal(negative,12);
+  assert.equal(positive,4);
+  assert.equal(negative,14);
   // These cells describe targets; they are *not* executed backend results.
   assert.equal(contract.cases.length*contract.backends.length,198);
 });
 
 test('one-character and nested comment changes never promote unrecognized bangs',()=>{
   for(const word of names) {
-    assert.deepEqual(referenceExceptionBangs(word+'!value'),[word+'!']);
+    assert.deepEqual(referenceExceptionBangs(word+'!value'),[]);
+    assert.deepEqual(referenceExceptionBangs(word+'! value'),[word+'!']);
     assert.deepEqual(referenceExceptionBangs(word+' !value'),[]);
     assert.deepEqual(referenceExceptionBangs(word+'!=value'),[]);
     assert.deepEqual(referenceExceptionBangs(word+'!eq value'),[]);
