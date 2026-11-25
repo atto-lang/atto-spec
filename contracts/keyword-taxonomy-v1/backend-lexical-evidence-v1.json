@@ -2,7 +2,7 @@
   "schema_version": 1,
   "status": "SOURCE_INSPECTION_ONLY_NOT_COMPILER_EXECUTED",
   "snapshot_date": "2026-11-12",
-  "baseline_catalog": "contracts/keyword-taxonomy-v1/catalog.json",
+  "baseline_catalog": "contracts/keyword-taxonomy-v1/historical-catalog-2026-11-12.json",
   "evidence": [
     {
       "backend": "java",
