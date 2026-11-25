@@ -1,0 +1,9 @@
+fnc runtime_value() -> int ::
+  return 40;
+end
+fnc main() -> int ::
+  val int immutable_name = runtime_value();
+  let int mutable_name = 0;
+  mutable_name = immutable_name + 2;
+  return mutable_name;
+end

@@ -4,6 +4,10 @@ on:
     paths:
       - 'src/guard-else-free-reference.mjs'
       - 'src/typeclass-witness-reference.mjs'
+      - 'src/typeclass-associated-v2-reference.mjs'
+      - 'contracts/typeclass-associated-v2.json'
+      - 'tests/typeclass-associated-v2.test.mjs'
+      - 'proposals/typeclass-associated-types-v2.md'
       - 'contracts/guard-else-free-v1.json'
       - 'contracts/typeclass-witness-v1.json'
       - 'tests/guard-else-free.test.mjs'
@@ -34,4 +38,4 @@ jobs:
         with:
           node-version: '22'
       - name: Run guard and typeclass proposal model cases
-        run: node --test tests/guard-else-free.test.mjs tests/typeclass-witness.test.mjs
+        run: node --test tests/guard-else-free.test.mjs tests/typeclass-witness.test.mjs tests/typeclass-associated-v2.test.mjs
