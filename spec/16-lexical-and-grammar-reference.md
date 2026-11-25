@@ -14,7 +14,7 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 
 ## Keywords
 
-The Java lexer reserves these words. The LLVM parser has its own keyword handling, and the two lists have not been compared.
+The historical table lists 93 documented Java reserved words. The two additional target words `ifnot` and `unless` are staged for syntax tooling and candidate compiler branches, not a claim about the historical Java or LLVM revisions. See chapter 23 for separate dated source snapshots.
 
 | Group | Words |
 | --- | --- |
@@ -22,7 +22,7 @@ The Java lexer reserves these words. The LLVM parser has its own keyword handlin
 | Callables | `fnc` `routine` `async` `suspends` `generator` `yield` `nlex` `return` `self` `super` `static` |
 | Visibility | `pub` `private` |
 | Bindings | `const` `val` `let` `mut` |
-| Control flow | `if` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
+| Control flow | `if` `ifnot` `unless` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
 | Errors | `try` `catch` `finally` `throw` `raise` `panic` `recover` `trap` `defer` |
 | Actors | `actor` `isoactor` `shared` `untrusted` `spawn` `stop` `rt` |
 | Async and channels | `await` `nb` `cb` `select` `readch` `writech` |
@@ -40,7 +40,7 @@ Some of these are narrower than the table suggests:
 
 Keywords may also be described linguistically as nouns (e.g. `actor`), relational verbs (e.g. `implements`), adjectives (e.g. `pub`), or execution qualifiers (e.g. `suspends`). These analogies are for readers and editor tooling, not additional syntax rules. The proposed taxonomy, semantic scopes, reserved-versus-contextual distinctions, and conformance gates appear in [chapter 23](23-keyword-taxonomy-and-highlighting.md).
 
-**This chapter's documented lexer inventory remains authoritative for its cited revisions.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
+**The historical 93-word inventory remains authoritative for its cited revisions; the two explicitly staged target additions are not historical observations.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
 
 ## Literals
 
@@ -144,6 +144,10 @@ Only the first two forms run on free functions today. See [chapter 19](19-observ
 3. Newlines do not separate the return type from the body, because AttoLang has no automatic semicolon insertion.
 
 **PROPOSED** formatter rule: the formatter keeps the form the author wrote and does not rewrite one into another.
+
+### Negated conditionals (TARGET)
+
+See [negated conditionals](ifnot-unless.md) and the [machine-readable contract](../contracts/ifnot-unless-v1.json). The value form requires `else` and `fi`; the `do` imperative form permits optional `else` and closes with `fi`; the brace form permits optional `else` and closes with matching braces only. The boolean head is evaluated once and inverted; `elif` predicates are positive. Invalid non-boolean predicates and unsafe negated binding heads are rejected. This is not evidence of compiler execution.
 
 ## Statements and semicolons
 

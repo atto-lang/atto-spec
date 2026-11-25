@@ -110,3 +110,6 @@ proof-gated optimization, not a new `borrow!` variant or new user keyword.
 BAE has no mandatory user-visible syntax and must never change the
 versioned compatibility profile. Fallback to ordinary checked calling
 conventions is always correct when proof is unavailable.
+
+## Reference checks
+Run `node tests/borrow-elision-reference.mjs` for fail-closed abstract eligibility, single-evaluation and alias-metadata checks. This oracle does not inspect a compiler's IR, machine code or performance. The opt-in source-profile and all backend acceptance gates remain unchanged.
