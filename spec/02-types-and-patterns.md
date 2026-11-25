@@ -28,6 +28,8 @@ A runtime `val` binding is not by itself deep immutability. Typed local `const` 
 
 AttoLang is statically typed and **nominal by default**. Two classes with the same fields are not automatically interchangeable. Explicit structural compatibility is permitted at designated call boundaries using `structural` or `struct{...}` / `structural {...}` forms after type-checker admission; structural typing is not a universal runtime cast.
 
+Class, trait, interface and type-alias **declarations are types, not runtime values**. Class instances remain valid parameter and result values; static member receivers are compiler-only. Value shadowing is lexical. See [type-declaration/value separation](../language/type-declarations-not-runtime-values-v1.md). Namespace aliases and explicitly admitted static type queries are governed by separate contracts; none implies a first-class runtime type descriptor.
+
 Primitive families include booleans, signed/unsigned integral types, floating-point types, strings, bytes, arrays, records, enums, function references and typed handles. Exact widths, overflow modes, numeric promotion, float corner cases, and ABI packing require cross-backend tests. No backend may rely on host-language unchecked overflow. Dynamic integer overflow is an ordinary thrown guest error under the November 23 target; see [integer rules](17-primitives-and-core-types.md#integer-rules).
 
 An immutable binding does not imply deep immutability of every reachable object. The ownership model controls mutation, copying, sharing and lifetime separately.
