@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Typed constant imports and startup environment constants](language/constant-imports-v1.md): per-declaration once-only immutable values; current v2 selector rules remain authoritative.
+
 - [Bounded reactive admission and lazy collections](spec/23-pull-push-and-lazy-collections.md): target demand, ownership, terminal race and physical accounting; host model only.
 
 - [Inferred and explicit named lifetimes](spec/27-inferred-lifetimes.md): target provenance, lifetime elision and checked loan relations; checked-handle bang aliases remain an independent unratified proposal.
