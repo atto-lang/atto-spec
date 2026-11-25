@@ -6,8 +6,8 @@ This is the target for `atto-source.*` compilers, `atto-common-source`, `atto-pl
 ## Canonical Atto example
 
 ```atto
-import * as http from "std.http";
-import * as fs from "std.fs";
+import namespace http from std.http;
+import namespace fs from std.fs;
 
 pub susp fnc main(): int {
   val response = await http.get("https://example.com/data");
@@ -18,7 +18,7 @@ pub susp fnc main(): int {
 }
 ```
 
-The two imports are **required**, not invisible prelude globals: a file without the imports must fail unresolved binding lookup unless it defines its own `http`/`fs` names. The explicit `import * as alias from "std.*"` form creates a static namespace alias for a built-in compiler library without `pkg`, per the proposed built-in selector rules in `language/unified-static-imports-v1.md` ([import specification #150](https://github.com/atto-lang/atto-spec/pull/150)). Third-party dependencies still use `pkg`; importing a built-in does not grant permissions. No new `async` keyword is introduced; `susp` is canonical and `await` is the suspension operator. `saved.length` has the already-specified String length semantics; the I/O contract must not silently reinterpret it as UTF-8 byte length. The example needs granted network and file permissions and is **not** a deterministic integration test: its remote endpoint can return any status/body or fail.
+The two imports are **required**, not invisible prelude globals: a file without the imports must fail unresolved binding lookup unless it defines its own `http`/`fs` names. The v2 `import namespace alias from std.*` form creates a static namespace alias for a built-in compiler library without `pkg`, per the proposed built-in selector rules in `language/unified-static-imports-v1.md` ([import specification #150](https://github.com/atto-lang/atto-spec/pull/150)). Third-party dependencies still use `pkg`; importing a built-in does not grant permissions. No new `async` keyword is introduced; `susp` is canonical and `await` is the suspension operator. `saved.length` has the already-specified String length semantics; the I/O contract must not silently reinterpret it as UTF-8 byte length. The example needs granted network and file permissions and is **not** a deterministic integration test: its remote endpoint can return any status/body or fail.
 
 ## Layer and package contract
 
@@ -29,7 +29,7 @@ The two imports are **required**, not invisible prelude globals: a file without 
 
 ## Source-level public API
 
-The names and observable types below are normative targets. Suspension semantics are those of a `susp fnc`; `await` produces the stated value. Ordinary recoverable failures are typed `Error` subclasses raised via ordinary **throw**, and `trap await …` must yield a `Result` under `trap-result-v1`. A fatal host crash, source `raise`, `panic`, cancellation or security trap must **not** be caught by `trap`.
+The names and observable types below are normative targets. Suspension semantics are those of a `susp fnc`; `await` produces the stated value. Ordinary recoverable failures are typed `Error` subclasses raised via ordinary **throw**, and `trap! await …` must yield a `Result` under `trap-result-v1`. A fatal host crash, source `raise`, `panic`, cancellation or security trap must **not** be caught by `trap!`.
 
 | API | Successful value | Ownership / semantics |
 | --- | --- | --- |
@@ -41,7 +41,7 @@ The names and observable types below are normative targets. Suspension semantics
 
 `HttpResponse` must also expose typed headers, `ok` (200–299), and `close()`/structured automatic cleanup; streaming/body-byte APIs require separate specification before shipping. `response.text()` twice must be a deterministic consumed-body error; cancellation/early-exit must release ownership. A transport error must never fabricate a 200 response; a 404/500 response must not automatically be converted into a thrown transport error. Neither HTTP request nor `fs.write_text` may automatically retry after an uncertain side effect.
 
-Expose typed `HttpError`, `FsError`, `PermissionError`, `CancelledError`, `ResourceLimitError`, `InvalidUtf8Error` under the common `Error` hierarchy, with stable classes/kinds; host-specific errno, Java exceptions, browser DOM exceptions and .NET exceptions must not leak as the public API. The application can use `trap await …` for ordinary failures. No implicit Result-unwrapping, silent catch-all, or non-`Error` throws.
+Expose typed `HttpError`, `FsError`, `PermissionError`, `CancelledError`, `ResourceLimitError`, `InvalidUtf8Error` under the common `Error` hierarchy, with stable classes/kinds; host-specific errno, Java exceptions, browser DOM exceptions and .NET exceptions must not leak as the public API. The application can use `trap! await …` for ordinary failures. No implicit Result-unwrapping, silent catch-all, or non-`Error` throws.
 
 ## Capabilities, isolation and path safety
 
@@ -66,7 +66,7 @@ For each `atto-source.llvm`, `.java`, `.net`, `.wasm`, `.rs`, `.forge`, `.cranel
 2. **Real compiled guest**, against a locally served HTTP fixture (not external example.com), demonstrates response status, full body, file bytes and reopened text length. Record the source blob SHA, compiler commit/tree, target triple, host-adapter version and executed steps. A host-only Rust test or static parser test is explicitly `NOT_EXECUTED`.
 3. Transport negatives: DNS failure, denied origin/IP/redirect, TLS invalid cert, too many redirects, chunked body, binary/invalid-UTF-8 body, oversized/decompression-bomb body, non-2xx status, response-body double consumption, timeout, abort, close and duplicate completion.
 4. FS negatives: read/write independently denied, path escape, symlink final/intermediate, swap race, directory/device/FIFO, invalid UTF-8, file oversize, partial write, existing file truncation, cancellation and cleanup. Include two-tenant isolation and actor stop/revoke while I/O is in flight.
-5. Execute ordinary throw/`trap` coverage, scheduler continuity with one carrier, AOT/zero-GC where claimed, native and browser capability checks, and actual SHA-pinned conformance on each supported target. Unsupported targets **must fail closed**.
+5. Execute ordinary throw/`trap!` coverage, scheduler continuity with one carrier, AOT/zero-GC where claimed, native and browser capability checks, and actual SHA-pinned conformance on each supported target. Unsupported targets **must fail closed**.
 6. Cross-repo test evidence states `PASS`, `FAIL`, `UNSUPPORTED`, or `NOT_EXECUTED` **per backend**, never a global PASS derived from another backend.
 
 ### Existing work to integrate rather than duplicate
@@ -81,7 +81,7 @@ For each `atto-source.llvm`, `.java`, `.net`, `.wasm`, `.rs`, `.forge`, `.cranel
 
 ## Full `std.fs` API target (2026-11-22 extension)
 
-Canonical import: `import * as fs from "std.fs";`. All functions use
+Canonical import: `import namespace fs from std.fs;`. All functions use
 `snake_case`. `std.fs` is hosted and may have independent, backend-owned
 `.atto` implementations; user-facing signatures and error/lifetime rules
 remain compatible. This section **extends** the initial `read_text` /
@@ -96,7 +96,7 @@ or permission-granting implementation. `Bytes` means an owned byte buffer.
 `Stream<Bytes>` describes a bounded, async backpressured byte stream.
 
 ```atto
-import * as fs from "std.fs";
+import namespace fs from std.fs;
 
 type PathLike = string | Path | PathBuf;
 
@@ -217,7 +217,7 @@ chunk consumption and is **not** required for these helpers.
 Complete example for the intended Atto `.atto` library surface:
 
 ```atto
-import * as fs from "std.fs";
+import namespace fs from std.fs;
 
 // 'fs.File' is a public std.fs class, returned by open().
 // This function takes a File instance, NOT a FileStream or path.
@@ -344,18 +344,18 @@ Security and lifecycle requirements:
 
 Normal operations return the successful type above and throw **only**
 `FsError` for ordinary recoverable filesystem failures. The existing Atto
-`trap` operation is the standard way to obtain `Result<T, FsError>`:
+`trap!` operation is the standard way to obtain `Result<T, FsError>`:
 
 ```atto
-import * as fs from "std.fs";
+import namespace fs from std.fs;
 pub susp fnc load(path: string): Result<Bytes, FsError> {
-  return trap await fs.read_file(path);
+  return trap! await fs.read_file(path);
 }
 ```
 
 This preserves the previous `await fs.read_text(path): string` contract and
 does not require every I/O caller to double-unwrap an additional Result.
-`trap` does **not** catch actor panic/raise, host crash or security trap.
+`trap!` does **not** catch actor panic/raise, host crash or security trap.
 An explicitly cancelled task reports `CancelledError` per task semantics,
 not a fabricated successful I/O result. Error `path` must be tenant-relative,
 never a leaked absolute host path; no raw errno or host exception escapes.
@@ -467,10 +467,12 @@ explicit, verified built-in registries. This spelling change does not
 by itself implement `await http.get`, TLS, streaming bodies, network grants
 or an actor-safe async host bridge.
 
-## Canonical wildcard and selective module import distinction (2026-11-22)
+## Namespace and selective module import distinction (v2 reconciliation)
 
-Use `import * as http from "std.http";` and
-`import * as fs from "std.fs";` in normative examples.
+The current [static imports v2](static-imports-v2.md) is authoritative: registered builtins use bare or quoted dotted names; `import namespace` is preferred and legacy star-as is compatible, not canonical. The historical shorthand and examples below do not supersede v2.
+
+Use `import namespace http from std.http;` and
+`import namespace fs from std.fs;` in normative examples.
 The shorthand `import http from "std.http";` may be accepted as
 compatibility syntax but is not necessary for the canonical language.
 

@@ -1,0 +1,26 @@
+name: Actor persistence contract (host only)
+on:
+  pull_request:
+    paths:
+      - 'language/actor-persistence-v1.md'
+      - 'conformance/actor-persistence-v1.json'
+      - 'tests/actor-persistence-contract.test.mjs'
+      - '.github/workflows/actor-persistence-contract.yml'
+  push:
+    paths:
+      - 'language/actor-persistence-v1.md'
+      - 'conformance/actor-persistence-v1.json'
+      - 'tests/actor-persistence-contract.test.mjs'
+      - '.github/workflows/actor-persistence-contract.yml'
+permissions:
+  contents: read
+jobs:
+  structural-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - run: node --test tests/actor-persistence-contract.test.mjs
+      - run: echo 'HOST_ONLY - no Atto compiler, AOT guest or disk persistence executed'

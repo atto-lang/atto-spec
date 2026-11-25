@@ -1,0 +1,169 @@
+{
+  "schema": "attolang.conditional-expression.v2",
+  "status": "TARGET_COMPILER_VERIFICATION_PENDING",
+  "requires_compiled_guest_for_pass": true,
+  "forms": {
+    "statement_if": {
+      "braced": "if bool { statements } [else { statements }]",
+      "terminator": "braced if is self-delimiting; never consumes fi; stray fi rejected",
+      "produces_value": false,
+      "keyword_legacy": "legacy edition only: if bool then statements [else statements] fi",
+      "keyword_canonical": "do if bool then statements [else statements] fi"
+    },
+    "expression_if": {
+      "syntax": "if bool then expression [elif bool then expression]* else expression fi",
+      "else_required": true,
+      "produces_value": true,
+      "condition_type": "bool",
+      "max_arms": 128
+    },
+    "ternary": {
+      "syntax": "bool ? expression_or_arm_block : expression_or_arm_block",
+      "associativity": "right",
+      "produces_value": true
+    }
+  },
+  "arm_block": {
+    "scope": "lexical_no_closure",
+    "tail": "final_unterminated_expression_yields_value",
+    "final_return": "final_return_expression_yields_arm_only; optional semicolon",
+    "other_returns": "ordinary_fn_return",
+    "trailing_semicolon": "discarded_value_not_valid_for_value-required_arm",
+    "empty": "Unit_not_valid_for_value-required_arm",
+    "branch_evaluation": "selected_branch_only",
+    "check_both_types": true,
+    "ownership": "join_after_exclusive_branches",
+    "effects": "checked",
+    "required_value_type": "non_void"
+  },
+  "backend_claims": {
+    "rust_browser": "implementation_PR_open_unverified",
+    "java": "draft_pr_open_unverified",
+    "llvm": "not_verified",
+    "net": "not_verified",
+    "forge": "not_verified",
+    "wasm": "not_verified"
+  },
+  "cases": [
+    {
+      "id": "if_expression_true",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { const int v = if true then 5 else 4 fi; return v; }",
+      "expected_result": 5
+    },
+    {
+      "id": "if_expression_false",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { const int v = if false then 5 else 4 fi; return v; }",
+      "expected_result": 4
+    },
+    {
+      "id": "if_expression_elif",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { int n = 2; return if n eq 1 then 1 elif n eq 2 then 42 else 0 fi; }",
+      "expected_result": 42
+    },
+    {
+      "id": "ternary_return_arms",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { const int v = true ? {return 5} : {return 4}; return v; }",
+      "expected_result": 5
+    },
+    {
+      "id": "ternary_block_tail",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { const int v = true ? { const int x = 40; x + 2 } : { 7 }; return v; }",
+      "expected_result": 42
+    },
+    {
+      "id": "braced_statement_no_fi",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { if true { return 42; } else { return 1; } }",
+      "expected_result": 42
+    },
+    {
+      "id": "unselected_arm_effects",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { let int n = 0; const int v = true ? { n = n + 1; 42 } : { n = n + 10; 7 }; return v + n; }",
+      "expected_result": 43
+    },
+    {
+      "id": "if_requires_else",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { return if true then 5 fi; }",
+      "expected_diagnostic": "E_VALUE_ARM"
+    },
+    {
+      "id": "if_requires_bool",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { return if 1 then 5 else 4 fi; }",
+      "expected_diagnostic": "E_TYPE"
+    },
+    {
+      "id": "if_types_join",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { return if true then 5 else false fi; }",
+      "expected_diagnostic": "E_TYPE"
+    },
+    {
+      "id": "block_requires_value",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { return true ? { let int n = 5; } : { 4 }; }",
+      "expected_diagnostic": "E_VALUE_ARM"
+    },
+    {
+      "id": "block_semi_discards_tail",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { return true ? { 5; } : { 4 }; }",
+      "expected_diagnostic": "E_VALUE_ARM"
+    },
+    {
+      "id": "block_scope_is_lexical",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { const int v = true ? { const int secret = 5; secret } : { 4 }; return secret; }",
+      "expected_diagnostic": "E_UNBOUND"
+    },
+    {
+      "id": "reject_mixed_braces_fi",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { if true { return 42; } fi return 0; }",
+      "expected_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "nested_brace_preserves_parent_fi",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { do if true then if true { return 42; } fi return 0; }",
+      "expected_result": 42
+    },
+    {
+      "id": "reject_excessive_elif",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { return if false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 elif false then 0 else 42 fi; }",
+      "expected_diagnostic": "E_NESTING"
+    },
+    {
+      "id": "reject_void_ternary_expression",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { true ? stdio.println(\"yes\") : stdio.println(\"no\"); return 42; }",
+      "expected_diagnostic": "E_TYPE"
+    },
+    {
+      "id": "reject_void_if_expression",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { const int impossible = if true then stdio.println(\"yes\") else stdio.println(\"no\") fi; return 42; }",
+      "expected_diagnostic": "E_TYPE"
+    },
+    {
+      "id": "allow_imperative_void_effect",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { if true { stdio.println(\"selected\"); } else { stdio.println(\"wrong\"); } return 42; }",
+      "expected_result": 42
+    },
+    {
+      "id": "reject_strict_bare_statement_if",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { if true then return 42; fi return 0; }",
+      "expected_diagnostic": "E_SYNTAX"
+    }
+  ]
+}
