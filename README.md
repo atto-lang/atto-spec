@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Effects and lifetimes](spec/23-effects-and-lifetimes.md): typed CFG loans, latent effects, actor-domain retirement and proof gates; canonical bang ownership syntax and host-only contract evidence.
+
 - [Structural tilde shorthand v1](language/structural-tilde-v1.md): candidate `~` synonym for `structural`, typed pattern matching and named/positional delimiter safety (**not guest-verified**).
 
 - [Structural member witness matrix](language/structural-member-witness-v1.md): proposed interface, trait, class, struct, Record, Tuple and Map contracts; [43 host-only cases](conformance/structural-member-witness-v1.json) (not backend-executed).
