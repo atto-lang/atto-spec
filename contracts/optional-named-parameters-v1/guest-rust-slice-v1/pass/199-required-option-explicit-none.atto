@@ -1,0 +1,10 @@
+// expect-exit: 42
+// java: rejects
+// T? x is required: supplying None is a value, not an omitted call item.
+fnc f(int? x): int {
+  match x over
+    on None -> { return 42; }
+    on Some(n) -> { return n; }
+  end
+}
+pub fnc main(): int { return f(None); }

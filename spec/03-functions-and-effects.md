@@ -16,6 +16,12 @@ fnc choose() -> infer { return 42; }
 
 A constructor has no return annotation, since construction is not an ordinary return-valued callable; lambdas retain separately specified contextual inference. See the [normative return-type contract](https://github.com/atto-lang/atto-spec/blob/main/language/explicit-callable-return-types-v1.md). This is an accepted target; backend execution and formatter parity remain separately gated.
 
+## Candidate static binding type queries
+
+Explicit `infer` is already part of the target return annotation contract. The separate [static binding type query proposal](../language/return-binding-type-query-target-v1.md) describes `typeof name` and parenthesized compatibility input; it does not certify backend support or permit omitted annotations.
+
+See [canonical lambdas and AOT closure semantics](../language/canonical-lambdas-and-closures-v1.md) for capture provenance, effect checks and full-AOT code-plus-environment lowering. Existing typed inline annotations, braced bodies and separately gated comma-body profiles remain intact.
+
 ## Signatures and visibility
 
 ```atto
@@ -38,9 +44,106 @@ end
 
 This `-> T :: ... end` style is one of the valid [function forms](16-lexical-and-grammar-reference.md#function-forms). Backend support differs until grammar parity is proved.
 
+## Comma callable bodies: versioned candidate
+
+`::` retains its existing optional statement-header delimiter meaning in the established profile, including return-first declarations. The separate comma-body proposal (#35) selects an implicit-tail body for name-first `-> T :: ... end` **only in an explicitly selected future profile**. No working edition selector is established here. Do not reinterpret existing statement bodies or return-first effect headers. In the candidate profile, top-level comma items evaluate once left to right; nested call/tuple/generic commas retain their roles. A non-void body needs a terminal expression of the declared type, never a declaration. Empty items and trailing commas reject. Statement bodies need explicit `return` or `^`; `^` cannot return a declaration. Legacy explicit return and semicolon bodies must be preserved or migrated explicitly, not heuristically mixed with comma sequencing. A runtime local needs explicit `val`/`let`, not type-first const shorthand. Formatter preserves body kind and effects; conversion requires checked equivalence. See the [return-first contract](../language/return-first-and-begin-callables-v1.md) and [initialization contract](27-implicit-const-and-const-mut.md).
+
+## Lambda bodies, explicit results and comma sequencing
+
+**Canonical typed inline lambda:** `|params| => ReturnType -> expression`.
+The fat arrow `=>` introduces the return **type annotation**; the slim
+arrow `->` introduces the executable **expression**. These roles also
+align with function-type notation `(int, int) => int`, where `=>`
+specifies a result type. Parenthesized `|params| (=> ReturnType) -> expression`
+is an accepted but noncanonical annotation alias. The reversed
+`|params| -> ReturnType => expression` is invalid.
+
+```atto
+val inferred = || -> 5 + 3;
+val typed = || => int -> 5 + 3;
+val typed_alias = || (=> int) -> 5 + 3;
+val typed_with_local = || => int -> val int x = 5, x + 3;
+val inferred_with_local = || -> val int x = 5, x + 3;
+
+val block = || -> int { return 8; };
+val comma_block = || -> int ::
+    val int x = 5,
+    x + 3
+end;
+```
+
+In the opt-in candidate comma-body profile, the `-> Type :: ... end` lambda form uses the same top-level comma
+sequence and implicit terminal-result rule as `fnc`, `routine` and `mtd`.
+An explicit `void` result permits a terminal effect expression with no
+value result; a non-`void` declaration must match the inferred terminal
+expression type. An ordinary `{ ... }` lambda body remains a statement
+body with explicit `return`.
+
+An inferred **same-line** comma sequence may begin with a local declaration
+(`val`, `const`, `let` or a supported type-first immutable binding),
+then one or more comma-delimited items, ending in a value expression.
+A bare `|| -> left, right` must not consume a caller's second argument
+as part of the lambda: explicit grouping or `:: ... end` is required
+for general comma sequences lacking a leading binding.
+
+### Pipeline lambda contracts
+
+```atto
+fnc foo(int n): Tuple[int, int] {
+    return tuple(n, n + 1);
+}
+
+val reporter = || -> void ::
+    5 |> foo |> |x, y| -> stdio.println(x + y)
+end;
+
+val compact = || => void ->
+    5 |> foo |> |x, y| -> stdio.println(x + y);
+```
+
+A value pipeline always forwards **one** value. For a lambda stage with
+multiple parameters (`|x, y|`), the single upstream value must be a
+statically typed tuple of matching arity, destructured exactly once in
+order. A scalar, array or mismatched tuple must fail type checking.
+No implicit extra arguments, reflection or copy of ownership-sensitive
+elements is introduced by the comma-body feature.
+
+For an unparenthesized `|n| -> expression` pipeline stage, the next
+top-level `|>` belongs to the enclosing pipeline; use parentheses to
+nest a pipeline inside a lambda expression. The same boundary rule applies
+to typed `|n| => Type -> expression` and inline local sequences.
+
+### Backend implementation and verification boundary (2026-11-14)
+
+These are **historical PR candidates**, not language parity or production
+acceptance. A test fixture, syntax-only formatter and a zero-step GitHub
+workflow must never be counted as executable guest evidence.
+
+| Target | Current candidate | Evidence status |
+| --- | --- | --- |
+| Java/Graal | [compiler #3079](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3079) | Parser, types and real guest tests authored; source Actions not executed |
+| LLVM | [native #1785](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1785) | Scalar `::` and named `|>` candidate; closure syntax denied; native execution not yet verified |
+| .NET | [CIL #523](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/523) | Scalar fnc/routine `::` candidate; nominal mtd and lambdas denied; NativeAOT run unverified |
+| Forge | [stage-0 #280](https://github.com/ores-truffle-oreslang/oreslang-source.forge/pull/280) | Explicit fail-closed `::`/lambda tests, no closure lowering |
+| WASM | [wasm32 #488](https://github.com/ores-truffle-oreslang/oreslang-source.wasm/pull/488) | Authenticated LLVM-to-Wasm compiler gate, native guest not yet run |
+| Browser playground | [compiler gate #115](https://github.com/atto-lang/atto-lang.github.io/pull/115) | Pinned independent Rust/Wasm compiler denies unimplemented forms pending upgrade |
+| Rust formatter | [formatter #143](https://github.com/ores-truffle-oreslang/oreslang-format/pull/143) | Exact head `c4065f6`, 2/2 CI jobs passed; this is formatting only |
+
+Conformance should progress from grammar and AST preservation, through
+type/ownership and effect validation, to real target execution and AOT
+artifact evidence. Backends may temporarily reject a proposed form
+with an explicit diagnostic; they must not accept it into an unsafe
+incomplete lowering or emit a false successful parity receipt.
+
+## Parameter binding and reassignment (v1 target)
+
+In the opt-in borrow-default profile, parameters have fixed local bindings unless marked `rebind`. `mut` requests writable referent access and `take!` specifies transfer at entry; `rebind` does not alter the caller's binding or signature dispatch. Owned replacement values have separate proven origin, cleanup and lifetime. See [explicit parameter rebinding](../language/implicit-argument-borrow-v1.md#explicit-parameter-rebinding-v1).
+
 ## Named function, method and constructor arguments (v1 target)
 
-Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
+The detailed normative distinction between **`T? name`**, **`T name?`**, and **`T? name?`**, including omission provenance and negative conformance cases, is in [chapter 27](27-optional-and-named-arguments.md). This section is a summary and must not be read as a separate lowering rule.
+
+Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. The dedicated `StructName(field=value)` target applies only to statically resolved implicit nominal struct fieldwise initialization, not ordinary callable arguments (see [layout chapter](27-collection-layout-named-generics.md)). This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
 
 ```atto
 fnc combine(int first, int second) -> int ::
@@ -69,9 +172,17 @@ val b = combine(1, second: 2)         // 12
 
 **Compatibility boundary:** A readonly record, `Map<K,V>`, tuple spread, structural product, named type metadata and actor message field are not interchangeable named-call argument packs. Static record-to-named forwarding requires an independently checked closed-field expansion with proven evaluation/ownership semantics. Formatters preserve source argument order and labels rather than sorting expressions to declaration order.
 
+## Call-argument ownership inference (target)
+
+In the versioned opt-in borrow-default profile, an ordinary nonprimitive reference-backed formal borrows rather than consumes. A read-only call may omit `borrow!`; a proved transitive write effect requires an exclusive writable loan requested with `mut`. Seal effects in the resolved signature before call admission. Receiver and supplied arguments evaluate once in lexical order, with each prior loan checked against subsequent argument effects. Permutation into formal slots neither duplicates nor retires a loan. Explicit `borrow!` cannot repair missing provenance. Keep explicit consuming `take! T` formals and `take! owner` arguments, and the separate `rebind` rule. See [implicit argument borrowing](../language/implicit-argument-borrow-v1.md) and [ownership](04-ownership-and-memory.md#implicit-argument-borrowing-target).
+
+## Unified inferred effect analysis (target)
+
+See [the unified semantic effect model](../language/unified-inferred-effects-v1.md). Inference over typed call graphs includes cleanup, latent effects and exceptional edges. Effect rows are upper bounds, not authority grants or resource bounds. Preserve the existing source grammar, typed exception distinctions, checked pipeline setup/completion boundaries and protected state loan effects; fine-grained semantic IR identifiers are not automatically accepted source tokens.
+
 ## Effect types
 
-A callable can be annotated for potential `throws`, `raises`, `panics` or `suspends` effects. The compile-time effect set is an upper bound used for diagnostics and safe call admission; it is not a license to perform privileged operations. `trap` describes a non-throwing boundary for ordinary throw effects, but does not catch panics or cancellation. Precise declaration syntax and effect-polymorphic inference are still being reconciled. The [unified inferred-effects v1 target](../language/unified-inferred-effects-v1.md) defines transitive allocation, file/network/FFI, actor-state, ambient nondeterminism, separate runtime capabilities, and strict real-time profile checks; it is **not** compiler execution evidence.
+A callable can be annotated for potential `throws`, `raises`, `panics` or `suspends` effects. The compile-time effect set is an upper bound used for diagnostics and safe call admission; it is not a license to perform privileged operations. `trap` describes a non-throwing boundary for ordinary throw effects, but does not catch panics or cancellation. Precise declaration syntax and effect-polymorphic inference are still being reconciled.
 
 `async`/`suspend` callables may yield a Future or a Task; the declared carrier type matters. Awaiting a value must not turn a borrowed stack address into a dangling alias or monopolize an OS thread.
 
@@ -113,3 +224,94 @@ val connection = Actor.connect(reader, writer)
 ## Macros and compile-time evaluation
 
 `define macro` must expand or lower ahead of target runtime execution, be hygienic or explicitly expose controlled capture, produce source-mapped diagnostics, and be deterministic under a pinned toolchain. Macros cannot manufacture permissions or bypass import boundaries. Runtime reflection and runtime code evaluation are not implicit substitutes for macros. Cross-backend macro compilation and behavior require independent executable fixtures.
+
+## Existing `using` keyword: deterministic scoped resources (v1 target)
+
+**Decision:** make the spelling `using telemetry.span("checkout") as span { ... }`
+a first-class, compiler-checked AttoLang construct. This **reuses the existing
+`using` keyword**, not a new telemetry-specific keyword, decorator, macro
+or application instrumentation wrapper. The LLVM hosted-AOT subset has restricted guest execution evidence.
+Java's compiler-owned guest scope implementation has separate candidate
+tests; this amendment does not certify their execution.
+
+```atto
+using telemetry.span("checkout") as span {
+    span.set_attribute("order.type", order.kind)
+    let result = await process_order(order)
+    return result
+}
+```
+
+Proposed grammar addition for a `using` statement (integrate with any other
+existing uses of that keyword, do not reject them):
+```ebnf
+using_statement = "using" expression "as" identifier block ;
+block           = "{" statement* "}" ;    (* existing brace scope *)
+```
+The body and binding use ordinary lexical scoping. Evaluate the resource
+expression exactly once. The compiler requires an admitted scoped-resource
+protocol (provisional contract name `ScopedResource` with deterministic
+`close_scope`). The acquired resource is bound in the body; neither the
+unique handle nor its mutable borrowed view may escape the lexical scope.
+It cannot be sent through channels or actor mailboxes. Immutable,
+capability-free trace context may be propagated independently.
+
+**Verified implementation boundary (12 November 2026):** the native
+LLVM hosted-AOT parser, compiler and Clang-linked runtime have an executed
+non-suspending `telemetry.span("literal")` scope subset (five native
+guest cases at `-O0` and `-O2`, five compiler-denial cases on the
+[approved source-blob carrier](https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43324098880)).
+That subset intentionally forbids observable scope-handle methods and
+suspension. Java main uses a compiler-owned lexical span and a trusted
+runtime provider. Its checked-in guest tests target nesting, `await`, cancellation
+and host-controlled recording; exact executed receipts are required. Full guest AOT, live JIT attach, and
+asynchronous scope parity across backends require independent execution
+evidence. See the [Java guest tests](https://github.com/atto-lang/atto-source.java/blob/b02efee4c036557278284ca444655e19cd0adc64/src/test/java/dev/oreslang/TelemetryUsingSpanLanguageTest.java)
+and the [shared telemetry contract](https://github.com/atto-lang/atto-common-source/pull/122).
+
+
+`close_scope` executes exactly once **after the body terminates** by
+fallthrough, `return`, `?` early propagation, `trap`, `throw`,
+`raise`, `panic`, cancellation or exceptional unwind. `using` is
+a proper-tail-call cleanup barrier. A legal `await` or `select`
+suspension does **not** end the scope: its resource token and immutable
+parent context are kept in the continuation and completed when the body
+actually exits. Resource acquisition failure follows the expression's
+ordinary error semantics and cannot close a never-acquired resource.
+
+A `SpanScope` is **runtime-owned and nominally sealed at the trust
+boundary**: a guest module or class with the same names
+(`telemetry.span`, `SpanScope`, or `close_scope`) cannot impersonate
+the built-in tracing capability. The public source-level contract is one
+affine `ScopedResource<SpanScope>` abstraction, not a `uint64` token,
+heap object identity, or user-implementable duck-typed interface.
+A backend may implement its internal handle as a compiler-owned opaque
+token, a proven heap value, or a continuation-owned frame provided the
+*observable* lifetime, observer operations, and effects are equivalent.
+The scope alias cannot shadow another live owned scope. Guest calls to
+`close_scope` are forbidden; closure is generated and enforced by the
+compiler, not delegated to an ordinary method lookup.
+
+A telemetry `SpanScope` is a specialized scoped resource whose cleanup is
+non-throwing, non-suspending, nonblocking and cannot alter guest-visible
+effects, exceptions, cancellation, or supervisor CONTROL priorities. The
+underlying native recorder/collector may drop events under bounded pressure.
+Disabled instrumentation yields a clock-free, allocation-free no-op span
+scope; ordinary argument and attribute expressions still run with their
+normal evaluation effects. Guard expensive attribute construction using
+`span.is_recording()` when needed.
+
+`using` scopes and automatic compiler/runtime/stdlib spans share one
+logical context, preserve parentage across `await`/actor handoffs, and
+avoid duplicate semantic HTTP server spans. A non-recording context may
+remain valid for propagation when explicit propagators are enabled.
+
+**Mandatory compiler and execution gates:** parse and format round-trip;
+wrong resource/cleanup protocol; scope escape/borrow and actor transport
+rejection; normal return/early exit/exception/panic/cancel exactly-once
+cleanup; suspension/resume and scheduler migration; disabled-path purity;
+telemetry failure isolation. All must be independently proven on each
+supported backend before implementation labels are upgraded.
+
+See [common-source native auto-instrumentation v1](https://github.com/ores-truffle-oreslang/oreslang-common-source/pull/279)
+for the versioned event ABI and conformance targets.

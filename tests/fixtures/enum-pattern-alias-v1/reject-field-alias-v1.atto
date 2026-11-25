@@ -1,0 +1,17 @@
+use namespace jobs;
+
+define enum WorkerMsg {
+    Run { job_id: u64 },
+    Stop
+}
+
+declare actor Worker;
+
+mtd (Worker self) receive(msg: WorkerMsg): void {
+    do match msg over
+        on Run { job_id as j } -> {
+            // ERROR in v1: field renaming is not yet supported
+        }
+        on Stop -> {}
+    end
+}
