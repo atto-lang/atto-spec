@@ -8,6 +8,10 @@ In a *structural type, type-pattern, or explicit structural argument-projection 
 
 The alias is contextual, **not** a lexer-wide replacement of `~` with an identifier. Whitespace must not change meaning: `~Point` and `~ Point` parse identically. A formatter may retain either source spelling or normalize to `structural`; it MUST preserve typed meaning, argument evaluation order, labels and the distinction between aggregate and structural expression forms.
 
+## Cross-kind member compatibility (candidate refinement)
+
+The explicit [structural member-witness contract](structural-member-witness-v1.md) defines the **all-member** satisfaction rules for interfaces (methods), traits and classes (exported state/properties plus methods), structs, Records, Tuples and Maps. A structural witness checks **every required accessible member**; extra actual members may be admitted for read-only projection. Tuple arity is exact, and a generic Map key type never proves a named key exists. These remain **normative targets**, not full compiler or guest parity. A backend without a checked method/field ABI must reject the affected source without generating guest code. The [43-case host-only matrix](../conformance/structural-member-witness-v1.json) does not certify a compiler.
+
 ## Target examples
 
 ```atto

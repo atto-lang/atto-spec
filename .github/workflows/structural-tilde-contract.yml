@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - "language/structural-tilde-v1.md"
+      - "language/structural-member-witness-v1.md"
+      - "conformance/structural-member-witness-v1.json"
+      - "tests/structural-member-witness-v1.test.mjs"
       - "language/anonymous-structural-shapes-v1.md"
       - "tests/anonymous-structural-shapes-reference.test.mjs"
       - "tests/anonymous-structural-shape-contract.test.mjs"
@@ -17,6 +20,9 @@ on:
   push:
     paths:
       - "language/structural-tilde-v1.md"
+      - "language/structural-member-witness-v1.md"
+      - "conformance/structural-member-witness-v1.json"
+      - "tests/structural-member-witness-v1.test.mjs"
       - "language/anonymous-structural-shapes-v1.md"
       - "tests/anonymous-structural-shapes-reference.test.mjs"
       - "tests/anonymous-structural-shape-contract.test.mjs"
@@ -38,4 +44,4 @@ jobs:
         with:
           persist-credentials: false
       - name: Check fixture integrity (NOT guest compilation)
-        run: node --test tests/structural-tilde-contract.test.mjs tests/match-arm-delimiters-contract.test.mjs tests/structural-pattern-semantics-reference.test.mjs tests/anonymous-structural-shapes-reference.test.mjs tests/anonymous-structural-shape-contract.test.mjs
+        run: node --test tests/structural-member-witness-v1.test.mjs tests/structural-tilde-contract.test.mjs tests/match-arm-delimiters-contract.test.mjs tests/structural-pattern-semantics-reference.test.mjs tests/anonymous-structural-shapes-reference.test.mjs tests/anonymous-structural-shape-contract.test.mjs
