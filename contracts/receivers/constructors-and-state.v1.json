@@ -1,0 +1,245 @@
+{
+  "schema": "atto.receiver.constructor.state.contract.v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "evidence": "SOURCE_ONLY_CASES_NOT_GUEST_EXECUTION",
+  "cases": [
+    {
+      "id": "class-forward-only",
+      "expected": "reject",
+      "source": "declare class Foo; pub fnc main(): int { val f = new Foo(); return 0; }",
+      "reason": "forward without layout cannot instantiate",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-forward-guarded-state",
+      "expected": "accept",
+      "source": "declare class Counter; define state on class Counter as { let int count = 0; } pub constructor (Counter)(): self {}",
+      "reason": "stateful class receiver constructor with default state",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-initial-state",
+      "expected": "accept",
+      "source": "declare class C; define state on class C as { let int n = 0; } pub constructor (C)(int n): self { self.handle_state(critical-write |s| -> { s.n = n; }); }",
+      "reason": "checked constructor state guard",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-new-call",
+      "expected": "accept",
+      "source": "declare class C; define state on class C as { let int n = 0; } pub constructor (C)(int n): self {} pub fnc main(): int { val c = new C(5); return 0; }",
+      "reason": "class construction uses new",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-receiver-read",
+      "expected": "accept",
+      "source": "declare class C; define state on class C as { let int n = 2; } pub mtd (C self) get(): int { return self.handle_state(critical-read |s| -> s.n); }",
+      "reason": "checked read-only state",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-receiver-guarded-write",
+      "expected": "accept",
+      "source": "declare class C; define state on class C as { let int n = 2; } pub mtd (C self) bump(): void { self.handle_state(critical-write |s| -> { s.n += 1; }); }",
+      "reason": "protected synchronized write",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-direct-state-field",
+      "expected": "reject",
+      "source": "declare class C; define state on class C as { let int n = 0; } pub mtd (C self) bad(): int { return self.n; }",
+      "reason": "state inaccessible outside guard",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-state-guard-escape",
+      "expected": "reject",
+      "source": "declare class C; define state on class C as { let int n = 0; } pub mtd (C self) leak(): Any { return self.handle_state(critical-read |s| -> s); }",
+      "reason": "state binder must not escape",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-guard-await",
+      "expected": "reject",
+      "source": "declare class C; define state on class C as { let int n = 0; } pub mtd (C self) bad(): void { self.handle_state(critical-write |s| -> { await work(); }); }",
+      "reason": "no suspension in guard",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-guard-read-write",
+      "expected": "reject",
+      "source": "declare class C; define state on class C as { let int n = 0; } pub mtd (C self) bad(): void { self.handle_state(critical-read |s| -> { s.n = 3; }); }",
+      "reason": "read guard cannot write",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-reentrant-state-guard",
+      "expected": "reject",
+      "source": "declare class C; define state on class C as { let int n = 0; } pub mtd (C self) bad(): void { self.handle_state(critical-write |s| -> self.handle_state(critical-read |t| -> t.n)); }",
+      "reason": "nested nonreentrant guard",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-duplicate-state",
+      "expected": "reject",
+      "source": "declare class C; define state on class C as { let int a = 1; } define state on class C as { let int b = 2; }",
+      "reason": "one state attachment",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-state-unknown-owner",
+      "expected": "reject",
+      "source": "define state on class C as { let int n = 0; }",
+      "reason": "state needs class owner",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-writes-final",
+      "expected": "reject",
+      "source": "declare class C; define class C as final int n = 0; end pub constructor (C)(): self { self.n = 2; }",
+      "reason": "constructor cannot reassign an already initialized final field",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-escape",
+      "expected": "reject",
+      "source": "declare class C; define state on class C as { let int n = 0; } pub constructor (C)(): self { publish(self); }",
+      "reason": "under-construction self cannot escape",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-duplicate",
+      "expected": "reject",
+      "source": "declare class C; define state on class C as { let int n = 0; } constructor (C)(): self {} constructor (C)(int n): self {}",
+      "reason": "no duplicate per owner in v1",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-actor",
+      "expected": "reject",
+      "source": "declare actor A; pub constructor (A)(): self {}",
+      "reason": "actors cannot own constructors",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "struct-default-literal",
+      "expected": "accept",
+      "source": "define struct T as { pub foo: string; bar: int; } pub fnc main(): int { val t = T{foo: \"a\", bar: 1}; return t.bar; }",
+      "reason": "generated nominal struct field initializer",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "struct-custom-constructor",
+      "expected": "accept",
+      "source": "define struct T as { pub foo: string; bar: int; } pub constructor (T)(string value): self { self.foo = value; self.bar = 0; }",
+      "reason": "checked fields initialized exactly once",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "struct-receiver-read",
+      "expected": "accept",
+      "source": "define struct T as { pub foo: string; bar: int; } pub mtd (T self) star(): string { return self.foo; }",
+      "reason": "readonly borrowed value receiver",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "struct-receiver-mutable",
+      "expected": "accept",
+      "source": "define struct T as { pub foo: string; bar: int; } pub mtd (mut self: T) set(int n): void { self.bar = n; }",
+      "reason": "exclusive mutable loan",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "struct-readonly-write",
+      "expected": "reject",
+      "source": "define struct T as { pub foo: string; bar: int; } pub mtd (T self) bad(): void { self.bar = 5; }",
+      "reason": "immutable receiver forbids write",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "struct-ctor-missing-field",
+      "expected": "reject",
+      "source": "define struct T as { pub foo: string; bar: int; } constructor (T)(string v): self { self.foo = v; }",
+      "reason": "definite full initialization",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "struct-ctor-double-field",
+      "expected": "reject",
+      "source": "define struct T as { pub foo: string; bar: int; } constructor (T)(string v): self { self.foo = v; self.foo = v; self.bar = 0; }",
+      "reason": "initializes field twice",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "struct-ctor-new",
+      "expected": "reject",
+      "source": "define struct T as { int bar; } pub fnc main(): int { val v = new T(3); return 0; }",
+      "reason": "new only for classes",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "struct-constructor-equals-ambiguous",
+      "expected": "reject",
+      "source": "define struct T as { int bar; } constructor (T)(int value): self { self.bar = value; } pub fnc main(): int { val v = T(bar=5); return 0; }",
+      "reason": "equals shorthand not custom constructor args",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "struct-no-attached-state",
+      "expected": "reject",
+      "source": "declare struct T; define state on struct T as { let int n = 0; }",
+      "reason": "struct cannot gain class state",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "receiver-unknown-owner",
+      "expected": "reject",
+      "source": "pub mtd (Unknown self) run(): void {}",
+      "reason": "nominal ownership link required",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "receiver-duplicate-owner-name-arity",
+      "expected": "reject",
+      "source": "define class C as end mtd (C self) run(): void {} mtd (self: C) run(): void {}",
+      "reason": "aliases cannot duplicate",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "receiver-actorref-not-sync",
+      "expected": "reject",
+      "source": "declare actor A; pub mtd (A self) run(): void {} pub fnc main(): int { val a = spawn A(); a.run(); return 0; }",
+      "reason": "ActorRef cannot invoke synchronously",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-space-owner",
+      "expected": "accept",
+      "source": "define class Counter as pub let int value = 0; end pub constructor (Counter)(int initial): self { self.value = initial; } pub fnc main(): int { val c = new Counter(5); return c.value; }",
+      "reason": "space after constructor, adjacent owner and parameter groups",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-space-two-groups",
+      "expected": "accept",
+      "source": "define class Counter as pub let int value = 0; end pub constructor (Counter) (int initial): self { self.value = initial; } pub fnc main(): int { val c = new Counter(5); return c.value; }",
+      "reason": "space between the nominal owner and parameter groups",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-compact-owner",
+      "expected": "accept",
+      "source": "define class Counter as pub let int value = 0; end pub constructor(Counter) (int initial): self { self.value = initial; } pub fnc main(): int { val c = new Counter(5); return c.value; }",
+      "reason": "adjacent constructor keyword and owner group, spaced parameter group",
+      "verification": "TARGET_NOT_EXECUTED"
+    },
+    {
+      "id": "class-constructor-duplicate-spacing",
+      "expected": "reject",
+      "source": "define class Counter as end constructor (Counter)(): self {} constructor(Counter) (): self {}",
+      "reason": "whitespace variants must not introduce distinct constructor overloads",
+      "verification": "TARGET_NOT_EXECUTED"
+    }
+  ]
+}
