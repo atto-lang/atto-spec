@@ -152,7 +152,7 @@
         },
         {
           "name": "keyword.control.atto",
-          "match": "(?<![\\p{L}\\p{N}_])(?:continue|default|elseif|return|select|switch|block|break|match|while|yield|done|elif|else|loop|end|for|do|fi|if)(?![\\p{L}\\p{N}_])"
+          "match": "(?<![\\p{L}\\p{N}_])(?:continue|default|elseif|return|select|switch|unless|block|break|ifnot|match|while|yield|done|elif|else|loop|end|for|do|fi|if)(?![\\p{L}\\p{N}_])"
         },
         {
           "name": "variable.language.atto",
