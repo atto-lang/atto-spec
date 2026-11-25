@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Implicit receiver and qualified calls v1](language/implicit-receiver-qualified-calls-v1.md): desired method-family precedence and distinct `self.`, `pkg::` and `imports::` lookup, including sealed-actor intrinsic protection. Its [26-case conformance matrix](conformance/implicit-receiver-qualified-calls-v1.json) and Node tests are **host-only**; real compiler/runtime/AOT parity is **not verified**.
+
 - [Functors and nested ADTs](spec/23-functors-and-nested-adts.md): target exact mapped return types, nested Result/Option, transpose/flatten, ownership, and AOT proof gates. Host reference tests are not guest execution evidence.
 
 - [Generic callable signatures v1](language/generic-callables-v1.md): target contract for `fnc foo<T>(...) : T { ... }`, `fnc foo<T>(...) -> T ... end`, bounded inference, named/defaulted type arguments, and full-AOT specialization. Its case registry is **NOT_EXECUTED**; compiler support remains independently gated.
