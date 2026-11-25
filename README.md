@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Virtual actor identity and directory](spec/20-virtual-actors-directory-inspection.md): target contract; host reference checks do not establish guest execution.
+
 - [Collection slicing, spread and Unicode](language/collection-slice-spread-v1.md): target contract; host reference checks do not establish guest execution.
 
 - [Interface and trait receiver conformance](language/implements-receiver-conformance-v1.md): target contract; host reference checks do not establish guest execution.
