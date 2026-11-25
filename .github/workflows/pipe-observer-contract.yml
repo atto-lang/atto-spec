@@ -4,6 +4,8 @@ on:
     paths:
       - 'language/pipe-observers-and-io-pipe-v1.md'
       - 'language/pipeline-failure-effects-v1.md'
+      - 'language/pipeline-handler-boundaries-v1.md'
+      - 'tests/pipeline-effect-boundaries-reference.test.mjs'
       - 'language/pipeline-effect-proof-v1.md'
       - 'language/error-accountability-proof-v0.md'
       - 'language/checked-throws-annotation-v1.md'
@@ -20,6 +22,8 @@ on:
     paths:
       - 'language/pipe-observers-and-io-pipe-v1.md'
       - 'language/pipeline-failure-effects-v1.md'
+      - 'language/pipeline-handler-boundaries-v1.md'
+      - 'tests/pipeline-effect-boundaries-reference.test.mjs'
       - 'language/pipeline-effect-proof-v1.md'
       - 'language/error-accountability-proof-v0.md'
       - 'language/checked-throws-annotation-v1.md'
@@ -63,6 +67,9 @@ jobs:
 
       - name: Check bounded failure-incident conservation model (host-only)
         run: node --test tests/error-accountability-model.test.mjs
+
+      - name: Check VALUE versus GRAPH exception jurisdiction (host-only)
+        run: node --test tests/pipeline-effect-boundaries-reference.test.mjs
 
       - name: Verify versioned cross-backend registry (host-only)
         run: node --test tests/pipe-registry-integrity.test.mjs
