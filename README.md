@@ -37,6 +37,10 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Hybrid actor memory v1 — 32/64/128-bit extensibility](language/hybrid-actor-memory-v1.md): **draft target** preserving the Ref32 offset8+1 layout while permitting explicitly versioned extended heaps, native pointers, SIMD and capability profiles; guest parity unverified.
 
+- [Fresh return types v1](language/fresh-return-types-v1.md): candidate `new T` and `new unique T` provenance and ownership rules, including stronger Copyable return contracts. Host-only oracle; no Java/LLVM/.NET compiler support claimed.
+
+- [Copyable / DeepCopyable shallow-and-deep v2](language/copyable-ownership-v1.md): candidate Object and interface contracts for shallow `copy!` / `.copy()` and graph-deep `copy!!` / `.copy_deep()`, array/collection copying, per-recipient actor isolation, AOT-generated inherited/private-field copy plans, share-permission checks, override hooks and fail-closed diagnostics. Its checked-in tests are **host-only**; backend guest execution is **not verified**.
+
 - [Maybe/else with lexical defer v1](language/maybe-else-defer-v1.md): contextual `do maybe` / `return maybe`, exhaustive value-failure `else`, and body cleanup before handler; **design proposal, not compiler certified**.
 
 - [Persistent immutable collections v1](language/persistent-immutable-collections-v1.md): constexpr Vector, nonmutating updates, distinct collection identities and explicit ownership proof; backend registry remains NOT_EXECUTED.
@@ -65,8 +69,12 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Tuple destructuring, mutability and aliasing v1](language/tuple-destructuring-v1.md): accepted target syntax for mixed per-element `let`/`val`/`const`/`mut` bindings, explicit binder lists and `as foo` root aliases; compiler/guest support not yet verified.
 - [Structural sequence matching v1](language/sequence-pattern-matching-v1.md): target semantics for `List.of(..._, ..., _...)`, typed `is` patterns, and explicit `as val` bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
+- [AOT compile-time reflection, C layout and safe FFI v1 candidate](language/compile-time-reflection-ffi-layout-v1.md): bounded compile-time-only descriptors, static serializer generation, target-specific C ABI layout checks, explicit FFI ownership/effects and callback prohibition in v1. **Proposal / source-free tests only; no compiler or guest-AOT verification.**
+
 - [Visibility, foreign linkage and final fields v1](language/visibility-linkage-and-final-v1.md): distinguish internal, external, protected and final; includes fail-closed browser frontend matrix. Native link parity remains unverified.
 - [Namespaced and module exports v1](language/namespaced-exports-v1.md): explicit `export pub module`, qualified member access, source namespace identity, package gates and negative cross-file cases. This is a target contract; linker and native guest parity are **not verified**.
+- [Duration, timers and sleep v1](language/timers-and-sleep-v1.md): target `Duration`, `await sleep(...)`, `sleep_blocking(...)`, monotonic deadlines, cancellation and fiber-admission. Host-only reference tests; no compiler or guest execution claim.
+
 - [Suspension effect alias v1](language/susp-effect-shorthand-v1.md): `susp` is canonical for `suspends`; both have identical suspension effects, including on lambda and callable type syntax. Runtime and multi-backend parity require separate evidence.
 - [Shared ownership and explicit guards v1](language/shared-ownership-and-guards-v1.md): TARGET semantics for canonical `share!` (legacy `rt share` is compatibility-only; frozen sharing) and separately synchronized `RwLock<T>` mutation; **not compiler certified**.
 
@@ -87,6 +95,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 - [Freestanding core / alloc / std v1](language/freestanding-library-layers-v1.md): proposed three-layer dependency and bare-metal link contract; **not compiled-guest verified**.
 
 - [Identity-free value classes v1](language/value-classes-v1.md): **proposed** nominal value types, immutable construction, equality/copying, AOT and fail-closed gates. No backend guest conformance is verified. See [conformance PR #57](https://github.com/atto-lang/atto-platform-conformance/pull/57).
+
+- [Failure capabilities v1](language/failure-capability-interfaces-v1.md): proposed `Throwable`, `Raisable`, and `Panicable` nominal contracts for `throw` / `raise` / `panic`; no executable-backend parity claim.
 
 ## Validation
 
