@@ -133,6 +133,10 @@ artifact evidence. Backends may temporarily reject a proposed form
 with an explicit diagnostic; they must not accept it into an unsafe
 incomplete lowering or emit a false successful parity receipt.
 
+## Parameter binding and reassignment (v1 target)
+
+In the opt-in borrow-default profile, parameters have fixed local bindings unless marked `rebind`. `mut` requests writable referent access and `take!` specifies transfer at entry; `rebind` does not alter the caller's binding or signature dispatch. Owned replacement values have separate proven origin, cleanup and lifetime. See [explicit parameter rebinding](../language/implicit-argument-borrow-v1.md#explicit-parameter-rebinding-v1).
+
 ## Named function, method and constructor arguments (v1 target)
 
 Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
