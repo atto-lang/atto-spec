@@ -1,0 +1,3 @@
+critical suspends fnc prohibited() -> int ::
+  return 42
+end
