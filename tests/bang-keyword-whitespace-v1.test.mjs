@@ -12,7 +12,7 @@ test('complete lexical separator target matrix (not compiler execution)',()=>{
   for(const c of rows){
    assert.ok(c.source.startsWith(k));
    const separator=c.source.slice(k.length,k.length+1);
-   assert.equal(c.expect, /[ \\t\\r\\n\\v\\f]/.test(separator) ? 'SEPARATOR_OK' : r.rule,c.id);
+   assert.equal(c.expect, /[ \t\r\n\v\f]/.test(separator) ? 'SEPARATOR_OK' : r.rule,c.id);
   }
  }
 });
