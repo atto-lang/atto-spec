@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "contract_id": "attolang-semantic-floor-v1",
+  "status": "DRAFT_TARGET_NOT_VERIFIED",
+  "canonical_name": "AttoLang",
+  "legacy_name": "Oreslang",
+  "source_policy": {
+    "canonical_extension": ".atto",
+    "legacy_extension": ".ores",
+    "legacy_admission": "versioned_migration_only",
+    "canonical_core_std": "byte_identical_across_required_backends",
+    "host_code_scope": "compiler_runtime_platform_abi_only"
+  },
+  "required_backends": [
+    "llvm",
+    "java",
+    "wasm",
+    "dotnet",
+    "forge",
+    "cranelift"
+  ],
+  "backend_repositories": {
+    "llvm": "ores-truffle-oreslang/oreslang-source.llvm",
+    "java": "ores-truffle-oreslang/oreslang-source.java",
+    "wasm": "ores-truffle-oreslang/oreslang-source.wasm",
+    "dotnet": "ores-truffle-oreslang/oreslang-source.net",
+    "forge": "ores-truffle-oreslang/oreslang-source.forge",
+    "cranelift": "ores-truffle-oreslang/oreslang-source.cranelift"
+  },
+  "evidence_policy": {
+    "baseline": "NOT_EXECUTED",
+    "eligible_parity_tier": "ORES_GUEST_EXECUTED",
+    "required_fields": [
+      "source_commit",
+      "source_tree",
+      "fixture_blob",
+      "compiler_commit",
+      "workflow_blob",
+      "run_id",
+      "run_attempt",
+      "job_id",
+      "runner_id",
+      "executed_non_housekeeping_steps",
+      "observed_result",
+      "artifact_sha256"
+    ],
+    "rejected_as_proof": [
+      "zero_step_job",
+      "runner_id_zero",
+      "host_only_test",
+      "source_free_canary",
+      "interpreter_fallback_for_native_claim",
+      "shared_fixture_blob_alone",
+      "different_source_per_backend",
+      "generic_parse_error_for_targeted_negative",
+      "unverified_cross_org_mirror"
+    ]
+  },
+  "existing_corpus_policy": "additive_candidate_lane_not_in_legacy_53_case_pass_matrix",
+  "features": [
+    {
+      "id": "immutable-local-default",
+      "status": "TARGET_NOT_VERIFIED",
+      "spec_chapter": "01",
+      "decision": "Unqualified local bindings are immutable; explicit let/mut is required for rebinding, while primitive values are never mutated in place.",
+      "positive_fixture_ids": [
+        "immutable-default-positive"
+      ],
+      "negative_fixture_ids": [
+        "immutable-rebind-reject"
+      ]
+    },
+    {
+      "id": "critical-suspends-effect-separation",
+      "status": "TARGET_NOT_VERIFIED",
+      "spec_chapter": "03",
+      "decision": "critical and suspends cannot both modify a function; async fnc is legacy-rejected; a suspends function may enter a non-suspending critical block.",
+      "positive_fixture_ids": [],
+      "negative_fixture_ids": [
+        "critical-suspends-reject",
+        "legacy-async-reject"
+      ]
+    },
+    {
+      "id": "routine-acyclic-direct-calls",
+      "status": "TARGET_NOT_VERIFIED",
+      "spec_chapter": "03",
+      "decision": "routine is direct-call-only and cannot participate in direct or indirect recursive cycles; fnc and methods carry the proper tail-call target.",
+      "positive_fixture_ids": [],
+      "negative_fixture_ids": []
+    },
+    {
+      "id": "no-callable-transport",
+      "status": "TARGET_NOT_VERIFIED",
+      "spec_chapter": "04",
+      "decision": "Functions, methods and closures are not Sendable channel or pub-sub payloads; only admitted serializable data crosses transport edges.",
+      "positive_fixture_ids": [],
+      "negative_fixture_ids": []
+    },
+    {
+      "id": "actor-group-linearizability",
+      "status": "TARGET_NOT_VERIFIED",
+      "spec_chapter": "05",
+      "decision": "Multi-group membership, bounded publication, per publisher-to-subscription FIFO, cancellation, generation fencing and close-vs-publish races need actual guest proof.",
+      "positive_fixture_ids": [],
+      "negative_fixture_ids": []
+    },
+    {
+      "id": "actor-stack-trace-boundaries",
+      "status": "TARGET_NOT_VERIFIED",
+      "spec_chapter": "18",
+      "decision": "Supervisor/heap/arena diagnostic traces use bounded immutable causal frame metadata; no borrowed stack, raw pointer, cross-tenant handle or mutable exception graph may escape.",
+      "positive_fixture_ids": [],
+      "negative_fixture_ids": []
+    },
+    {
+      "id": "canonical-core-std-identity",
+      "status": "TARGET_NOT_VERIFIED",
+      "spec_chapter": "09",
+      "decision": "Portable core and standard-library modules are authored as canonical .atto and must be byte-identical at each audited release across the six backends; host code is compiler/runtime/ABI only.",
+      "positive_fixture_ids": [],
+      "negative_fixture_ids": []
+    },
+    {
+      "id": "dop-layout-ownership",
+      "status": "TARGET_NOT_VERIFIED",
+      "spec_chapter": "10",
+      "decision": "AoS, SoA, AoSoA and inverted class/struct layouts preserve indexing, aliasing, bounds and actor ownership semantics; optimization is not evidence of guest parity.",
+      "positive_fixture_ids": [],
+      "negative_fixture_ids": []
+    },
+    {
+      "id": "local-storage-boundaries",
+      "status": "TARGET_NOT_VERIFIED",
+      "spec_chapter": "06",
+      "decision": "TLS, task-local, actor-local and routine-local storage have distinct lifetime/identity rules and cannot bypass actor or tenant isolation.",
+      "positive_fixture_ids": [],
+      "negative_fixture_ids": []
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "immutable-default-positive",
+      "path": "contracts/attolang-semantic-floor-v1/fixtures/immutable-default-positive.atto",
+      "kind": "compile_and_execute",
+      "expected_exit": 42,
+      "expected_diagnostic_category": null,
+      "feature": "immutable-local-default",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "immutable-rebind-reject",
+      "path": "contracts/attolang-semantic-floor-v1/fixtures/immutable-rebind-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "immutable_reassignment",
+      "feature": "immutable-local-default",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "critical-suspends-reject",
+      "path": "contracts/attolang-semantic-floor-v1/fixtures/critical-suspends-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "incompatible_effect_modifiers",
+      "feature": "critical-suspends-effect-separation",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "legacy-async-reject",
+      "path": "contracts/attolang-semantic-floor-v1/fixtures/legacy-async-reject.atto",
+      "kind": "compile_reject",
+      "expected_exit": null,
+      "expected_diagnostic_category": "legacy_async_modifier",
+      "feature": "critical-suspends-effect-separation",
+      "status": "AUTHORED_NOT_EXECUTED"
+    }
+  ]
+}

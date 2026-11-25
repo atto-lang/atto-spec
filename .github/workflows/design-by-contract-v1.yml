@@ -1,0 +1,44 @@
+name: Design-by-contract v1 source-only contract tests
+on:
+  pull_request:
+    paths:
+      - 'language/design-by-contract-v1.md'
+      - 'conformance/design-by-contract-v1.json'
+      - 'tests/design-by-contract-v1.test.mjs'
+      - '.github/workflows/design-by-contract-v1.yml'
+  push:
+    paths:
+      - 'language/design-by-contract-v1.md'
+      - 'conformance/design-by-contract-v1.json'
+      - 'tests/design-by-contract-v1.test.mjs'
+      - '.github/workflows/design-by-contract-v1.yml'
+permissions:
+  contents: read
+jobs:
+  source-only-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact head without persisting credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Check exact source head
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --exit-code HEAD --
+          git rev-parse HEAD^{tree}
+      - name: Execute host-only registry and spec checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          node --check tests/design-by-contract-v1.test.mjs
+          node --test tests/design-by-contract-v1.test.mjs
+      - name: Clarify evidence scope
+        run: echo 'HOST_ONLY does not certify AttoLang parser, compiler or guest AOT execution.'
