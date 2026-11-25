@@ -145,3 +145,52 @@ The shared vector in the reference hashes to
 Independent Java/.NET/Rust implementations must reproduce the vector and
 all rejection cases before persistent cache integration. Receipt authentication,
 safe storage and full stage-specific input witnesses are still mandatory.
+
+### Candidate local trusted-ledger artifact receipt v1
+
+This bounded profile uses a **symmetric HMAC-SHA-256** key of exactly 32
+cryptographically random bytes, provisioned independently by the trusted
+host. It MUST NOT be stored in the cache, exposed to guest code, accepted
+from an artifact, committed to a repository, or used as a shared cross-tenant
+key. Every verifier holding the key can also create receipts; this is not
+a public-key signature, remote attestation, or suitable for untrusted
+verifiers. Deployment must isolate the signing authority and define key
+rotation and revocation. The test key below is exclusively a fixture.
+
+An envelope has exactly 112 header bytes plus 0–4,194,304 payload bytes:
+eight ASCII bytes ATTOCAC1, 32 binary bytes of the independently computed
+canonical cache key, eight unsigned big-endian payload-length bytes,
+32 binary SHA-256 bytes of payload, 32 HMAC-SHA-256 bytes, then payload.
+Authenticate ASCII atto.compiler.artifact-receipt.v1 followed by a zero
+byte and the first 80 header bytes. The expected key is derived from
+current authenticated inputs, never from the envelope. Verify size,
+magic, exact expected key, exact length, HMAC and payload digest before
+returning a private copy of the verified bytes; do not return a path
+for later reopening. No trailing bytes. Failure is a miss or explicit
+cache diagnostic, not executable authority.
+
+Test vector: key 6d0658c41d4e45ede029ca0c7654333c5aa0bc117f3179f12832aa7b1d22b657;
+test secret bytes 00 through 1f; payload hex
+6174746f2d61727469666163742d763100ff (18 bytes); payload digest
+12159b7475693b14fdfe1090dc00659901309d07d525fd96647e04e53fe5c4e1;
+expected HMAC 3653396c79c689b07bb08274d60b4de17d57d0c9dd4fd22180aa7af88940b524.
+
+A Linux-only candidate store may use 16 fixed direct-mapped slots (first
+key nibble) and one pending file, with at most 64 MiB published payload
+plus headers and one pending envelope. A slot collision is a miss.
+Use a pinned owner-only directory, reject symlinks, nonregular files and
+hardlinks, inspect pinned inode before opening it for reading, bound
+reads, serialize cooperating writers, fsync complete pending data,
+atomically rename within the directory and fsync the directory. Recover
+interrupted pending files only under the writer lock. A trusted host and
+trusted procfs are prerequisites for the Linux descriptor implementation.
+This is a logical store bound, not an OS-enforced disk quota against
+arbitrary external writes or a defense against a hostile same-UID
+process. No automatic portable filesystem or native-loading claim.
+
+Receipt signing must be downstream of successful compiler verification,
+not a service that signs arbitrary caller-supplied executable bytes.
+This candidate only specifies and tests the envelope and storage
+primitives. Compiler stage witnesses, key provisioning, independent
+cryptographic/filesystem review, real cross-process compilation and
+guest execution remain mandatory before activating cache reuse.
