@@ -190,6 +190,8 @@ All frontends must agree on parse tree shape, contextual type inference, diagnos
 
 > **Symbol-keyed Entry clarification:** [Symbol-keyed Entries v1](symbol-keyed-entries-v1.md) specifies `#foo => 5` as a candidate `Entry<Symbol,int>` and `{#foo => 5}` as `Map<Symbol,int>`; `bar :: 5` is not a RecordEntry operator. Guest parity is not certified.
 
+> **Further Entry/Record syntax:** [Map key expressions and Record construction](computed-map-keys-and-record-construction-v1.md) keeps `foo => 5` as an evaluated key and `[foo] => 5` as a collection-valued key subject to stable Hash/Eq. Record fields are identifier-only.
+
 ## Nominal Entry literal and mutable Map operations (candidate extension, 2026-11-19)
 
 The binary `=>` token has two **context-dependent** uses:
