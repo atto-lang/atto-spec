@@ -52,6 +52,99 @@ val Result<int, String | Error> id = trap checked_id(raw)   // checked_id(): Res
 
 LLVM and .NET must move to `Result<_, Error>`, or reject `trap` with a diagnostic. They must not keep producing `Option`.
 
+## Canonical deferred cleanup and recovery syntax
+
+Ordinary cleanup canonically uses `defer { ... };`; `defer _ -> { ... };`
+and the existing `defer || -> { ... };` are admitted equivalent
+zero-argument forms. An explicit capture factory is also accepted:
+
+```atto
+defer (|int v| -> _ -> {
+    stdio.println(v);
+})(5);
+```
+
+The factory evaluates its arguments exactly once at registration. The
+deferred body executes later during supported scope exit/unwind paths.
+`_ ->` is nullary **only in this cleanup context** and is not a wildcard
+single-argument handler.
+
+A recovery handler has **two explicitly bound capabilities**:
+
+```atto
+recover |err, cursor| -> {
+    stdio.println(err.message);
+    return 42;
+};
+
+// Equivalent explicit annotation:
+recover |ErrorView err, RecoveryCursor cursor| -> {
+    cursor.next();
+};
+```
+
+`err: ErrorView` is a read-only, non-escaping compiler-issued view over the
+pending original Error; initially `err.message: string` and
+`err.is_raise: bool` are readable. It is not a first-class object, and
+cannot be cloned, sent, returned, captured or kept beyond the handler.
+`cursor: RecoveryCursor` is a non-escaping one-shot, terminal delegation
+capability: `cursor.next()` passes the identical pending failure to the
+next eligible registered recovery callback. Recovery callbacks must either
+return a result compatible with the enclosing callable or delegate; they
+cannot resume the failed statement.
+
+An existing explicit-capture recovery factory remains accepted:
+`recover (|int fallback| -> |err, cursor| -> { return fallback; })(5);`.
+A bare `recover { ... }` is intentionally rejected to keep exceptional
+handling explicit. An escaping ordinary `throw` must give all caller
+`catch` and `trap` boundaries precedence before any recovery callback
+runs; `raise` bypasses ordinary catch/trap; `panic` and cancellation
+bypass recovery entirely.
+
+**Cleanup and recovery hardening (browser profile):** The compiler-issued
+`ErrorView` and `RecoveryCursor` binder names are reserved throughout the
+recovery handler body, including nested branches. The checker computes
+separate *escaping ordinary throw* and *escaping raise* effects through typed
+calls by a convergent recursive call-graph fixed point. `catch (Error e)`
+subtracts ordinary throws originating in its protected body, while effect
+analysis still includes exceptional behavior of the catch handler and
+`finally`. `trap expression` subtracts ordinary throws from its operand;
+neither ordinary catch nor trap can intercept raise or panic. Thus a helper
+that locally handles its own throw may be called from `defer`, `recover`,
+or `finally`, while a helper with an escaping throw/raise remains rejected
+there. A registered recover does not erase a function's inferred effects,
+since an outer caller's catch/trap still has precedence. Conservative
+overapproximation remains for unreachable paths; full CFG-sensitive
+effect inference and actor/async parity are not established.
+A factory argument that fails before registration cannot leave a partially
+registered cleanup; earlier registered cleanup executes according to the
+normal unwind contract. Fatal/forced termination still has no absolute
+cleanup guarantee.
+
+**Declared effects are checked upper bounds in the browser profile:**
+if a function signature supplies one or more `throws(Error)`,
+`raises(Error)` or `panics(Error)` clauses, its omitted *throw/raise*
+channels must not escape its typed body, including indirectly through
+function calls. Thus a declared `throws(Error)` without `raises(Error)`
+does not authorize an unhandled raise. Unannotated functions retain
+inferred-effect compatibility. The compiler also excludes error paths
+after proven terminal exits and excludes catch-handler effects when its
+protected region provably cannot throw. The ordinary throw/raise analysis
+uses a monotone call-graph fixed point and rejects mismatched contracts
+with a positioned `E_EFFECT` diagnostic before guest emission.
+
+`panics(Error)` is accepted as syntax and retained as metadata but is
+**not yet a machine-checked guarantee**: fatal traps, overflow, allocation
+failures, cancellation and supervisor failures must be handled by the
+separate runtime/actor proof. A successful static throw/raise check is
+never evidence that a function cannot panic.
+
+**Current admission limitation:** the Rust browser slice restricts
+registrations to synchronous top-level function bodies and factory captures
+to scalar/string values. This section defines intended language semantics;
+it does not assert actor/async/Java/LLVM parity. See the normative candidate
+in `atto-spec/language/defer-recover-unwind-v1.md`.
+
 ## Cleanup and effect precedence
 
 `defer` runs in last-in-first-out order exactly once on admitted normal and exceptional unwind paths. `finally` runs once after a try/catch outcome. Cleanup failure must not demote a stronger panic/raise/cancellation to success; suppressed diagnostics preserve secondary failures. A cleanup callback cannot bypass an actor's CONTROL escalation policy.

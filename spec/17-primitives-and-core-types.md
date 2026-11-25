@@ -20,13 +20,11 @@
 
 AttoLang has **no `null` value** and **no truthiness**. Absence is `Option<T>`, and conditions must have type `bool`.
 
-Boolean logic uses the operators `&&` (short-circuit AND), `^^` (eager XOR) and `||` (short-circuit OR), whose operands must all be `bool`. The built-in `And`, `Or` and `Xor` functions, such as `And(true, true)`, remain available. See [chapter 16](16-lexical-and-grammar-reference.md#operators) for precedence and backend status. Inside conditions, `,` and `|` are still accepted as AND and OR.
+Boolean logic uses `&&` and `||` with strict `bool` operands and short-circuit evaluation. Boolean exclusive OR uses `Xor(bool,bool)`, not `^^`, which is reserved for integer bitwise XOR. The built-in `And`, `Or` and `Xor` functions remain available; historical condition-only comma/pipe forms require explicit migration and must not be silently rewritten if effects differ. See [operator contract](../language/bitwise-and-stream-operators-v1.md).
 
-## Bitwise integers (proposed target)
+## Bitwise integers (target)
 
-The `int` bitwise operators `& | ^ ~ <<< >>> ashr` operate on 64-bit two's-complement patterns, not checked arithmetic. `<<<` discards high bits and fills zero low bits; `>>>` fills zero high bits; `ashr` extends the sign bit. Proposed shift counts use the low six bits of the count, pending cross-backend approval. Examples: `12 & 10` is `8`, `-1 >>> 1` is `9223372036854775807`, and `-8 ashr 1` is `-4`. Boolean `^^` and stream `<<`/`>>` have separate meanings.
-
-These rules are not yet verified across the backends. See [chapter 16](16-lexical-and-grammar-reference.md#operators) and [the v1 bitwise contract](https://github.com/atto-lang/atto-spec/pull/87).
+The signed 64-bit `int` operations `& | ^^ ~ <<< >>> ashr` act on two's-complement bit patterns. Left shift discards high bits, logical right shift zero-fills, and arithmetic right shift sign-extends. Counts outside `0..63` are checked language failures, not masked. Examples: `12 & 10` gives 8, `12 ^^ 10` gives 6, `-1 >>> 1` gives 9223372036854775807, `-8 ashr 1` gives -4, and `1 <<< 63` gives -9223372036854775808. These are bit operations, not arithmetic overflow or type coercion. Single `^` means return in statement position, `Xor` is Boolean XOR, and `<<`/`>>` are typed I/O. See [chapter 16](16-lexical-and-grammar-reference.md#current-target-bitwise-precedence-and-token-boundaries) and the [operator contract](../language/bitwise-and-stream-operators-v1.md). Backend execution remains separately verified.
 
 ## Integer rules
 
@@ -83,6 +81,8 @@ Whether `int / int` gives a `float` or an integer is a separate decision (S-25).
 - On Java, an out-of-bounds index fails with a host `IllegalArgumentException`. **TARGET:** it becomes a language-level panic with a defined class.
 
 ## Option and Result
+
+The unqualified `Option`, `Result`, `Some`, `None`, `Ok` and `Err` names belong to the **automatic core prelude**; users need not explicitly import them. This is a compile-time source binding, not a process-global value. For the profile boundaries and the rules for `String`, collections, ownership, name collisions and cross-backend conformance, see [automatic prelude v1](../language/automatic-prelude-v1.md).
 
 Both are ordinary data, not exceptions. `Result` always takes two type arguments.
 

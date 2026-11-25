@@ -14,7 +14,7 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 
 ## Keywords
 
-The Java lexer reserves these words. The LLVM parser has its own keyword handling, and the two lists have not been compared.
+The historical table lists 93 documented Java reserved words. The two additional target words `ifnot` and `unless` are staged for syntax tooling and candidate compiler branches, not a claim about the historical Java or LLVM revisions. See chapter 23 for separate dated source snapshots.
 
 | Group | Words |
 | --- | --- |
@@ -22,7 +22,7 @@ The Java lexer reserves these words. The LLVM parser has its own keyword handlin
 | Callables | `fnc` `routine` `async` `suspends` `generator` `yield` `nlex` `return` `self` `super` `static` |
 | Visibility | `pub` `private` |
 | Bindings | `const` `val` `let` `mut` |
-| Control flow | `if` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
+| Control flow | `if` `ifnot` `unless` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
 | Errors | `try` `catch` `finally` `throw` `raise` `panic` `recover` `trap` `defer` |
 | Actors | `actor` `isoactor` `shared` `untrusted` `spawn` `stop` `rt` |
 | Async and channels | `await` `nb` `cb` `select` `readch` `writech` |
@@ -40,7 +40,7 @@ Some of these are narrower than the table suggests:
 
 Keywords may also be described linguistically as nouns (e.g. `actor`), relational verbs (e.g. `implements`), adjectives (e.g. `pub`), or execution qualifiers (e.g. `suspends`). These analogies are for readers and editor tooling, not additional syntax rules. The proposed taxonomy, semantic scopes, reserved-versus-contextual distinctions, and conformance gates appear in [chapter 23](23-keyword-taxonomy-and-highlighting.md).
 
-**This chapter's documented lexer inventory remains authoritative for its cited revisions.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
+**The historical 93-word inventory remains authoritative for its cited revisions; the two explicitly staged target additions are not historical observations.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
 
 ## Literals
 
@@ -57,7 +57,7 @@ Keywords may also be described linguistically as nouns (e.g. `actor`), relationa
 
 ## Operators
 
-From lowest to highest precedence, following the v0.6 grammar:
+Historical v0.6 operator table (not current target precedence; see the operator contract below):
 
 | Level | Operators | Associativity |
 | --- | --- | --- |
@@ -67,30 +67,39 @@ From lowest to highest precedence, following the v0.6 grammar:
 | Logical OR | `\|\|` (and `\|` inside conditions) | Left |
 | Logical XOR | `^^` | Left |
 | Logical AND | `&&` (and `,` inside conditions) | Left |
-| Integer bitwise OR | `\|` (outside condition-only legacy OR) | Left |
-| Integer bitwise XOR | `^` | Left |
-| Integer bitwise AND | `&` | Left |
 | Equality and identity | `eq` `neq` `!eq` `==` `!=` `is` | Left |
 | Comparison and type tests | `<` `<=` `>` `>=` `is type` `matches` `as` `as?` | Left |
-| Integer shifts | `<<<` `>>>` `ashr` | Left |
 | Additive | `+` `-` | Left |
 | Multiplicative | `*` `/` `%` | Left |
-| Unary | `!` `~` `-` `+` `await` `&` `&mut` `readch` `writech` | Prefix |
+| Unary | `!` `-` `+` `await` `&` `&mut` `readch` `writech` | Prefix |
 | Postfix | call, `.member`, `[index]` | Left |
 
 - `eq` and `neq` are the canonical comparisons. `==` and `!=` are accepted aliases.
 - `is` tests identity. Type tests use `is type`, as in `if animal is type Dog dog then`.
 - Inside an `if` or `while` condition, `,` means AND and `|` means OR, and comma binds tighter.
-- **TARGET (decided, 2026-11-14):** `&&` is short-circuit boolean AND, `^^` is boolean XOR, and `||` is short-circuit boolean OR. `^^` is eager: it evaluates both operands exactly once, left to right. Precedence is `&&` above `^^` above `||`. Every operand must have static type `bool`, and there is no truthiness conversion. The built-in `And`, `Or` and `Xor` functions stay valid.
+- **SUPERSEDED TARGET (2026-11-14):** the former Boolean `^^` proposal is historical. The 2026-11-20 owner decision reserves `^^` for integer XOR; Boolean XOR uses `Xor(bool,bool)`. Boolean `&&` and `||` retain strict bool operands and left-to-right short circuit. See [operator contract](../language/bitwise-and-stream-operators-v1.md).
 - Backend status on 2026-11-14: Java main and LLVM main accept `&&` and `||`. .NET main accepts only the `and`/`or`/`xor` words. All three mains still reject `^^` as reserved. The fixes are oreslang-source.java#3009, oreslang-source.llvm#1728 / #1739 and oreslang-source.net#521, which adds `&&`, `^^` and `||` to the structured frontend.
-- **PROPOSED TARGET (2026-11-17):** `&`, `|`, `^`, `~`, `<<<`, `>>>`, and `ashr` are integer-only bit operations on signed 64-bit `int`. `&= |= ^= <<<= >>>= ashr=` are compound assignments. These change the previously absent bitwise syntax; `^^` remains distinct boolean XOR. The [normative proposal](https://github.com/atto-lang/atto-spec/pull/87) defines shift-count masking, signed bit patterns, precedence and regression cases. Browser compiler [draft #334](https://github.com/atto-lang/atto-source.rs/pull/334) is not verified backend parity.
-- Exactly three adjacent brackets form `<<<` or `>>>` in expression context; exactly two `<<`/`>>` remain typed stream/channel direction syntax. The parser MUST preserve nested generic `>` closers, the `|>` pipeline and `|x| -> expr` lambda. Legacy `|` inside conditions stays boolean OR; parenthesize integer bitwise OR inside a condition.
+- The current target uses statement-leading `^` for return, not infix XOR or exponentiation. Integer `^^`, `&`, `|`, `~`, and checked `<<<`, `>>>`, `ashr` follow the separate operator contract; `<<` and `>>` are typed I/O.
 - Open: whether the condition-only `,` and `|` spellings stay. oreslang-source.java#3009 proposes removing them in favor of `&&` and `||`.
 - Assignment is an expression, but `if x = y then` is rejected.
 - `name = value` in a call is never a named argument. Named value arguments use `name: value` ([chapter 03](03-functions-and-effects.md)).
 - `++` and `--` exist only in a `for` update clause.
 
+### Current target bitwise precedence and token boundaries
+
+From lowest to highest within the operator expression region: Boolean `||`, Boolean `&&`, integer `|`, integer `^^`, integer `&`, equality, comparison, shifts `<<< >>> ashr`, additive, multiplicative, unary (including integer `~`), postfix. See the [normative operator grammar](../language/bitwise-and-stream-operators-v1.md). Boolean XOR is the explicit `Xor` call. `^` is statement-leading return only. Compound forms `&= |= ^^= <<<= >>>= ashr=` require writable integer places. Counts must be in `0..63`, never masked. Three adjacent brackets are shifts in expression context; two are typed I/O. Preserve nested generic closers, `|>` pipelines, and `|x| -> expr` lambdas. Legacy condition-only `|` is profile-specific; parenthesize integer OR where that legacy grammar remains active.
+
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
+
+## Return-first named callables and explicit `begin`/`end` (target)
+
+The mandatory return-type rule accepts both conventional `fnc name(args) -> T` / `fnc name(args): T` and return-first `fnc T <- name(args)` or `T <- name(args)`. `T` may be `void`, `infer`, or a concrete return type. The contiguous `<-` is a declaration delimiter, not assignment. Return-first spelling is also valid for class/actor methods in declaration context; existing visibility, ownership and actor isolation rules do not change.
+
+All three body families are supported for return-first declarations: `{ ... }`, `begin ... end`, and `statement; ... end` with no `begin`. The latter two require explicit return for a nonvoid result and admit empty bodies for void. Existing name-first `: T -> { ... }` remains valid. The legacy `-> T` comma/end tail-expression form remains distinct from semicolon/end. These variants define the *same* callable signature, and duplicate declarations remain errors.
+
+See [normative return-first contract](https://github.com/atto-lang/atto-spec/blob/main/language/return-first-and-begin-callables-v1.md). Backend support and tests require independent evidence.
+
+The [logical punctuation fixture registry](../contracts/logical-punctuation-v1/contract.json) follows the current target, not the historical v0.6 table. `Xor` is an eager call, not an infix precedence tier; `&&` binds more tightly than `||`.
 
 ## Function forms
 
@@ -100,8 +109,10 @@ As a grammar rule (**TARGET (decided)**), this reads:
 
 ```ebnf
 callable_body = return_spec [ "::" ] ( block | { statement } "end" ) ;
-return_spec   = ":" type_ref | "->" type_ref ;
+return_spec   = (":" | "->") (type_ref | "infer") ;
 ```
+
+A named callable **must** include this return specification, even for `void`. `infer` is explicitly allowed but not preferred; omitting the annotation is an error and never means `void` by default. This applies to functions, routines, instance/static methods, actor handlers and out-of-line methods. Constructors and contextual lambda inference follow their separate grammar contracts.
 
 So these all declare the same function:
 
@@ -139,6 +150,10 @@ Only the first two forms run on free functions today. See [chapter 19](19-observ
 3. Newlines do not separate the return type from the body, because AttoLang has no automatic semicolon insertion.
 
 **PROPOSED** formatter rule: the formatter keeps the form the author wrote and does not rewrite one into another.
+
+### Negated conditionals (TARGET)
+
+See [negated conditionals](ifnot-unless.md) and the [machine-readable contract](../contracts/ifnot-unless-v1.json). The value form requires `else` and `fi`; the `do` imperative form permits optional `else` and closes with `fi`; the brace form permits optional `else` and closes with matching braces only. The boolean head is evaluated once and inverted; `elif` predicates are positive. Invalid non-boolean predicates and unsafe negated binding heads are rejected. This is not evidence of compiler execution.
 
 ## Statements and semicolons
 
