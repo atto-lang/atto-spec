@@ -36,17 +36,16 @@ let entry2 = "foo" => 5 (as Entry<string, int>);
 - Both normalize to the **same typed AST**: `EntryExpr(key, value, expected_type=Entry<K,V>)`. An implementation may retain the source spelling separately for diagnostics and formatter round-trip. The formatter canonical spelling is `(key => value) as Entry<K,V>`; the alternative must still parse correctly.
 - Generic arity must be exactly two; key and value must each be assignable to their corresponding generic parameters. A typed `Entry` may be held in a variable, passed to methods, returned or transferred under normal Atto ownership checks. An unrelated `as Map<K,V>` cast may never reinterpret an Entry.
 - An untyped `key => value` expression is legal only when inference supplies non-ambiguous `K,V` or there is an expected `Entry<K,V>`; no implicit `any`/host value fallback. No Entry expression may bypass hashing/equality constraints when eventually inserted into a Map.
-- A file-scope `let entry = ...;` using a fully pure, statically evaluable and frozen Entry initializer is an intended compatible static binding; its initialized value is private and read-only after module startup, not a mutable global shared between actors. This **additional file-scope admission** is not a claim that arbitrary runtime top-level `let`, cross-actor mutable globals or effectful initializers are already supported. Compilers must reject those until their module-initialization contract is verified. Local `let` retains its existing rebinding semantics.
+- File-scope entries require the existing unconditional typed `define const` declaration and a proven pure frozen constexpr initializer; ordinary top-level `let` remains invalid. A backend that cannot fold the Entry must reject it. Local `let` retains its existing rebinding semantics.
 
 `Map<K,V>.add(entry: Entry<K,V>): Option<V>` performs the same checked **insert-or-replace** as `set(k,v)`; a duplicate key replaces the value, returning the previous value when copyable. `try_add(entry): bool` is the distinct insert-if-absent operation: it returns `false` and preserves the old value when a key already exists. In the initial copyable-scalar profile the call borrows a reusable Entry and copies its immutable key/value into owned Map storage. For non-copyable resources, require a proven ownership transfer/clone protocol (`take!` or `copy!!` when appropriate); storing a reference to a caller's temporary or active borrow is forbidden. `Entry` is not itself evidence of Sendable or Serializable conformance.
 
 ### Complete requested program (target contract, not yet a guest pass)
 
 ```atto
-let entry1 = ("foo" => 5) as Entry<string, int>;
-let entry2 = "foo" => 5 (as Entry<string, int>);
-
 pub fnc main(): int {
+    let entry1 = ("foo" => 5) as Entry<string, int>;
+    let entry2 = "foo" => 5 (as Entry<string, int>);
     let mut Map<string, int> x = {
         "foo" => 5
     };
@@ -117,7 +116,7 @@ The formatter must round-trip `let mut Map<string, int>`, brace map entries, con
 
 ## Verification gates
 
-Entry-specific gates: both typed ascription spellings (including file-scope pure bindings), AST equivalence, generic arity/type negatives, `add(Entry)` upsert and distinct `try_add(Entry)` no-overwrite execution, exactly-once key/value evaluation, reusable Entry storage ownership, missing-key `unwrap()` failure behavior, and parse-format-parse/idempotence. Both compiler and formatter must retain entry-versus-Map-brace-vs-lambda distinctions. Runtime and security evidence must be collected for each target independently.
+Entry-specific gates: both typed ascription spellings (including independently proven file-scope `define const` bindings), AST equivalence, generic arity/type negatives, `add(Entry)` upsert and distinct `try_add(Entry)` no-overwrite execution, exactly-once key/value evaluation, reusable Entry storage ownership, missing-key `unwrap()` failure behavior, and parse-format-parse/idempotence. Both compiler and formatter must retain entry-versus-Map-brace-vs-lambda distinctions. Runtime and security evidence must be collected for each target independently.
 
 A backend is conformant only if real compiler-produced guest code (not a host/reference model) exercises actual allocation, collision handling, replacement, try_add insert-only, missing-key `Option`, indexing mutation, ownership and cleanup. Pin executed evidence to exact source commit/tree, tests, toolchain and nonzero-step CI run. Keep all independent backend cells **NOT_EXECUTED** unless their own compiled-guest evidence passes. A parser/type-only pass is distinct from executable runtime conformance.
 
