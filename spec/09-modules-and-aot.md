@@ -18,6 +18,13 @@ import module math from "+lib/math"
 
 This documents intended spelling; the exact source ordering, grammar and executable support require backend-specific fixtures.
 
+## Compiler-owned libraries
+
+`core`, `alloc` and `std` are reserved library roots with Rust-like layering
+(freestanding core, allocator-backed alloc, hosted std). Selectors, import
+forms, platform variants and the v1 unit catalog are normative in
+[language/core-alloc-std-libraries-v1.md](../language/core-alloc-std-libraries-v1.md).
+
 ## Project root and resolver safety
 
 The `+` import prefix refers to the governed package root. Canonical AttoLang packages use the nearest applicable `.atto.pkg.toml`; `.ores.pkg.toml` is a migration-only fallback where permitted. An invalid canonical manifest MUST fail closed even if a legacy sibling exists. `ATTOLANG_PATH` is the canonical extra-root environment setting in compilers that implement it; legacy `ORESLANG_PATH`, `ORES_PATHS`, and `.oreslangc.cfg.toml` must be admitted only through separately documented compatibility modes. An explicitly present but empty canonical setting must not silently enable legacy roots. No environmental path list may grant capabilities to the guest.

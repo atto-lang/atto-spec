@@ -20,7 +20,7 @@
 
 AttoLang has **no `null` value** and **no truthiness**. Absence is `Option<T>`, and conditions must have type `bool`.
 
-Boolean logic uses the operators `&&` (short-circuit AND), `^^` (eager XOR) and `||` (short-circuit OR), whose operands must all be `bool`. The built-in `And`, `Or` and `Xor` functions, such as `And(true, true)`, remain available. See [chapter 16](16-lexical-and-grammar-reference.md#operators) for precedence and backend status. Inside conditions, `,` and `|` are still accepted as AND and OR.
+Boolean logic uses `&&` and `||` with strict `bool` operands and short-circuit evaluation. Boolean exclusive OR uses `Xor(bool,bool)`, not `^^`, which is reserved for integer bitwise XOR. The built-in `And`, `Or` and `Xor` functions remain available; historical condition-only comma/pipe forms require explicit migration and must not be silently rewritten if effects differ. See [operator contract](../language/bitwise-and-stream-operators-v1.md).
 
 ## Integer rules
 
@@ -77,6 +77,8 @@ Whether `int / int` gives a `float` or an integer is a separate decision (S-25).
 - On Java, an out-of-bounds index fails with a host `IllegalArgumentException`. **TARGET:** it becomes a language-level panic with a defined class.
 
 ## Option and Result
+
+The unqualified `Option`, `Result`, `Some`, `None`, `Ok` and `Err` names belong to the **automatic core prelude**; users need not explicitly import them. This is a compile-time source binding, not a process-global value. For the profile boundaries and the rules for `String`, collections, ownership, name collisions and cross-backend conformance, see [automatic prelude v1](../language/automatic-prelude-v1.md).
 
 Both are ordinary data, not exceptions. `Result` always takes two type arguments.
 
