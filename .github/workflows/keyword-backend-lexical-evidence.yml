@@ -1,0 +1,24 @@
+name: Backend lexical source-evidence contract
+on:
+  push:
+    paths:
+      - 'contracts/keyword-taxonomy-v1/backend-lexical-evidence-v1.json'
+      - 'tests/keyword-backend-lexical-evidence.test.mjs'
+      - '.github/workflows/keyword-backend-lexical-evidence.yml'
+  pull_request:
+    paths:
+      - 'contracts/keyword-taxonomy-v1/backend-lexical-evidence-v1.json'
+      - 'tests/keyword-backend-lexical-evidence.test.mjs'
+      - '.github/workflows/keyword-backend-lexical-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: 
+          persist-credentials: false
+      - run: node --test tests/keyword-backend-lexical-evidence.test.mjs
