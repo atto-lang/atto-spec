@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Actor DATA codec selection](architecture/actor-data-codec-selection-v1.md) and [grammar-neutral policy](architecture/actor-data-codec-policy-v1.md): design target, existing wire compatibility and separately gated host reference subsets; no new ABI or compiler support.
+
 - [Actor execution classes](language/actor-execution-classes-v1.md), [scheduler domains](language/actor-scheduler-domains-v1.md) and [scheduling policy](language/actor-scheduling-policy-v1.md): candidate carrier topology and affinity; physical serial ceiling independently gated.
 
 - [Authenticated incremental build cache](proposals/incremental-compilation-unit-boundaries-v1.md): proposed unit identity and provenance, never an authorization to reuse an untrusted artifact.
