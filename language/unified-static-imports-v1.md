@@ -1,5 +1,7 @@
 # Unified static imports (v1)
 
+> **2026-11-24 v2 target:** [Static imports v2](static-imports-v2.md) supersedes conflicting selector and binding rules for the v2 profile; preserve historical v1 admission until migration is implemented. Library layering, visibility, initialization, source identity and capability constraints remain unchanged. No backend parity implied.
+
 **Status:** Proposed normative AttoLang grammar. Syntax acceptance, cross-file
 linking, runtime execution and cross-backend parity are separate milestones.
 This document does not claim that the browser compiler currently links packages.
@@ -10,6 +12,10 @@ This document does not claim that the browser compiler currently links packages.
 > canonical `import module num from "atto.core/num";` (shorthand `"core/num"`, never `ores.*`),
 > reserved `atto.core/`, `atto.alloc/`, `atto.std/` roots, no `pkg` and no dotted `"std.fs"` selectors for builtins. The
 > builtin-selector addenda at the end of this document are superseded by it.
+
+## Typed constant selection
+
+The [constant-import proposal](constant-imports-v1.md) defines immutable declaration-kind selection, startup-once initialization and visibility. In v2 its historical selector grammar is subordinate to [static imports v2](static-imports-v2.md); `pkg` denotes external packages, builtin identity is not inferred from a lexical lookalike, and mixed and direct typed selectors remain admitted.
 
 ## One static import verb
 

@@ -1,0 +1,18 @@
+pub fnc main(): int {
+  return (
+    (false && false) eq false &&
+    (false && true) eq false &&
+    (true && false) eq false &&
+    (true && true) eq true &&
+    (false || false) eq false &&
+    (false || true) eq true &&
+    (true || false) eq true &&
+    (true || true) eq true &&
+    Xor(false, false) eq false &&
+    Xor(false, true) eq true &&
+    Xor(true, false) eq true &&
+    Xor(true, true) eq false &&
+    Xor(Xor(true, true), true) eq true &&
+    (false || Xor(true, true && false)) eq true
+  ) ? 42 : 7;
+}

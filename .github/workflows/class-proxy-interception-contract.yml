@@ -1,0 +1,28 @@
+name: Class proxy interception candidate (host only)
+on:
+  pull_request:
+    paths:
+      - 'language/class-proxy-virtual-interception-v1.md'
+      - 'conformance/class-proxy-interception-v1.json'
+      - 'tests/class-proxy-interception-contract.test.mjs'
+      - '.github/workflows/class-proxy-interception-contract.yml'
+  push:
+    paths:
+      - 'language/class-proxy-virtual-interception-v1.md'
+      - 'conformance/class-proxy-interception-v1.json'
+      - 'tests/class-proxy-interception-contract.test.mjs'
+      - '.github/workflows/class-proxy-interception-contract.yml'
+permissions:
+  contents: read
+jobs:
+  contract-host-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate manifest only (NOT compiler/guest execution)
+        run: |
+          node --version
+          node --test tests/class-proxy-interception-contract.test.mjs

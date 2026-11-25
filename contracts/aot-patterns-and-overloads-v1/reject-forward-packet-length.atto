@@ -1,0 +1,7 @@
+pub fnc main(): int {
+    let payload = Bytes.from_list([0, 3, 97, 98, 99]);
+    match payload over
+        on packet { body: bytes[length], length: u16be } -> { return 1; }
+        on _ -> { return 0; }
+    end;
+}
