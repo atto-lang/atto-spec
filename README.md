@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Bounded reactive admission and lazy collections](spec/23-pull-push-and-lazy-collections.md): target demand, ownership, terminal race and physical accounting; host model only.
+
 - [Inferred and explicit named lifetimes](spec/27-inferred-lifetimes.md): target provenance, lifetime elision and checked loan relations; checked-handle bang aliases remain an independent unratified proposal.
 
 - [Typed task payloads and inline sync](language/typed-task-payload-sync-v1.md) and [TaskFuture control](language/task-future-control-v1.md): independently scheduled children, affine result receipts, same-thread inline scopes and cancellation/retirement targets; compiler evidence independently gated.

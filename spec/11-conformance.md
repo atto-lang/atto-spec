@@ -112,3 +112,8 @@ Every backend is **TARGET / NOT_VERIFIED** until the following independent evide
 The sequence-pattern extension adds source-level `bytes[...]` and `bits[...]` with exact/prefix/tail semantics, `ByteView`/`BitView` ownership, MSB-first unaligned bit tails and explicit contextual distinction from `payload: bytes[length]` typed field segments. Its source corpus now has **48 acceptance/rejection entries** and **14 pinned canonical .atto fixtures** (including eight byte/bit sequence fixtures). Reference-model checks cannot verify the compiler's AST, typed IR, emitted branch plans, runtime owner-generation checks or zero-copy behavior. Require actual guest compiled tests that both match and nonmatch byte prefixes, distinguish one-byte literal from a three-byte length field, reject invalid literals/double tails, and verify a borrowed bit tail cannot survive owner retirement.
 
 Neither a function name/arity-only host model nor a typed binary parser that dynamically interprets patterns at runtime satisfies the full AOT requirement. Backends must fail closed until compiled native/wasm code generation for the canonical fixture is demonstrated.
+
+
+## Reactive conformance target
+
+Use the [bounded reactive admission contract](23-pull-push-and-lazy-collections.md). Preserve exact backend classifications; source-free reference tests never establish compiled guest or memory-profile support.

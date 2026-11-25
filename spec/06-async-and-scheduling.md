@@ -208,3 +208,8 @@ Normal hosted I/O returns `Future<T>` or another explicit asynchronous result an
 ## Failure and cancellation
 
 Cancellation is a structured control effect, not a normal `throw` to be swallowed by `catch`. It must release owned message slots, wake waiters, settle or fence Futures and Tasks exactly once, run eligible cleanup, and delay resource reclamation until native operations physically retire. This includes timer, socket, channel and actor shutdown races.
+
+
+## Pull/push reactive admission target
+
+[Reactive admission](23-pull-push-and-lazy-collections.md) separates synchronous pull, demand-controlled push, one-shot Future receipts and graph pipes. Terminal choices are irrevocable and physical ACK debt remains charged after logical termination.
