@@ -1,0 +1,25 @@
+name: Verified Core pinned reference checks
+on:
+  push:
+    paths: ['reference-checks/**', 'proposals/verified-core-*.md', '.github/workflows/verified-core-reference.yml']
+  pull_request:
+    paths: ['reference-checks/**', 'proposals/verified-core-*.md', '.github/workflows/verified-core-reference.yml']
+permissions:
+  contents: read
+jobs:
+  host-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          path: src
+          persist-credentials: false
+      - name: Fetch pinned public semantic reference and execute tests
+        run: |
+          set -euo pipefail
+          git init --quiet common
+          git -C common -c credential.helper= -c http.extraHeader= fetch --no-tags --depth=1 https://github.com/atto-lang/atto-common-source.git ab7636174634ce01bbe7691ad65e89dc540dcdca
+          git -C common checkout --detach FETCH_HEAD
+          test "$(git -C common rev-parse HEAD^{tree})" = 1c4b78f90639c0f57b73b656d2cd8baf594610d5
+          node --test common/reference/verified-core/intervals.test.mjs common/reference/verified-core/quantities.test.mjs src/reference-checks/*.test.mjs

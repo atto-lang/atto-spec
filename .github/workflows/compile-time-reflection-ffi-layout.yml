@@ -1,0 +1,37 @@
+name: compile-time reflection and ABI source-only contract
+on:
+  pull_request:
+    paths:
+      - 'language/compile-time-reflection-ffi-layout-v1.md'
+      - 'contracts/compile-time-reflection-ffi-layout-v1.json'
+      - 'src/compile-time-abi-reference.mjs'
+      - 'tests/compile-time-reflection-ffi-layout.test.mjs'
+      - '.github/workflows/compile-time-reflection-ffi-layout.yml'
+      - 'tests/compile-time-ffi-c-layout-v1.c'
+  push:
+    paths:
+      - 'language/compile-time-reflection-ffi-layout-v1.md'
+      - 'contracts/compile-time-reflection-ffi-layout-v1.json'
+      - 'src/compile-time-abi-reference.mjs'
+      - 'tests/compile-time-reflection-ffi-layout.test.mjs'
+      - '.github/workflows/compile-time-reflection-ffi-layout.yml'
+      - 'tests/compile-time-ffi-c-layout-v1.c'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute source-free reference tests (NOT guest compiler AOT)
+        run: node --test tests/compile-time-reflection-ffi-layout.test.mjs
+      - name: Compile and execute C11 x86_64 layout witness with GCC
+        run: |
+          gcc -std=c11 -Wall -Wextra -Werror -pedantic tests/compile-time-ffi-c-layout-v1.c -o /tmp/atto-ffi-c11-gcc
+          /tmp/atto-ffi-c11-gcc
+      - name: Compile and execute C11 x86_64 layout witness with Clang
+        run: |
+          clang -std=c11 -Wall -Wextra -Werror -pedantic tests/compile-time-ffi-c-layout-v1.c -o /tmp/atto-ffi-c11-clang
+          /tmp/atto-ffi-c11-clang

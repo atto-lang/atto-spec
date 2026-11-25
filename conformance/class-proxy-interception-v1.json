@@ -1,0 +1,895 @@
+{
+  "schemaVersion": 1,
+  "language": "AttoLang",
+  "feature": "class-proxy-virtual-interception",
+  "contract": "language/class-proxy-virtual-interception-v1.md",
+  "extension": ".atto",
+  "status": "candidate_not_implemented",
+  "note": "Declarative planned oracles only. This JSON is not a compiler implementation or guest execution record; hook surface syntax is not fixed. An experimental Java draft additionally proposes new Proxy(new Target(), new Hooks()) and strict typed before_ methods; spelling is not yet normative or guest-verified. The companion affine-proceed state-machine document is design-only and none of the 15 newly added cases are executable backend receipts.",
+  "cases": [
+    {
+      "id": "construct-once",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Target constructor side effect occurs exactly once per new Proxy(new Foo(...)).",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "forwarded-int-value",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Public synchronous typed forwarder returns target result.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "distinct-arity-overload",
+      "phase": "compile",
+      "expect": "accept",
+      "oracle": "Independent names with distinct explicit arity map to distinct slots.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "virtual-override-once",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "A proxy receiver call invokes the final virtual override exactly once.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "typed-proceed-once",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "A hook calls its target continuation once and forwards the exact typed result.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "typed-around-short-circuit",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "An approved around hook returns a typed value without calling target.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "throw-effect-preserved",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Declared throw travels to the nearest eligible catch/trap without alteration.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "raise-effect-preserved",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Declared raise bypasses catch and uses valid recovery path.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "panic-control-not-intercepted",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "A target panic reaches supervisor CONTROL without being consumed by a hook.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "target-self-call-bypass",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "A target-internal self call does not enter proxy virtual dispatch.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-second-proceed",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Proceed capability cannot be used twice or recursively reentered.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-proceed-escape",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Proceed cannot be stored, returned, captured or sent across actor/task boundary.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-effect-narrowing",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "A generated or overridden slot cannot silently remove declared effects.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-unbound-target",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Proxy target must resolve to an unambiguous supported nominal class.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-generated-name-collision",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Synthetic class and vtable slot names cannot capture imported or local declarations.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-ambiguous-slot",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Two methods mapping to one generated slot require explicit resolution.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-opaque-return-escape",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Any/Object/dynamic nested return may conceal the proxied target identity.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-alias-return-escape",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Type aliases and structural types may not disguise target identity or borrowed state.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-reserved-receiver-shadowing",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Method parameters cannot shadow compiler-generated receiver/storage bindings.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-private-member-export",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Private/protected/static members cannot be exposed by generated instance methods.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-actor-target",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Actors cannot be proxied as ordinary classes.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-unsupported-generic-async",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "No silently lossy forwarding of generic, suspending or function-valued signatures.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-implicit-proxy-to-target",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "No implicit conversion from FooProxy into Foo or unproven target identity.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "nested-proxy-single-entry",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "A nested proxy's each explicit layer is observed exactly once, no accidental duplicate entry.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "cleanup-on-failure",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Deferred cleanup executes according to ordinary throw/raise/panic/cancel rules.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "typed-before-hook-constructor-once",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Experimental two-constructor-operand proxy evaluates target and hook constructors exactly once in left-to-right order.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "typed-before-hook-order",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Experimental before_method hook runs once before the delegated target method and both use ordinary typed dispatch.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-hook-noncopyable-argument",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Experimental before hook cannot consume and then reuse a nominal move-only/borrowed argument without an ownership proof.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-hook-extra-slot",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Experimental hook class exposing a before_ method absent from the target must be rejected.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-hook-invalid-signature",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Experimental before_ hook must be public, synchronous, void, and exactly match original parameter shapes.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-runtime-hook-inference",
+      "phase": "parse",
+      "expect": "reject",
+      "oracle": "Experimental proxy hook must be a statically known new LocalHooks() expression; existing variables cannot substitute.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "typed-before-local-helper-chain",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Before hook reaches permitted synchronous local helper calls by statically linked instance method slots, without dynamically discovering methods.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-recursive-helper",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Recursive local helper graph under before hook is rejected rather than assumed synchronous or used for unbounded call-graph walking.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-indirect-dispatch",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Indirect or unresolved helper invocation under before hook fails closed until a checked call target and effects are established.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-hidden-suspension",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Await or other suspension reachable through a statically named before-hook helper is rejected before execution.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-shadowed-builtin-stdio",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Builtin synchronous IO namespace cannot be shadowed by interceptor fields, parameters or conflicting local declarations.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-state-consumption",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "One around invocation transitions its unique continuation AVAILABLE to CLAIMED before performing downstream dispatch, then CONSUMED on completion.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-short-circuit-zero-proceed",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Around hook returns a correctly typed value without consuming proceed, closes its frame, and never invokes downstream target.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-reentrant-proceed-rejection",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "A hook cannot invoke the same proceed capability recursively or from a second dynamic path after consuming it.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-cross-invocation-token-rejection",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Proceed token cannot be used with a different receiver, method slot, actor domain or invocation identity.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-capture-rejection",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Proceed token cannot be captured in closure, stored in aggregate/field, sent as actor message, returned, or passed outside the invocation.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-suspend-rejection",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Proceed token cannot survive await or suspension until a pinned activation-frame proof is implemented.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-generation-fence",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Continuation pinned to one hot-loading code generation rejects stale generation use without replaying the target.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-concurrent-once",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Concurrent attempts to consume the same continuation cannot cause more than one downstream invocation.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-nested-proxy-order",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Nested proxy around hooks each own separate continuation and preserve deterministic outer-to-inner delegation with at most one target call.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "affine-proceed-failure-control",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Throw, raise, panic and cancellation propagate through claimed proceed with original failure precedence and panic supervisor CONTROL delivery.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "typed-before-multiple-instances-one-class",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "Two typed before-hook proxy values with the same target/interceptor types synthesize exactly one nominal AOT proxy class but independently invoke their own hook and delegated target once.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "typed-before-shared-helper-graph",
+      "phase": "run",
+      "expect": "observe",
+      "oracle": "A typed before-hook class with two different public interception slots referencing one local synchronous helper reuses a bounded transitive analysis and invokes each hook and delegated target once.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-oversized-helper-table",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "A typed before-hook interceptor class containing more than the bounded 4096 local method slots fails closed before constructing an unbounded helper call graph.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-deep-ast-unbounded-prepass",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "A deeply nested before hook AST must be rejected by the finite verifier depth/node budget rather than exhausting the host compiler stack during a preliminary recursive walk.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-implicit-divide-effects",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Before hook division/modulo expressions without a proved nonzero divisor and checked exceptional effects must be rejected rather than silently treated as effect-free scalar arithmetic.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-void-helper-parameter",
+      "phase": "compile",
+      "expect": "reject",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      },
+      "oracle": "A before hook may not call a local helper whose formal parameter has void type, even if the source AST was manufactured directly."
+    },
+    {
+      "id": "reject-proxy-deep-generic-signature-overflow",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Deeply nested generic parameter and return signatures must fail closed under a bounded nonrecursive proxy metadata traversal rather than overflow the host compiler stack.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "preserve-proxy-program-exports",
+      "phase": "compile",
+      "expect": "accept",
+      "oracle": "Compiler proxy synthesis must retain all user-authored explicit export declarations and their scopes rather than silently invoking a compatibility constructor that discards module export metadata.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-proxy-protected-nominal-collision",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "A generated proxy class may not collide with protected state containers, virtual actors, GPU actors or standalone actor nominal type names available in the current compiler AST.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-proxy-annotated-class-policy",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "A proxied target or interceptor class with unproven policy-bearing annotations must fail closed rather than silently strip or forge class annotation metadata on the synthetic type.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-proxy-critical-method",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "Proxy synthesis cannot forward or intercept a method marked critical until the compiler proves its state/locking and exceptional effects are preserved on the generated virtual slot.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    },
+    {
+      "id": "reject-before-shared-helper-depth-cache-bypass",
+      "phase": "compile",
+      "expect": "reject",
+      "oracle": "When a shared helper's AST is valid at shallow entry depth but exceeds the fixed verifier depth when reached through a longer second hook call path, the compiler must revalidate that helper at the greater depth and reject rather than reuse the earlier shallow proof.",
+      "backendStatus": {
+        "java": "not_executed",
+        "llvm": "not_executed",
+        "wasm": "not_executed",
+        "forge": "not_executed",
+        "net": "not_executed",
+        "rust_cranelift": "not_executed",
+        "js": "not_executed"
+      }
+    }
+  ],
+  "receiptRequirements": [
+    "compiler_commit_sha",
+    "compiler_tree_sha",
+    "generated_slot_signature",
+    "target_and_proxy_type_identity",
+    "guest_binary_digest_or_unsupported",
+    "toolchain",
+    "test_steps_executed_nonzero",
+    "guest_output_or_compiler_diagnostic",
+    "per_backend_per_case_status",
+    "affine_proceed_state_trace",
+    "exact_invocation_and_slot_identity",
+    "direct_and_transitive_hook_effect_proof"
+  ]
+}

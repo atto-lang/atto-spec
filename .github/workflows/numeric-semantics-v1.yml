@@ -1,0 +1,27 @@
+name: AttoLang numeric semantics v1 reference (host-only)
+on:
+  push:
+    paths:
+      - 'contracts/numeric-semantics-v1.json'
+      - 'tests/numeric-semantics-v1.test.mjs'
+      - 'language/numeric-semantics-v1.md'
+      - '.github/workflows/numeric-semantics-v1.yml'
+  pull_request:
+    paths:
+      - 'contracts/numeric-semantics-v1.json'
+      - 'tests/numeric-semantics-v1.test.mjs'
+      - 'language/numeric-semantics-v1.md'
+      - '.github/workflows/numeric-semantics-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Verify target contract and exact BigInt host oracle (NOT guest parity)
+        run: node --test tests/numeric-semantics-v1.test.mjs

@@ -2,7 +2,7 @@
 
 **Status: TARGET DESIGN CONTRACT — NOT COMPILER / GUEST EXECUTION CERTIFIED (2026-11-19).**
 
-Canonical AttoLang spelling is `unsafe { ... }`. This defines a lexical *proof-obligation* boundary, not a new trust level, permission, memory domain, or scheduler mode. It reconciles the historical Oreslang `unsafe-boundary-v1` / `std/unsafe` drafts without importing their guest-facing unsafe package. The language spec is authoritative; formatting and backend profiles follow it.
+Candidate AttoLang spelling is `unsafe { ... }`. This defines a lexical *proof-obligation* boundary, not a new trust level, permission, memory domain, or scheduler mode. It reconciles the historical Oreslang `unsafe-boundary-v1` / `std/unsafe` drafts without importing their guest-facing unsafe package. This proposal does not amend existing lexical admission or certify native execution; the existing versioned grammar and ownership profiles remain authoritative.
 
 ## Syntax and phase distinction
 
@@ -16,7 +16,7 @@ block                  = "{", { statement }, "}" ;
 - Version 1 guarantees a **statement** form `unsafe { ... }` (including empty and nested blocks). A value-producing block form, if introduced, needs an independent typed-expression/last-value contract; implementations MUST NOT silently treat a statement block as a value.
 - `pub unsafe fnc read_word(...): int { ... }` declares a callable with an unsafe **caller obligation**. A call to it needs a lexical `unsafe` block even from an unsafe callable. The body of an `unsafe fnc` is **not implicitly unsafe**: raw operations inside it still require an explicit `unsafe { ... }`. Ordinary Atto effect declarations (`susp`, `spawns`, `throws`, etc.) remain independent and must be preserved.
 - Nested callable/lambda/actor declarations do **not** inherit the enclosing unsafe permission, even if their source text appears inside a block. Unsafe context ends at its matching closing brace. Macro expansion, inlining, callbacks, dynamic dispatch and imported callables do not acquire caller permission by accident.
-- `unsafe` is not a cast, binding qualifier, ownership operation, exception handler, or synonym of `trap`. `rt ref`, `ref!`, `deref!`, `unref!`, `borrow!`, `take!`, `share!`, `pin!`, `drop!` and `copy!!` keep their existing typed ownership semantics in and out of blocks.
+- `unsafe` is not a cast, binding qualifier, ownership operation, exception handler, or synonym of `trap!`. existing `rt ref`/`rt deref`/`rt unref` and separately proposed bang aliases, `borrow!`, `take!`, `share!`, `pin!`, `drop!` and `copy!!` keep their existing typed ownership semantics in and out of blocks.
 
 ```atto
 // TARGET SYNTAX — NOT YET EXECUTED AS AN ATTO GUEST.
@@ -59,7 +59,7 @@ An empty unsafe block or one containing only safe operations can be syntacticall
 
 ## Permitted only within admitted trusted-native host profiles
 
-Subject to the two gates: explicit `RawPointer<T>` access; checked raw casts/arithmetic; foreign ABI calls; compiler intrinsics; memory-mapped I/O. `RawPointer<T>` is a distinct, provenance-bearing interface, **not** interchangeable with Atto's checked `Pointer<T>` or `ref!` / `deref!` / `unref!` handle model. `NativePointer<T>` is an unresolved legacy name, not a second implicit alias. A plain integer address cannot create valid pointer provenance.
+Subject to the two gates: explicit `RawPointer<T>` access; checked raw casts/arithmetic; foreign ABI calls; compiler intrinsics; memory-mapped I/O. `RawPointer<T>` is a distinct, provenance-bearing interface, **not** interchangeable with Atto's checked `Pointer<T>` or existing checked-handle model (bang aliases remain separately proposed). `NativePointer<T>` is an unresolved legacy name, not a second implicit alias. A plain integer address cannot create valid pointer provenance.
 
 When the compiler cannot prove native aliasing/alignment/initialization/exclusivity properties, the **author** of a trusted-host unsafe component must document and preserve them. But unsafe does **not** waive host-enforced allocation bounds, provenance/grant checks, ACLs, capability permissions, code origin verification, quota accounting, or branch/CFI validation. Any target unable to enforce the required isolation must reject unsafe host execution or run it behind a separate process boundary; never call native unsandboxed guest code a secure in-process TenantVM.
 
