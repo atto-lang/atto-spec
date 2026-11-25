@@ -192,6 +192,8 @@ All frontends must agree on parse tree shape, contextual type inference, diagnos
 
 > **Further Entry/Record syntax:** [Map key expressions and Record construction](computed-map-keys-and-record-construction-v1.md) keeps `foo => 5` as an evaluated key and `[foo] => 5` as a collection-valued key subject to stable Hash/Eq. Record fields are identifier-only.
 
+> **Expression-key clarification:** [Entry expression keys and Record syntax](entry-expression-and-record-literals-v1.md) specifies contextual List/Array-valued Entry keys, independent Map key admission, and no bracket-based computed-key marker.
+
 ## Nominal Entry literal and mutable Map operations (candidate extension, 2026-11-19)
 
 The binary `=>` token has two **context-dependent** uses:
