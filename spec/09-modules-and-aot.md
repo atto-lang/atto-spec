@@ -13,10 +13,17 @@ define pub module math as
   end
 end
 
-import module math from "+lib/math"
+import namespace math from "+/lib/math";
 ```
 
-This documents intended spelling; the exact source ordering, grammar and executable support require backend-specific fixtures.
+The namespace-first spelling follows the latest static-imports v2 target (#227). Both `import * as math from "+/lib/math";` and the older `import module math from "+lib/math"` are migration spellings; no source resolver or linker support is implied. Preserve explicit typed module selection where admitted.
+
+## Compiler-owned libraries
+
+`core`, `alloc` and `std` are reserved library roots with Rust-like layering
+(freestanding core, allocator-backed alloc, hosted std). Selectors, import
+forms, platform variants and the v1 unit catalog are normative in
+[language/core-alloc-std-libraries-v1.md](../language/core-alloc-std-libraries-v1.md).
 
 ## Project root and resolver safety
 
@@ -65,7 +72,6 @@ Hot loading can introduce validated source/IR into a new code generation in expl
 ## Version stability
 
 Do not change historical `oreslang` CLI, binary/wire protocol, package coordinates, ABI, code-unit identities, manifest formats, or persistent keys merely for the AttoLang brand. Version the migration and test old/new filenames against each selected backend.
-
 
 ## Live runtime instrumentation: JIT versus full AOT (v1 target)
 

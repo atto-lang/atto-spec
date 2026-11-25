@@ -1,0 +1,22 @@
+// contract: readonly-shape-projection-v1
+// expected-exit: 84
+// status: TARGET_ONLY_NOT_YET_EXECUTED
+// Requirement: preserve actual source field offsets (A.x=0, B.x=1).
+pub fnc read_x(p: {x: int}): int {
+    return p.x;
+}
+
+define class A as
+    pub val int x = 42;
+end
+
+define class B as
+    pub val int padding = 10;
+    pub val int x = 42;
+end
+
+pub fnc main(): int {
+    val a = new A();
+    val b = new B();
+    return read_x(a) + read_x(b);
+}

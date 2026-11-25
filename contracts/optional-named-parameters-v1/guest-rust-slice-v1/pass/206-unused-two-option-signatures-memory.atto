@@ -1,0 +1,16 @@
+// expect-exit: 42
+// java: rejects
+// Reproducer from mutation fuzz: two uncalled match-only functions with Option formals.
+fnc second(int? b, int n): int {
+  match b over
+    on None -> { return n; }
+    on Some(v) -> { return v; }
+  end
+}
+fnc both(int n, int? a?, int? b?): int {
+  match a over
+    on None -> { return second(b, n); }
+    on Some(v) -> { return v; }
+  end
+}
+pub fnc main(): int { return (42); }

@@ -25,6 +25,106 @@ val result = await work
 
 ## Channels, select and backpressure
 
+### Channel wait modes and result discard
+
+**Target contract; backend evidence is required before declaring parity.** A
+channel operation has one of three wait modes, independent of whether its result
+is used. A "blocking" source operation means **cooperative suspension of the
+logical task**, never blocking the underlying actor/scheduler worker.
+
+| Syntax | Return type | When not immediately ready |
+| --- | --- | --- |
+| `readch ch` | `T` | Suspend the calling continuation until read commits |
+| `writech ch, value` | `void` | Suspend until write/rendezvous admission commits |
+| `nb readch ch` | `Future<T>` | Atomically register a pending read and return immediately |
+| `nb writech ch, value` | `Future<void>` | Atomically register a pending write and return immediately |
+| `try readch ch` | `Option<T>` | Return `None`, **without registering** |
+| `try writech ch, value` | `TryWriteResult<T>` | Return `Accepted`, `Full(original)` or `Closed(original)` **without registering** |
+| `do readch ch` | `void` statement | Exactly `readch`, but discard the received value |
+| `do writech ch, value` | `void` statement | Exactly `writech`, but discard the unit result |
+
+The `do` qualifier is **result discard, not a detach or nonblocking
+modifier**. `do nb readch/writech` is rejected: silently throwing away an
+unsettled Future loses error observation, cancellation ownership and possibly a
+bounded channel registration. To perform a concurrent operation, explicitly
+retain and `await` its Future within a structured task scope. `try` and `nb`
+are not synonyms. Parenthesized intrinsic forms, when supported, preserve the
+same semantics.
+
+Channel operations must type-check their channel capability and payload, and
+evaluate their operands once in source order. No competing `select` arm may
+consume a value after another arm has won. For bounded channels, full and empty
+states imply backpressure; capacity zero requires a rendezvous, not buffering.
+Cancelling a waiting task must detach its pending registration exactly once,
+refund its uncommitted admission quota, and leave the channel contents
+unchanged when the cancellation wins before commit. Committed ownership
+transfers must not be rolled back. Closing a channel must settle/fail its
+pending operations without leaving suspended continuations or losing committed
+buffered data. `nb` does not make admission quotas unbounded.
+
+A pending operation saves typed locals, continuation position, cleanup/defer
+state, ownership/borrow state and actor generation; completion re-enqueues the
+continuation on the proper scheduler lane. It must **never** run guest code in
+the producer, reactor or Future completion callback. Do not carry live
+`critical-write` loans, mutex guards or otherwise unproven mutable borrows
+across a channel suspension. Callers must have a checked suspension effect or
+a verified resumable task path; a legacy direct evaluator that cannot resume
+must fail closed rather than park an actor worker.
+
+### Channel shift-operator shorthand (TARGET, NOT IMPLEMENTED)
+
+`<<` and `>>` are **already integer shift operators** in the Java source
+compiler. Channel overloading must therefore be type-directed, never an
+unconditional parser rewrite or an accidental bitwise fallback.
+
+Proposed contextually typed statement aliases (pending separate compiler
+implementation and executable conformance fixtures):
+
+```atto
+output << payload;       // writech output, payload; may suspend
+input >> mutable_slot;   // readch input, then assign into a writable lvalue
+```
+
+Only a statically known `Channel<T>` (or a specifically admitted directional
+channel capability) on the left qualifies. `<<` requires a `T`-compatible
+payload. `>>` requires an addressable, mutable, `T`-compatible lvalue on the
+right; do not evaluate it as an arbitrary value expression or mutate it before
+the read commits. Numeric operands retain ordinary integer-shift semantics.
+Invalid or ambiguous operand combinations must fail at compile time. Both
+channel aliases inherit the same suspension, closure, cleanup and ownership
+rules as plain `writech`/`readch`, not `nb` or `try`. Until this lowering
+is verified, use the explicit channel keywords.
+
+### Conformance gates
+
+- Exact parse/typecheck/guest execution of plain, `nb`, `try` and `do`
+  forms for ready, empty, full and capacity-zero channels; both command and
+  parenthesized intrinsic forms
+- Prove suspension releases scheduler carriers and resumes under the original
+  execution context; nested `suspends` frames and actor-owned continuations
+- Concurrent writers/readers, select arbitration, strict one-commit semantics,
+  payload ownership transfer and no phantom delivery on failure
+- Cancellation versus admission, closing/teardown versus resume, quota
+  exhaustion and fairness under adversarial schedules
+- Reject `do nb` silent Future discard and suspend-across-critical-loan;
+  preserve integer `<<`/`>>` until type-directed channel lowering is proven
+- Record backend-specific fixture and CI run links; parser-only acceptance
+  never counts as runtime parity
+
+**Verified Java/JVM baseline (2026-11-17):** `oreslang-source.java`
+PR [#3170](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3170)
+at exact head `9ba62afe639e1e431ab4f6d3e34a18c4cb137a8d` admits
+`do readch/writech` via the existing cooperative SourceTask channel path.
+An alternate private token-free CI mirror verified all 315 production-source
+blob SHAs and three relevant test files (319 pinned paths including `pom.xml`).
+[Run #44201622299](https://github.com/quaestor-ledger-test/atto-ci/actions/runs/44201622299)
+passed 14 JVM guest/channel tests (6 new, 8 existing) with zero
+failures, errors or skips. The production compiler change is **in review,
+not merged**; the run was focused rather than full-repository, Native Image
+AOT or multi-backend conformance. Channel `<<`/`>>` remains
+**TARGET / NOT IMPLEMENTED**, tracked by
+[issue #3171](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/3171).
+
 Channels are typed and capacity-bounded. `readch` and `writech` operations obey ownership transfer, closure, cancellation and fairness. `select` observes readiness and chooses one admitted case, without silently losing a message. `nb-select` (or admitted compatibility `nb select`) does not block the underlying worker. Typed `select<T>` must produce a `T`-compatible result from each value arm; a `do select` with `return` exits the enclosing callable where admitted.
 
 ```atto
@@ -37,6 +137,8 @@ end
 This is proposed syntax; exact arm grammar and timeout handling need compiler fixtures. Blocking `readch` is not allowed inside a nonblocking select arm unless an explicit typed adapter exists.
 
 `process.stdout` / `stderr` / `stdin` and `stdio.out` / `err` / `in` are channel-style standard streams by design; `stdio.in.stream()` and `Observable.from_ch(stdio.in)` are target adapters. Network stream framing and backpressure are part of the contract, not consequences of merely using a Channel type.
+
+The [immediate channel probe target](27-channel-immediate-probes.md) replaces the historical Boolean guest-write probe with a typed recoverable ownership result; `try readch` remains `Option<T>` with closed/drained failure. This is a target, not cross-backend proof.
 
 ## Scheduling guarantees
 

@@ -1,0 +1,43 @@
+name: "Caret return and explicit :: contract (host only)"
+on:
+  pull_request:
+    paths:
+      - 'language/callable-body-styles-v1.md'
+      - 'language/callable-body-migration-v2.md'
+      - 'language/return-shorthand-and-sequences-v1.md'
+      - 'conformance/caret-return-sequences-v1.json'
+      - 'tests/caret-return-sequences-contract.test.mjs'
+      - '.github/workflows/caret-return-contract.yml'
+  push:
+    paths:
+      - 'language/callable-body-styles-v1.md'
+      - 'language/callable-body-migration-v2.md'
+      - 'language/return-shorthand-and-sequences-v1.md'
+      - 'conformance/caret-return-sequences-v1.json'
+      - 'tests/caret-return-sequences-contract.test.mjs'
+      - '.github/workflows/caret-return-contract.yml'
+permissions:
+  contents: read
+jobs:
+  corpus-structure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact head and tree
+        env:
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$SHA"
+          git rev-parse HEAD
+          git rev-parse HEAD^{tree}
+      - name: Validate 49 normative cases (host structural checks only)
+        run: |
+          node --version
+          node --test tests/caret-return-sequences-contract.test.mjs
+      - name: Boundary of evidence
+        run: |
+          echo "Host corpus shape validation only. Actual guest execution and cross-backend parity NOT established."
