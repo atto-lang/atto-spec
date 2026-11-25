@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Recursive layouts and identity graphs v1](language/recursive-layout-graph-wire-v1.md): separate alias, inline-layout and finite-inhabitation proofs; bounded actor-local identity, deep copy and explicit graph wire profile. Source-free model only; no guest verification.
+
 - [Result/Option payload discard patterns v1](language/adt-payload-discard-patterns-v1.md): `Ok()` / `Err()` / `Some()` and `(_)` wildcard patterns discard payloads without inventing bindings, with guarded/exhaustive matching and AOT verification requirements. **Proposal only**; no universal backend parity claimed.
 
 - [Typed match/switch arms v1](language/typed-match-switch-arms-v1.md): candidate `case Pattern : Type -> body` and `on Pattern : Type -> body` grammar, switch defaults, no implicit fallthrough, and async/error typing. **Proposal only**; guest implementation and parity are tracked separately.
