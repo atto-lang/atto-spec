@@ -1,0 +1,7 @@
+// expect-main-value: 61; evaluate inserted pipeline argument first
+fnc subtract(int value, int adjustment): int -> value - adjustment;
+pub fnc main(): int {
+  val a = 42 |> subtract(2);
+  val b = subtract(1) <| 22;
+  return a + b;
+}

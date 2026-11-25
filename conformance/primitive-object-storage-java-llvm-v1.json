@@ -1,0 +1,390 @@
+{
+  "schemaVersion": 1,
+  "language": "AttoLang",
+  "feature": "primitive-object-storage-java-llvm-v1",
+  "contract": "language/primitive-object-storage-java-llvm-v1.md",
+  "status": "TARGET_ONLY_NOT_EXECUTED",
+  "notes": [
+    "Each case is a semantic target, NOT executable .atto source or a proof of backend support.",
+    "Backend teams must add checked .atto fixtures and executed compiler/guest evidence before changing the status.",
+    "Some dependent syntax/contracts remain open draft PRs; do not accept a compiler hack as normative behavior."
+  ],
+  "backendStatus": {
+    "atto-source.java": "NOT_EXECUTED",
+    "atto-source.llvm": "NOT_EXECUTED"
+  },
+  "cases": [
+    {
+      "id": "PS01",
+      "name": "scalar-int-inline",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "int scalar remains i64 value in locals, inline fields and returns, no auto-boxing",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS02",
+      "name": "scalar-bool-memory",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "byte-addressable bool memory accepts only canonical 0/1 and round-trips; SSA may be i1",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS03",
+      "name": "float-binary64",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "float is binary64; parity includes signed zero, infinity and NaN handling per numeric semantics",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS04",
+      "name": "nested-inline-nominal-struct",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "nominal Struct can be embedded in another aggregate; nested field offsets and drop glue checked",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS05",
+      "name": "struct-with-owned-reference-bitcopy",
+      "phase": "compile",
+      "expect": "reject",
+      "requirement": "raw memcpy-style duplication of owned ref-bearing Struct fails ownership check",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS06",
+      "name": "nominal-struct-shape-collision",
+      "phase": "compile",
+      "expect": "reject",
+      "requirement": "two distinct nominal Struct declarations with identical fields cannot be silently unified",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS07",
+      "name": "closed-record-shape-canonical",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "closed Record shape independent of textual field ordering; source expressions evaluate once in source order",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS08",
+      "name": "open-record-missing-field",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "open Record absent field must be guarded/reported rather than arbitrary slot read",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS09",
+      "name": "identity-class-distinct",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "two separately allocated identity-class objects with equal fields have distinct logical identity",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS10",
+      "name": "identity-survives-stack-promotion",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "scalar replacement/escape optimization does not change observable class identity",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS11",
+      "name": "value-class-no-identity",
+      "phase": "compile",
+      "expect": "reject",
+      "requirement": "identity comparison on identity-free value class is rejected by future equality contract",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS12",
+      "name": "inherited-field-alias-storage",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "use Base.field as alias addresses same inherited field, never duplicate storage",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS13",
+      "name": "nonprimitive-default-read-loan",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "ordinary Foo argument produces checked non-owning read loan; caller owner remains live",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS14",
+      "name": "nonprimitive-write-needs-mut",
+      "phase": "compile",
+      "expect": "reject",
+      "requirement": "mutating callee through ordinary read loan fails before guest artifact",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS15",
+      "name": "mutable-loan-exclusive",
+      "phase": "compile",
+      "expect": "reject",
+      "requirement": "conflicting shared/exclusive aliases fail, including second argument evaluation",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS16",
+      "name": "explicit-take-invalidates-source",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "take! into a consuming parameter moves logical ownership and prevents subsequent sender use",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS17",
+      "name": "shallow-copy-unique-alias",
+      "phase": "compile",
+      "expect": "reject",
+      "requirement": "copy! must reject nested mutable ownership aliases without share proof",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS18",
+      "name": "deep-copy-graph-isolation",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "copy!! yields independent nested mutable graph while preserving internal aliasing and cycles",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS19",
+      "name": "same-actor-ref32-stale-reuse",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "stale Ref32 cannot become valid after free/reallocation or generation exhaustion",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS20",
+      "name": "actor-restart-ref32-replay",
+      "phase": "compile-and-run",
+      "expect": "reject",
+      "requirement": "old actor incarnation token cannot resolve to restarted actor's object",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS21",
+      "name": "cross-actor-raw-pointer-send",
+      "phase": "compile",
+      "expect": "reject",
+      "requirement": "raw Offset32/native pointer/Java MemorySegment may not be transported as an ActorRef or message",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS22",
+      "name": "failed-send-preserves-ownership",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "mailbox rejection rolls back transfer/clone admission; sender retains ownership",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS23",
+      "name": "borrow-escape-suspension",
+      "phase": "compile",
+      "expect": "reject",
+      "requirement": "unpinned loan or critical-write guard may not survive await/select",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS24",
+      "name": "foreign-pointer-escape",
+      "phase": "compile",
+      "expect": "reject",
+      "requirement": "FFI cannot retain actor raw storage address beyond checked lifetime/capability",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS25",
+      "name": "stop-quiescence",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "after STOP quiescence, actor drops once and every stale handle rejects",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS26",
+      "name": "java-guest-object-arena",
+      "phase": "profiling",
+      "expect": "accept",
+      "requirement": "compiled Java guest object graph uses actor off-heap arena; report host allocations and GC honestly",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS27",
+      "name": "llvm-nontracing-guest-heap",
+      "phase": "profiling",
+      "expect": "accept",
+      "requirement": "compiled LLVM guest object storage/drop has no guest tracing collector dependency",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS28",
+      "name": "object-graph-semantic-parity",
+      "phase": "cross-backend",
+      "expect": "accept",
+      "requirement": "Java and LLVM compiled guests agree on field values, identity, loan, drop and copy outcomes",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS29",
+      "name": "actor-ref-capability-not-address",
+      "phase": "compile",
+      "expect": "reject",
+      "requirement": "ActorRef capability cannot be pointer-cast or dereferenced as class memory",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "PS30",
+      "name": "array-struct-soa-no-alias",
+      "phase": "compile-and-run",
+      "expect": "accept",
+      "requirement": "layout=soa Array<Struct> retains nominal types, checked layout and nested ownership rules",
+      "fixture_status": "TARGET_ONLY_NOT_EXECUTED",
+      "backend_status": {
+        "java": "NOT_EXECUTED",
+        "llvm": "NOT_EXECUTED"
+      }
+    }
+  ],
+  "receiptRequirements": [
+    "backend_exact_source_sha",
+    "source_tree_sha",
+    "fixture_sha",
+    "target_toolchain",
+    "typed_ir_or_emitted_guest_artifact",
+    "positive_guest_run_or_explicit_unsupported",
+    "negative_no_artifact_proof",
+    "sanitizer_result_or_not_executed",
+    "allocator_and_host_gc_metrics_or_not_executed",
+    "independent_review"
+  ]
+}

@@ -20,10 +20,10 @@ test("TextMate fallback is explicitly lexical-only and ordered for shielding",()
  assert.equal(catalog.status,"DRAFT_TOOLING_METADATA_NOT_COMPILER_VERIFIED");
 });
 
-test("regex scopes agree exactly with the documented 93 words and group categories",()=>{
+test("regex scopes agree exactly with the documented 95 words and group categories",()=>{
  const patterns=grammar.repository.keywords.patterns;
  assert.equal(patterns.length,catalog.reserved_groups.length);
- assert.equal(new Set(words).size,93);
+ assert.equal(new Set(words).size,95);
  for(let i=0;i<patterns.length;i++){
   const group=catalog.reserved_groups[i],pattern=patterns[i];
   assert.ok(group.words.every(word=>/^[a-z]+$/.test(word)));
