@@ -31,6 +31,10 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Compiler-generated proxy virtual interception candidate](language/class-proxy-virtual-interception-v1.md): typed virtual dispatch, one-shot continuation, ownership and effect-safety obligations; **not implemented or guest-verified**. Planned [58-case conformance matrix](conformance/class-proxy-interception-v1.json) is host-validated only.
+
+- [Affine proxy proceed protocol](language/class-proxy-affine-proceed-v1.md): continuation state machine, typed short-circuit and failure-control obligations; **design only, not executable**.
+
 - [ActorGroup typed pub/sub v1](language/actor-pubsub-v1.md): group membership is distinct from topic subscriptions; bounded RELIABLE atomic fan-out, affine cancellation and incarnation fencing are TARGET, not yet backend-verified.
 
 - [Primitive, aggregate and object storage v1 — Java/LLVM](language/primitive-object-storage-java-llvm-v1.md): **draft target** for inline scalars, nominal Struct/structural Record, identity classes, actor-private heap handles and verified implicit borrowing. [30 target cases](conformance/primitive-object-storage-java-llvm-v1.json) are **NOT_EXECUTED** on Java and LLVM.
