@@ -37,7 +37,7 @@ A manually written subclass is permitted, but it is not a substitute for compile
 5. Suspended continuations own or pin their frames and captures. Cancellation, exceptions, task completion, restart, supervisor shutdown and normal return must each release exactly once. Cleanup cannot race with in-flight I/O or generation fences.
 6. Across actor/channel/pub-sub boundaries, only validated Sendable payloads cross, using `take`, `copy` or authorized immutable `share`. Do not transfer lexical closures, methods, raw pointers, borrowed actor state or hidden host capabilities.
 7. The allocator must check quotas, arithmetic overflow, handle generations, bounds and alignment. Out-of-memory is a defined fail-closed outcome; no silent ownership bypass or unbounded queue growth.
-8. Preserve existing language constraints: no implicit conversions, no operator overloading, no reintroduction of the `%` or single `^` operators (`^^` is the boolean XOR operator; see chapter 16), and no implicit flattening of nested `Option`/`Future`. Compiler-generated wrappers may not bypass these restrictions.
+8. Preserve existing language constraints: no implicit conversions, no operator overloading, no reintroduction of `%` or infix single `^`; statement-leading `^` is return, `^^` is integer XOR, and Boolean XOR is `Xor(bool,bool)` (see chapter 16), and no implicit flattening of nested `Option`/`Future`. Compiler-generated wrappers may not bypass these restrictions.
 9. **No GC does not imply hard real time:** cascaded reference drops, finalizers, allocator operations, arena retirement and cancellation can be unbounded without a separately measured and enforced latency policy.
 
 ## Backend-specific claim boundary

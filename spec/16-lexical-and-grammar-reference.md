@@ -106,7 +106,7 @@ Historical v0.6 operator table (not current target precedence; see the operator 
 | Unary | `!` `-` `+` `await` `&` `&mut` `readch` `writech` | Prefix |
 | Postfix | call, `.member`, `[index]` | Left |
 
-- `eq` and `neq` are the canonical comparisons. `==` and `!=` are accepted aliases.
+- `eq` and `neq` are the canonical comparisons; contiguous `!eq` is accepted. The legacy profile accepts `==` and `!=` as value aliases. The Java strict Atto profile rejects both tokens rather than interpreting them as identity. Profile selection is explicit; see the [Java reference baseline](../language/java-reference-baseline-v1.md).
 - `is` tests identity. Type tests use `is type`, as in `if animal is type Dog dog then`.
 - Inside an `if` or `while` condition, `,` means AND and `|` means OR, and comma binds tighter.
 - **SUPERSEDED TARGET (2026-11-14):** the former Boolean `^^` proposal is historical. The 2026-11-20 owner decision reserves `^^` for integer XOR; Boolean XOR uses `Xor(bool,bool)`. Boolean `&&` and `||` retain strict bool operands and left-to-right short circuit. See [operator contract](../language/bitwise-and-stream-operators-v1.md).

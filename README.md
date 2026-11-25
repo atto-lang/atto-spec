@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Temporary Java behavioral reference and AOT/zero-GC acceptance baseline](language/java-reference-baseline-v1.md): explicit profiles and evidence boundaries; language-owner decisions remain authoritative.
+
 - [Alternative equality edition proposal](proposals/equality-value-vs-identity.md): exploration only; current eq/neq, legacy aliases and is identity remain authoritative.
 
 - [Actor DATA codec selection](architecture/actor-data-codec-selection-v1.md) and [grammar-neutral policy](architecture/actor-data-codec-policy-v1.md): design target, existing wire compatibility and separately gated host reference subsets; no new ABI or compiler support.
