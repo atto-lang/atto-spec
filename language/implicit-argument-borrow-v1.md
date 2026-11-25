@@ -59,9 +59,26 @@ The compiler must analyze the callee body and the **transitive**, statically res
 | `adjust(mut foo)` | explicit exclusive writable loan to statically mutating parameter |
 | `adjust(borrow! mut foo)` | explicit exclusive loan (legacy/long spelling) |
 | `consume(take! foo)` | intentional ownership transfer **only when the resolved formal is explicitly consuming** |
-| `consume(copy!! foo)` | independently owned deep graph copy only where supported by the typed copy contract |
+| `consume(take! clone)` | explicit transfer of a named, independently owned value (e.g. `val clone = copy!! foo;`), requiring a matching `take! T` formal |
 | `retain(share! handle)` | explicit shared-owner handle duplication, not borrowed-object promotion |
 | `rt share foo` | explicit unique-to-readonly-shared conversion within verified domain, not ordinary call lowering |
+
+For the borrow-by-default call profile, `inspect(copy! foo)` creates a
+fresh *shallow* root and lends that temporary root to the non-owning callee.
+`inspect(copy!! foo)` lends a fresh deep graph. Neither transfers ownership
+to the ordinary callee, and neither means just duplicating the original
+pointer. Only proven shareable nested references may remain aliased in the
+shallow copy. The backend may physically pass a pointer to the *new* root,
+but must keep the logical owner and lifetime separate from the original.
+
+An explicitly consuming `take! T` formal does not accept bare `copy! foo`
+or `copy!! foo` rvalues in phase 1. Bind the copy to a live named owner
+first, then invoke `consume(take! clone)`. This is intentional: the phase-1
+grammar only admits named live owning places as take! operands. In particular,
+`consume(copy!! foo)` must NOT be presented as a valid implicit owned
+handoff. Borrowed temporaries cannot escape through a retained parameter,
+return value, task, actor send, or deferred callback without a separately
+verified lifetime/ownership transfer contract.
 
 The compiler MUST NOT quietly interpret `take!`/ `copy!!` / `share!` as an implicit borrow to suppress a type error. Conversely, passing `foo` to an ordinary `Foo` formal MUST NOT consume it. Explicit owned-formal syntax and migration strategy use the separate grammar
 review in this patch: `take! Foo f` (type-first) and `f: take! Foo`
