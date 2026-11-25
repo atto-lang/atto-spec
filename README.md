@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Typed actor job envelopes and acknowledgements](language/actor-job-envelope-v1.md): candidate single-worker dispatch, admission versus settlement, bounded volatile and durable ledger distinctions; not an implemented guest ABI.
+
 - [Typed constant imports and startup environment constants](language/constant-imports-v1.md): per-declaration once-only immutable values; current v2 selector rules remain authoritative.
 
 - [Bounded reactive admission and lazy collections](spec/23-pull-push-and-lazy-collections.md): target demand, ownership, terminal race and physical accounting; host model only.
