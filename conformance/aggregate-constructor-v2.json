@@ -308,6 +308,18 @@
       "kind": "reject",
       "source": "let p = Pair.of((1,2),5);",
       "expect": "non-string first component"
+    },
+    {
+      "id": "pair-canonical-type",
+      "kind": "accept",
+      "source": "val p: Pair<int> = Pair.of(\"a\",5);",
+      "expect": "canonical string-key Pair type"
+    },
+    {
+      "id": "pair-compatibility-type",
+      "kind": "accept",
+      "source": "val p: Pair<string,int> = Pair.of(\"a\",5);",
+      "expect": "same nominal type as Pair<int>"
     }
   ]
 }
