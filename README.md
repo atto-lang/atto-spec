@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Interface and trait receiver conformance](language/implements-receiver-conformance-v1.md): target contract; host reference checks do not establish guest execution.
+
 - [Loops and iteration](spec/27-loops-and-iteration.md): target contract; host reference checks do not establish guest execution.
 
 - [Checked i64 edition and migration](language/checked-i64-arithmetic-v1.md): target contract; host reference checks do not establish guest execution.
