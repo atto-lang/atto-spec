@@ -191,6 +191,12 @@ See [static binding type queries](../language/return-binding-type-query-target-v
 
 `T name = expression;` and `const T name = expression;` are equivalent typed local constants; `const name: T = expression;` is the type-right form. A runtime initializer cannot silently become `val`. `const mut` is explicit, and bare `mut T name` is rejected in this local grammar. Fields and contextual pattern bindings are separate. See [chapter 27](27-implicit-const-and-const-mut.md).
 
+## Byte and bit patterns (TARGET, not parser-supported today)
+
+See [chapter 27](27-aot-overloads-nested-and-binary-patterns.md#31-byte-sequence-and-bit-sequence-patterns-target) for the normative intended `match` syntax. In *pattern position only*, `bytes[71, 69, 84 | tail]` tests a byte prefix and `bits[1, 0, 1 | tail]` tests MSB-first individual bits. `|` introduces a tail only in these brackets, never bitwise OR. `bytes[]` / `bits[]` are exact empty-sequence patterns. A bracket's meaning is determined by its syntactic role: `on bytes[3]` matches exactly one byte with value 3, whereas `packet { payload: bytes[3] }` captures a three-byte segment. `binary { ... }` and `packet { ... }` use typed field/length patterns, not positional byte elements. The frontend must build distinct AST nodes and must not rewrite ordinary value expressions or type shapes based on whitespace.
+
+**Current backend status:** Java `parsePattern()` explicitly rejects `[` list patterns; the new `bytes[...]`, `bits[...]`, `binary { ... }` and `packet { ... }` forms remain TARGET until real parser/type/borrow/lowering support is delivered. The Node reference tests are not execution evidence. Literal `0xNN` source notation likewise remains outside currently accepted Java/LLVM lexical grammar; use decimal bytes in canonical target fixtures.
+
 ## Statements and semicolons
 
 Semicolons are the formatter's canonical output. They may be omitted only where the parser has a clear structural boundary, such as just before `}`, `fi` or `end`. There is no JavaScript-style automatic insertion. Imports and `namespace` declarations always need one.

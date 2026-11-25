@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [AOT overloads, nested and binary patterns](spec/27-aot-overloads-nested-and-binary-patterns.md): static callable/class constructor selection, head/tail and byte/bit/packet matching; target contract, not guest parity.
+
 - [Root Object and Actor lifecycle](spec/27-root-object-actor-lifecycle.md): target root APIs, deterministic cleanup, shutdown quiescence and no-GC limitations; host contract only.
 
 - [Actor creation effect `spawns` v1](language/actor-spawns-effect-v1.md): explicit spawn-capable callable effects, nested actor parentage, tenant-scoped authorization, quotas, lifecycle fencing and 26 proposed conformance cases (19 source / 7 runtime). **Target proposal; no compiler or guest parity certified.**
