@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Field-sensitive borrowing and projected actor-state receivers v1](language/field-sensitive-borrow-effects-v1.md): target typed disjoint places/NLL, authenticated method effects, and projected receiver write ceilings; not guest-certified.
+
 - [Caret return and scoped sequences](language/return-shorthand-and-sequences-v1.md): contextual return syntax and comma sequences; portable execution independently gated.
 - [Opt-in v2 callable-body migration](language/callable-body-migration-v2.md): v1 remains the default; draft version selector and checked migration only.
 
