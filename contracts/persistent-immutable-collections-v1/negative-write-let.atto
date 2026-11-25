@@ -1,0 +1,6 @@
+// TARGET only — NOT_EXECUTED. let rebinds, but does not grant mutable interior access.
+fnc main() -> int {
+  let Vector<int> data = [1, 2, 3];
+  data[0] = 42;
+  return 0;
+}
