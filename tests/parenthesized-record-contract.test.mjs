@@ -25,7 +25,7 @@ test('v2 constructor split preserves Entry arrow semantics and static Record nam
   ]) assert.ok(v2.includes(fragment),fragment);
   for(const file of ['map-of-entries-and-nominal-structs-v1.md','typed-map-of-entries-and-nominal-structs-v1.md']){
     const old=readFileSync(new URL('../language/'+file,import.meta.url),'utf8');
-    assert.ok(old.includes('makes `Map.of` Entry-only in the new profile'));
+    assert.ok(old.includes('makes `Map.of` accept both Pair and Entry items'));
   }
 });
 
@@ -35,13 +35,14 @@ test('portable aggregate v2 fixture registry records target expectations only',(
   assert.equal(fixture.schema,'atto.aggregate-constructor-v2');
   assert.equal(fixture.status,'TARGET_NOT_EXECUTED');
   assert.equal(new Set(fixture.vectors.map(v=>v.id)).size,fixture.vectors.length);
-  assert.ok(fixture.vectors.filter(v=>v.kind==='accept').length>=13);
-  assert.ok(fixture.vectors.filter(v=>v.kind==='reject').length>=20);
+  assert.ok(fixture.vectors.filter(v=>v.kind==='accept').length>=17);
+  assert.ok(fixture.vectors.filter(v=>v.kind==='reject').length>=25);
   for(const v of fixture.vectors){
     assert.ok(v.source && v.expect,v.id);
     assert.ok(['accept','reject'].includes(v.kind),v.id);
   }
-  for(const id of ['record-escape-duplicate','record-dynamic-val','record-nul','record-entry','map-pair','map-flat-v2','tuple-crossed','entry-nonassociative','import-crossed']){
+  for(const id of ['map-pair','map-pair-multiple','map-mixed-pair-entry','map-pair-nonidentifier']) assert.equal(fixture.vectors.find(v=>v.id===id)?.kind,'accept',id);
+  for(const id of ['record-escape-duplicate','record-dynamic-val','record-nul','record-entry','map-mixed-duplicate','map-pair-unhashable','map-entries-pair','map-pair-empty','record-entry-empty','map-mixed-type','map-flat-v2','tuple-crossed','entry-nonassociative','import-crossed']){
     assert.equal(fixture.vectors.find(v=>v.id===id)?.kind,'reject',id);
   }
 });
