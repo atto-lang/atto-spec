@@ -2,11 +2,35 @@
 
 **Status: DRAFT.**
 
+## Class field declaration defaults: implicit `val` (accepted target)
+
+In **ordinary class fields only**, a type-first declaration without an explicit binding modifier means `val`, **independent of the field's type**: `pub int count = 0;` means `pub val int count = 0;`, and `pub Foo child = new Foo();` means `pub val Foo child = new Foo();`. This applies to generic `T` fields too. Explicit `let` permits rebinding; `mut` independently requests writable referent access. Historical implicit-`let` is migration-only.
+
+```atto
+define class Person as
+  pub string name = "Alice"; // implicit val: fixed binding
+  pub mut List<string> items = []; // implicit val mut: fixed binding; writable referent if safe
+  pub val int id = 42; // stable binding, no referent writes by default
+  pub val mut List<int> scores = []; // stable binding, writable referent if safe
+  pub final int birth_year = 1996; // exactly once (checked definite assignment)
+  pub const int capacity = 100; // class field initializer must be constexpr
+end
+```
+
+`let` and `val` govern **rebinding**; `mut` independently governs requested write access through an object reference, subject to ownership, readonly receivers, existing borrows and actor boundaries. `const` prevents rebinding and requires compile-time evaluation for ordinary class fields; the runtime-once `os.read_env` exception is **only** for file/module-level `define const` declarations. `final` requires exactly one assignment and may permit checked deferred construction-time initialization only where a backend can prove it; this differs from a `val` initialized at declaration/construction. No combination may evade the borrow checker. A bare local `int x = 5;` keeps its existing meaning of `const int x = 5;`, rather than the class-field default.
+
+This is an accepted *semantic target*, not a claim that every backend already distinguishes `final`, `val`, `const` and `mut` in typed IR. Native/independent backend parity is pending. Normative implementation guide: [atto-spec class field binding defaults v2](https://github.com/atto-lang/atto-spec/blob/main/language/class-field-binding-defaults-v2.md); executable requirements: [atto-platform-conformance v2 registry](https://github.com/atto-lang/atto-platform-conformance/blob/main/contracts/class-field-binding-defaults-v2.json).
+
+
+A runtime `val` binding is not by itself deep immutability. Typed local `const` requires compile-time evaluation and frozen constant data; explicit `const mut` materializes a fresh owned mutable instance per execution, never a mutable pooled alias. See [chapter 27](27-implicit-const-and-const-mut.md).
+
 ## Type system
 
 AttoLang is statically typed and **nominal by default**. Two classes with the same fields are not automatically interchangeable. Explicit structural compatibility is permitted at designated call boundaries using `structural` or `struct{...}` / `structural {...}` forms after type-checker admission; structural typing is not a universal runtime cast.
 
-Primitive families include booleans, signed/unsigned integral types, floating-point types, strings, bytes, arrays, records, enums, function references and typed handles. Exact widths, overflow modes, numeric promotion, float corner cases, and ABI packing require cross-backend tests. No backend may rely on host-language unchecked overflow. Integer overflow panics the actor; see [integer rules](17-primitives-and-core-types.md#integer-rules).
+Class, trait, interface and type-alias **declarations are types, not runtime values**. Class instances remain valid parameter and result values; static member receivers are compiler-only. Value shadowing is lexical. See [type-declaration/value separation](../language/type-declarations-not-runtime-values-v1.md). Namespace aliases and explicitly admitted static type queries are governed by separate contracts; none implies a first-class runtime type descriptor.
+
+Primitive families include booleans, signed/unsigned integral types, floating-point types, strings, bytes, arrays, records, enums, function references and typed handles. Exact widths, overflow modes, numeric promotion, float corner cases, and ABI packing require cross-backend tests. No backend may rely on host-language unchecked overflow. Dynamic integer overflow is an ordinary thrown guest error under the November 23 target; see [integer rules](17-primitives-and-core-types.md#integer-rules).
 
 An immutable binding does not imply deep immutability of every reachable object. The ownership model controls mutation, copying, sharing and lifetime separately.
 
@@ -19,22 +43,22 @@ An immutable binding does not imply deep immutability of every reachable object.
 - **Sealed / non-sealed classes:** intended hierarchy contracts; `sealed` bounds known subtypes for exhaustive checking, while `non-sealed` explicitly permits extension where policy allows.
 
 ```atto
-define enum Status as
-  Pending
-  Ready
-  Failed
-end
+define enum Status {
+    Pending,
+    Ready,
+    Failed
+}
 
-fnc describe(Status status) -> string ::
-  return match status over
-    Status.Pending -> "pending"
-    Status.Ready   -> "ready"
-    Status.Failed  -> "failed"
-  end
-end
+fnc describe(status: Status): string {
+    return match status over
+        on Pending -> "pending"
+        on Ready -> "ready"
+        on Failed -> "failed"
+    end;
+}
 ```
 
-This is an intended idiom, **not** an assertion that each enum and match spelling already executes in every backend.
+This is the **TARGET canonical idiom**, not a claim that each spelling executes in every backend. Field-bearing patterns support a whole-variant scoped borrow using `on Run { job_id, payload } as r`; the borrowed view `r` is narrowed to the selected variant. See [chapter 27](27-typed-enum-pattern-aliases.md).
 
 ## Generics and overloading
 
@@ -90,7 +114,7 @@ For generic functions/methods, value-argument name binding and type-argument nam
 
 `Option<T>` has `Some(T)` / `None`. `Result<T,E>` has `Ok(T)` / `Err(E)`. Operations include `map`, `and_then`, `map_err`, `unwrap_or`, `unwrap_safe` and explicit conversion. A failure represented as data is not an exception effect.
 
-Postfix `value?` is the target early-return operator: `None` or `Err(error)` exits the enclosing eligible callable without converting into `throw`, `raise`, or `panic`. `unwrap()` asserts presence and **panics** on absent/error variants. Do not silently flatten nested `Option` or `Result` types.
+Postfix `value?` is the target early-return operator: `None` or `Err(error)` exits the enclosing eligible callable without converting into `throw`, `raise`, or `panic`. `unwrap()` asserts presence and **panics** on absent/error variants. Do not silently flatten nested `Option` or `Result` types. The precise one-layer `map`, `and_then`, `map_err`, nested-ADT `transpose`/`flatten` equations, and the requirements for error-domain identity are specified in [the nested functor contract](23-functors-and-nested-adts.md).
 
 ```atto
 fnc parse_port(string input) -> Result<int, ParseError> ::

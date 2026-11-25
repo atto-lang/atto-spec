@@ -7,7 +7,8 @@
       "braced": "if bool { statements } [else { statements }]",
       "terminator": "braced if is self-delimiting; never consumes fi; stray fi rejected",
       "produces_value": false,
-      "keyword_legacy": "if bool then statements [else statements] fi"
+      "keyword_legacy": "legacy edition only: if bool then statements [else statements] fi",
+      "keyword_canonical": "do if bool then statements [else statements] fi"
     },
     "expression_if": {
       "syntax": "if bool then expression [elif bool then expression]* else expression fi",
@@ -131,7 +132,7 @@
     {
       "id": "nested_brace_preserves_parent_fi",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int { if true then if true { return 42; } fi return 0; }",
+      "source": "pub fnc main(): int { do if true then if true { return 42; } fi return 0; }",
       "expected_result": 42
     },
     {
@@ -157,6 +158,12 @@
       "kind": "accept_execute",
       "source": "pub fnc main(): int { if true { stdio.println(\"selected\"); } else { stdio.println(\"wrong\"); } return 42; }",
       "expected_result": 42
+    },
+    {
+      "id": "reject_strict_bare_statement_if",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { if true then return 42; fi return 0; }",
+      "expected_diagnostic": "E_SYNTAX"
     }
   ]
 }

@@ -23,3 +23,10 @@ test('conditional-expression v2 stays target-only and has three distinct forms',
     else assert.match(item.expected_diagnostic, /^E_/);
   }
 });
+
+test('strict statements require do and retain the enclosing fi', () => {
+  assert.match(c.forms.statement_if.keyword_canonical, /^do if /);
+  assert.match(c.forms.statement_if.keyword_legacy, /^legacy edition only:/);
+  assert.match(c.cases.find(x => x.id === 'nested_brace_preserves_parent_fi').source, /do if true then if true/);
+  assert.equal(c.cases.find(x => x.id === 'reject_strict_bare_statement_if').kind, 'reject_compile');
+});
