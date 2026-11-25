@@ -31,6 +31,12 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Primitive, aggregate and object storage v1 — Java/LLVM](language/primitive-object-storage-java-llvm-v1.md): **draft target** for inline scalars, nominal Struct/structural Record, identity classes, actor-private heap handles and verified implicit borrowing. [30 target cases](conformance/primitive-object-storage-java-llvm-v1.json) are **NOT_EXECUTED** on Java and LLVM.
+
+- [Control-loop and actor unmanaged memory v1](language/control-and-actor-unmanaged-memory-v1.md): **draft target** for separate control/actor Ref32 memory domains, versioned offset-vs-slot ABIs, unmanaged JVM/.NET guest payloads and measured zero-managed-allocation hot paths; no backend certification.
+
+- [Hybrid actor memory v1 — 32/64/128-bit extensibility](language/hybrid-actor-memory-v1.md): **draft target** preserving the Ref32 offset8+1 layout while permitting explicitly versioned extended heaps, native pointers, SIMD and capability profiles; guest parity unverified.
+
 - [Fresh return types v1](language/fresh-return-types-v1.md): candidate `new T` and `new unique T` provenance and ownership rules, including stronger Copyable return contracts. Host-only oracle; no Java/LLVM/.NET compiler support claimed.
 
 - [Copyable / DeepCopyable shallow-and-deep v2](language/copyable-ownership-v1.md): candidate Object and interface contracts for shallow `copy!` / `.copy()` and graph-deep `copy!!` / `.copy_deep()`, array/collection copying, per-recipient actor isolation, AOT-generated inherited/private-field copy plans, share-permission checks, override hooks and fail-closed diagnostics. Its checked-in tests are **host-only**; backend guest execution is **not verified**.
