@@ -108,9 +108,9 @@ val connection = Actor.connect(reader, writer)
 **Decision:** make the spelling `using telemetry.span("checkout") as span { ... }`
 a first-class, compiler-checked AttoLang construct. This **reuses the existing
 `using` keyword**, not a new telemetry-specific keyword, decorator, macro
-or application instrumentation wrapper. The LLVM hosted-AOT subset and
-Java's compiler-owned guest scopes have independent execution evidence
-for the admitted cases below.
+or application instrumentation wrapper. The LLVM hosted-AOT subset has restricted guest execution evidence.
+Java's compiler-owned guest scope implementation has separate candidate
+tests; this amendment does not certify their execution.
 
 ```atto
 using telemetry.span("checkout") as span {
@@ -141,8 +141,8 @@ guest cases at `-O0` and `-O2`, five compiler-denial cases on the
 [approved source-blob carrier](https://github.com/streempilot-test/browser-studio-e2e/actions/runs/43324098880)).
 That subset intentionally forbids observable scope-handle methods and
 suspension. Java main uses a compiler-owned lexical span and a trusted
-runtime provider. Its guest tests cover nesting, `await`, cancellation
-and host-controlled recording. Full guest AOT, live JIT attach, and
+runtime provider. Its checked-in guest tests target nesting, `await`, cancellation
+and host-controlled recording; exact executed receipts are required. Full guest AOT, live JIT attach, and
 asynchronous scope parity across backends require independent execution
 evidence. See the [Java guest tests](https://github.com/atto-lang/atto-source.java/blob/b02efee4c036557278284ca444655e19cd0adc64/src/test/java/dev/oreslang/TelemetryUsingSpanLanguageTest.java)
 and the [shared telemetry contract](https://github.com/atto-lang/atto-common-source/pull/122).
