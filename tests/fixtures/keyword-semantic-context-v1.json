@@ -1,0 +1,410 @@
+{
+  "schema_version": 1,
+  "status": "DRAFT_PARSER_CONTEXT_EXPECTATIONS_NOT_IMPLEMENTATION_EVIDENCE",
+  "purpose": "Target role fixtures for parser/LSP implementations; not produced by a compiler",
+  "offset_encoding": "UTF-16",
+  "cases": [
+    {
+      "id": "documented-actor-relation",
+      "source": "define actor Foo implements ActorXYZ;",
+      "status": "DOCUMENTED_SYNTAX_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "define",
+          "start": 0,
+          "length": 6,
+          "role": "declaration_keyword"
+        },
+        {
+          "text": "actor",
+          "start": 7,
+          "length": 5,
+          "role": "entity_keyword"
+        },
+        {
+          "text": "Foo",
+          "start": 13,
+          "length": 3,
+          "role": "actor_type_identifier"
+        },
+        {
+          "text": "implements",
+          "start": 17,
+          "length": 10,
+          "role": "relationship_keyword"
+        },
+        {
+          "text": "ActorXYZ",
+          "start": 28,
+          "length": 8,
+          "role": "contract_type_identifier"
+        }
+      ]
+    },
+    {
+      "id": "target-declare-actor",
+      "source": "declare actor Foo implements ActorXYZ;",
+      "status": "TARGET_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "declare",
+          "start": 0,
+          "length": 7,
+          "role": "target_declaration_marker"
+        },
+        {
+          "text": "actor",
+          "start": 8,
+          "length": 5,
+          "role": "entity_keyword"
+        },
+        {
+          "text": "Foo",
+          "start": 14,
+          "length": 3,
+          "role": "actor_type_identifier"
+        },
+        {
+          "text": "implements",
+          "start": 18,
+          "length": 10,
+          "role": "relationship_keyword"
+        },
+        {
+          "text": "ActorXYZ",
+          "start": 29,
+          "length": 8,
+          "role": "contract_type_identifier"
+        }
+      ]
+    },
+    {
+      "id": "namespace-header",
+      "source": "namespace foo;",
+      "status": "TARGET_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "namespace",
+          "start": 0,
+          "length": 9,
+          "role": "entity_keyword"
+        },
+        {
+          "text": "foo",
+          "start": 10,
+          "length": 3,
+          "role": "namespace_identifier"
+        }
+      ]
+    },
+    {
+      "id": "use-namespace-header",
+      "source": "use namespace foo;",
+      "status": "TARGET_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "use",
+          "start": 0,
+          "length": 3,
+          "role": "target_declaration_marker"
+        },
+        {
+          "text": "namespace",
+          "start": 4,
+          "length": 9,
+          "role": "entity_keyword"
+        },
+        {
+          "text": "foo",
+          "start": 14,
+          "length": 3,
+          "role": "namespace_identifier"
+        }
+      ]
+    },
+    {
+      "id": "namespace-method",
+      "source": "pub mtd (Foo f) init(): f {}",
+      "status": "TARGET_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "pub",
+          "start": 0,
+          "length": 3,
+          "role": "modifier_keyword"
+        },
+        {
+          "text": "mtd",
+          "start": 4,
+          "length": 3,
+          "role": "target_method_marker"
+        },
+        {
+          "text": "Foo",
+          "start": 9,
+          "length": 3,
+          "role": "actor_type_identifier"
+        },
+        {
+          "text": "init",
+          "start": 16,
+          "length": 4,
+          "role": "method_identifier"
+        }
+      ]
+    },
+    {
+      "id": "sealed-actor-state",
+      "source": "define state on actor Foo as { let int x: 5 }",
+      "status": "TARGET_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "define",
+          "start": 0,
+          "length": 6,
+          "role": "declaration_keyword"
+        },
+        {
+          "text": "state",
+          "start": 7,
+          "length": 5,
+          "role": "target_state_marker"
+        },
+        {
+          "text": "on",
+          "start": 13,
+          "length": 2,
+          "role": "target_relation_marker"
+        },
+        {
+          "text": "actor",
+          "start": 16,
+          "length": 5,
+          "role": "entity_keyword"
+        },
+        {
+          "text": "Foo",
+          "start": 22,
+          "length": 3,
+          "role": "actor_type_identifier"
+        },
+        {
+          "text": "let",
+          "start": 31,
+          "length": 3,
+          "role": "binding_keyword"
+        }
+      ]
+    },
+    {
+      "id": "reserved-callable-context",
+      "source": "worker.stop(); do(); done();",
+      "status": "DOCUMENTED_SYNTAX_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "worker",
+          "start": 0,
+          "length": 6,
+          "role": "variable_identifier"
+        },
+        {
+          "text": "stop",
+          "start": 7,
+          "length": 4,
+          "role": "method_identifier"
+        },
+        {
+          "text": "do",
+          "start": 15,
+          "length": 2,
+          "role": "method_identifier"
+        },
+        {
+          "text": "done",
+          "start": 21,
+          "length": 4,
+          "role": "method_identifier"
+        }
+      ]
+    },
+    {
+      "id": "two-pipelines",
+      "source": "spawn A() pipe spawn B(); left |> right;",
+      "status": "TARGET_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "spawn",
+          "start": 0,
+          "length": 5,
+          "role": "concurrency_keyword"
+        },
+        {
+          "text": "A",
+          "start": 6,
+          "length": 1,
+          "role": "actor_type_identifier"
+        },
+        {
+          "text": "pipe",
+          "start": 10,
+          "length": 4,
+          "role": "target_pipeline_marker"
+        },
+        {
+          "text": "B",
+          "start": 21,
+          "length": 1,
+          "role": "actor_type_identifier"
+        },
+        {
+          "text": "left",
+          "start": 26,
+          "length": 4,
+          "role": "variable_identifier"
+        },
+        {
+          "text": "|>",
+          "start": 31,
+          "length": 2,
+          "role": "pipeline_operator"
+        },
+        {
+          "text": "right",
+          "start": 34,
+          "length": 5,
+          "role": "variable_identifier"
+        }
+      ]
+    },
+    {
+      "id": "symbol-and-string",
+      "source": "\"actor implements\" #ready #\"with spaces\";",
+      "status": "TARGET_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "\"actor implements\"",
+          "start": 0,
+          "length": 18,
+          "role": "string_literal"
+        },
+        {
+          "text": "#ready",
+          "start": 19,
+          "length": 6,
+          "role": "symbol_literal"
+        },
+        {
+          "text": "#\"with spaces\"",
+          "start": 26,
+          "length": 14,
+          "role": "symbol_literal"
+        }
+      ]
+    },
+    {
+      "id": "ownership-context",
+      "source": "rt borrow mut value;",
+      "status": "TARGET_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "rt",
+          "start": 0,
+          "length": 2,
+          "role": "concurrency_keyword"
+        },
+        {
+          "text": "borrow",
+          "start": 3,
+          "length": 6,
+          "role": "target_ownership_marker"
+        },
+        {
+          "text": "mut",
+          "start": 10,
+          "length": 3,
+          "role": "modifier_keyword"
+        },
+        {
+          "text": "value",
+          "start": 14,
+          "length": 5,
+          "role": "variable_identifier"
+        }
+      ]
+    },
+    {
+      "id": "critical-state-compound",
+      "source": "handle_state(critical-read |s| -> s.x);",
+      "status": "TARGET_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "handle_state",
+          "start": 0,
+          "length": 12,
+          "role": "method_identifier"
+        },
+        {
+          "text": "critical-read",
+          "start": 13,
+          "length": 13,
+          "role": "target_critical_access_marker"
+        },
+        {
+          "text": "->",
+          "start": 31,
+          "length": 2,
+          "role": "operator"
+        },
+        {
+          "text": "x",
+          "start": 36,
+          "length": 1,
+          "role": "variable_identifier"
+        }
+      ]
+    },
+    {
+      "id": "subtraction-not-compound",
+      "source": "a-b; critical–read;",
+      "status": "DOCUMENTED_SYNTAX_NOT_EXECUTED",
+      "expected": [
+        {
+          "text": "a",
+          "start": 0,
+          "length": 1,
+          "role": "variable_identifier"
+        },
+        {
+          "text": "-",
+          "start": 1,
+          "length": 1,
+          "role": "operator"
+        },
+        {
+          "text": "b",
+          "start": 2,
+          "length": 1,
+          "role": "variable_identifier"
+        },
+        {
+          "text": "critical",
+          "start": 5,
+          "length": 8,
+          "role": "variable_identifier"
+        },
+        {
+          "text": "–",
+          "start": 13,
+          "length": 1,
+          "role": "invalid_unicode_dash"
+        },
+        {
+          "text": "read",
+          "start": 14,
+          "length": 4,
+          "role": "variable_identifier"
+        }
+      ]
+    }
+  ]
+}
