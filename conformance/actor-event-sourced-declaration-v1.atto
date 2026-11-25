@@ -1,0 +1,14 @@
+// Syntax-level target for current Rust/browser persistence frontend PR #263.
+// No guest event sourcing, serialization, SQLite, or automatic revival is executed.
+// #event_sourced is a trusted runtime policy value, not inline annotation grammar.
+define durable actor BankAccount as
+    state balance: int = 0;
+
+    receive(ActorMail<int> mail): void {
+        // No mutation here; a real event-sourced implementation must commit first.
+    }
+end
+
+pub fnc main(): int {
+    return 0;
+}

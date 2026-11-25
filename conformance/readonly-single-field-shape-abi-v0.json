@@ -1,0 +1,115 @@
+{
+  "version": "readonly-single-field-structural-call-v0",
+  "status": "proposed-contract: rust-wasm bounded guest verified; java llvm net frontend not verified",
+  "source_parser_only": true,
+  "cases": [
+    {
+      "id": "RSF001",
+      "expected": "accept",
+      "source": "fnc inspect(p: {foo: int}): int { return p.foo; }",
+      "reason": "single anonymous scalar formal"
+    },
+    {
+      "id": "RSF002",
+      "expected": "accept",
+      "source": "fnc inspect(~{foo: int} p): int { return p.foo; }",
+      "reason": "tilde alias"
+    },
+    {
+      "id": "RSF003",
+      "expected": "accept",
+      "source": "routine inspect(p: structural {foo: int}): int { return p.foo; }",
+      "reason": "structural alias"
+    },
+    {
+      "id": "RSF004",
+      "expected": "accept",
+      "source": "fnc inspect(p: {foo: int}): int { return p.foo; } // Dog.foo offset 0, Cat.foo offset 8, combined result 83",
+      "reason": "different source offsets"
+    },
+    {
+      "id": "RSF005",
+      "expected": "accept",
+      "source": "fnc inspect(p: {foo: int}): int { return p.foo; } // same owner called twice",
+      "reason": "owner non-consuming"
+    },
+    {
+      "id": "RSF006",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo: int | string}): int { return 42; }",
+      "reason": "union tagged-view ABI unavailable"
+    },
+    {
+      "id": "RSF007",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo: \"dog\"}): int { return 42; }",
+      "reason": "singleton literal proof unavailable"
+    },
+    {
+      "id": "RSF008",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo: int, bar: bool}): int { return p.foo; }",
+      "reason": "multi-field descriptor unavailable"
+    },
+    {
+      "id": "RSF009",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo: {bar: int}}): int { return 42; }",
+      "reason": "nested shape descriptor unavailable"
+    },
+    {
+      "id": "RSF010",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo?: int}): int { return 42; }",
+      "reason": "optional type-field unavailable"
+    },
+    {
+      "id": "RSF011",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo: int}): int { return p; }",
+      "reason": "loan address cannot escape as value"
+    },
+    {
+      "id": "RSF012",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo: int}, int n): int { return p.foo + n; }",
+      "reason": "multi-argument lifetime scheduling unavailable"
+    },
+    {
+      "id": "RSF013",
+      "expected": "reject",
+      "source": "fnc inspect(~Point p): int { return p.x; }",
+      "reason": "named structural projection ABI unavailable"
+    },
+    {
+      "id": "RSF014",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo: int}): int { return p.foo; } // class source has private foo",
+      "reason": "private source field"
+    },
+    {
+      "id": "RSF015",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo: int}): int { return p.foo; } // source foo is bool",
+      "reason": "incompatible scalar type"
+    },
+    {
+      "id": "RSF016",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo: int}): int { return p.foo; } // source missing foo",
+      "reason": "missing required field"
+    },
+    {
+      "id": "RSF017",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo: int}): int { return p.foo; } // source is actor sealed state",
+      "reason": "sealed state cannot be borrowed"
+    },
+    {
+      "id": "RSF018",
+      "expected": "reject",
+      "source": "fnc inspect(p: {foo: int}): int { return p.foo; } // source is a dynamic Map<string,int>",
+      "reason": "no static guaranteed key"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+name: AOT pattern and overload source-free contract
+on:
+  pull_request:
+    paths:
+      - 'spec/27-aot-overloads-nested-and-binary-patterns.md'
+      - 'contracts/aot-patterns-and-overloads-v1/**'
+      - 'tests/aot-patterns-and-overloads-v1.test.mjs'
+      - 'tests/byte-bit-sequence-pattern-model.test.mjs'
+      - '.github/workflows/aot-patterns-and-overloads-v1.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'spec/27-aot-overloads-nested-and-binary-patterns.md'
+      - 'contracts/aot-patterns-and-overloads-v1/**'
+      - 'tests/aot-patterns-and-overloads-v1.test.mjs'
+      - 'tests/byte-bit-sequence-pattern-model.test.mjs'
+      - '.github/workflows/aot-patterns-and-overloads-v1.yml'
+permissions:
+  contents: read
+jobs:
+  source-free-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate model semantics (NOT compiled guest execution)
+        run: node --test tests/aot-patterns-and-overloads-v1.test.mjs tests/byte-bit-sequence-pattern-model.test.mjs

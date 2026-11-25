@@ -1,0 +1,268 @@
+{
+  "version": "atto-mailman-delivery-v1",
+  "status": "HOST_ONLY_MODEL_NOT_GUEST_PROOF",
+  "cases": [
+    {
+      "name": "transfer unique graph",
+      "request": {
+        "mode": "TRANSFER"
+      },
+      "expected": "TRANSFER"
+    },
+    {
+      "name": "transfer nested alias",
+      "request": {
+        "mode": "TRANSFER",
+        "graph_closed": false
+      },
+      "expected": "E_EXCLUSIVE_GRAPH_REQUIRED"
+    },
+    {
+      "name": "transfer root not unique",
+      "request": {
+        "mode": "TRANSFER",
+        "unique": false
+      },
+      "expected": "E_EXCLUSIVE_GRAPH_REQUIRED"
+    },
+    {
+      "name": "transfer with borrower",
+      "request": {
+        "mode": "TRANSFER",
+        "loans": 1
+      },
+      "expected": "E_BORROW_CONFLICT"
+    },
+    {
+      "name": "transfer across isolated heaps",
+      "request": {
+        "mode": "TRANSFER",
+        "same_domain": false
+      },
+      "expected": "E_MEMORY_DOMAIN"
+    },
+    {
+      "name": "transfer forged proof",
+      "request": {
+        "mode": "TRANSFER",
+        "authentic": false
+      },
+      "expected": "E_ENVELOPE_FORGED"
+    },
+    {
+      "name": "transfer stale epoch",
+      "request": {
+        "mode": "TRANSFER",
+        "fresh_epoch": false
+      },
+      "expected": "E_STALE_GENERATION"
+    },
+    {
+      "name": "transfer saturated inbox",
+      "request": {
+        "mode": "TRANSFER",
+        "room": false
+      },
+      "expected": "E_MAILBOX_FULL"
+    },
+    {
+      "name": "transfer not sendable",
+      "request": {
+        "mode": "TRANSFER",
+        "sendable": false
+      },
+      "expected": "E_SENDABLE_PROOF_REQUIRED"
+    },
+    {
+      "name": "explicit deep copy",
+      "request": {
+        "mode": "DEEP_COPY"
+      },
+      "expected": "DEEP_COPY"
+    },
+    {
+      "name": "dead source can elide",
+      "request": {
+        "mode": "DEEP_COPY",
+        "elision": true,
+        "live_after": false,
+        "observable_copy": false
+      },
+      "expected": "ELIDED_COPY_TRANSFER"
+    },
+    {
+      "name": "live source forbids elision",
+      "request": {
+        "mode": "DEEP_COPY",
+        "elision": true,
+        "live_after": true,
+        "observable_copy": false
+      },
+      "expected": "DEEP_COPY"
+    },
+    {
+      "name": "observable identity forbids elision",
+      "request": {
+        "mode": "DEEP_COPY",
+        "elision": true,
+        "live_after": false,
+        "observable_copy": true
+      },
+      "expected": "DEEP_COPY"
+    },
+    {
+      "name": "custom copy hook forbids elision",
+      "request": {
+        "mode": "DEEP_COPY",
+        "elision": true,
+        "live_after": false,
+        "observable_copy": false,
+        "copy_hooks_equivalent": false
+      },
+      "expected": "DEEP_COPY"
+    },
+    {
+      "name": "loan forbids copy elision",
+      "request": {
+        "mode": "DEEP_COPY",
+        "elision": true,
+        "live_after": false,
+        "observable_copy": false,
+        "loans": 1
+      },
+      "expected": "DEEP_COPY"
+    },
+    {
+      "name": "deep copy independent across domains",
+      "request": {
+        "mode": "DEEP_COPY",
+        "same_domain": false
+      },
+      "expected": "DEEP_COPY"
+    },
+    {
+      "name": "nondeepcopyable resource",
+      "request": {
+        "mode": "DEEP_COPY",
+        "deep_copyable": false
+      },
+      "expected": "E_DEEP_COPY_WITNESS"
+    },
+    {
+      "name": "deep copy exceeds quota",
+      "request": {
+        "mode": "DEEP_COPY",
+        "copy_budget": false
+      },
+      "expected": "E_COPY_BUDGET"
+    },
+    {
+      "name": "read lease concurrent readers",
+      "request": {
+        "mode": "READ_LEASE",
+        "readers": 6
+      },
+      "expected": "READ_LEASE"
+    },
+    {
+      "name": "read lease blocked by writer",
+      "request": {
+        "mode": "READ_LEASE",
+        "writer": true
+      },
+      "expected": "E_LOAN_CONFLICT"
+    },
+    {
+      "name": "read lease not scoped",
+      "request": {
+        "mode": "READ_LEASE",
+        "scoped": false
+      },
+      "expected": "E_LOAN_SCOPE_REQUIRED"
+    },
+    {
+      "name": "read lease no proof",
+      "request": {
+        "mode": "READ_LEASE",
+        "reader_proof": false
+      },
+      "expected": "E_READ_LEASE_PROOF"
+    },
+    {
+      "name": "write lease exclusive",
+      "request": {
+        "mode": "WRITE_LEASE"
+      },
+      "expected": "WRITE_LEASE"
+    },
+    {
+      "name": "write lease blocks readers",
+      "request": {
+        "mode": "WRITE_LEASE",
+        "readers": 2
+      },
+      "expected": "E_LOAN_CONFLICT"
+    },
+    {
+      "name": "write lease blocks writer",
+      "request": {
+        "mode": "WRITE_LEASE",
+        "writer": true
+      },
+      "expected": "E_LOAN_CONFLICT"
+    },
+    {
+      "name": "write lease no proof",
+      "request": {
+        "mode": "WRITE_LEASE",
+        "writer_proof": false
+      },
+      "expected": "E_WRITE_LEASE_PROOF"
+    },
+    {
+      "name": "loan cannot cross heap",
+      "request": {
+        "mode": "READ_LEASE",
+        "same_domain": false
+      },
+      "expected": "E_MEMORY_DOMAIN"
+    },
+    {
+      "name": "frozen share",
+      "request": {
+        "mode": "FROZEN_SHARE"
+      },
+      "expected": "FROZEN_SHARE"
+    },
+    {
+      "name": "share mutable graph rejected",
+      "request": {
+        "mode": "FROZEN_SHARE",
+        "frozen": false
+      },
+      "expected": "E_FREEZE_PROOF_REQUIRED"
+    },
+    {
+      "name": "share non-sync graph rejected",
+      "request": {
+        "mode": "FROZEN_SHARE",
+        "sync": false
+      },
+      "expected": "E_FREEZE_PROOF_REQUIRED"
+    },
+    {
+      "name": "shallow copy not isolation",
+      "request": {
+        "mode": "SHALLOW_COPY"
+      },
+      "expected": "E_SHALLOW_ISOLATION_PROOF"
+    },
+    {
+      "name": "unknown mode fail closed",
+      "request": {
+        "mode": "MAGIC"
+      },
+      "expected": "E_DELIVERY_MODE"
+    }
+  ]
+}

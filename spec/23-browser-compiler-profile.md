@@ -42,7 +42,7 @@ A real Chromium prototype executes compiler-emitted ESM with two source-defined 
 
 Linear-memory actor fields do not prove a bounded guest stack, aggregate tenant resource accounting, zero garbage collection, hard real time, native full AOT or OS-process isolation. JS temporaries and frames still use engine-managed storage; browser engines may JIT both Wasm and JavaScript. Web Workers are execution carriers, not cross-tenant OS security boundaries.
 
-## Executed snapshot and open parity gaps
+## Historical executed snapshot and open parity gaps
 
 The immutable source snapshot `9b40edd07e78c69f541408ad41d7349f34725f1c`, root tree `3937d26010d59d0648afe601c035afa7455557a2`, was mirrored exactly into the verified-private `atto-lang/atto-source.rs` test branch at carrier commit `3b898fd07b1571c0f08cfa99d5305aa0bbf8f53b`. [Carrier run 42921459862](https://github.com/atto-lang/atto-source.rs/actions/runs/42921459862) executed 13 job steps, 332 compiler/guest checks and real Chromium Wasm/ESM tests. The 274237-byte compiler SHA-256 was `1acd37c8f460aba821bfe791d268f37c5fa47599d152b2108cdacb90554ead9b`. These facts apply to that snapshot only. Carrier CI supplements origin checks; it does not bypass review or origin merge policy.
 
@@ -59,6 +59,8 @@ The immutable source snapshot `9b40edd07e78c69f541408ad41d7349f34725f1c`, root t
 The Java snapshot was head `6d8eb70048eafc9a84c5aebe9c1bb06104f16e76`; LLVM was head `0ee037ca3e5dd9ac6ac1e9cc3d40f19ee6326a9c`. The compiler integration's `browser/INTEGRATION_EVIDENCE.md` names the exact differing fixtures. No failed or unsupported positive case is a parity pass. Acceptance requires byte-identical `.atto` sources through each real compiler, matching values/output/failure behavior, negative admission checks, actual execution and immutable provenance as specified in chapter 11. A hosted job with no executed steps is NOT EXECUTED.
 
 ## Browser task carrier and suspension lowering
+
+The current task target distinguishes `TaskFuture<T>` from its one-shot result receipt and `sync task<T>` from spawned children. This dated compatibility profile does not certify those newer constructs. A browser Worker is a logical tenant execution carrier, not proof of OS fault containment.
 
 Every browser actor MUST execute inside its owning tenant Worker. Multiple actors from one tenant may share that Worker; actors from different tenants use different Workers. Shared module code is allowed, but the current profile allocates a distinct non-shared Wasm memory for each actor instance. Disjoint arenas inside one common memory require independently enforced access confinement before they can replace this boundary. Separate actor heaps do not by themselves provide bounded or separate engine call stacks.
 
