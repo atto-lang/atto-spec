@@ -67,7 +67,7 @@
       "id": "record-numeric",
       "kind": "reject",
       "source": "let Record r = Record.of(Pair.of(7,5));",
-      "expect": "non-string name"
+      "expect": "Pair rejects non-string first component before Record admission"
     },
     {
       "id": "record-nul",
@@ -204,8 +204,8 @@
     {
       "id": "map-pair-multiple",
       "kind": "accept",
-      "source": "let Map m = Map.of(Pair.of(1,5), Pair.of(2,6));",
-      "expect": "two integer keys"
+      "source": "let Map m = Map.of(Pair.of(\"a\",5), Pair.of(\"b\",6));",
+      "expect": "two string keys"
     },
     {
       "id": "map-mixed-pair-entry",
@@ -229,7 +229,7 @@
       "id": "map-pair-unhashable",
       "kind": "reject",
       "source": "let m = Map.of(Pair.of([1,2],5));",
-      "expect": "no proven stable Hash/Eq"
+      "expect": "Pair rejects non-string first component before Map admission"
     },
     {
       "id": "map-entries-pair",
@@ -254,6 +254,60 @@
       "kind": "reject",
       "source": "let Map<string,int> m = Map.of(Pair.of(\"a\",5), Entry.of(true,6));",
       "expect": "key type mismatch"
+    },
+    {
+      "id": "pair-standalone-int",
+      "kind": "reject",
+      "source": "let p = Pair.of(42,5);",
+      "expect": "non-string first argument independently of consumer"
+    },
+    {
+      "id": "pair-standalone-bool",
+      "kind": "reject",
+      "source": "let p = Pair.of(true,5);",
+      "expect": "no implicit stringification"
+    },
+    {
+      "id": "pair-nonstring-type",
+      "kind": "reject",
+      "source": "let Pair<int,int> p = Pair.of(42,5);",
+      "expect": "non-string first generic parameter"
+    },
+    {
+      "id": "pair-runtime-string",
+      "kind": "accept",
+      "source": "fnc f(string key): void { let p = Pair.of(key,5); }",
+      "expect": "Pair accepts dynamic string, unlike Record"
+    },
+    {
+      "id": "pair-nonidentifier",
+      "kind": "accept",
+      "source": "let p = Pair.of(\"first-name\",5);",
+      "expect": "identifier restriction is Record-only"
+    },
+    {
+      "id": "entry-int",
+      "kind": "accept",
+      "source": "let e = Entry.of(42,5);",
+      "expect": "arbitrary well-typed Entry key"
+    },
+    {
+      "id": "map-entry-int",
+      "kind": "accept",
+      "source": "let m = Map.of(Entry.of(42,5), 43 => 6);",
+      "expect": "integer key map without Pair"
+    },
+    {
+      "id": "map-pair-int",
+      "kind": "reject",
+      "source": "let m = Map.of(Pair.of(42,5));",
+      "expect": "non-string Pair key"
+    },
+    {
+      "id": "pair-tuple-first",
+      "kind": "reject",
+      "source": "let p = Pair.of((1,2),5);",
+      "expect": "non-string first component"
     }
   ]
 }
