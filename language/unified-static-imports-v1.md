@@ -1,5 +1,7 @@
 # Unified static imports (v1)
 
+> **2026-11-24 v2 target:** [Static imports v2](static-imports-v2.md) supersedes conflicting selector and binding rules for the v2 profile; preserve historical v1 admission until migration is implemented. Library layering, visibility, initialization, source identity and capability constraints remain unchanged. No backend parity implied.
+
 **Status:** Proposed normative AttoLang grammar. Syntax acceptance, cross-file
 linking, runtime execution and cross-backend parity are separate milestones.
 This document does not claim that the browser compiler currently links packages.

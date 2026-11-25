@@ -13,10 +13,10 @@ define pub module math as
   end
 end
 
-import module math from "+lib/math"
+import namespace math from "+/lib/math";
 ```
 
-This documents intended spelling; the exact source ordering, grammar and executable support require backend-specific fixtures.
+The namespace-first spelling follows the latest static-imports v2 target (#227). Both `import * as math from "+/lib/math";` and the older `import module math from "+lib/math"` are migration spellings; no source resolver or linker support is implied. Preserve explicit typed module selection where admitted.
 
 ## Compiler-owned libraries
 

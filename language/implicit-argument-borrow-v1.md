@@ -43,7 +43,7 @@ The compiler must analyze the callee body and the **transitive**, statically res
 
 ## Explicit parameter rebinding v1
 
-**Status: TARGET.** Parameter bindings are fixed by default in the borrow-default profile. A function or method implementation can opt an individual parameter into local assignment with `rebind`. `mut` governs writes through the binding. `take!` independently governs ownership transfer at entry.
+**Status: TARGET, opt-in borrow-default profile; guest execution unverified.** Parameter bindings are fixed by default in the borrow-default profile. A function or method implementation can opt an individual parameter into local assignment with `rebind`. `mut` governs writes through the binding. `take!` independently governs ownership transfer at entry.
 
 ```atto
 define class Foo as
@@ -93,7 +93,7 @@ Rust separates reassignment of a local binding from writes through a mutable ref
 3. Materialize borrow operations with the **same typed loan/provenance and CFG facts** as explicit `borrow!`: exact place/root, origin, allocation domain, exclusivity, lifetime and exceptional cleanup. Every use, move, mutation, reborrow and drop edge must be accounted for, including branches, exceptions, cancellation and closures. No `Borrow<T>` to owned-`T` erasure that grants drop/move authority.
 4. Reject and require explicit ownership/lifetime clarification when provenance is ambiguous, e.g. unverified aliases, borrowed-return relationships, escaping references, temporary aggregate projections, multiple unresolved candidate owners, borrowed generic substitutions, FFI/dynamic calls or uncertain effect summaries. **An explicit `borrow!` documents intent but cannot bypass a missing proof.**
 5. Loan checks must be at least as strong as the existing explicit-borrow checker: shared readers coexist, exclusive writers exclude all other access, owners cannot be moved while loaned, no dangling return/capture or unproven `await`/select/actor-boundary escape. Failure must happen before artifact emission.
-6. A proven ordinary loan needs no heap allocation, deep copy, reference-count increase or new long-lived owner. A borrowed value carries no destructor, drop, or transfer authority. An owned replacement assigned under `rebind` has its own independent authority.
+6. A proven ordinary loan needs no heap allocation, deep copy, reference-count increase or new long-lived owner. Borrowed values have no destructor/drop/transfer authority. An explicitly rebindable formal may hold an independently owned replacement; the incoming loan never becomes owned.
 
 ## Explicit ownership actions remain explicit
 
@@ -104,9 +104,26 @@ Rust separates reassignment of a local binding from writes through a mutable ref
 | `adjust(mut foo)` | explicit exclusive writable loan to statically mutating parameter |
 | `adjust(borrow! mut foo)` | explicit exclusive loan (legacy/long spelling) |
 | `consume(take! foo)` | intentional ownership transfer **only when the resolved formal is explicitly consuming** |
-| `consume(copy!! foo)` | independently owned deep graph copy only where supported by the typed copy contract |
+| `consume(take! clone)` | explicit transfer of a named, independently owned value (e.g. `val clone = copy!! foo;`), requiring a matching `take! T` formal |
 | `retain(share! handle)` | explicit shared-owner handle duplication, not borrowed-object promotion |
 | `rt share foo` | explicit unique-to-readonly-shared conversion within verified domain, not ordinary call lowering |
+
+For the borrow-by-default call profile, `inspect(copy! foo)` creates a
+fresh *shallow* root and lends that temporary root to the non-owning callee.
+`inspect(copy!! foo)` lends a fresh deep graph. Neither transfers ownership
+to the ordinary callee, and neither means just duplicating the original
+pointer. Only proven shareable nested references may remain aliased in the
+shallow copy. The backend may physically pass a pointer to the *new* root,
+but must keep the logical owner and lifetime separate from the original.
+
+An explicitly consuming `take! T` formal does not accept bare `copy! foo`
+or `copy!! foo` rvalues in phase 1. Bind the copy to a live named owner
+first, then invoke `consume(take! clone)`. This is intentional: the phase-1
+grammar only admits named live owning places as take! operands. In particular,
+`consume(copy!! foo)` must NOT be presented as a valid implicit owned
+handoff. Borrowed temporaries cannot escape through a retained parameter,
+return value, task, actor send, or deferred callback without a separately
+verified lifetime/ownership transfer contract.
 
 The compiler MUST NOT quietly interpret `take!`/ `copy!!` / `share!` as an implicit borrow to suppress a type error. Conversely, passing `foo` to an ordinary `Foo` formal MUST NOT consume it. Explicit owned-formal syntax and migration strategy use the separate grammar
 review in this patch: `take! Foo f` (type-first) and `f: take! Foo`
@@ -162,7 +179,7 @@ This specification does not assert general Java/LLVM/.NET/Forge parity or full l
 
 Ordinary nonprimitive `fnc inspect(Foo foo)` or `class M { read(Foo foo) }` inputs have an **inferred lifetime tied to the actual caller owner**, just as `Borrow<Foo>` would. The default hides *notation*, never lifetime constraints.
 
-1. **Ordinary synchronous nonescaping call:** infer a short read loan for each argument. Track its origin, exclusivity, full argument-evaluation window, body last use, cleanup and NLL end. The incoming value retains borrowed provenance even after its active loan ends. Expiry grants no drop or move authority.
+1. **Ordinary synchronous nonescaping call:** infer a short read loan for each argument. Track its origin, exclusivity, full argument-evaluation window, body last use, cleanup and NLL end. The incoming value remains tagged `borrowed` even after its active loan ends; expiry does not grant drop/move authority. Any replacement has separately tracked origin and ownership.
 2. **Borrowed result, single input:** require return type `Borrow<Child>` (to distinguish from an owned `Child`). If every returned view is provably rooted in the sole borrowed parameter or method `self`, elide the result lifetime by associating it with that input. On return the *input's* loan survives as needed for all caller uses; callee's stack cannot be the owner.
 3. **Borrowed result, multiple inputs:** require an explicit owner-to-result lifetime relation when it cannot be independently and unambiguously proven from the exported signature. Canonical `lt! a` binder and `lt=a` named reference; `lifetime! a` is a source alias. Never accept Rust apostrophes or positional lifetime arguments. `Borrow<T>` remains available for such formal annotations.
 4. **Stored/escaping borrows:** require a containing type/closure/task lifetime contract and a proven outlives relationship. Without it, return, field-store, callback capture, FFI export, `await`, actor messaging, or detached task escape rejects with no output artifact. `borrow!` cannot override this.

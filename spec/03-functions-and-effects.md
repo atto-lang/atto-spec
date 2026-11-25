@@ -16,6 +16,10 @@ fnc choose() -> infer { return 42; }
 
 A constructor has no return annotation, since construction is not an ordinary return-valued callable; lambdas retain separately specified contextual inference. See the [normative return-type contract](https://github.com/atto-lang/atto-spec/blob/main/language/explicit-callable-return-types-v1.md). This is an accepted target; backend execution and formatter parity remain separately gated.
 
+## Candidate static binding type queries
+
+Explicit `infer` is already part of the target return annotation contract. The separate [static binding type query proposal](../language/return-binding-type-query-target-v1.md) describes `typeof name` and parenthesized compatibility input; it does not certify backend support or permit omitted annotations.
+
 ## Signatures and visibility
 
 ```atto
@@ -38,9 +42,100 @@ end
 
 This `-> T :: ... end` style is one of the valid [function forms](16-lexical-and-grammar-reference.md#function-forms). Backend support differs until grammar parity is proved.
 
+## Comma callable bodies: versioned candidate
+
+`::` retains its existing optional statement-header delimiter meaning in the established profile, including return-first declarations. The separate comma-body proposal (#35) selects an implicit-tail body for name-first `-> T :: ... end` **only in an explicitly selected future profile**. No working edition selector is established here. Do not reinterpret existing statement bodies or return-first effect headers. In the candidate profile, top-level comma items evaluate once left to right; nested call/tuple/generic commas retain their roles. A non-void body needs a terminal expression of the declared type, never a declaration. Empty items and trailing commas reject. Statement bodies need explicit `return` or `^`; `^` cannot return a declaration. Legacy explicit return and semicolon bodies must be preserved or migrated explicitly, not heuristically mixed with comma sequencing. A runtime local needs explicit `val`/`let`, not type-first const shorthand. Formatter preserves body kind and effects; conversion requires checked equivalence. See the [return-first contract](../language/return-first-and-begin-callables-v1.md) and [initialization contract](27-implicit-const-and-const-mut.md).
+
+## Lambda bodies, explicit results and comma sequencing
+
+**Canonical typed inline lambda:** `|params| => ReturnType -> expression`.
+The fat arrow `=>` introduces the return **type annotation**; the slim
+arrow `->` introduces the executable **expression**. These roles also
+align with function-type notation `(int, int) => int`, where `=>`
+specifies a result type. Parenthesized `|params| (=> ReturnType) -> expression`
+is an accepted but noncanonical annotation alias. The reversed
+`|params| -> ReturnType => expression` is invalid.
+
+```atto
+val inferred = || -> 5 + 3;
+val typed = || => int -> 5 + 3;
+val typed_alias = || (=> int) -> 5 + 3;
+val typed_with_local = || => int -> val int x = 5, x + 3;
+val inferred_with_local = || -> val int x = 5, x + 3;
+
+val block = || -> int { return 8; };
+val comma_block = || -> int ::
+    val int x = 5,
+    x + 3
+end;
+```
+
+In the opt-in candidate comma-body profile, the `-> Type :: ... end` lambda form uses the same top-level comma
+sequence and implicit terminal-result rule as `fnc`, `routine` and `mtd`.
+An explicit `void` result permits a terminal effect expression with no
+value result; a non-`void` declaration must match the inferred terminal
+expression type. An ordinary `{ ... }` lambda body remains a statement
+body with explicit `return`.
+
+An inferred **same-line** comma sequence may begin with a local declaration
+(`val`, `const`, `let` or a supported type-first immutable binding),
+then one or more comma-delimited items, ending in a value expression.
+A bare `|| -> left, right` must not consume a caller's second argument
+as part of the lambda: explicit grouping or `:: ... end` is required
+for general comma sequences lacking a leading binding.
+
+### Pipeline lambda contracts
+
+```atto
+fnc foo(int n): Tuple[int, int] {
+    return tuple(n, n + 1);
+}
+
+val reporter = || -> void ::
+    5 |> foo |> |x, y| -> stdio.println(x + y)
+end;
+
+val compact = || => void ->
+    5 |> foo |> |x, y| -> stdio.println(x + y);
+```
+
+A value pipeline always forwards **one** value. For a lambda stage with
+multiple parameters (`|x, y|`), the single upstream value must be a
+statically typed tuple of matching arity, destructured exactly once in
+order. A scalar, array or mismatched tuple must fail type checking.
+No implicit extra arguments, reflection or copy of ownership-sensitive
+elements is introduced by the comma-body feature.
+
+For an unparenthesized `|n| -> expression` pipeline stage, the next
+top-level `|>` belongs to the enclosing pipeline; use parentheses to
+nest a pipeline inside a lambda expression. The same boundary rule applies
+to typed `|n| => Type -> expression` and inline local sequences.
+
+### Backend implementation and verification boundary (2026-11-14)
+
+These are **historical PR candidates**, not language parity or production
+acceptance. A test fixture, syntax-only formatter and a zero-step GitHub
+workflow must never be counted as executable guest evidence.
+
+| Target | Current candidate | Evidence status |
+| --- | --- | --- |
+| Java/Graal | [compiler #3079](https://github.com/ores-truffle-oreslang/oreslang-source.java/pull/3079) | Parser, types and real guest tests authored; source Actions not executed |
+| LLVM | [native #1785](https://github.com/ores-truffle-oreslang/oreslang-source.llvm/pull/1785) | Scalar `::` and named `|>` candidate; closure syntax denied; native execution not yet verified |
+| .NET | [CIL #523](https://github.com/ores-truffle-oreslang/oreslang-source.net/pull/523) | Scalar fnc/routine `::` candidate; nominal mtd and lambdas denied; NativeAOT run unverified |
+| Forge | [stage-0 #280](https://github.com/ores-truffle-oreslang/oreslang-source.forge/pull/280) | Explicit fail-closed `::`/lambda tests, no closure lowering |
+| WASM | [wasm32 #488](https://github.com/ores-truffle-oreslang/oreslang-source.wasm/pull/488) | Authenticated LLVM-to-Wasm compiler gate, native guest not yet run |
+| Browser playground | [compiler gate #115](https://github.com/atto-lang/atto-lang.github.io/pull/115) | Pinned independent Rust/Wasm compiler denies unimplemented forms pending upgrade |
+| Rust formatter | [formatter #143](https://github.com/ores-truffle-oreslang/oreslang-format/pull/143) | Exact head `c4065f6`, 2/2 CI jobs passed; this is formatting only |
+
+Conformance should progress from grammar and AST preservation, through
+type/ownership and effect validation, to real target execution and AOT
+artifact evidence. Backends may temporarily reject a proposed form
+with an explicit diagnostic; they must not accept it into an unsafe
+incomplete lowering or emit a false successful parity receipt.
+
 ## Parameter binding and reassignment (v1 target)
 
-Under default argument borrowing, each function or method parameter has a fixed local binding. `mut Foo f` permits writes through a checked mutable loan, including writes to fields declared `let`. To permit local assignment explicitly, declare `rebind mut Foo f`. The caller keeps ownership of the borrowed input when the callee assigns a newly owned object to `f`. Calls and interface signatures continue to use the underlying borrow or ownership mode. See [explicit parameter rebinding](../language/implicit-argument-borrow-v1.md#explicit-parameter-rebinding-v1) for the grammar, lifetime checks and zero-GC lowering.
+In the opt-in borrow-default profile, parameters have fixed local bindings unless marked `rebind`. `mut` requests writable referent access and `take!` specifies transfer at entry; `rebind` does not alter the caller's binding or signature dispatch. Owned replacement values have separate proven origin, cleanup and lifetime. See [explicit parameter rebinding](../language/implicit-argument-borrow-v1.md#explicit-parameter-rebinding-v1).
 
 ## Named function, method and constructor arguments (v1 target)
 
