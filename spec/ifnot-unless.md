@@ -1,45 +1,31 @@
 # Negated conditionals: `ifnot` and `unless`
 
-**Status:** normative target contract; compiler implementations pending exact-head CI verification. The populated Java and LLVM implementations are under review in `ores-truffle-oreslang/oreslang-source.java#3086` and `ores-truffle-oreslang/oreslang-source.llvm#1791`.
+**Status:** TARGET, not compiler-certified. This revision supersedes the older statement-only and mandatory-fi-for-braces proposal, matching [#174](https://github.com/atto-lang/atto-spec/pull/174) and [#183](https://github.com/atto-lang/atto-spec/pull/183).
 
-## Grammar
+## Forms
 
-```ebnf
-if_statement = ("if" | "ifnot" | "unless"), boolean_condition,
-               ("then", statements | "{", statements, ["}"]),
-               { "elif", boolean_condition, "then", statements },
-               ["else", statements], "fi";
-```
+- Value: `ifnot/unless condition then value else value fi`. Mandatory else, compatible static arm types; no control-transfer statement as a value.
+- Imperative keyword: `do ifnot/unless condition then statements [else statements] fi`. Optional else.
+- Imperative brace: `ifnot/unless condition { statements } [else { statements }]`. Matching braces terminate; no fi.
 
-Existing braced and semicolon compatibility rules follow `if`. This fragment is illustrative; exact condition-binding and braced-delimiter grammar is defined by the primary grammar. `ifnot` and `unless` are reserved, case-sensitive, single tokens with identifier boundaries; there is no postfix `unless` form.
-
-## Semantics
-
-Both spellings mean `if !(condition)`. The condition must have static type `bool`; numbers, strings, `Option` and `Result` are not coerced to booleans. Evaluate the original condition exactly once, and execute the first branch if and only if it yields `false`. `elif` clauses retain their ordinary *positive* conditions and evaluate in source order only if earlier branches were skipped. `else` runs only when no branch matches. `fi` remains mandatory, including for braced forms. The negation must never change side-effect order, error propagation or actor scheduling.
+Both keywords are reserved case-sensitive whole tokens, not postfix modifiers. The original predicate has static type bool and is evaluated once, then inverted; subsequent elif predicates remain positive and are evaluated in source order only if reached. Else is ordinary fallback. There is no truthiness coercion. Negation does not alter side effects, failures or scheduling.
 
 ```atto
-ifnot ready then
+do ifnot ready then
   start_worker();
 else
   notify_ready();
 fi
 
-unless should_stop then
+unless should_stop {
   process_next();
-fi
+}
+
+val int selected = unless ready then 5 else 6 fi;
 ```
 
-Neither keyword introduces a new AST or backend runtime control-flow operation; implementations may desugar to a single logical negation of the initial `if` condition. Existing `if` semantics remain unchanged.
+Refutable or conditional-binding heads are rejected pending sound scope proof; a positive-predicate capture is never available in a negated branch merely because the spelling changes. Existing if semantics are not replaced by this chapter; the general conditional grammar is separately tracked in #183.
 
-**Soundness gate:** a refutable `let` head or an `as let ... when` capture in the first negated branch is rejected until a backend can prove correct binding scope under inversion. Rejection must be explicit rather than letting the captured value leak. In particular, a pattern capture established by the *positive* predicate must not become visible in the *negative* branch.
+## Verification
 
-## Acceptance checklist
-
-- Reserved words with whole-word, case-sensitive lexing and no identifier-prefix collisions
-- True/false branch inversion; normal `elif` and `else` handling; nested `fi` correctness
-- Both `then` and existing braced spellings; single evaluation of a side-effecting boolean predicate
-- Type errors for non-`bool` predicates and errors for unsafe bound-pattern heads
-- Real guest-code execution for each compiler backend, not just lexical/model tests
-- Reports must distinguish **passed**, **failed**, **unsupported**, and **not executed**
-
-See `contracts/ifnot-unless-v1.json` for the machine-readable semantic contract.
+The [machine-readable contract](../contracts/ifnot-unless-v1.json) is identical to the reconciled #174 contract. Run `node tests/negated-conditional-reference.mjs` for the host reference checks of truth table, evaluation order, positive elif, fallback, type rejection and form/evidence consistency. Actual compiler parsing, guest execution, formatting and parity remain separately required. Compiler PR references are not execution proof.
