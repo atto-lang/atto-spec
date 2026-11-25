@@ -2,13 +2,23 @@
 
 **Status: DRAFT.**
 
-A free function is declared with `fnc`; class and actor instance methods use an implicit `self` and canonically omit `fnc`. Callables have explicit or inferred return types where grammar permits. Each invocation returns **one value**; tuples/records are themselves one value.
+A free function is declared with `fnc`; class and actor instance methods use an implicit `self` and canonically omit `fnc`. Every named callable must explicitly declare its return type, including `void`; explicit `-> infer` (or `: infer`) is allowed, but a concrete result type is preferred. Omitted return annotations are invalid. Each invocation returns **one value**; tuples/records are themselves one value.
 
-## Proposed explicit return inference and static binding type queries
+## Mandatory named-callable return annotations
 
-**TARGET / not yet implemented or guest-verified:** `: infer` / `-> infer` requests return inference from all reachable return paths, and `: typeof(tbr)` / `-> typeof(tbr)` queries the static type of a parameter or uniquely resolved immutable local binding. A body-local forward query is restricted to an unambiguous `val`/`const` declared directly in the callable's outer body, with a resolvable annotation or acyclic initializer type. Neither notation evaluates a value, performs runtime reflection, or relaxes ownership/effects/ABI checking. Preserve earlier `typeof fnc(...) => T` signature syntax and the existing proposed `typeof foo` value query from Java RFC #450. Do not treat `type<tbr>` as a query of a runtime value. `infer` is contextual, not globally reserved.
+The accepted AttoLang v1 rule is that **every named function, routine, class/actor instance or static method, out-of-line method, and actor receive handler must explicitly annotate its return**. Accepted syntax includes name-first `name(params) -> T` or `name(params): T` and return-first `[fnc] T <- name(params)`, where `T` can be a concrete type, `void`, or the explicitly requested inference placeholder `infer`. The return-first form also allows braces, `begin`/`end`, and an explicit statement/`end` body; its `<-` token is not an assignment operator. Inference is permitted but less desirable for public APIs and cross-module signatures; the compiler resolves it statically or reports an error, never silently choosing void. For example:
 
-Canonical detailed contract and diagnostics: [atto-spec return type queries v1](https://github.com/atto-lang/atto-spec/blob/design/return-type-infer-typeof-v1-20261116/language/return-type-queries-and-inference-v1.md). The [conformance source registry](https://github.com/atto-lang/atto-platform-conformance/blob/tests/return-type-infer-typeof-v1-20261116/contracts/return-type-inference-typeof-v1.json) is a **TARGET-only** matrix; it is not compiler parity evidence.
+~~~atto
+fnc calculate(int x) -> int { return x + 1; }
+fnc shutdown() -> void { }
+fnc choose() -> infer { return 42; }
+~~~
+
+A constructor has no return annotation, since construction is not an ordinary return-valued callable; lambdas retain separately specified contextual inference. See the [normative return-type contract](https://github.com/atto-lang/atto-spec/blob/main/language/explicit-callable-return-types-v1.md). This is an accepted target; backend execution and formatter parity remain separately gated.
+
+## Candidate static binding type queries
+
+Explicit `infer` is already part of the target return annotation contract. The separate [static binding type query proposal](../language/return-binding-type-query-target-v1.md) describes `typeof name` and parenthesized compatibility input; it does not certify backend support or permit omitted annotations.
 
 ## Signatures and visibility
 
