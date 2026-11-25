@@ -20,6 +20,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [TaskFuture control and unique result receipt](language/task-future-control-v1.md): independently scheduled child control, single await, compatibility projection and same-thread inline task distinction; compiler admission remains separately gated.
+
 - [Typed task payloads and sync aliases v1](language/typed-task-payload-sync-v1.md): TARGET `task<T> : Future<T>`, `sync task` as suspension-preserving join alias, `do sync task` as supervised discard, `sync` reserved, and scoped borrow/capture restrictions. **Not yet guest-verified**.
 
 - [Bitwise operators and directional streams v1](language/bitwise-and-stream-operators-v1.md): int-only `& | ^ ~`, `<<< >>> ashr`, compound updates, and typed-I/O `<< >>`, with context-sensitive caret/structural-tilde parsing; target semantics, not backend parity.
