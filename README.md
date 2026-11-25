@@ -31,6 +31,16 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Structural tilde shorthand v1](language/structural-tilde-v1.md): candidate `~` synonym for `structural`, typed pattern matching and named/positional delimiter safety (**not guest-verified**).
+
+- [Structural member witness matrix](language/structural-member-witness-v1.md): proposed interface, trait, class, struct, Record, Tuple and Map contracts; [43 host-only cases](conformance/structural-member-witness-v1.json) (not backend-executed).
+
+- [Statement match arm delimiters v1](language/match-arm-delimiters-v1.md): per-arm `end` or braces, plus the outer match `end`; source-only structural cases remain unexecuted.
+
+- [Anonymous structural shape types, singleton and union field values (proposed)](language/anonymous-structural-shapes-v1.md)
+
+- [Anonymous structural shapes: source-only 50-case registry](conformance/anonymous-structural-shapes-v1.json) — proposed, not compiler-executed.
+
 - [Atomics and receive-only serialization](spec/27-atomics-and-receive-only-serialization.md): `Atomic<T>`, memory order, concurrent receiver methods and serial receive admission; target only.
 
 - [Typed enum patterns and aliases](spec/27-typed-enum-pattern-aliases.md): canonical target `on Run { ... } as r`, scoped type narrowing and borrows; no guest proof claimed.
