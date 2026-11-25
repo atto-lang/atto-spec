@@ -26,6 +26,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [TenantVM terminology](spec/tenant-vm-terminology.md): canonical per-tenant execution boundary and historical identifier compatibility; target terminology, not sandbox certification.
+
 - [Ownership vocabulary v1](language/ownership-vocabulary-v1.md): canonical `borrow!`, `take!`, `share!`, `copy!`/`copy!!`; legacy `rt` ownership aliases and independent checked-handle admission.
 
 - [Exceptional bang spellings v1](language/exception-control-bang-spellings-v1.md): canonical `trap!` / `throw!` / `raise!` / `panic!` target spellings with bare migration aliases; no compiler certification.
