@@ -14,11 +14,12 @@ All five implementations target the **same language-level semantics**:
 | `oreslang-source.forge` | Forge independent JIT/AOT | Same language and actor contract |
 | `oreslang-source.net` | .NET/CIL | Full Native AOT deployment target |
 
-A source feature is not "five-backend parity" because a parser recognizes it, one backend passes a host-unit test, or different backends execute different reduced fixtures. Hierarchical `define supervisor` is **TARGET / NOT_VERIFIED** across all five until equivalent nested guest trees, CONTROL events and restarts execute in exact-head builds. The [source-free topology model](13-supervisor-hierarchies.md) checks invariants but is not guest proof.
+A source feature is not "five-backend parity" because a parser recognizes it, one backend passes a host-unit test, or different backends execute different reduced fixtures. The [nested functor/ADT return-type gate](23-functors-and-nested-adts.md) likewise requires actual guest execution and negative semantic checks on immutable heads; a source-free algebraic model is not guest evidence. Hierarchical `define supervisor` is **TARGET / NOT_VERIFIED** across all five until equivalent nested guest trees, CONTROL events and restarts execute in exact-head builds. The [source-free topology model](13-supervisor-hierarchies.md) checks invariants but is not guest proof.
 
 ## Named generic and named value-call conformance gate
 
 Optional type and omittable formal syntax are independently specified in [chapter 27](27-optional-and-named-arguments.md), with a versioned [source-free reference corpus](../contracts/optional-named-parameters-v1/cases.json). Passing its Node model is **not** native or managed `.atto` guest execution and does not certify optional-argument support.
+
 
 The normative target is specified in [generics](02-types-and-patterns.md) and [named value calls](03-functions-and-effects.md). The `oreslang-platform-conformance` named-generic-and-call-v1 corpus is a **source-level target and reference-model check only**, not executable guest certification. Every backend starts as `pending` until exact-commit, exact-tree parser/formatter diagnostics, positive and negative guest programs, ownership/effect/source-order checks, and an independent AOT run where applicable are evidenced. `Vector`, `Array` and `ArrayList` names must be resolved against actual exported declarations rather than guessed from other backend standard libraries. Distinguish pre-existing `Vector[int]` shape syntax, named type metadata, generic type binding, and value-call labels in all parser and formatter tests.
 
