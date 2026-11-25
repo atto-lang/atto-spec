@@ -1,0 +1,6 @@
+// TARGET only — NOT_EXECUTED. Expect E_IMMUTABLE; no guest artifact.
+fnc main() -> int {
+  const Vector<int> data = [1, 2, 3];
+  data[0] = 42;
+  return 0;
+}

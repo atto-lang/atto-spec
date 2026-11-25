@@ -1,0 +1,15 @@
+use namespace jobs;
+
+define enum WorkerMsg {
+    Run { job_id: u64 },
+    Stop
+}
+
+declare actor Worker;
+
+mtd (Worker self) receive(msg: WorkerMsg): void {
+    do match msg over
+        on Run { imaginary_field } as r -> {}
+        on Stop -> {}
+    end
+}
