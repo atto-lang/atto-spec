@@ -116,3 +116,32 @@ Report parsing, type checking, CFG/IR verification, code generation, linking,
 native publication and actual guest execution separately. A parser hit is not
 a code-generation hit. A persistent-cache claim requires a second process or
 restarted compiler and hostile on-disk fixture tests.
+
+### Candidate canonical cache-key envelope v1
+
+The executable reference in [compiler-cache-key-reference.mjs](../tests/compiler-cache-key-reference.mjs)
+defines a bounded **key envelope only**. Each stage must separately specify
+how its six input digest witnesses are constructed and authenticated; this
+envelope does not turn a caller-supplied digest into authority.
+
+Encoding: SHA-256 of ASCII `atto.compiler.cache-key.v1` plus one zero byte,
+then four length-prefixed ASCII identities (stage, owner, unit kind,
+unit), then six fixed 32-byte binary SHA-256 witnesses in this order:
+compiler, toolchain, target/ABI, semantic configuration, source/lock
+inventory, binding provenance. Length/count prefixes are unsigned 32-bit
+big-endian. Identities contain 1–512 printable nonspace ASCII bytes;
+unit kind is exactly namespace or source-unit. Generated-input witness
+uses a one-byte presence tag: 0 means absent, 1 is followed by its 32-byte
+digest. Finish with a dependency count (0–128) and that many
+length-prefixed dependency identities followed by 32-byte digests,
+sorted lexicographically by ASCII bytes; duplicate identities reject.
+The input API requires every field, lowercase 64-character hex digests,
+and explicit null for absent generated inputs. Unknown fields reject.
+This deliberately narrow ASCII envelope is not a general source path
+normalization rule or a cross-backend artifact compatibility guarantee.
+
+The shared vector in the reference hashes to
+`6d0658c41d4e45ede029ca0c7654333c5aa0bc117f3179f12832aa7b1d22b657`.
+Independent Java/.NET/Rust implementations must reproduce the vector and
+all rejection cases before persistent cache integration. Receipt authentication,
+safe storage and full stage-specific input witnesses are still mandatory.
