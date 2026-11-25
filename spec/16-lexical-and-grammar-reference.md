@@ -93,7 +93,7 @@ Ternary conditions must have static type `bool`. AttoLang has no truthiness conv
 
 ## Canonical match-arm introducer (target)
 
-Every arm after `over` starts with contextual `on`; `on Ok(ack)`, `on Err(err)` and `on _` are examples. `on default`, `default`, `else` and bare patterns are invalid match arms; `case` and `default` are switch forms. Use `->`, not `=>`. Formatter and guest admission require independent proof.
+Every arm after `over` starts with contextual `on`; `on Ok(ack)`, `on Err(err)` and `on _` are examples. `on default`, `default`, `else` and bare patterns are invalid match arms; `case` and `default` are switch forms. Use `->`, not `=>`. In `do match`, void arm returns complete the arm; a nonvoid return is rejected. In value match, arm values join the common static result type. The formatter must preserve `on` and `on _`, and must not silently repair invalid bare arms or convert match to switch. Historical accepted spellings in this chapter are evidence only, not normative canonical grammar. Formatter and guest admission require independent proof.
 
 ## Return-first named callables and explicit `begin`/`end` (target)
 

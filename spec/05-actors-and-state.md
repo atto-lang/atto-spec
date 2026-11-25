@@ -47,7 +47,17 @@ An actor has a bounded DATA inbox. Sending has a **linearization point**: either
 
 Canonical synchronous mailbox admission `send(message)` returns `Result<Ack, SendError>`; explicitly asynchronous admission may return `Future<Result<Ack, SendError>>`. Ack proves admission at the bounded mailbox linearization point, not processing, durability or completion. Void profiles are transitional and not portable typed-send parity. Rejected admission returns a typed error without implicit panic. Match the result with `on Ok(ack)` and `on Err(err)` arms. `get_done()` is an explicit completion barrier, not an implicit send acknowledgement.
 
-A receiver is serialized with other conflicting turns. Messages may be rejected due to full/closed inbox, stale actor generation, invalid payload, cancelled sender or missing authority. No backend may silently drop a message while returning success.
+The admission Ack is not authority to access other actors or tenants. This example is a target, not an execution receipt:
+
+```atto
+val result = worker.send(42);
+do match result over
+  on Ok(ack) -> { mark_admitted(ack); }
+  on Err(err) -> { handle_send_error(err); }
+end
+```
+
+Conflicting state loans obey the state confinement rules during receives. Messages may be rejected due to full/closed inbox, stale actor generation, invalid payload, cancelled sender or missing authority. No backend may silently drop a message while returning success.
 
 ## Lifecycle
 

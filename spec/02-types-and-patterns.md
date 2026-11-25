@@ -47,9 +47,9 @@ end
 
 fnc describe(Status status) -> string {
   return match status over
-    on Status.Pending -> "pending"
-    on Status.Ready   -> "ready"
-    on Status.Failed  -> "failed"
+    on Status.Pending -> { return "pending"; }
+    on Status.Ready   -> { return "ready"; }
+    on Status.Failed  -> { return "failed"; }
   end;
 }
 ```
