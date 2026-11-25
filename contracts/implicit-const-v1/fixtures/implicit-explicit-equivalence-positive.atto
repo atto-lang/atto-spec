@@ -1,0 +1,6 @@
+fnc main() -> int ::
+  int left = 40;
+  const int right = 2;
+  val int check = left + right;
+  return check;
+end
