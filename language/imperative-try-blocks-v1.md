@@ -58,7 +58,7 @@ finally
 end
 ```
 
-`catch()` catches an ordinary, eligible `Error` without binding its value.
+`catch()` catches an ordinary eligible thrown payload without binding its value, under the admitted failure profile. The base Error profile catches Error; the later trait-conforming non-Error extension requires its independently specified typed admission and cannot be silently coerced to Error.
 It is supported with either block style, e.g. `catch() { handle_error(); }`.
 `catch (Error e)` is the explicit typed form. A single untyped catch binder
 (`catch(e)`) exists in the Java source backend as a compatibility spelling;
@@ -119,12 +119,12 @@ contract does not imply blanket multi-backend parity.
 ## Relationship to `maybe/?=/else/end`
 
 `maybe` is **not** a synonym or alternate spelling for `try`.
-The proposed `maybe` construct operates on the *value* of a conditional
+The merged target `maybe` construct operates on the *value* of a conditional
 pattern match (`Pattern ?= expression`) and selects an `else` value
 handler when that match fails. An `Err(...)` or `None` value by itself
 is not an exception, and a failed `?=` does not enter `catch`.
 
-Conversely, an ordinary `throw Error` originating inside a `maybe`
+Conversely, an ordinary `throw!` of an eligible Error originating inside a `maybe`
 skips its value `else` and may be handled by a surrounding `try/catch`.
 `raise` bypasses `catch`, and panic cannot be intercepted locally.
 The surrounding `finally` retains its existing once-only structured-exit

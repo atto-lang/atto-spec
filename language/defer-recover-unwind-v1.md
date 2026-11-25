@@ -51,10 +51,7 @@ Wasm exception handler at each local `recover` site.
 
 ## Accepted source syntax (canonical v1)
 
-For imperative exception statements, both braced and keyword/end-delimited
-`try/catch/finally` are accepted with identical AST and unwind semantics;
-see [imperative try block styles](imperative-try-blocks-v1.md). This syntax
-extension does not imply that every backend has full exception execution.
+For imperative exception statements, both braced and keyword/end-delimited `try/catch/finally` are target spellings with the same unwind rules; see [imperative try block styles](imperative-try-blocks-v1.md). This does not certify execution.
 
 
 All of the following register a deferred cleanup; **the block form is
