@@ -9,11 +9,11 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 | S-01 | Function forms | **Decided 2026-11-03:** `: T` and `-> T` are both valid, and `::` is optional. `::` is optional before both brace and `end` bodies. Open: confirm the [proposed parsing and formatter rules](16-lexical-and-grammar-reference.md#function-forms), then publish a versioned grammar corpus for all five backends |
 | S-02 | Implicit immutable class fields versus older explicit `val` binding grammar | Specify class-field grammar separately from local declaration grammar; compile mutation negatives |
 | S-03 | Match exclusivity/exhaustiveness versus ordered first-match arms | Define semantics of `match`, `match first`, `switch`, `over` and typed arm return; prove duplicate/overlap diagnostics |
-| S-04 | Whether `trap expr` returns `Option<T>` or `Result<T,E>` | Existing source contract is Option; requested actor-send trap Result must be a distinct typed API or an explicitly versioned change |
+| S-04 | Whether `trap expr` returns `Option<T>` or `Result<T,E>` | **Resolved 2026-11-17:** `Result<T, Error>`, never wrapping a `Result` twice (`Result<T, E \| Error>`); see [chapter 07](07-errors-and-failure.md#trap) |
 | S-05 | `throw` without a catch: raise, supervisor notification or an ordinary terminal throw? | Define exact effect escalation and non-actor root exit; execute unwind/supervision fixtures |
 | S-06 | Actor `state {}`, `handle_state(critical-read/write ...)` and `using state...` equivalent spellings | Choose one canonical syntax and compiler-owned intrinsic; forbid direct sealed-state access |
 | S-07 | Actor send result/admission type, `ready`, `done`/`get_done()` and output streams | Lock typed API and admission linearization before declaring transport parity |
-| S-08 | Per-actor multi-turn READ and MaxActorThreads MEDIUM/HIGH | Default one turn; support parallel reads only after source/continuation proof and runtime lease tests |
+| S-08 | Concurrent-default actor scheduling and MaxActorThreads MEDIUM/HIGH | Default concurrency and `serial` opt-in are decided in [chapter 22](22-concurrency-and-shared-ownership.md); capacity, fairness and continuation admission still require proof and runtime lease tests |
 | S-09 | Exact initial runtime thread count on JVM/LLVM/.NET | Distinguish explicit bootstrap workers from host-created threads; measure each runtime and define profile-based budgets |
 | S-10 | Canonical project root/manifest (`.ores.pkg.toml`) and `ORES_PATHS` migration | Reconcile with `.oreslangc.cfg.toml` / `ORESLANG_PATH`; symlink and dual-extension fail-closed suite |
 | S-11 | `define macro` expansion, hygiene, compile-time API, import and capabilities | Static expansion IR with exact source maps; no runtime host reflection dependency |
@@ -35,6 +35,7 @@ This ledger keeps conflicting historic contracts visible until backed by reviewe
 | S-27 | Stored state for heap-backed actors | Fixed-size state is simple to commit, while arena memory can be half-written at a crash. Choose persistent structures, a per-turn scratch arena or another design, and check it against the zero-GC goal; see [chapter 18](18-runtime-guarantees.md) |
 | S-28 | What a reference from `spawn` means across a restart | **Decided 2026-11-05:** it addresses the actor instance and survives restarts, and it fails as `TERMINATED` once the instance has ended; see [chapter 18](18-runtime-guarantees.md) |
 | S-29 | Per-actor stack quota and proper tail calls | Chapter 18 requires both. Open: how a quota is enforced without a probe on every call, and whether to admit the Wasm tail-call proposal or have the compiler turn tail calls into loops |
+| S-30 | Typed local const and explicit initialization | Proposed target: [chapter 27](27-implicit-const-and-const-mut.md) and [chapter 28](28-explicit-initialization-no-implicit-defaults.md); actual backend admission remains unverified. |
 
 **Observed on 2026-11-03** ([chapter 19](19-observed-status-2026-11-03.md)): for S-01, both Java and LLVM accept only `: T { }` and `-> T { }` on free functions. For S-14, the Java launcher refuses `.atto` files.
 

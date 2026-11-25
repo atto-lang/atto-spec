@@ -66,7 +66,7 @@ val count = await cart.get_count()
 
 A typed virtual actor reference is a restricted capability. It supports only the source methods explicitly exported for remote/logical invocation, plus safe metadata inspection. It does not expose a mutable activation, state pointer, mailbox internals, supervisor CONTROL handle or arbitrary host object. Functions, closures and lexical environments are never transported as invocation arguments.
 
-**Reference types are deliberately distinct.** An ordinary `ActorRef<T>` returned by `spawn` addresses one actor instance under the existing chapter 18 termination rule: after that instance is terminal, sends fail and never retarget a later instance in the same slot. A `VirtualActorRef<T>` addresses a persistent logical identity and may resolve to a newer activation after a restart, relocation or passivation, provided the logical identity has not been permanently tombstoned and the caller remains authorized. An `ActivationRef<T>` is bound to exactly one activation generation and becomes stale when that generation ends. No implicit conversion among these three reference types is permitted.
+**Reference types are deliberately distinct.** An ordinary `ActorRef<T>` returned by `spawn` addresses one actor instance under the existing chapter 18 termination rule: after that logical instance is permanently terminal, sends fail and never retarget a later instance in the same slot. A `VirtualActorRef<T>` addresses a persistent logical identity and may resolve to a newer activation after a restart, relocation or passivation, provided the logical identity has not been permanently tombstoned and the caller remains authorized. An `ActivationRef<T>` is bound to exactly one activation generation and becomes stale when that generation ends. No implicit conversion among these three reference types is permitted.
 
 ## 4. Directory and activation protocol
 
@@ -94,7 +94,7 @@ An activation must renew its lease within bounded timing rules. Loss of director
 
 ## 5. Calls, mailboxes, state and persistence
 
-Virtual invocation uses the same typed message ownership, bounded mailbox, DATA/CONTROL separation, turn serialization, cancellation and structured-concurrency rules as ordinary actors. Remote transport does not weaken those rules. Each request has a bounded correlation identity, caller authority, deadline, cancellation state and target generation fence.
+Virtual invocation uses the same typed message ownership, bounded mailbox, DATA/CONTROL separation, bounded concurrent receives or explicit serial-receive admission, cancellation and structured-concurrency rules as ordinary actors. Remote transport does not weaken those rules. Each request has a bounded correlation identity, caller authority, deadline, cancellation state and target generation fence.
 
 A successful enqueue means **admitted**, not processed. A successful method result means the target turn committed its state and outbound messages according to the transaction boundary in [chapter 18](18-runtime-guarantees.md). A caller disconnect or timeout does not imply the operation did not commit; mutation APIs that need retry safety must accept an idempotency key and deduplicate it within a declared retention bound. The language does not promise exactly-once delivery across arbitrary network failures.
 
@@ -214,3 +214,6 @@ Every positive and negative fixture must compile and execute against each suppor
 5. **Distributed profile:** only after local semantics are sound, specify membership/lease/quorum, state replication, handoff and node-failure receipts. Do not claim Orleans-like cluster transparency from a local map or address type.
 
 Each gate needs exact source SHA/tree, nonzero executed steps, test command, test count, native guest artifact/receipt where applicable, negative mutation evidence, and independent review. Empty/null workflow steps mean runner admission failure, not a virtual-actor test failure or pass.
+
+
+The checked-in host reference suite `tests/virtual-actor-directory-reference.test.mjs` exercises selected semantic invariants only; it does not compile Atto source or certify backend parity.
