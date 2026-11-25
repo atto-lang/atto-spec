@@ -38,8 +38,8 @@ for (const fixture of suite.cases) {
   });
 }
 
-test("all 93 historically documented reserved words retain lexical status", () => {
-  assert.equal(reserved.length, 93);
+test("all 95 documented reserved words retain lexical status", () => {
+  assert.equal(reserved.length, 95);
   assert.equal(new Set(reserved).size, reserved.length);
   for (const word of reserved) {
     assert.deepEqual(scan(word).map(t => [t.text, t.kind]), [[word, "reserved"]], word);

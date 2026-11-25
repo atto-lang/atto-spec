@@ -1,0 +1,5 @@
+fnc main() -> int ::
+  const mut object item = infer struct{};
+  item = infer struct{};
+  return 42;
+end
