@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Typed enum patterns and aliases](spec/27-typed-enum-pattern-aliases.md): canonical target `on Run { ... } as r`, scoped type narrowing and borrows; no guest proof claimed.
+
 - [AOT overloads, nested and binary patterns](spec/27-aot-overloads-nested-and-binary-patterns.md): static callable/class constructor selection, head/tail and byte/bit/packet matching; target contract, not guest parity.
 
 - [Root Object and Actor lifecycle](spec/27-root-object-actor-lifecycle.md): target root APIs, deterministic cleanup, shutdown quiescence and no-GC limitations; host contract only.
