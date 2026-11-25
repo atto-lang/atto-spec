@@ -38,7 +38,7 @@ That an actor's failure restarts the actor, including on stack exhaustion and in
 
 ## Stacks
 
-An actor does not need its own native stack for containment. Turns run to completion, so no native frames survive between turns, and a guarded stack per carrier thread is enough. A backend needs per-actor native stacks only if it suspends actors mid-frame.
+An actor does not require a dedicated OS-thread stack, but **each live receive invocation and independently scheduled child Task owns a distinct logical execution stack**. A suspended receive retains its invocation identity, live frames and bounded continuation roots even when its carrier thread is released. Ordinary actors are concurrent by default and admit several live receive invocations, each on a separate stack; a `define serial actor` does not admit a second DATA receive while the first remains suspended. Separate stacks never form a shared mutable frame store. See [chapter 25](25-receive-invocation-stacks.md) for lifecycle, quotas, generation fencing and backend obligations.
 
 **TARGET:** every backend that runs untrusted actors MUST:
 
@@ -46,6 +46,25 @@ An actor does not need its own native stack for containment. Turns run to comple
 2. Handle exhaustion on separate stack space.
 3. Contain exhaustion that happens inside a runtime call, not just in guest code. A guest can recurse to just short of the limit and then call into the runtime.
 4. Prevent a single large frame from stepping over the guard.
+
+**TARGET:** every actor has a **logical stack**: frames that belong to that actor and are accounted to it. This gives the Erlang containment property, where one actor's runaway recursion ends that actor and nothing else, without Erlang's interpreter. It does not have to be a separate native stack. A backend may use a guarded native stack per carrier, heap-allocated frames, segmented stacks or explicit continuations. The LLVM tenant VM uses the first. Pony is the model to avoid: its actors have private heaps but run on the scheduler thread's native stack, so one actor's overflow is not reliably contained.
+
+**TARGET:**
+
+5. **Per-actor quota.** Each actor kind has a configurable stack quota, so the depth at which an actor overflows does not depend on which carrier runs it, or how deep that carrier already is. The quota is about predictable behaviour. Containment does not depend on it, because a guard region already stops an overflow safely.
+6. **Proper tail calls.** A call in tail position does not grow the stack, on every backend, so tail-recursive code never overflows. Today this happens only when an optimizer chooses it. On the LLVM path through Wasm, lowering disables the Wasm tail-call proposal, so the guarantee needs either that proposal admitted or the compiler turning tail calls into loops itself.
+7. **Deterministic failure.** Overflow ends the turn with `StackOverflow`, and the actor restarts under its budget.
+8. **A test on every backend.** It exhausts one actor's stack, including from inside a runtime call, and checks that unrelated actors, carrier threads and the OS process keep working.
+
+Status of rules 5 to 8 (for item 7, the restart part):
+
+| Backend | Overflow contained to the actor? | Per-actor quota | Proper tail calls |
+| --- | --- | --- | --- |
+| LLVM tenant VM | Yes, with restart. Exhaustion inside a runtime call is contained | Yes, per VM, in PR #1566, not yet merged: `actor_stack_bytes` gives the same depth on every carrier | No guarantee |
+| LLVM native, no tenant VM | No: the process dies with SIGSEGV | No | No guarantee |
+| Java/GraalVM | No: the program exits with status 1 | No | No guarantee |
+| .NET | No: a CLR stack overflow ends the process, which is why tenants run through the native core | No | No guarantee |
+| Wasm (Wasmtime) | A spike traps on stack overflow, at the Store level. Actor-level restart is not built | Per Store | No guarantee |
 
 ## Restarting a failed actor
 

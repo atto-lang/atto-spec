@@ -1,13 +1,12 @@
-// Source lexical model only: not a compiler or a parser acceptance receipt.
-// Discovers the removed infix tokens %, ^ and ^^ outside literals/comments.
-export function removedOperators(source) {
- if(typeof source!=='string')throw new TypeError('expected .atto source text');
- const hits=[];let i=0,block=0,line=false,quote=null,escaped=false;
+// Bounded source-fixture scanner, NOT the language lexer or parser.
+export function operatorTokens(source) {
+ if(typeof source!=='string')throw new TypeError('expected source text');
+ const tokens=[]; let i=0,block=0,line=false,quote=null,escaped=false;
  while(i<source.length){
    const c=source[i],n=source[i+1];
    if(line){if(c==='\n')line=false;i++;continue;}
-   if(block>0){
-     if(c==='/'&&n==='*'){block++;i+=2;continue;}
+   if(block){
+     if(c==='/'&&n==='*'){if(++block>128)throw Error('comment nesting exceeds 128');i+=2;continue;}
      if(c==='*'&&n==='/'){block--;i+=2;continue;}
      i++;continue;
    }
@@ -21,20 +20,24 @@ export function removedOperators(source) {
    if(c==='/'&&n==='/'){line=true;i+=2;continue;}
    if(c==='/'&&n==='*'){block++;i+=2;continue;}
    if(c==='"'||c==="'"){quote=c;i++;continue;}
-   // Template interpolation is not modeled; no claimed parser parity.
    if(c==='`')throw Error('template syntax needs compiler parsing');
-   if(c==='%'||c==='^'){
-     const token=c==='^'&&n==='^'?'^^':c;
-     hits.push({offset:i,token});
-     i+=token.length;continue;
-   }
-   i++;
+   if(/\s/.test(c)){i++;continue;}
+   const m=/^(?:\^\^=|\^\^|\^=|\^|%=|%|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|.)/.exec(source.slice(i));
+   const token=m[0];tokens.push({offset:i,token});i+=token.length;
  }
- if(block!==0||quote)throw Error('unterminated comment or literal');
- return hits;
+ if(block||quote)throw Error('unterminated comment or literal');
+ return tokens;
 }
-export function assertCanonicalOperators(source) {
- const hits=removedOperators(source);
- if(hits.length)throw Error('removed AttoLang operator: '+hits.map(x=>x.token).join(', '));
- return true;
+// Only the simple fixture shapes are classified. Unknown syntax needs a parser.
+export function caretSites(source){
+ const ts=operatorTokens(source);
+ return ts.flatMap((t,i)=>{
+   if(t.token!=='^')return [];
+   const prev=ts[i-1]?.token,next=ts[i+1]?.token;
+   const kind=prev==='return'&&next==='('?'contextual-return':
+     prev===undefined||prev==='{'||prev===';'?'statement-return':
+     /^[0-9]+$/.test(prev||'')&&/^[0-9]+$/.test(next||'')?'removed-infix':
+     'requires-parser';
+   return [{...t,kind}];
+ });
 }

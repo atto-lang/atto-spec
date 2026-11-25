@@ -1,0 +1,12 @@
+use namespace jobs;
+
+define enum WorkerMsg {
+    Run { job_id: u64 },
+    Stop
+}
+
+fnc status_code(msg: WorkerMsg): u64 {
+    return match msg over
+        on Run as r -> r.job_id
+    end;
+}
