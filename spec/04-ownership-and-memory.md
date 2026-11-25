@@ -29,6 +29,8 @@ val owned = take! packet
 
 Borrow checking is not optional for a native backend. Aliased writes, use-after-take, escaping stack borrows, double-drops, stale actor references, and mutable aliases crossing isolation domains MUST be rejected or safely represented with explicit runtime guards, never silently trusted.
 
+Compact operands (`copy!value`, `borrow!mut value`) normalize to one ASCII space after the bang. The historical `mut borrow! value` is a migration alias for `borrow! mut value`. Prefix precedence is unary with postfix member/index expressions binding tighter; evaluate each operand once. Duplicate `mut` qualifiers reject. The [checked-handle call-loan profile](../language/checked-handle-call-loans-v1.md) defines all-path retirement, explicit lexical `block` scopes and versioned borrow-default call proof boundaries.
+
 ## Explicit capability extensions: `freeze!`, `weak!`, and `pin!` (TARGET)
 
 These are **contextual prefix operations** (the word followed immediately by `!`), not
@@ -198,7 +200,7 @@ The target actor-heap reference representation uses checked **32-bit arena-relat
 
 Each message transfer must have a provable ownership action (`take`, `copy`, or permitted `share`), validated payload graph, bounded bytes/depth/nodes, and type-correct domain admission. A mutable pointer, synchronized cell, closure with host capability, or foreign pointer cannot be smuggled across isolation merely because its in-memory representation is small.
 
-`Pointer<T>` transport is only admissible under a proof of pointee safety and a domain-specific copy, move, or immutable share strategy; a raw address is never a portable wire representation. `Sendable` and `Serializable` are distinct properties.
+`Pointer<T>` capability transport or serialization across actors, tenants, isolates or networks is forbidden, even if `T` is Sendable or Serializable. An authorized transfer may copy, move or serialize the **pointee data** under its own proof and receiving-domain ownership, never the pointer token. Same-domain owner transfer requires separate proof. `Sendable` and `Serializable` are distinct properties.
 
 ## Resource lifecycle
 
