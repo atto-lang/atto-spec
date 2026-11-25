@@ -1,6 +1,6 @@
 # Typed directional I/O captures and forward/reverse await continuations
 
-Status: **candidate language contract**; the Rust/Wasm stdin guest read ABI is still unsupported. This extends `io-direction-shorthand-v1.md` and `suspending-pipeline-stage-v1.md`. Unlike the earlier version of this document, the two *contextual* typed-Future spellings below are now proposed as valid grammar. A general `future |> await` stage remains invalid.
+Status: **candidate language contract**; the Rust/Wasm stdin guest read ABI is still unsupported. The reverse functional capture below is a separate candidate compiler vertical slice, not an I/O ABI. This extends `io-direction-shorthand-v1.md` and `suspending-pipeline-stage-v1.md`. Unlike the earlier version of this document, the two *contextual* typed-Future spellings below are now proposed as valid grammar. A general `future |> await` stage remains invalid.
 
 ## Binding versus channel I/O
 
@@ -8,6 +8,45 @@ Status: **candidate language contract**; the Rust/Wasm stdin guest read ABI is s
 - `result >> val item` **only at the terminal capture of a recognized pipeline** binds its value, not another channel read. `val item << result` is a declaration-first capture *only* in the corresponding recognized reverse pipeline. Never infer the distinction from runtime duck typing.
 - An `nb source >> Future<T> x` continuation *registers a nonparking read* and binds the resulting Future to `x`. The source does not "write to a Future": it initiates a read and its completion is represented by the future. `Future<T>` is a contextual **type slot**, not an evaluated expression or a new object constructor.
 - A `val` or `let` binder must be fresh. Neither `>>` nor `<<` performs arbitrary reassignment to an existing variable. Runtime `const` capture is rejected.
+
+## Optional equals on directional bindings
+
+An optional separated `=` is accepted **only immediately after the
+contiguous `>>` directional operator when the next grammar item is a
+fresh typed declaration or read-binder**. This is a cosmetic marker,
+not another assignment, evaluation, I/O operation, or new operator.
+
+~~~atto
+// Canonical (the formatter removes redundant equals):
+nb stdio.in >> Future<Result<Option<string>, IoError>> x
+    |> |f| -> (await f)?
+    >> val Option<string> pending_line;
+
+// Accepted equivalent: both markers are independent and optional.
+nb stdio.in >> = Future<Result<Option<string>, IoError>> x
+    |> |f| -> (await f)?
+    >> = val Option<string> pending_line;
+
+// Also available on ordinary typed read binders and terminal value
+// captures after a checked suspending pipeline:
+inbox >> = val result;
+pending |> susp |f| -> await f >> = val result: int;
+~~~
+
+`>> Future<T> pending`, `>> = Future<T> pending`,
+`>> val T outcome`, and `>> = val T outcome` are equivalent at
+their respective **authorized** read/capture sites. The optional marker
+is not valid for an existing-variable target, plain arithmetic/shift
+expression, sink write, reverse `<<` operation or a fresh standalone
+assignment form. `>>=` (contiguous), `>> ==`, `>> = =`, and
+`>> = existing_variable` are invalid. `>>` itself must remain
+contiguous; generic closers `>>` remain part of a type, not a capture.
+
+Parsing must not manufacture a second storage write or a second read,
+and the compiler must preserve the same type, ownership, lifetime,
+`IoError`, `Option.None`/EOF, and suspension checks as the canonical
+spelling. The formatter's target canonical spelling omits the `=`;
+formatter support itself requires a separate implementation/test gate.
 
 ## The two requested forms
 
@@ -17,9 +56,9 @@ nb stdio.in >> (
     val String pending_line << |x| -> await x <| Future<string>
 );
 
-// Forward: named pending Future, then a checked await of precisely x.
+// Forward: named pending Future, then a real inline lambda stage.
 nb stdio.in >> Future<string> x
-    |> await x
+    |> |f| -> await f
     >> val String pending_line;
 ~~~
 
@@ -34,14 +73,14 @@ That desugaring is illustrative: it is only well-typed when this source really p
 
 The reverse `<|` means functional application in the general language, `f <| value = f(value)`; **only in this particular read production** is `Future<T>` the typed slot for the preceding nonblocking registration. Anywhere else, `f <| Future<T>` is invalid because `Future<T>` is a type, not a runtime value.
 
-The forward `|> await x` is a *contextual named-future control stage*, **not** `await` as a function. It is permitted only immediately after the `nb source >> Future<T> x` declaration and only when the identifier is precisely `x`. Elsewhere `future |> await` and `future |> await x` remain invalid. Existing ordinary lambda application remains:
+The forward `|> |f| -> await f` is a **contextual inline lambda adapter**, not an `await` function. The preceding named Future is passed as the lambda's single argument and consumed exactly once. The lambda binder may have a different name from the Future binding (and should not shadow it for readability). The spellings `future |> await`, `future |> await x`, and `nb source >> Future<T> x |> await x` are **all invalid**. Ordinary explicitly suspending lambda application remains:
 
 ~~~atto
 val transformed = pending |> susp |f| -> await f |> transform_result;
 // Equivalent effect spelling: suspends |f| -> await f
 ~~~
 
-The reverse lambda `|x| -> await x` can infer its suspension effect from its *explicit* await in this narrow inline-I/O production; a standalone general callable lambda still follows normal `susp`/`suspends` effect rules. The **enclosing** callable must authorize `suspends`, regardless of the inline marker.
+Both the reverse lambda `|x| -> await x` and the forward lambda `|f| -> await f` infer their suspension effect from the literal await in this narrow **inline-I/O production**. The compiler lowers these to the enclosing callable's control flow without creating a first-class closure. As a consequence, `?` on the awaited `Result` propagates from the **enclosing callable** (nonlocal to the inline adapter). In an ordinary first-class lambda, by contrast, `?` exits that lambda, not its caller; do not silently import this special behavior into general closure semantics. Standalone callable lambdas still follow normal `susp`/`suspends` checking, and the enclosing I/O caller must authorize `suspends`.
 
 ## Checked IoError propagation with ?
 
@@ -50,7 +89,7 @@ Assuming a line-oriented source's checked outcome is `Future<Result<Option<strin
 ~~~atto
 // Forward: propagation applies to the awaited Result, NOT to the Future.
 nb stdio.in >> Future<Result<Option<string>,IoError>> pending
-    |> (await pending)?
+    |> |f| -> (await f)?
     >> val Option<string> line;
 
 // Reverse:
@@ -64,9 +103,9 @@ The semantics are:
 
 1. A nonblocking read registration is attempted **exactly once** and yields an owned Future (or its declared immediate admission failure).
 2. `await` consumes/awaits the Future, potentially suspending the current task; the result is `Result<Option<string>,IoError>`.
-3. `(await pending)?` propagates `Err(IoError)` to a compatible enclosing `Result<...,IoError>` return (or a compatible explicitly declared conversion). The successful value is `Option<string>` and is bound by the terminal `>> val` or declaration-first `val <<`.
+3. `(await f)?` inside the contextual inline adapter propagates `Err(IoError)` to a compatible **enclosing callable's** `Result<...,IoError>` return (or a compatible explicitly declared conversion). The successful value is `Option<string>` and is bound by the terminal `>> val` or declaration-first `val <<`.
 4. `None` is **EOF**, not a string and not an `IoError`. It remains `None` for the caller to handle. Do not silently convert it to an empty string, panic, or implicit cancellation.
-5. `await pending?` is rejected in this production: it ambiguously suggests `await (pending?)`. Require `(await pending)?` for the intended Result propagation.
+5. `await f?` is rejected in this production: it ambiguously suggests `await (f?)`. Require `(await f)?` for the intended Result propagation. Likewise, bare `|> await f` is invalid: `|>` must apply an explicit lambda.
 
 An enclosing `Result<Option<string>,IoError>` callable could return `Ok(line)`. A regular `int`-returning callable must not use this `?` unless its effect/return contract has a defined compatible error propagation route. Cancellation/close/admission errors must have an observable path; they are never discarded.
 
@@ -74,23 +113,24 @@ An enclosing `Result<Option<string>,IoError>` callable could return `Ok(line)`. 
 
 ~~~ebnf
 nb_capture =
-    "nb", readable_expr, ">>",
+    "nb", readable_expr, directional_binding_arrow,
     ( "(", new_binding, "<<", reverse_await, "<|", future_type_slot, ")"
-    | future_type_slot, identifier, ("|>" | "|"), named_await,
-      ">>", new_binding
-    | new_future_binding, "|>", explicit_susp_lambda,
-      ">>", new_binding ) ;
+    | future_type_slot, identifier, "|>", inline_await_lambda,
+      directional_binding_arrow, new_binding
+    | new_future_binding, "|>", inline_await_lambda,
+      directional_binding_arrow, new_binding ) ;
+directional_binding_arrow = ">>", [ separated_equals ] ;
+separated_equals = "=" ;  (* must have whitespace after >>, never contiguous >>= *)
 reverse_await = [ "susp" | "suspends" ], "|", identifier, "|", "->",
                 ( "await", identifier | "(", "await", identifier, ")", ["?"] ) ;
-named_await = "await", identifier | "(", "await", identifier, ")", ["?"] ;
-explicit_susp_lambda = ("susp" | "suspends"), "|", identifier, "|", "->",
-                       ( "await", identifier | "(", "await", identifier, ")", ["?"] ) ;
+inline_await_lambda = [ "susp" | "suspends" ], "|", identifier, "|", "->",
+                      ( "await", identifier | "(", "await", identifier, ")", ["?"] ) ;
 future_type_slot = "Future", "<", type_ref, ">" ;
 new_future_binding = ("val" | "let"), typed_name_with_future_type ;
 new_binding = ("val" | "let"), typed_name ;
 ~~~
 
-In the reverse case the awaited identifier must match the inline lambda parameter; in the forward case the awaited identifier must equal the explicitly bound pending Future. Strictly reject renamed/unbound, multiply awaited, borrowed-across-suspension, type-incorrect, and `const` captures. The pipeline operators are parsed as complete contiguous `|>` and `<|` tokens; `>>` and `<<` must be contiguous, except generic close `>>` belongs exclusively to its type grammar. Mixed forward/reverse chains outside this narrow production require explicit grouping.
+In both directions, the awaited identifier must match the inline lambda parameter; the preceding named Future is passed into this parameter exactly once. A distinct parameter name is allowed and avoids shadowing. Strictly reject renamed/unbound, multiply awaited, borrowed-across-suspension, type-incorrect, and `const` captures. The pipeline operators are parsed as complete contiguous `|>` and `<|` tokens; `>>` and `<<` must be contiguous, except generic close `>>` belongs exclusively to its type grammar. Mixed forward/reverse chains outside this narrow production require explicit grouping.
 
 ## Compiler/verification boundaries
 
@@ -224,7 +264,7 @@ not implicitly provided by the standard library. `^ pending ... >> const
 result` is invalid because a suspension-dependent value is not constant;
 a non-`susp` caller is an effect violation. `^` alone is a void return
 only in a callable with `void` return type. `^` is never an assignment
-operator, and `^^` is a separate reserved boolean operator.
+operator, and `^^` is a separate integer bitwise XOR operator.
 
 Compiler implementation and **unverified current-head regression tests**:
 [atto-source.rs #197](https://github.com/atto-lang/atto-source.rs/pull/197).
@@ -234,3 +274,90 @@ version-gated compiler implementation is
 [atto-source.rs #185](https://github.com/atto-lang/atto-source.rs/pull/185).
 Do not adopt the breaking `::` migration merely to use this additive
 caret/capture interaction.
+
+## Ordinary reverse functional pipelines and declaration-first value capture
+
+Reverse functional application is **right-associated**:
+
+~~~atto
+val v = twice <| add_three <| 4;
+// exactly: twice(add_three(4)), not add_three(twice(4))
+~~~
+
+The function call is applied to the single value on the right. This is the
+syntactic dual of `4 |> add_three |> twice`. Neither form constructs an
+actor/stream pipe: continuous connections continue to use the `pipe` keyword.
+The compiler rewrites each reverse stage to an ordinary named call with the
+value as its first argument, preserving existing argument evaluation, type,
+effect and ownership checks.
+
+A declaration-first reversed await pipeline is the dual of the existing
+checked forward `>> val` capture:
+
+~~~atto
+fnc transform_result(int x): int {
+    ^ x + 1;
+}
+
+pub suspends fnc main(): int {
+    val pending = task { return 41; };
+    val result: int <<
+        transform_result <|
+        susp |f| -> await f <|
+        pending;
+
+    guard result > 0 { ^ -1; }
+    ^ result;
+}
+~~~
+
+The precise canonical desugaring is:
+
+~~~atto
+val result: int = transform_result(await pending);
+guard result > 0 { ^ -1; }
+^ result;
+~~~
+
+A valid reverse capture must satisfy **all** of these conditions:
+
+1. `val` or `let` introduces a fresh lexical local. `const` is prohibited
+   for runtime/suspending results. `<<` does not reassign an existing local.
+2. `<<` is a **contiguous** single-result terminal binding and the RHS must
+   be a checked reverse functional pipeline containing the explicit
+   `susp |f| -> await f` or `suspends |f| -> await f` identity-await stage.
+   There is no implicit await, no bare `await` function and no general
+   lambda-value execution in this milestone.
+3. `<|` must be contiguous; `< |` is not an alternate spelling. The
+   semantics are `transform_result(await pending)`, with the source Future
+   evaluated/consumed exactly once. Unrelated await binders are rejected.
+4. The ordinary compiler must check suspension effects, full result type,
+   ownership/moves, loan lifetimes across `await`, and the guard's
+   fail-on-false and terminal-return contract. Any failure means no guest
+   artifact, not a fallback to unchecked channel semantics.
+5. General reverse calls may appear in ordinary expression contexts, e.g.
+   `val n = f <| g <| x`. Parentheses are mandatory when mixing `|>` and
+   `<|` in one chain.
+6. `val result << readable_source` **without** a reverse functional pipeline
+   retains the existing declaration-first *I/O read* contract. It must never
+   be misclassified as a pure value capture by type duck-typing. Similarly,
+   `sink << value` remains one checked write, not a permanent connection.
+
+For fallible input, an await produces its declared checked outcome; it does
+not silently unwrap `Result`, discard `IoError`, or treat `None` as a
+string. A separate explicit `(await future)?` stage and a compatible
+`Result`-returning callable are required for propagation. No syntax here
+grants the currently missing guest stdin ABI.
+
+### Rust/Wasm staging and evidence
+
+The browser compiler implementation candidate is stacked on
+[atto-source.rs #197](https://github.com/atto-lang/atto-source.rs/pull/197),
+which already stages checked forward capture. The reverse branch adds the
+right-associated named-call lowering, the narrow reverse identity-await stage,
+and a checked declaration-first binder; positive/negative Rust conformance
+tests and a guest exit-42 fixture accompany it. **Source authored is not
+evidence of tests executed.** An exact-head Rust test and real guest
+Wasm/Chromium execution receipt are required before claiming working runtime
+support or merging the draft. Native LLVM/Java/.NET/Forge parity is separate
+and not established by the browser compiler branch.

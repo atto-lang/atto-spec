@@ -2,8 +2,6 @@
 
 Status: **candidate syntax contract**. This document records the intended grammar and static/effect semantics, not proof of general executable compiler/backend support. The Rust/Wasm browser subset has a draft implementation of **standalone `stdio.out << value`** and **`writech stdio.out, value`** via its existing checked `stdio.print` lowering (atto-source.rs #176), but no passing exact-head guest test has been observed. General channels, stream reads/writes, and atomic `select` remain unsupported in that compiler.
 
-> **Expression extension:** [Unary `<< readable` reads](unary-read-expression-v1.md) are a separate prefix-expression form. Binary directional bindings/writes below keep their existing meaning. Browser guest read execution and Java/LLVM/.NET parity remain unverified.
-
 ## Decision
 
 The direction operators are typed **I/O syntax**, not general user-defined overloads:
@@ -25,7 +23,6 @@ do select {
 
 - `source >> val item;` reads one unit from a readable source into an immutable binding.
 - `source >> let item;` reads into a reassignable binding (not an assertion that the referent is mutable).
-- `val int item << source;` and `val item: int << source;` are declaration-first reads with the same value/effect contract as `val int item = << source;`. The annotation must match the *checked read outcome*; an EOF/error-capable channel does not implicitly yield a bare `int`.
 - `sink << value;` writes one value to a writable sink.
 - The same operations are candidates in `when` arms of `select`, `do select`, and `nb select`, **only** for selectable capabilities.
 - `readch`/`writech` stay the explicit, canonical spelling for channels. The formatter must preserve a programmer's chosen shorthand or explicit spelling rather than rewrite one to the other.
@@ -37,14 +34,26 @@ For `Channel<T>`, this is a syntax-directed alias for the same read/write and ow
 ## Grammar (informal)
 
 ```ebnf
-read_binder    = ("val" | "let"), (identifier, [":", type] | type, identifier) ;
 io_statement   = writable_expr, "<<", value_expr, ";"
-               | readable_expr, ">>", read_binder, ";"
-               | read_binder, "<<", readable_expr, ";" ;
+               | readable_expr, ">>", [ "=" ], ("val" | "let"), identifier, [" :", type], ";" 
+               | ("val" | "let"), identifier, [":", type], "<<", readable_expr, ";" ;
 select_io_arm  = "when", writable_expr, "<<", value_expr, "->", block
-               | "when", readable_expr, ">>", read_binder, "->", block
-               | "when", read_binder, "<<", readable_expr, "->", block ;
+               | "when", readable_expr, ">>", [ "=" ], ("val" | "let"), identifier, [":", type], "->", block
+               | "when", ("val" | "let"), identifier, [":", type], "<<", readable_expr, "->", block ;
 ```
+
+Optional `=` after a read-direction `>>` is accepted only when it is
+separated from `>>` by whitespace and followed by a fresh `val`/`let`
+binding; it is redundant and the target formatter canonicalizes it away.
+For example, `inbox >> = val item;` is equivalent to
+`inbox >> val item;`, including in selectable read arms. `>>=` as a
+contiguous operator, `>> ==`, `>> = =`, and
+`>> = existing_variable` are **not** valid read-binding spellings.
+The same optional marker is admitted for the contextual typed Future slot
+and terminal checked-pipeline captures in
+`language/typed-io-continuation-pipelines-v1.md`; the underlying
+directional operation still evaluates exactly once. No optional `=` is
+introduced after `<<` writes, and this is not a general assignment alias.
 
 A statement may also use a parenthesized source/sink and a qualified path (`stdio.out`, `streams.output`). The token pairs must be contiguous: `<<` and `>>`, not `< <` / `> >`. Nested generic closing delimiters such as `Result<Option<int>>` remain distinct by grammar context. Numeric bit shifts are not retroactively I/O; no inferred channel creation, arithmetic shift-to-I/O conversion, or arbitrary class operator overloading is permitted. v1 rejects chained I/O operators without explicit sequencing.
 
@@ -53,7 +62,7 @@ A statement may also use a parenthesized source/sink and a qualified path (`stdi
 1. Left-hand operand must resolve statically to a readable/writable capability of the corresponding element type. Otherwise emit a type error. Writing an incompatible value must fail at compile time. Read binder scope is the statement's remaining lexical scope or the winning select arm, as applicable.
 2. Reads/writes evaluate operands only once, preserve the underlying operation's result, error, EOF/closed-state, and cancellation contract, and never silently discard errors. For streams, an element read might produce `Option<T>` or `Result<Option<T>, E>`; shorthand must not flatten or disguise that result. For a channel, preserve the channel's existing close semantics.
 3. For a write, ownership transfers only upon successful admission/commit. A rejected or losing selectable write retains the original value and cannot produce a duplicate effect.
-4. Direct I/O may cooperatively suspend, never park an OS thread. If the statically resolved operation can suspend, its enclosing callable **must** be declared `susp` or `suspends` (aliases), and declare the required `io`/`suspend` effects. `using io` alone does not permit suspension. `trap` cannot erase the suspend effect. The `try` / `nb` forms preserve their separately specified nonblocking/read-future semantics; neither `<<` nor `>>` implies `nb` or `try`.
+4. Cooperative suspension is allowed for ordinary I/O; no OS-thread parking is implied. The `try` / `nb` forms and any future I/O shorthand prefixes must preserve existing scheduling behavior, not infer nonblocking from `<<`/`>>`.
 5. Select arms register **atomic** alternatives. Exactly one arm commits. Reads in losing arms consume nothing; writes in losing arms publish nothing. Candidate-value evaluation must not itself perform irreversible I/O; a selected arm cannot speculatively call `read()`/`write()` before winning. Losing registrations are safely canceled/disposed.
 6. Generic streams are **not** automatically selectable. A type must separately implement checked/selectable read or write admission, atomic commit, and cancellation/ownership rollback. Ordinary file/socket/readiness APIs without those guarantees must be rejected in select arms.
 7. Backpressure, bounded buffering, close, cancellation, task/actor ownership, effect checking, and error handling remain the responsibility of the underlying I/O contract. A stream with a terminal EOF event must not turn EOF into a phantom data message. An `io << data` statement that returns a fallible result cannot implicitly swallow that result where the language requires checked effects.
@@ -96,7 +105,7 @@ The `file_reader` and `file_writer` lines above are candidate source spellings f
 
 ### Parse and capability resolution
 
-- **The binary directional forms in this v1 document** occupy an I/O statement or I/O `when` guard, not an arbitrary subexpression. The separate prefix `<< readable` expression form is specified in [the unary read addendum](unary-read-expression-v1.md). Reject `send << value << second` and `source >> val item >> val next` as chains. The right-hand write expression may contain nested generic type applications or parenthesized expressions; the parser must distinguish these from direction tokens by AST context.
+- The operator must occupy an I/O statement or an I/O `when` guard, never an arbitrary subexpression. Reject `send << value << second` and `source >> val item >> val next` as chains. The right-hand write expression may contain nested generic type applications or parenthesized expressions; the parser must distinguish these from direction tokens by AST context.
 - The receiver is evaluated **exactly once**. It must have an accessible typed `Readable<T>` or `Writable<T>` capability, as appropriate; a channel maps to its channel-specific operation. A readable-only stream cannot be written to, and a writable-only stream cannot be read from. An untyped `any`, arbitrary method named `read`/`write`, or duck-typed numeric operand cannot opt into this syntax.
 - If numeric shift operators exist in an expression grammar, those remain separate AST operations with numeric operands. Do not select the I/O interpretation merely because a token pair appears in the lexer or because a numeric expression happens to be a bare statement. Invalid or ambiguous operands produce an error rather than silently switching effect domains.
 - Bindings accept exactly one identifier and, optionally, a **complete** type grammar after `:`. Do not accept trailing expression tokens or malformed/incomplete generic annotations. The annotation must unify with the read operation's real result type, not be used to coerce away EOF/errors.
@@ -339,13 +348,15 @@ do readch foo, |outcome| -> void {
 
 **Latest directional-capture extension:** The two explicit reverse/forward
 spellings `nb source >> (val T result << |f| -> await f <| Future<T>)`
-and `nb source >> Future<T> pending |> await pending >> val T result`,
-and the checked `(await pending)?` / `(await f)?` propagation forms,
+and `nb source >> Future<T> pending |> |f| -> await f >> val T result`,
+and the checked inline-lambda `(await f)?` propagation form,
 are specified in `language/typed-io-continuation-pipelines-v1.md`.
 This is a contextual exception: `Future<T>` is a typed placeholder
 **only** in that `nb` read production; outside it `Future<T>` is not a
-runtime value and bare `|> await` is still invalid. `?` propagates
-`Result.Err` after await while preserving an inner `Option<T>` EOF.
+runtime value and both bare `|> await` and `|> await pending` are invalid.
+The explicit inline-lambda stage is lowered in the enclosing callable,
+so `?` propagates `Result.Err` after await to that caller while preserving
+an inner `Option<T>` EOF; ordinary first-class lambdas retain local `?` scope.
 This newest draft supersedes contradictory earlier rejection wording below.
 
 
@@ -362,10 +373,9 @@ await and stays available in the remaining statement scope.
 // not a constructor, expression, or evaluated generic.
 nb incoming >> (val Outcome resolved << await Future<Outcome>);
 
-// Second spelling: '|' is a delimiter ONLY in this typed I/O continuation
-// production, not a replacement for functional '|>'.
+// Second spelling: a real inline lambda is the callable pipeline stage.
 nb incoming >> Future<Outcome> pending
-    | await pending >> val Outcome resolved;
+    |> |f| -> await f >> val Outcome resolved;
 
  // Third equivalent, explicitly functional pipeline stage, with susp alias:
 nb incoming >> val pending: Future<Outcome>
@@ -446,3 +456,8 @@ future_type_slot = "Future", "<", complete_type_ref, ">" ;
 - Runtime checks: admission of bounded writes, credit exhaustion and quota failure; supervisor error path when there is no callback; callback once on terminal success/failure; cancel vs commit; no payload duplication; no callback after owner destruction; no stack loan escaping the caller.
 - Negative parse/type tests for bare `do readch`, detached local read binders, `nb readch foo >> Future<string> foo`, a standalone `await Future<string>` expression outside the contextual nb-read continuation production, `do` under `pure`, missing I/O capability, and bare discarded checked Futures.
 - A Rust host model or syntax-only preflight must be reported separately from actual compiled `.atto` guest runtime/driver evidence. **No claims of executable support** until each backend runs a real channel and stream fixture from an exact SHA-pinned artifact.
+
+
+## Checked prefix/postfix reads and declaration-first typed bindings (candidate)
+
+See [prefix read](unary-read-expression-v1.md) and [terminal postfix read](postfix-channel-read-expression-v1.md). Both evaluate a readable once and preserve the exact checked result. Type-first and name-first annotations are admitted without silently unwrapping Result or Option. A potentially suspending read/write requires `susp` (legacy `suspends`) plus applicable capabilities. `trap!` preserves the suspend effect; it never turns a blocking read into an immediate attempt. Binary binding and write forms retain their own grammar, including the optional equals rules above. The restricted guest channel pilot is not portable runtime evidence.
