@@ -1,0 +1,32 @@
+name: Supervisor hierarchy source-free model
+
+on:
+  pull_request:
+    paths:
+      - 'spec/13-supervisor-hierarchies.md'
+      - 'scripts/supervisor-hierarchy-model.mjs'
+      - 'tests/supervisor-hierarchy-*.json'
+      - 'tests/supervisor-hierarchy-*.mjs'
+      - '.github/workflows/supervisor-hierarchy-model.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/supervisor-hierarchy-model.mjs'
+      - 'tests/supervisor-hierarchy-*.json'
+      - 'tests/supervisor-hierarchy-*.mjs'
+      - '.github/workflows/supervisor-hierarchy-model.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-free-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify topology reference model (not guest compiler evidence)
+        run: node --test tests/supervisor-hierarchy-model.test.mjs

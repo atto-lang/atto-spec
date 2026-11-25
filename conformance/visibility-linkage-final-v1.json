@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "language": "AttoLang",
+  "feature": "visibility-linkage-and-final",
+  "status": "target-and-frontend-subset",
+  "contract": "language/visibility-linkage-and-final-v1.md",
+  "cases": [
+    {
+      "id": "local-internal-fnc",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "internal fnc helper(): int { return 41; }\npub fnc main(): int { return helper() + 1; }\n"
+    },
+    {
+      "id": "internal-public-export",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "E_VISIBILITY",
+      "source": "export pub fnc helper;\ninternal fnc helper(): int { return 42; }\npub fnc main(): int { return 0; }\n"
+    },
+    {
+      "id": "internal-package-export",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "E_VISIBILITY",
+      "source": "export pub[pkg] helper;\ninternal fnc helper(): int { return 42; }\npub fnc main(): int { return 0; }\n"
+    },
+    {
+      "id": "internal-pub-conflict",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "E_VISIBILITY",
+      "source": "internal pub fnc helper(): int { return 42; }\npub fnc main(): int { return 0; }\n"
+    },
+    {
+      "id": "pub-internal-conflict",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "E_VISIBILITY",
+      "source": "pub internal fnc helper(): int { return 42; }\npub fnc main(): int { return 0; }\n"
+    },
+    {
+      "id": "external-unlinked-call",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "E_UNSUPPORTED",
+      "source": "external fnc host_clock_ns(): int;\npub fnc main(): int { return host_clock_ns(); }\n"
+    },
+    {
+      "id": "external-pub-conflict",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "E_VISIBILITY",
+      "source": "pub external fnc host_clock_ns(): int;\npub fnc main(): int { return 0; }\n"
+    },
+    {
+      "id": "external-export",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "E_UNBOUND",
+      "source": "export pub fnc host_clock_ns;\nexternal fnc host_clock_ns(): int;\npub fnc main(): int { return 0; }\n"
+    },
+    {
+      "id": "external-duplicate-prototype",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "E_DUPLICATE",
+      "source": "external fnc host_clock_ns(): int;\nexternal fnc host_clock_ns(): int;\npub fnc main(): int { return 0; }\n"
+    },
+    {
+      "id": "protected-must-not-private-lower",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "E_UNSUPPORTED",
+      "source": "define class C as\n protected final int id: 7;\nend\npub fnc main(): int { return 0; }\n"
+    },
+    {
+      "id": "final-initialized-read",
+      "phase": "compile",
+      "expect": "accept",
+      "source": "define class Receipt as\n final int number: 7;\n pub get(): int { return self.number; }\nend\npub fnc main(): int { val r = new Receipt(); return r.get(); }\n"
+    },
+    {
+      "id": "final-constructor-reassignment",
+      "phase": "compile",
+      "expect": "reject",
+      "diagnostic": "E_IMMUTABLE",
+      "source": "define class Receipt as\n final int number: 7;\n constructor(int n) { self.number = n; }\nend\npub fnc main(): int { val r = new Receipt(9); return 0; }\n"
+    }
+  ],
+  "receiptRequirements": [
+    "source_commit_sha",
+    "source_tree_sha",
+    "compiler_version",
+    "backend_name",
+    "parser_result",
+    "binder_result",
+    "linker_result_or_unsupported",
+    "guest_executed_or_not_run",
+    "compiler_diagnostics"
+  ]
+}
