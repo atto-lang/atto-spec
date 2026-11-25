@@ -26,6 +26,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Canonical Boolean operators v1](docs/CANONICAL_BOOLEAN_OPERATORS_V1.md): strict bool `&&`, `||`, and `Xor(bool,bool)`; historical spellings require explicit migration.
+
 - [Checked int.parse Result v1](language/int-parse-result-v1.md): signed-i64 parsing to Result<int,Error> with deterministic bounded ASCII admission; target-only until compiled-guest evidence.
 
 - [Keyword roles and syntax highlighting taxonomy](spec/23-keyword-taxonomy-and-highlighting.md) records proposed editor metadata and links the documented lexer inventory.
