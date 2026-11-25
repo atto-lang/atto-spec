@@ -22,28 +22,24 @@ an exactly compatible `Entry<K,V>` type. `Pair<K,V>` is *not* an Entry,
 and alternating `key, value, key, value` arguments are NOT admitted by
 this dedicated factory. Those positional pairs belong to `Map.of(...)`.
 
-Both generic arguments are required at the `of_entries` call in this
-portable target. Infer types of individual entry expressions against these
-**known** K and V types; never infer a dynamic erased container or reinterpret
+This chapter focuses on the explicitly typed `of_entries` spelling. The [general factory contract](map-of-entries-and-nominal-structs-v1.md) also admits uniquely inferred or contextual K,V. Check individual entry expressions against the resolved K and V types; never infer a dynamic erased container or reinterpret
 an Entry as a Pair. The key type must have stable checked Hash + Eq
 semantics. The first bounded guest profile accepts only int, bool and
 string keys and scalar values; an unsupported type is an explicit rejection,
 not a host Map fallback.
 
-Duplicate keys are errors, including equivalent constant integer keys such
-as 0 and -0. When arbitrary expressions are supported, evaluate each entry
+Duplicate compile-time constant keys are errors, including equivalent integer keys such as 0 and -0. Dynamically computed equal keys use the existing Map last-value-wins rule with verified cleanup. When arbitrary expressions are supported, evaluate each entry
 left-to-right, evaluating key before value, once. Do not sort by key before
 evaluating effects or allow duplicated side effects. The final Map is
 immutable unless the declared Map API explicitly supports safe mutation.
-Missing-key lookup needs a specified Option/Result or throwing contract;
-do not invent a default value, trap, or raw pointer.
+Scalar `get` returns Option<V> under the Map mutation contract; do not invent a default value, trap, or raw pointer.
 
 ### Const constructor contract
 
 In a `const m = Map.of_entries<K,V>(...)` declaration, the **entire**
 key/value set must be compile-time evaluable and contain no effects,
 mutable references, dynamic key witnesses or unowned capabilities.
-The result is a logically immutable constant Map value; the compiler may
+A verified frozen Map ABI is mandatory; absent that proof, const initialization rejects E_UNSUPPORTED. The result is a logically immutable constant Map value; the compiler may
 lower constant data to a private, checked guest storage header but may not
 run arbitrary expressions or alter observable constant values. This is a
 narrow compile-time constant-data exception, not a rule that all runtime
@@ -103,12 +99,7 @@ reordering physical constructor arguments cannot alter observable effects.
 Extending that profile to effectful expressions MUST first preserve lexical
 evaluation order through typed temporaries.
 
-`infer struct{x:40,y:2}` is permitted only when exactly one visible
-nominal struct has a statically proved matching required field set **and**
-types. Missing, mismatched or duplicate fields reject. If two nominal
-struct types can match, the expression rejects with an ambiguous-struct
-diagnostic; never pick by declaration order, package traversal, or host
-reflection.
+`infer struct{x:40,y:2}` requires a statically resolved nominal expected type and matching required fields and types. Missing, mismatched or duplicate fields reject. Without a resolved expected type, fail closed; never search visible declarations by shape or select by declaration order, package traversal, or host reflection.
 
 Closed `Record` is different: a Record's structural identity depends on
 field names and field types, not on a declared nominal name, and its

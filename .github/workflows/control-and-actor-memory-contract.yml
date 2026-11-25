@@ -1,0 +1,22 @@
+name: Control and actor unmanaged memory contract (target-only)
+on:
+  pull_request:
+    paths:
+      - 'language/control-and-actor-unmanaged-memory-v1.md'
+      - 'conformance/control-and-actor-unmanaged-memory-v1.json'
+      - 'tools/check_control_memory_v1.mjs'
+      - '.github/workflows/control-and-actor-memory-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate target-only contract, prohibit false parity
+        run: node tools/check_control_memory_v1.mjs

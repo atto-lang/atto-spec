@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "status": "TARGET_SOURCE_ONLY_NOT_EXECUTED",
+  "language_contract": "language/bang-pipeline-and-stop-aliases-v1.md",
+  "depends_on": [
+    "atto-lang/atto-spec#45",
+    "atto-lang/atto-source.rs#224",
+    "atto-lang/atto-platform-conformance#102"
+  ],
+  "invariants": {
+    "contiguous_ascii_bang": true,
+    "grammar_context_only": true,
+    "same_precedence_and_associativity": true,
+    "same_operand_evaluation_order": true,
+    "same_type_effect_ownership_capability_and_runtime_semantics": true,
+    "formatter_preserves_spelling": true,
+    "no_implicit_force_stop": true,
+    "no_global_identifier_rewrites": true,
+    "no_new_factory_methods": true,
+    "mixed_pipeline_direction_still_rejected": true
+  },
+  "aliases": [
+    {
+      "bare": "pipe",
+      "bang": "pipe!",
+      "role": "infix_pipeline_forward",
+      "direction": "LEFT_TO_RIGHT"
+    },
+    {
+      "bare": "rpipe",
+      "bang": "rpipe!",
+      "role": "infix_pipeline_reverse",
+      "direction": "RIGHT_TO_LEFT"
+    },
+    {
+      "bare": "stop",
+      "bang": "stop!",
+      "role": "recognized_graceful_stop",
+      "direction": null
+    }
+  ],
+  "positive_fixtures": [
+    {
+      "id": "forward",
+      "input": "producer pipe! consumer",
+      "equivalent": "producer pipe consumer",
+      "context": "directed_pipeline"
+    },
+    {
+      "id": "reverse",
+      "input": "consumer rpipe! producer",
+      "equivalent": "consumer rpipe producer",
+      "context": "directed_pipeline"
+    },
+    {
+      "id": "forward_chain",
+      "input": "p pipe! t pipe c",
+      "equivalent": "p pipe t pipe c",
+      "context": "directed_pipeline"
+    },
+    {
+      "id": "reverse_chain",
+      "input": "c rpipe t rpipe! p",
+      "equivalent": "c rpipe t rpipe p",
+      "context": "directed_pipeline"
+    },
+    {
+      "id": "stop_member",
+      "input": "actor_ref.stop!()",
+      "equivalent": "actor_ref.stop()",
+      "context": "recognized_lifecycle_call_only"
+    },
+    {
+      "id": "stop_statement",
+      "input": "stop! actor_ref",
+      "equivalent": "stop actor_ref",
+      "context": "only_if_standalone_stop_already_admitted"
+    }
+  ],
+  "negative_fixtures": [
+    {
+      "id": "mixed_directions",
+      "input": "a pipe! b rpipe! c",
+      "reason": "mixed direction without parentheses"
+    },
+    {
+      "id": "split_bang",
+      "input": "a pipe !b",
+      "reason": "separate logical negation is not alias"
+    },
+    {
+      "id": "split_stop",
+      "input": "actor_ref.stop !()",
+      "reason": "not contiguous alias"
+    },
+    {
+      "id": "prefix_identifier",
+      "input": "a mypipe! b",
+      "reason": "identifier boundary"
+    },
+    {
+      "id": "suffix_identifier",
+      "input": "a pipe!suffix b",
+      "reason": "identifier boundary"
+    },
+    {
+      "id": "fabricated_factory",
+      "input": "Actor.pipe!(A(), B())",
+      "reason": "no method alias"
+    },
+    {
+      "id": "unrelated_method",
+      "input": "ordinary_object.stop!()",
+      "reason": "no alias for unrelated user method"
+    },
+    {
+      "id": "comment",
+      "input": "// producer pipe! consumer",
+      "reason": "comment is opaque"
+    },
+    {
+      "id": "string",
+      "input": "\"stop! pipe! rpipe!\"",
+      "reason": "string is opaque"
+    },
+    {
+      "id": "quoted_symbol",
+      "input": "#\"pipe!\"",
+      "reason": "symbol is opaque"
+    }
+  ]
+}

@@ -1,0 +1,167 @@
+{
+  "contract": "atto.match-arm-delimiters.v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "note": "Source-free case catalog. Cases are syntax contracts; compiler-backed tests run separately, and structural pattern execution is unverified.",
+  "cases": [
+    {
+      "id": "MAB001",
+      "expect": "accept",
+      "arm_style": "braces",
+      "source": "match value over\n    on is ~Point as val p -> { process(p); }\n    on _ -> { fallback(); }\nend",
+      "verification_scope": "target_structural",
+      "note": "Both arms braced"
+    },
+    {
+      "id": "MAB002",
+      "expect": "accept",
+      "arm_style": "end",
+      "source": "match value over\n    on is ~Point as val p ->\n        process(p);\n    end\n    on _ ->\n        fallback();\n    end\nend",
+      "verification_scope": "target_structural",
+      "note": "Each arm has its own end plus match end"
+    },
+    {
+      "id": "MAB003",
+      "expect": "accept",
+      "arm_style": "mixed",
+      "source": "match value over\n    on is structural Point as val p -> { process(p); }\n    on _ -> fallback(); end\nend",
+      "verification_scope": "target_structural",
+      "note": "Mixed braces and end"
+    },
+    {
+      "id": "MAB004",
+      "expect": "accept",
+      "arm_style": "end",
+      "source": "match value over\n    on 1 -> process(1); end\n    on _ -> process(2); end\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Two end-delimited scalar arms"
+    },
+    {
+      "id": "MAB005",
+      "expect": "accept",
+      "arm_style": "braces",
+      "source": "match value over\n    on 1 -> { process(1); }\n    on _ -> { process(2); }\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Two braced scalar arms"
+    },
+    {
+      "id": "MAB006",
+      "expect": "accept",
+      "arm_style": "mixed",
+      "source": "match value over\n    on 1 -> process(1); end\n    on _ -> { process(2); }\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Mixed scalar arms"
+    },
+    {
+      "id": "MAB007",
+      "expect": "accept",
+      "arm_style": "end",
+      "source": "match value over\n    on 1 ->\n        val x = 1;\n        process(x);\n    end\n    on _ -> fallback(); end\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Multiple statements"
+    },
+    {
+      "id": "MAB008",
+      "expect": "accept",
+      "arm_style": "end",
+      "source": "match value over\n    on 1 ->\n        if ready then process(1); fi\n    end\n    on _ -> fallback(); end\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Nested if/fi"
+    },
+    {
+      "id": "MAB009",
+      "expect": "accept",
+      "arm_style": "end",
+      "source": "match value over\n    on 1 ->\n        match nested over\n            on 2 -> { process(2); }\n            on _ -> { fallback(); }\n        end\n    end\n    on _ -> fallback(); end\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Nested match end consumed independently"
+    },
+    {
+      "id": "MAB010",
+      "expect": "accept",
+      "arm_style": "end",
+      "source": "match value over\n    on is ~Point as val p when p.x > 0 ->\n        process(p: ~p, count: 1);\n    end\n    on _ -> fallback(); end\nend",
+      "verification_scope": "target_structural",
+      "note": "Pattern guard and named colon"
+    },
+    {
+      "id": "MAB011",
+      "expect": "accept",
+      "arm_style": "end",
+      "source": "match value over\n    on 1 -> end\n    on _ -> end\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Empty arms allowed like braces"
+    },
+    {
+      "id": "MAB012",
+      "expect": "accept",
+      "arm_style": "braces",
+      "source": "match value over\n    on 1 -> {}\n    on _ -> {}\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Empty brace arms"
+    },
+    {
+      "id": "MAB013",
+      "expect": "accept",
+      "arm_style": "end",
+      "source": "do match value over\n    on 1 -> process(1); end\n    on _ -> { fallback(); }\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Do match uses same boundaries"
+    },
+    {
+      "id": "MAB014",
+      "expect": "reject",
+      "arm_style": "end",
+      "source": "match value over\n    on 1 -> process(1);\n    on _ -> fallback(); end\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Missing first arm end"
+    },
+    {
+      "id": "MAB015",
+      "expect": "reject",
+      "arm_style": "end",
+      "source": "match value over\n    on 1 -> process(1); end\n    on _ -> fallback(); end",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Missing enclosing match end"
+    },
+    {
+      "id": "MAB016",
+      "expect": "reject",
+      "arm_style": "end",
+      "source": "match value over\n    on 1 -> process(1); end\n    on _ -> fallback(); end\nend\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Unexpected extra end"
+    },
+    {
+      "id": "MAB017",
+      "expect": "reject",
+      "arm_style": "end",
+      "source": "match value over\n    on 1 -> process(1);\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Single end cannot close arm and match"
+    },
+    {
+      "id": "MAB018",
+      "expect": "reject",
+      "arm_style": "braces",
+      "source": "match value over\n    on 1 -> { process(1); }\n    on _ -> fallback(); end",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Missing outer end with mixed styles"
+    },
+    {
+      "id": "MAB019",
+      "expect": "reject",
+      "arm_style": "end",
+      "source": "match value over\n    on 1 -> process(1); end\n    on _ -> fallback(); }\nend",
+      "verification_scope": "compiler_scalar_candidate",
+      "note": "Wrong closing delimiter"
+    },
+    {
+      "id": "MAB020",
+      "expect": "reject",
+      "arm_style": "end",
+      "source": "match value over\n    on is ~Point as val p when p.x > 0 \n        process(p);\n    end\n    on _ -> fallback(); end\nend",
+      "verification_scope": "target_structural",
+      "note": "Missing arm arrow"
+    }
+  ]
+}
