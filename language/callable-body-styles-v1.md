@@ -269,3 +269,7 @@ header is not evidence that a guest Wasm method executes. Rust, Wasm,
 Java, LLVM, .NET, Forge, the formatter, and playground should publish
 their own tested capability status and a shared positive/negative
 conformance corpus before declaring parity.
+
+## Opt-in v2 body mode (draft)
+
+The legacy v1 grammar above remains the default. With an explicitly selected v2 edition only, an unmarked `-> Type ... end` body is statement-oriented and non-void paths require `return` or contextual `^`. An explicit `::` selects a comma body with implicit tail return. The `: Type -> expression;`, return-first, receiver, effect and ownership contracts above are unchanged. No edition inference from nested commas, no implicit format migration, and no change to package defaults is authorized. See [the v2 migration contract](callable-body-migration-v2.md) and [sequence contract](return-shorthand-and-sequences-v1.md). A terminal binding is not a return value; bare return commas cannot consume a `::` body's separators. Test both modes independently, including negative fallthrough, trailing commas, nested scopes, and receiver checks. Cross-backend parity is not established.

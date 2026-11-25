@@ -31,6 +31,9 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Caret return and scoped sequences](language/return-shorthand-and-sequences-v1.md): contextual return syntax and comma sequences; portable execution independently gated.
+- [Opt-in v2 callable-body migration](language/callable-body-migration-v2.md): v1 remains the default; draft version selector and checked migration only.
+
 - [Result/Option payload discard patterns v1](language/adt-payload-discard-patterns-v1.md): `Ok()` / `Err()` / `Some()` and `(_)` wildcard patterns discard payloads without inventing bindings, with guarded/exhaustive matching and AOT verification requirements. **Proposal only**; no universal backend parity claimed.
 
 - [Typed match/switch arms v1](language/typed-match-switch-arms-v1.md): candidate `case Pattern : Type -> body` and `on Pattern : Type -> body` grammar, switch defaults, no implicit fallthrough, and async/error typing. **Proposal only**; guest implementation and parity are tracked separately.
