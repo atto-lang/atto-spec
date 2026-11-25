@@ -4,6 +4,9 @@
 [directed-rpipe-and-stream-capture-v1.md](directed-rpipe-and-stream-capture-v1.md),
 [io-direction-shorthand-v1.md](io-direction-shorthand-v1.md), and
 [typed-io-continuation-pipelines-v1.md](typed-io-continuation-pipelines-v1.md).
+For proof-oriented static obligations see [pipeline-effect-proof-v1.md](pipeline-effect-proof-v1.md).
+Java-style signature `throws(Error)` and attached `@throws(Error)` have identical
+semantic obligations; see [checked-throws-annotation-v1.md](checked-throws-annotation-v1.md).
 Align with the separate actor escalation, throwable-capability, and
 caller-side `trap` draft specifications before merging. This is not
 a claim of executable mixed-pipe error handling or backend parity.
@@ -60,38 +63,55 @@ can reach EOF should use the source's explicitly declared checked
 outcome, typically `Result<Option<T>,IoError>`. Do not treat
 `None` as an `IoError`, an empty value or an automatic retry.
 
-## `trap` only catches ordinary `throw`
+## `trap` preserves failures as `Result` (updated contract)
 
-Existing caller-side contract:
+The newer [trap-to-Result contract](https://github.com/atto-lang/atto-spec/blob/feat/trap-result-contract-20261117/language/trap-result-v1.md) (atto-spec PR #71)
+**supersedes** the earlier `trap -> Option` proposal in this draft.
+The language semantics are:
+
+| Operand type | `trap expression` type |
+| --- | --- |
+| `T` | `Result<T,F>` |
+| `Option<T>` | `Result<Option<T>,F>` |
+| `Result<T,E>` | `Result<T,join_error(E,F)>` |
+| `void` | `Result<void,F>` |
+
+`F` is the statically possible ordinary thrown Error type.
+`join_error` must represent both returned `Err(E)` and caught
+`throw(F)` **losslessly**, without inventing a nested outer Result,
+discarding an Error subtype, or converting an arbitrary `E` to
+`Error`. Reject unavailable joins with `E_TRAP_ERROR_JOIN` and emit
+no guest. The bounded Rust/Wasm candidate currently admits only
+concrete proven joins.
+
+- Success returns `Ok(v)` (or preserves the original `Ok` when
+  the operand was already a Result); a returned `Err(e)` stays
+  `Err(e)`, retaining error identity, type, and payload.
+- Only an ordinary source `throw Error` crossing the trap boundary
+  becomes `Err(original_error)`. The operand is evaluated once.
+- `raise`, `panic`, cancellation, host faults, engine traps, and
+  supervisor CONTROL **bypass** `trap`.
+- `trap` does not transform a later asynchronous pipeline failure into
+  the construction-time Result. The caller still owns and must handle
+  `await handle.get_done()` independently.
+- `(trap f())?` is explicit Result propagation. A returned `Err`
+  is **not** a source exception, and cannot run `catch`/`recover`.
+  The `?` exit must run proven cleanup, preserve original tagged
+  Error/Result identity, and not be allowed inside unproven
+  `defer`/`recover`/`finally` replacement paths.
+
+Example target syntax (not proof of mixed-pipe runtime support):
 
 ```atto
-trap expression : Option<T>
+val setup = trap (readable pipe transform pipe writable);
+// setup is a checked Result, not Option and not a live-graph completion.
+val connection = setup?;
+val stats = (await connection.get_done())?;
 ```
 
-- A successful expression `v:T` becomes `Some(v)`.
-- An **ordinary throw** that reaches this caller-side trap becomes
-  `None`. Only the ordinary throw channel is handled.
-- `trap` NEVER implicitly catches or suppresses `raise`, `panic`,
-  cancellation, host failure, fatal engine trap or a supervisor CONTROL notice.
-- `trap` does NOT catch a returned `Err(E)`; `trap f()` where
-  `f():Result<T,E>` yields `Option<Result<T,E>>`. In particular,
-  `Some(Err(e))` and `None` are distinct.
-- `trap` is not a lossy alias for `?`; choose explicitly between
-  `Option`, `Result`, a `try/catch`, and a supervisor fault.
-- It evaluates its operand once. An ordinary throw leaves the resource
-  cleanup defined by normal unwinding; trapping must not leak a half-open
-  pipe or release the same message twice.
-
-Trapping pipeline **construction** only handles an ordinary throw in
-that synchronous setup. It cannot retroactively trap asynchronous
-element processing or a later failure reported by
-`await connection.get_done()`. Because the latter is a Result,
-`trap await connection.get_done()` is
-`Option<Result<PipeStats,PipeError>>`, and a normal returned
-`Err(PipeError)` remains wrapped in `Some(Err(...))`.
-
-To turn an `Err` into `None`, write an explicit `match` or
-`Result`→`Option` conversion. Never make `trap` silently do this.
+Legacy `Option<Result<T,E>>` / `Some(Err(e))` / `None` descriptions
+of `trap` must not be used in new compiler lowering, fixtures, or docs.
+`Option.None` remains distinct from stream EOF and from `Err`.
 
 ## `throw`, `raise`, `panic` are not interchangeable
 
@@ -153,7 +173,7 @@ Positive and negative executions must cover ordinary value, `Result.Err`,
 CONTROL, partial progress, and exhausted backpressure across:
 `<<`, `>>`, `|>`, `<|`, `pipe` and `rpipe`.
 
-Assertions include `Some(Err(e)) != None`, `None` stream payload
+Assertions include `Ok(None) != Err(error)`, `None` stream payload
 `!=` EOF, one-time evaluation, no observable guest artifact for
 unsupported combinations, exact distinct failure categories, no
 double resume/throw/finish, and source-order versus actual dataflow
