@@ -1,0 +1,29 @@
+name: Enum pattern alias source-free contract (not compiler evidence)
+on:
+  pull_request:
+    paths:
+      - 'spec/27-typed-enum-pattern-aliases.md'
+      - 'spec/02-types-and-patterns.md'
+      - 'spec/16-lexical-and-grammar-reference.md'
+      - 'tests/fixtures/enum-pattern-alias-v1/**'
+      - 'tests/enum-pattern-alias-*.test.mjs'
+      - '.github/workflows/enum-pattern-alias-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'spec/27-typed-enum-pattern-aliases.md'
+      - 'tests/fixtures/enum-pattern-alias-v1/**'
+      - 'tests/enum-pattern-alias-*.test.mjs'
+      - '.github/workflows/enum-pattern-alias-contract.yml'
+permissions:
+  contents: read
+jobs:
+  source-free-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify source-free pattern alias contract (NOT guest execution)
+        run: node --version && node --test tests/enum-pattern-alias-contract.test.mjs tests/enum-pattern-alias-model.test.mjs

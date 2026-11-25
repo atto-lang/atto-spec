@@ -1,0 +1,10 @@
+// expect-exit: 42
+// java: rejects
+// Result<int,string>? must be Option<Result<int,string>>, not Result<...>.
+fnc f(Result<int,string>? x?): int {
+  match x over
+    on None -> { return 42; }
+    on Some(v) -> { return 0; }
+  end
+}
+pub fnc main(): int { return f(); }

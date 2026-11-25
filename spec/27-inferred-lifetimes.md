@@ -42,6 +42,8 @@ Compiler acceptance of `borrow!` today does not certify `Borrow<T>` types.
 
 ## Explicit reference and pointer types (target, no sigils)
 
+**Reconciliation boundary:** the current canonical ownership and lexer contracts do not yet ratify ref!/deref!/unref!. The checked-handle spelling discussion below is a separately gated proposal, not a change to that decision. Existing rt ref/deref/unref are checked-handle operations; no compiler may infer acceptance of the bang aliases. Named lifetime binders and loan proofs are independent of that spelling question.
+
 **Decision:** AttoLang spells borrowed and pointer types by name. There are no
 pointer or borrow type sigils, and no dereference/borrow operators based on
 `*` or `&`. These characters retain unrelated uses, such as multiplication
@@ -58,7 +60,7 @@ pointer or borrow type sigils, and no dereference/borrow operators based on
 A `Pointer<T>` value must never automatically confer read, write, drop,
 actor-transport, or ownership rights. Construction, pointer conversion,
 dereference and lifetime validity require separately checked runtime/FFI
-capabilities and provenance. The canonical checked-handle operations
+capabilities and provenance. The proposed checked-handle operations
 are `ref! value`, `deref! handle` and `unref! handle`;
 `rt ref`, `rt deref` and `rt unref` are compatibility forms.
 These must lower identically to their legacy checked-handle operations,
@@ -107,10 +109,10 @@ conditions, not a reason to assume an omitted handle is safe.
 The scanner must not recursively inspect diagnostic positions before
 applying its depth bound.
 
-Canonical `ref! value` and legacy `rt ref value` spellings must
+Candidate `ref! value` and legacy `rt ref value` spellings must
 resolve to the same checked-handle AST operation; combining them
 as `rt ref! value` (likewise deref/unref) is a syntax error.
-An attached bang marker is required for canonical spelling;
+An attached bang marker is required for candidate spelling;
 `ref !value` is not an alias. Use a single evaluation of each
 operand and disallow an extra `mut` qualifier. Once true codegen
 exists, the lifetime and generation verifier still must prove
@@ -251,7 +253,7 @@ an object. `Owned<T>` may be considered as an explicit API type qualifier
 only where annotation aids readability. In the new target call model, a bare
 nonprimitive parameter `T x` denotes an **implicit non-owning loan**, not an
 implicit consuming/owned formal; explicit transfer requires `take!` at the call
-site **and** an explicit consuming formal contract (grammar pending). Existing
+site **and** an explicit consuming formal contract in the opt-in profile. Existing
 compiler code that moves objects into bare `T` formals is legacy behavior and
 must migrate under a versioned compatibility profile. Type aliases, names and
 qualifiers must not
@@ -334,7 +336,7 @@ These examples describe target semantics; none of the above new generic/returned
 - A public signature must export a stable, independently checked lifetime/effect contract so separate compilation and AOT can check a call without inspecting the callee implementation. If the source body changes, metadata is revalidated.
 - The migration from implicit owned `Foo` formal to default borrowed `Foo` formal is a **source-breaking target change**. Until an explicit consuming formal grammar and feature/version migration are approved, compilers must not silently switch legacy code without diagnostics.
 
-**Implementation boundary:** [Rust compiler #336](https://github.com/atto-lang/atto-source.rs/pull/336) supports only checked `Borrow<Class>` synchronous call loans with named local owners, not bare `Foo` default, result lifetime inference or method/actor/async parity. See [conformance #74](https://github.com/atto-lang/atto-platform-conformance/pull/74) for the target matrix. Keep this proposal draft until verified guests and the canonical typed checker agree.
+**Implementation boundary:** [Rust compiler #336](https://github.com/atto-lang/atto-source.rs/pull/336) supports only checked `Borrow<Class>` synchronous call loans with named local owners, not bare `Foo` default, result lifetime inference or method/actor/async parity. See [conformance #74](https://github.com/atto-lang/atto-platform-conformance/pull/74) for the target matrix. Keep compiler admission gated until verified guests and the canonical typed checker agree.
 
 ## Lifetime elision and inference
 
