@@ -1,0 +1,56 @@
+{
+  "contract": "persistent-immutable-collections-v1",
+  "version": 1,
+  "scope": "target candidate; no compiler guest attestations",
+  "cases": [
+    {
+      "id": "const_empty_vector",
+      "path": "positive-const-empty.atto",
+      "kind": "guest_success",
+      "expected_exit": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "persistent_vector_no_source_mutation",
+      "path": "positive-persistent-updates.atto",
+      "kind": "guest_success",
+      "expected_exit": 62,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "persistent_map_set",
+      "path": "positive-map-set.atto",
+      "kind": "guest_success",
+      "expected_exit": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "const_index_write",
+      "path": "negative-write-const.atto",
+      "kind": "compile_reject",
+      "diagnostic": "E_IMMUTABLE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "let_is_not_mut",
+      "path": "negative-write-let.atto",
+      "kind": "compile_reject",
+      "diagnostic": "E_IMMUTABLE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "const_runtime_initializer",
+      "path": "negative-const-runtime.atto",
+      "kind": "compile_reject",
+      "diagnostic": "E_NON_CONST_INITIALIZER",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "ambiguous_empty_literal",
+      "path": "negative-untyped-empty.atto",
+      "kind": "compile_reject",
+      "diagnostic": "E_TYPE_INFERENCE",
+      "status": "NOT_EXECUTED"
+    }
+  ]
+}

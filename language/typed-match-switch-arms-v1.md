@@ -99,6 +99,86 @@ A compiler must preserve match's single-evaluation, source-order, scope, exhaust
 
 Unannotated `on P -> e` and existing `case P -> e` retain their meanings. The new annotation is optional and does not change unrelated callable `fnc foo(): T`, pattern-field `:`, typed bindings or the existing typed `match<T>` header. Canonical formatter spacing: `on P : T -> e` for match and `case P : T -> e` for switch; preserve guards and nested field-pattern colons.
 
+## Four equivalent guarded return-match forms
+
+All four spellings below are normative *target syntax* for value-producing
+matches. They share one typed match AST/control-flow contract and one
+scrutinee-dispatch semantics, not four independent runtime implementations.
+
+```atto
+fnc block_return(int value): int {
+    return match value over
+        on 0 -> { return 0; }
+        on 1 -> { return 1; }
+        on n when n > 1 -> { return 2; }
+        on _ -> { return -1; }
+    end
+}
+
+fnc value_return(int value): int {
+    return match value over
+        on 0 -> 0,
+        on 1 -> 1,
+        on n when n > 1 -> 2,
+        on _ -> -1,
+    end
+}
+
+fnc block_caret(int value): int {
+    ^ match value over
+        on 0 -> { return 0; }
+        on 1 -> { return 1; }
+        on n when n > 1 -> { return 2; }
+        on _ -> { return -1; }
+    end
+}
+
+fnc value_caret(int value): int {
+    ^ match value over
+        on 0 -> 0,
+        on 1 -> 1,
+        on n when n > 1 -> 2,
+        on _ -> -1,
+    end
+}
+```
+
+For each function, inputs `-1, 0, 1, 2, 7` must return
+`-1, 0, 1, 2, 2` respectively. For the user's full program, the
+observable stdout is exactly `2\n2\n` and `main()` returns `0`.
+The `end` before `}` may omit a semicolon only under the existing
+statement-terminator rule; in an explicit semicolon-only source context,
+use `end;`. A trailing comma after a direct expression arm is admitted;
+a block arm may be followed immediately by the next arm or by a comma.
+
+**Control flow:** `^` is a statement-position alias for `return` and
+must enter the same parser, type checker, effect checker, and code-generation
+path. Each direct expression arm is lowered as a value returned by the
+enclosing callable. In `{ return e; }`, the inner return exits the nearest
+lexical callable and produces `Never` at the match arm level; it does not
+return from a nested match block. A block lacking both a produced value and
+a proven exit is illegal in a value match.
+
+**Pattern binding and guards:** `on n` introduces an arm-local immutable
+binder with the scrutinee type. Evaluate the subject exactly once; attempt
+patterns in source order; instantiate `n` before evaluating `when n > 1`.
+A false guard proceeds to the next arm without running that arm's body. A
+guarded catch-all does **not** prove exhaustiveness. An unguarded
+`on _` proves the default case for this scalar pattern family, and an arm
+after an unconditional wildcard is unreachable. Duplicate literal arms,
+non-boolean guards, type-incompatible values, missing wildcard/exhaustiveness,
+out-of-scope bindings and fallthrough blocks must be rejected **without a
+guest artifact**.
+
+**Verification:** conformance fixtures must independently compile and
+execute all four functions per backend, compare exact stdout and return,
+check negatives, and bind results to compiler commit/tree, source blob,
+target, toolchain and actual executed steps. Existing Rust/Wasm subset
+branches and host-only specification tests do not certify Java/LLVM/.NET,
+Forge, Cranelift, independent Wasm, JS or self-hosted Atto support.
+See `atto-platform-conformance` for the shared source fixtures and
+per-backend evidence ledger.
+
 
 ## ADT payload binders, `when` and exhaustive coverage
 
@@ -126,8 +206,8 @@ be accepted as unconditional coverage without a separately verified
 decision procedure; the v1 checker is deliberately conservative.
 An unguarded `on Ok(v)` / `on Ok()` / `on Ok(_)` does cover all `Ok`
 values. The same applies to `Err` and `Some`. A successful unguarded
-wildcard `on _` or `default` covers the remaining cases, and must
-be unreachable to any subsequent arm. Repeated *guarded* cases of
+wildcard `on _` or `default` covers the remaining cases, and makes
+any subsequent arm unreachable. Repeated *guarded* cases of
 the same variant are allowed until an unguarded one consumes that
 variant. A later case for an already unconditionally covered variant
 is rejected as unreachable.
@@ -137,7 +217,7 @@ fnc checked(): Result<int,string> {
     return Ok(41);
 }
 
-pub suspends fnc main(): int {
+pub susp fnc main(): int {
     return match<int> checked() over
         on Err(error) when error != "E3" : int -> 0,
         on Ok(value) when value > 5 : int ->

@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "id": "atto-aot-zero-gc-stage-gates-v1",
+  "status": "AUTHORED_NOT_EXECUTED",
+  "backends": [
+    "java-graalvm",
+    "llvm",
+    "net-nativeaot",
+    "wasm",
+    "forge",
+    "cranelift"
+  ],
+  "releaseQualified": false,
+  "compilerBackedPassingCases": 0,
+  "artifactVerifiedCases": 0,
+  "guestRuntimePassingCases": 0,
+  "cases": [
+    {
+      "id": "reject-runtime-eval",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject source eval and runtime guest-code emission, not merely a host eval stub.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-open-class-creation",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject runtime class/method injection and prototype mutation in sealed AOT.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-unknown-proxy-target",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject proxy target outside linker-known closed class or interface set.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-private-proxy-escalation",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject proxy wrapper exposing inaccessible/private method.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-unregistered-reflection",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject access to reflection descriptor not registered at build time.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-borrow-across-suspension",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject statically invalid borrowed reference escaping across await.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-closure-channel-send",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject function or lexical closure as Sendable channel/pub-sub data.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "reject-sealed-dynamic-loader",
+      "stage": "SOURCE_ADMISSION",
+      "witness": "TARGETED_DIAGNOSTIC_NO_IR",
+      "scenario": "Reject dynamic precompiled module load in sealed rather than governed mode.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "dispatch-edge-erasure",
+      "stage": "LOWERING_ARTIFACT",
+      "witness": "ARTIFACT_IR_MUTATION",
+      "scenario": "Mutate compiler-generated reachable virtual dispatch edge and reject artifact proof.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "cleanup-edge-erasure",
+      "stage": "LOWERING_ARTIFACT",
+      "witness": "ARTIFACT_IR_MUTATION",
+      "scenario": "Mutate cancellation/exception/await release edge and reject ownership proof.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "runtime-interpreter-fallback",
+      "stage": "LOWERING_ARTIFACT",
+      "witness": "ARTIFACT_IR_MUTATION",
+      "scenario": "Insert unexpected interpreter/JIT entry into sealed artifact and reject closure proof.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "proxy-static-instance-confusion",
+      "stage": "LOWERING_ARTIFACT",
+      "witness": "ARTIFACT_IR_MUTATION",
+      "scenario": "Mutate proxy lowering to expose static method on an instance wrapper.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "actor-stale-generation",
+      "stage": "RUNTIME_STRESS",
+      "witness": "EXECUTED_GUEST_NEGATIVE",
+      "scenario": "Reject use of an ActorRef from retired generation under restart.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "cancel-pending-io",
+      "stage": "RUNTIME_STRESS",
+      "witness": "EXECUTED_GUEST_NEGATIVE",
+      "scenario": "Cancel suspended owned frame during pending I/O and prove single cleanup.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "quota-oom-churn",
+      "stage": "RUNTIME_STRESS",
+      "witness": "EXECUTED_GUEST_NEGATIVE",
+      "scenario": "Bound live actor scratch allocations and reject quota exhaustion safely.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "publish-unsubscribe-close",
+      "stage": "RUNTIME_STRESS",
+      "witness": "EXECUTED_GUEST_NEGATIVE",
+      "scenario": "Race pub/sub publish with unsubscribe and close while preserving generation fences.",
+      "status": "AUTHORED_NOT_EXECUTED"
+    }
+  ]
+}
