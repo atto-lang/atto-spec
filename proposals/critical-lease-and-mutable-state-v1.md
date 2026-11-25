@@ -2,6 +2,7 @@
 
 Status: **proposed normative contract**. Backend conformance is not established
 by this document; executable evidence must be attached per target and commit.
+This candidate refines the existing [state-container contract](../spec/state-containers-and-virtual-actors.md) and [actor state chapter](../spec/05-actors-and-state.md); it does not weaken their sealed-state or ownership rules.
 
 ## Syntax and admission
 
@@ -58,6 +59,8 @@ end
    closure, or reference aliases. Support for such fields requires deep
    ownership, copy, borrow and escape rules; do not infer it from primitive
    scalar support.
+
+A guard is not a transaction: already-performed writes are not implicitly rolled back by a checked failure. Release exactly once on all exits. The protected region includes reachable nested allocations; neither a host reference nor `share!` supplies unsynchronized write authority. Owned copy-out is allowed only after proving the value has no escaping state loan. Existing restricted scalar projection profiles remain narrower than the general target.
 
 ## Twenty executable regression scenarios (two ten-case matrices)
 

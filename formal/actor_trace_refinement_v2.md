@@ -15,7 +15,7 @@ dispatch are FIFO; completion of concurrently running turns need not be FIFO.
 The canonical vocabulary, field types and bounded budgets live at
 atto-common-source/contracts/actor-trace-v2.json. The fail-closed verifier
 lives at atto-platform-conformance/bin/check_actor_trace_v2.py.
-Legacy Oreslang v1 receive records are not, alone, proof of completion.
+Earlier version-1 receive records are not, alone, proof of completion.
 
 ## Required linearization points
 

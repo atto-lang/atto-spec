@@ -1,0 +1,26 @@
+name: AttoLang keyword lexical property checks
+on:
+  push:
+    paths:
+      - 'tests/keyword-lexical-property.test.mjs'
+      - 'tests/helpers/keyword-taxonomy-lexical-reference.mjs'
+      - 'contracts/keyword-taxonomy-v1/catalog.json'
+      - '.github/workflows/keyword-lexical-property.yml'
+  pull_request:
+    paths:
+      - 'tests/keyword-lexical-property.test.mjs'
+      - 'tests/helpers/keyword-taxonomy-lexical-reference.mjs'
+      - 'contracts/keyword-taxonomy-v1/catalog.json'
+      - '.github/workflows/keyword-lexical-property.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source_only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node --test tests/keyword-lexical-property.test.mjs

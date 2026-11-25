@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "feature": "atto-iterator-stream-lazy-v1",
+  "contract": "language/iterator-stream-lazy-v1.md",
+  "status": "candidate-no-guest-evidence",
+  "hostReferenceIsGuestExecution": false,
+  "compilerBackends": {
+    "java": "not_executed",
+    "llvm": "not_executed",
+    "net": "not_executed",
+    "wasm": "not_executed",
+    "forge": "not_executed",
+    "rs": "not_executed",
+    "js": "not_executed",
+    "cranelift": "not_executed",
+    "hdl": "unsupported"
+  },
+  "cases": [
+    {
+      "id": "lazy-map-filter-take",
+      "phase": "guest",
+      "expect": "ordered_lazy_pull",
+      "status": "not_executed"
+    },
+    {
+      "id": "fold-no-intermediate-buffer",
+      "phase": "guest",
+      "expect": "left_fold",
+      "status": "not_executed"
+    },
+    {
+      "id": "collect-bounded-success",
+      "phase": "guest",
+      "expect": "ok_within_limit",
+      "status": "not_executed"
+    },
+    {
+      "id": "collect-overflow-cleanup",
+      "phase": "guest",
+      "expect": "error_and_exact_release",
+      "status": "not_executed"
+    },
+    {
+      "id": "result-option-as-data",
+      "phase": "guest",
+      "expect": "not_end_marker",
+      "status": "not_executed"
+    },
+    {
+      "id": "sticky-terminal-failure",
+      "phase": "guest",
+      "expect": "same_failure_no_reentry",
+      "status": "not_executed"
+    },
+    {
+      "id": "async-concurrent-pull",
+      "phase": "guest",
+      "expect": "reject_concurrent_pull",
+      "status": "not_executed"
+    },
+    {
+      "id": "async-close-idempotent",
+      "phase": "guest",
+      "expect": "shared_cleanup_future",
+      "status": "not_executed"
+    },
+    {
+      "id": "cancel-pending-receive",
+      "phase": "guest",
+      "expect": "no_orphan_waiter",
+      "status": "not_executed"
+    },
+    {
+      "id": "buffer-zero-rendezvous",
+      "phase": "guest",
+      "expect": "no_prefetch",
+      "status": "not_executed"
+    },
+    {
+      "id": "buffer-one-backpressure",
+      "phase": "guest",
+      "expect": "bounded_storage",
+      "status": "not_executed"
+    },
+    {
+      "id": "write-admission-quota",
+      "phase": "guest",
+      "expect": "reject_extra_registration",
+      "status": "not_executed"
+    },
+    {
+      "id": "close-drain-before-terminal",
+      "phase": "guest",
+      "expect": "drain_fifo_then_eof_or_error",
+      "status": "not_executed"
+    },
+    {
+      "id": "reader-lease-exclusivity",
+      "phase": "guest",
+      "expect": "single_destructive_reader",
+      "status": "not_executed"
+    },
+    {
+      "id": "reject-async-map-callback",
+      "phase": "compile",
+      "expect": "E_STREAM_CALLBACK_EFFECT",
+      "status": "not_executed"
+    },
+    {
+      "id": "reject-borrow-escape",
+      "phase": "compile",
+      "expect": "E_ITERATOR_BORROW_ESCAPE",
+      "status": "not_executed"
+    },
+    {
+      "id": "reject-unbounded-collect",
+      "phase": "compile",
+      "expect": "E_STREAM_UNBOUNDED_COLLECT",
+      "status": "not_executed"
+    },
+    {
+      "id": "cancel-ownership-release",
+      "phase": "guest",
+      "expect": "each_uncommitted_released_once",
+      "status": "not_executed"
+    }
+  ],
+  "receiptRequired": [
+    "source_sha",
+    "source_tree_sha",
+    "compiler_version",
+    "backend",
+    "case_id",
+    "executed_steps_nonzero",
+    "guest_executed",
+    "observed_output",
+    "cleanup_counter",
+    "buffer_high_water"
+  ]
+}

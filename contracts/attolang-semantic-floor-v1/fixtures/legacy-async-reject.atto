@@ -1,0 +1,3 @@
+async fnc prohibited() -> int ::
+  return 42
+end

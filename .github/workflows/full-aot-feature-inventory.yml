@@ -1,0 +1,36 @@
+name: AOT feature inventory contract (host only)
+
+on:
+  pull_request:
+    paths:
+      - 'language/full-aot-feature-admission-v1.md'
+      - 'conformance/full-aot-feature-inventory-v1.tsv'
+      - 'tests/full_aot_feature_inventory.rs'
+      - '.github/workflows/full-aot-feature-inventory.yml'
+  push:
+    paths:
+      - 'language/full-aot-feature-admission-v1.md'
+      - 'conformance/full-aot-feature-inventory-v1.tsv'
+      - 'tests/full_aot_feature_inventory.rs'
+      - '.github/workflows/full-aot-feature-inventory.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  registry-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Validate the source registry only (not guest parity)
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'source_head=%s\n' "$(git rev-parse HEAD)"
+          printf 'registry_blob=%s\n' "$(git hash-object conformance/full-aot-feature-inventory-v1.tsv)"
+          rustc --edition=2021 --test tests/full_aot_feature_inventory.rs -o "$RUNNER_TEMP/atto-aot-feature-registry-tests"
+          "$RUNNER_TEMP/atto-aot-feature-registry-tests"
+          echo 'HOST_ONLY: no AttoLang compiler, native guest, or backend parity was executed.'
