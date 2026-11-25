@@ -26,7 +26,8 @@ Every failure ends exactly one of these domains. A failure must never take down 
 | --- | --- | --- |
 | `throw` not caught, `raise` not recovered | Actor | Restart |
 | `panic`, including `unwrap()` on `None` | Actor | Restart |
-| Integer overflow | Actor | Restart |
+| Checked integer overflow or division by zero, caught by `trap!` / `catch` | Expression / callable | Typed error; no actor restart |
+| Unhandled checked arithmetic failure | Actor | Supervised failure after ordinary throw/raise escalation |
 | Stack exhaustion | Actor | Restart |
 | Guest trap or out-of-bounds access | Actor | Restart |
 | Turn deadline exceeded | Actor | Restart |
@@ -34,7 +35,7 @@ Every failure ends exactly one of these domains. A failure must never take down 
 | Access outside the tenant's memory | Tenant VM | The tenant stops, with no restart, because the boundary itself failed |
 | Runtime bug, VM corruption, OS kill | Process | No recovery is promised |
 
-That an actor's failure restarts the actor, including on stack exhaustion and integer overflow, is **TARGET (decided)**, because one untrusted actor must not end hundreds or thousands of siblings. The exact class of each other row is **PROPOSED**. A backend that cannot contain an actor-level failure must not run untrusted actors directly on that path.
+That an actor's failure restarts the actor, including on stack exhaustion and unhandled integer overflow, is **TARGET (decided)**, because one untrusted actor must not end hundreds or thousands of siblings. The exact class of each other row is **PROPOSED**. A backend that cannot contain an actor-level failure must not run untrusted actors directly on that path.
 
 ## Stacks
 
