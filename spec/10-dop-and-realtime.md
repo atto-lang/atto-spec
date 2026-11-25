@@ -2,6 +2,8 @@
 
 **Status: DRAFT; largely an optimization/profile target, not universal runtime evidence.**
 
+For the inverted struct/class value-versus-identity split and optimization legality, see [chapter 27](27-inverted-structs-classes-aot-jit.md). It is a proposed contract, not implemented guest parity.
+
 ## Data-layout semantics
 
 AttoLang targets efficient arrays/records and explicit or compiler-selected AoS, SoA, AoSoA, and SoAoS layouts. Inverted classes, field-column storage and ECS-like iteration are performance representations. They MUST preserve declared value/ownership semantics, including identity, deterministic drop, bounds checking, mutation rights and actor state isolation.

@@ -1,0 +1,12 @@
+// TARGET guest fixture: NOT_EXECUTED on all backends as of 2026-11-14.
+pub fnc main(): int {
+  val counter: Atomic<int> = Atomic.new(0);
+  counter.fetch_add(1);
+  counter.fetch_add(2);
+  val result = counter.compare_exchange(3, 42);
+  if result.exchanged then
+    return counter.load();
+  else
+    return 0;
+  fi
+}

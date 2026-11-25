@@ -60,6 +60,10 @@ Keywords may also be described linguistically as nouns (e.g. `actor`), relationa
 
 **The historical 93-word inventory remains authoritative for its cited revisions; the two explicitly staged target additions are not historical observations.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
 
+## Enum-pattern arm syntax — TARGET (not certified)
+
+The canonical enum syntax is `define enum Name { Variant, Data { field: Type } }`. Match arms begin with contextual `on` and use unqualified variants when the scrutinee's enum is known: `do match msg over on Run { job_id } as r -> { ... } end`. `as r` names a scoped readonly view of the entire narrowed variant, not a copied payload. A prefix dot such as `.Run` is not canonical. A qualified `EnumName.Run` may resolve ambiguity. Field-level renaming such as `job_id as j` remains deferred. See [chapter 27](27-typed-enum-pattern-aliases.md). The keyword inventory above is the observed Java lexer, **not** proof of target support.
+
 ## Literals
 
 | Kind | Form | Notes |
@@ -190,6 +194,12 @@ See [static binding type queries](../language/return-binding-type-query-target-v
 ## Typed local constant syntax (target)
 
 `T name = expression;` and `const T name = expression;` are equivalent typed local constants; `const name: T = expression;` is the type-right form. A runtime initializer cannot silently become `val`. `const mut` is explicit, and bare `mut T name` is rejected in this local grammar. Fields and contextual pattern bindings are separate. See [chapter 27](27-implicit-const-and-const-mut.md).
+
+## Byte and bit patterns (TARGET, not parser-supported today)
+
+See [chapter 27](27-aot-overloads-nested-and-binary-patterns.md#31-byte-sequence-and-bit-sequence-patterns-target) for the normative intended `match` syntax. In *pattern position only*, `bytes[71, 69, 84 | tail]` tests a byte prefix and `bits[1, 0, 1 | tail]` tests MSB-first individual bits. `|` introduces a tail only in these brackets, never bitwise OR. `bytes[]` / `bits[]` are exact empty-sequence patterns. A bracket's meaning is determined by its syntactic role: `on bytes[3]` matches exactly one byte with value 3, whereas `packet { payload: bytes[3] }` captures a three-byte segment. `binary { ... }` and `packet { ... }` use typed field/length patterns, not positional byte elements. The frontend must build distinct AST nodes and must not rewrite ordinary value expressions or type shapes based on whitespace.
+
+**Current backend status:** Java `parsePattern()` explicitly rejects `[` list patterns; the new `bytes[...]`, `bits[...]`, `binary { ... }` and `packet { ... }` forms remain TARGET until real parser/type/borrow/lowering support is delivered. The Node reference tests are not execution evidence. Literal `0xNN` source notation likewise remains outside currently accepted Java/LLVM lexical grammar; use decimal bytes in canonical target fixtures.
 
 ## Statements and semicolons
 

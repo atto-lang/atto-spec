@@ -31,7 +31,29 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
-- [Optional types and named/omittable call arguments](spec/27-optional-and-named-arguments.md): target semantics for independent `?` positions, defaults, named binding and call-plan provenance; no guest certification.
+- [Optional types and named/omittable call arguments](spec/27-optional-and-named-arguments.md): independent `?` positions, defaults, named binding and provenance; host tests do not certify guest support.
+
+- [Immediate channel probes](spec/27-channel-immediate-probes.md): recoverable `Accepted`/`Full(T)`/`Closed(T)`, no waiter registration and affine ownership; host reference only.
+
+- [Effects and lifetimes](spec/23-effects-and-lifetimes.md): typed CFG loans, latent effects, actor-domain retirement and proof gates; canonical bang ownership syntax and host-only contract evidence.
+
+- [Structural tilde shorthand v1](language/structural-tilde-v1.md): candidate `~` synonym for `structural`, typed pattern matching and named/positional delimiter safety (**not guest-verified**).
+
+- [Structural member witness matrix](language/structural-member-witness-v1.md): proposed interface, trait, class, struct, Record, Tuple and Map contracts; [43 host-only cases](conformance/structural-member-witness-v1.json) (not backend-executed).
+
+- [Statement match arm delimiters v1](language/match-arm-delimiters-v1.md): per-arm `end` or braces, plus the outer match `end`; source-only structural cases remain unexecuted.
+
+- [Anonymous structural shape types, singleton and union field values (proposed)](language/anonymous-structural-shapes-v1.md)
+
+- [Anonymous structural shapes: source-only 50-case registry](conformance/anonymous-structural-shapes-v1.json) — proposed, not compiler-executed.
+
+- [Atomics and receive-only serialization](spec/27-atomics-and-receive-only-serialization.md): `Atomic<T>`, memory order, concurrent receiver methods and serial receive admission; target only.
+
+- [Typed enum patterns and aliases](spec/27-typed-enum-pattern-aliases.md): canonical target `on Run { ... } as r`, scoped type narrowing and borrows; no guest proof claimed.
+
+- [AOT overloads, nested and binary patterns](spec/27-aot-overloads-nested-and-binary-patterns.md): static callable/class constructor selection, head/tail and byte/bit/packet matching; target contract, not guest parity.
+
+- [Root Object and Actor lifecycle](spec/27-root-object-actor-lifecycle.md): target root APIs, deterministic cleanup, shutdown quiescence and no-GC limitations; host contract only.
 
 - [Actor creation effect `spawns` v1](language/actor-spawns-effect-v1.md): explicit spawn-capable callable effects, nested actor parentage, tenant-scoped authorization, quotas, lifecycle fencing and 26 proposed conformance cases (19 source / 7 runtime). **Target proposal; no compiler or guest parity certified.**
 
