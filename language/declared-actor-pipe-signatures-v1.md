@@ -59,8 +59,8 @@ This exact `mtd (Foo self) receive(ActorMail<Input> m)` spelling is valid. The c
 
 Rules:
 - A declared `receives T` specifies what the linked private handler must accept; `mtd (Foo self) receive(ActorMail<U> m)` satisfies that inbox signature **only when `U` resolves exactly to `T`**, with no implicit coercion, duck typing or invented generic payload.
-- Require **exactly one** private `receive(ActorMail<T>)` ingress per implemented actor, with `void` result, no public visibility and no writable/raw receiver loan. Reject a second inline `receive` and an attached `mtd receive` for the same actor. Ordinary methods cannot take `ActorMail<T>`.
-- A declaration without an attached ingress or other authenticated matching implementation is still valid *forward-only metadata*, but it is **unfulfilled**: the linker must refuse to mark it executable/spawnable or admit it to a `pipe` graph.
+- Require **exactly one** private `receive(ActorMail<T>)` ingress per implemented actor, with `void` result, no public visibility and no writable/raw receiver loan. Reject a second inline `receive` and an attached `mtd receive` for the same actor. Ordinary methods cannot take `ActorMail<T>`. Reject direct calls `receive(m)`, `self.receive(m)`, `Foo.receive(m)` and `super.receive(m)`; only the authenticated actor runtime may enter this sealed handler.
+- A declaration without an attached ingress or other authenticated matching implementation is still valid *forward-only metadata*, but it is **unfulfilled**: the linker must refuse to mark it executable/spawnable or admit it to a `pipe` graph. The typed linker tracks an `inbox_witnessed` bit only after a signature-compatible attached or inline handler is found. This is source-level static evidence, never runtime authorization; `emits_witnessed` remains false until independent effect proof.
 - Multiple files may contribute the declaration and receiver mtd only through the authenticated same-package/namespace linker; never link by spelling alone.
 - `emits U` additionally requires effect-checked `emit(U)` behavior (which may output zero, one or many values); an empty `receive` body does not prove emission capability. `sends M` similarly requires transitive ordinary-message effect checking. The three proof obligations are distinct.
 - The parser/source-only linker may record the signature and private ingress without generating any guest code. Runtime admission also needs verified body effects, cancellation/backpressure, supervisor CONTROL separation, actor generation fencing and trusted mailbox dispatch.
@@ -80,6 +80,22 @@ define actor Foo receives int emits bool as
     }
 end
 ```
+
+An actor may repeat its inbox contract on a concrete definition while keeping its handler out-of-line:
+
+```atto
+declare actor Foo receives int;
+
+define actor Foo receives int as
+    // State and other actor members; no inline receive required here
+end
+
+mtd (Foo self) receive(ActorMail<int> message): void {
+    // Attached sealed mailbox ingress
+}
+```
+
+The nominal `receives` type, concrete `receives` type (if restated), and the attached `ActorMail<T>` payload must all agree. A concrete definition's `receives` clause without an inline handler is valid **only if** exactly one attached private receiver satisfies it in the same verified namespace. If the declaration and attached handler both say `int` but the concrete header says `bool`, that is an `E_SIGNATURE` error—not a valid override or an implicit conversion. This remains source-level linking metadata, not a runtime admission certificate.
 
 The Rust target namespace linker from merged compiler PR #91 can associate nominal headers and concrete definitions as **nonexecuting metadata**. An ordinary browser `define actor` program is a distinct execution path; do not silently redirect it to an untrusted namespace implementation. Linking by bare name across packages, unchecked symlinks, structural matches or forged `ActorRef` objects is prohibited.
 
