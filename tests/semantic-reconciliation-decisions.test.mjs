@@ -27,7 +27,8 @@ test('both return-first separators and exact bullet code point are normative', (
 });
 test('core reconciled spec examples are present', () => {
  assert.ok(read('spec/02-types-and-patterns.md').includes('implicit `val`'));
- assert.ok(read('spec/02-types-and-patterns.md').includes('on Status.Pending'));
+ assert.ok(read('spec/02-types-and-patterns.md').includes('on Pending ->')); // contextual short enum arm, current chapter 02
+ assert.match(read('spec/27-typed-enum-pattern-aliases.md'), /qualified/i);
  assert.ok(read('spec/05-actors-and-state.md').includes('inside `receive`'));
  assert.ok(read('spec/05-actors-and-state.md').includes('Result<Ack, SendError>'));
  assert.ok(read('spec/01-source-and-syntax.md').includes('on Ok(ack)'));
