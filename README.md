@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Named-generic collection layouts](spec/27-collection-layout-named-generics.md): target layout and nominal struct field initialization; host reference only.
+
 - [Telemetry source identity and tracing](spec/27-telemetry-source-identity-and-tracing.md): target contract; host reference checks do not establish guest execution.
 
 - [Virtual actor identity and directory](spec/20-virtual-actors-directory-inspection.md): target contract; host reference checks do not establish guest execution.

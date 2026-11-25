@@ -22,6 +22,8 @@ These rules close gaps found in the Java and LLVM DOP reference code. They const
 
 A layout annotation is not a promise of speedup. The compiler should select layout using access-pattern evidence and report effective layout with build-time diagnostics. Vectorization, SIMD and zero-copy transfers must be proven against scalar and copy baselines.
 
+The [named-generic layout target](27-collection-layout-named-generics.md) defines physical layout identity and safe nominal field initialization without claiming guest parity.
+
 ## Cache and CPU locality
 
 L1/L2/LLC locality, NUMA ownership, worker-lane affinity and contiguous data access are optimization goals. Keep distinctions explicit:

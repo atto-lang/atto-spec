@@ -143,7 +143,7 @@ In the opt-in borrow-default profile, parameters have fixed local bindings unles
 
 The detailed normative distinction between **`T? name`**, **`T name?`**, and **`T? name?`**, including omission provenance and negative conformance cases, is in [chapter 27](27-optional-and-named-arguments.md). This section is a summary and must not be read as a separate lowering rule.
 
-Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
+Runtime value arguments use **`label: expression`**, whereas generic type arguments use **`T=Type`**. Ordinary assignment in a call is **not** a named argument. The dedicated `StructName(field=value)` target applies only to statically resolved implicit nominal struct fieldwise initialization, not ordinary callable arguments (see [layout chapter](27-collection-layout-named-generics.md)). This surface is intended for ordinary functions, instance/static methods and constructors with statically known parameter names; dynamic/foreign/opaque callables without a verified name-bearing signature reject named calls.
 
 ```atto
 fnc combine(int first, int second) -> int ::
