@@ -1,0 +1,18 @@
+// TARGET guest fixture: serial limits receive() admission only.
+// Runtime harness must hold one receive suspended and call read_count concurrently.
+// NOT_EXECUTED on real AttoLang backends.
+define serial actor Counter as
+  state {
+    let int count: 0
+  }
+
+  receive(int message): void {
+    self.handle_state(critical-write |s| -> {
+      s.count = s.count + message;
+    });
+  }
+
+  read_count(): int {
+    return self.handle_state(critical-read |s| -> s.count);
+  }
+end

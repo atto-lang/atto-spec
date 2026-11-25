@@ -1,0 +1,48 @@
+name: Exceptional bang spelling source contract (NOT guest parity)
+on:
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'language/exception-control-bang-spellings-v1.md'
+      - 'language/trap-result-v1.md'
+      - 'spec/16-lexical-and-grammar-reference.md'
+      - 'contracts/exception-control-bang/v1/**'
+      - 'tests/exception-control-bang-spellings.test.mjs'
+      - '.github/workflows/exceptional-bang-spellings.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - name: Exact Git source checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify source commit/tree and regular-file modes
+        shell: bash
+        env:
+          EXPECTED_SOURCE: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SOURCE" =~ ^[a-f0-9]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          git rev-parse 'HEAD^{tree}'
+          for file in language/exception-control-bang-spellings-v1.md contracts/exception-control-bang/v1/cases.json tests/exception-control-bang-spellings.test.mjs; do
+            mode="$(git ls-files -s -- "$file" | cut -d' ' -f1)"
+            test "$mode" = 100644 || { echo "Unsafe source mode for $file"; exit 1; }
+          done
+      - name: Pinned Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Run source-only lexical contract tests
+        run: |
+          node --check tests/exception-control-bang-spellings.test.mjs
+          node --test tests/exception-control-bang-spellings.test.mjs
+          echo 'EXCEPTION_BANG_SOURCE_REFERENCE=RUN'
+          echo 'EXCEPTION_BANG_BACKEND_GUEST_PARITY=NOT_EXECUTED'
