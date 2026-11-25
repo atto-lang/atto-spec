@@ -11,8 +11,8 @@ const failure = (effect, label) => Object.assign(new Error(label), {effect, labe
 
 // Handler jurisdiction is explicit: JavaScript's catch-all is NOT Atto catch.
 function trap(f) {
-  try { return Some(f()); }
-  catch (e) { if (e.effect === 'throw') return None; throw e; }
+  try { const v=f(); return v?.tag==='Ok'||v?.tag==='Err' ? v : Ok(v); }
+  catch (e) { if (e.effect === 'throw') return Err(e); throw e; }
 }
 function catch_throw(f, handler) {
   try { return f(); }
@@ -73,7 +73,7 @@ test('throw stops every later functional stage; trap applies to entire call boun
     x => forward(x, [() => { throw failure('throw','X'); }, () => { throw Error('unreachable'); }]),
     x => reverse([() => { throw Error('unreachable'); }, () => { throw failure('throw','X'); }], x),
   ]) {
-    assert.deepEqual(trap(() => run(1)), None);
+    const caught=trap(() => run(1)); assert.equal(caught.tag,'Err'); assert.equal(caught.error.label,'X');
   }
 });
 
@@ -93,10 +93,10 @@ test('recover handles raise, but neither trap nor recover intercept panic', () =
   assert.throws(() => recover_raise(panic, () => 'incorrect'), e => e.effect === 'panic');
 });
 
-test('returned Err remains a value, and trap Err is Some(Err), never None', () => {
+test('returned Err remains a value, and trap preserves Result without wrapping', () => {
   const result = forward(1,[x => Err('bad-' + x)]);
   assert.deepEqual(result, Err('bad-1'));
-  assert.deepEqual(trap(() => reverse([x => Err('bad-' + x)], 1)), Some(Err('bad-1')));
+  assert.deepEqual(trap(() => reverse([x => Err('bad-' + x)], 1)), Err('bad-1'));
   assert.notDeepEqual(Some(Err('bad-1')), None);
 });
 
@@ -176,7 +176,7 @@ test('a graph cancelled before an actor panic still propagates CONTROL', () => {
 
 test('trap construction does not catch later asynchronous completion', async () => {
   const handle = {get_done: async () => Err({kind:'StageFailure',stage:'f'})};
-  assert.deepEqual(trap(() => handle),Some(handle));
+  assert.deepEqual(trap(() => handle),Ok(handle));
   const completed = await handle.get_done();
-  assert.deepEqual(trap(() => completed),Some(Err({kind:'StageFailure',stage:'f'})));
+  assert.deepEqual(trap(() => completed),Err({kind:'StageFailure',stage:'f'}));
 });

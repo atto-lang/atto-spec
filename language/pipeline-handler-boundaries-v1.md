@@ -37,19 +37,21 @@ a sink as ordinary values, or reorders constructor side effects.
 
 ## Exact exception handling jurisdiction
 
-| Encountered outcome | `try/catch` | caller-side `trap` | `recover` | stage/graph boundary |
+| Encountered outcome | `try/catch` | caller-side `trap!` | `recover` | stage/graph boundary |
 | --- | --- | --- | --- | --- |
-| return `T` | no intervention | `Some(T)` | no intervention | ordinary value |
-| return `Result.Err(E)` | **not** an exception | `Some(Err(E))` | **not** an exception | typed DATA unless explicitly propagated |
-| return `Option.None` | **not** an exception | `Some(None)` | **not** an exception | typed DATA, not EOF |
-| `throw Error` | nearest eligible catch | converts to `None` when it reaches this trap | not implicitly a raise | otherwise escalates per error contract |
+| return `T` | no intervention | `Ok(T)` | no intervention | ordinary value |
+| return `Result.Err(E)` | **not** an exception | `Err(E)` unchanged | **not** an exception | typed DATA unless explicitly propagated |
+| return `Option.None` | **not** an exception | `Ok(None)` | **not** an exception | typed DATA, not EOF |
+| `throw Error` | nearest eligible catch | converts to `Err(original Error)` when it reaches this trap | not implicitly a raise | otherwise escalates per error contract |
 | `raise Error` | bypasses | bypasses | nearest eligible recover | otherwise escalates; graph fails if stage exits |
 | `panic Error` | bypasses | bypasses | bypasses | actor supervisor CONTROL; graph also settles on failure |
-| cancellation | does not synthesize a throw | does not synthesize `None` | not a raise | typed cancellation and quiescence |
+| cancellation | does not synthesize a throw | bypasses trap | not a raise | typed cancellation and quiescence |
 
 All `throw`, `raise`, and `panic` operands must satisfy the language's
 existing appropriate `Error` capability requirement; non-Error payloads
-are rejected statically. Only a handler **inside the execution boundary**
+are rejected statically. The current [trap-to-Result contract](trap-result-v1.md) is authoritative: a normal Result-typed operand retains its existing result, a normal non-Result operand becomes Ok, and an ordinary throw becomes Err with its original cause. Option is not flattened. Legacy bare trap is a spelling alias.
+
+Only a handler **inside the execution boundary**
 can turn a stage exception into a normal stage value. A caller's
 `try/catch` or `trap` around construction may handle *synchronous*
 construction throws, but never an independently scheduled later
@@ -86,7 +88,7 @@ Continuous construction produces checked
 `await handle.get_done(): Result<PipeStats,PipeError>` (candidate API).
 Both paths must be deliberately consumed. `trap (graph construction)`
 cannot catch later completion; `trap (await handle.get_done())`
-still gives `Some(Err(PipeError))` for a normally returned error.
+preserves `Err(PipeError)` for a normally returned error.
 A `PipeError.StageFailure` preserves the exact originating effect,
 stage and causal error, but is **not** a replacement supervisor notice.
 
