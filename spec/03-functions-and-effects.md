@@ -2,14 +2,29 @@
 
 **Status: DRAFT.**
 
-A free function is declared with `fnc`; class and actor instance methods use an implicit `self` and canonically omit `fnc`. Callables have explicit or inferred return types where grammar permits. Each invocation returns **one value**; tuples/records are themselves one value.
+A free function is declared with `fnc`; class and actor instance methods use an implicit `self` and canonically omit `fnc`. Every named callable must explicitly declare its return type, including `void`; explicit `-> infer` (or `: infer`) is allowed, but a concrete result type is preferred. Omitted return annotations are invalid. Each invocation returns **one value**; tuples/records are themselves one value.
+
+## Mandatory named-callable return annotations
+
+The accepted AttoLang v1 rule is that **every named function, routine, class/actor instance or static method, out-of-line method, and actor receive handler must explicitly annotate its return**. Accepted syntax includes name-first `name(params) -> T` or `name(params): T` and return-first `[fnc] T <- name(params)`, where `T` can be a concrete type, `void`, or the explicitly requested inference placeholder `infer`. The return-first form also allows braces, `begin`/`end`, and an explicit statement/`end` body; its `<-` token is not an assignment operator. Inference is permitted but less desirable for public APIs and cross-module signatures; the compiler resolves it statically or reports an error, never silently choosing void. For example:
+
+~~~atto
+fnc calculate(int x) -> int { return x + 1; }
+fnc shutdown() -> void { }
+fnc choose() -> infer { return 42; }
+~~~
+
+A constructor has no return annotation, since construction is not an ordinary return-valued callable; lambdas retain separately specified contextual inference. See the [normative return-type contract](https://github.com/atto-lang/atto-spec/blob/main/language/explicit-callable-return-types-v1.md). This is an accepted target; backend execution and formatter parity remain separately gated.
+
+## Candidate static binding type queries
+
+Explicit `infer` is already part of the target return annotation contract. The separate [static binding type query proposal](../language/return-binding-type-query-target-v1.md) describes `typeof name` and parenthesized compatibility input; it does not certify backend support or permit omitted annotations.
 
 ## Signatures and visibility
 
 ```atto
 pub fnc square(int x) -> int ::
-  int result = x * x,
-  result
+  return x * x
 end
 
 define class Ledger as
@@ -20,22 +35,16 @@ define class Ledger as
   end
 
   static fnc zero() -> int ::
-    0
+    return 0
   end
 end
 ```
 
-The `-> T :: ... end` form is the **comma-delimited expression-body** style:
-top-level commas evaluate items from left to right and the final expression
-is the implicit return value for a non-`void` callable. A brace-delimited
-`{ ... }` body remains an explicit statement body, where a result requires
-`return`. Ordinary `-> T` end bodies without `::` retain their legacy
-statement semantics. Explicit `return` remains accepted inside `::` bodies
-for compatibility. The same rule applies to `fnc`, `routine`, class
-methods and explicit `mtd` receiver methods. Details and negative rules
-are in the [function grammar](16-lexical-and-grammar-reference.md#function-forms).
-Backend support must be tested independently; a declared contract alone is
-not proof of LLVM or .NET execution.
+This `-> T :: ... end` style is one of the valid [function forms](16-lexical-and-grammar-reference.md#function-forms). Backend support differs until grammar parity is proved.
+
+## Comma callable bodies: versioned candidate
+
+`::` retains its existing optional statement-header delimiter meaning in the established profile, including return-first declarations. The separate comma-body proposal (#35) selects an implicit-tail body for name-first `-> T :: ... end` **only in an explicitly selected future profile**. No working edition selector is established here. Do not reinterpret existing statement bodies or return-first effect headers. In the candidate profile, top-level comma items evaluate once left to right; nested call/tuple/generic commas retain their roles. A non-void body needs a terminal expression of the declared type, never a declaration. Empty items and trailing commas reject. Statement bodies need explicit `return` or `^`; `^` cannot return a declaration. Legacy explicit return and semicolon bodies must be preserved or migrated explicitly, not heuristically mixed with comma sequencing. A runtime local needs explicit `val`/`let`, not type-first const shorthand. Formatter preserves body kind and effects; conversion requires checked equivalence. See the [return-first contract](../language/return-first-and-begin-callables-v1.md) and [initialization contract](27-implicit-const-and-const-mut.md).
 
 ## Lambda bodies, explicit results and comma sequencing
 
@@ -56,12 +65,12 @@ val inferred_with_local = || -> val int x = 5, x + 3;
 
 val block = || -> int { return 8; };
 val comma_block = || -> int ::
-    int x = 5,
+    val int x = 5,
     x + 3
 end;
 ```
 
-The `-> Type :: ... end` lambda form uses the same top-level comma
+In the opt-in candidate comma-body profile, the `-> Type :: ... end` lambda form uses the same top-level comma
 sequence and implicit terminal-result rule as `fnc`, `routine` and `mtd`.
 An explicit `void` result permits a terminal effect expression with no
 value result; a non-`void` declaration must match the inferred terminal
@@ -104,7 +113,7 @@ to typed `|n| => Type -> expression` and inline local sequences.
 
 ### Backend implementation and verification boundary (2026-11-14)
 
-These are **unmerged PR candidates**, not language parity or production
+These are **historical PR candidates**, not language parity or production
 acceptance. A test fixture, syntax-only formatter and a zero-step GitHub
 workflow must never be counted as executable guest evidence.
 

@@ -10,10 +10,15 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 - Identifiers and keywords are case-sensitive.
 - An identifier starts with a letter or `_` and continues with letters, digits or `_`. The Java lexer accepts any Unicode letter. Whether every backend must do the same is open (S-22).
 - `//` starts a line comment. `/* ... */` is a block comment, and block comments nest.
+- **TARGET (decided, 2026-11-14):** block comments nest at most 128 deep. Opening a 129th level is a compile error, reported as `block comment nesting exceeds 128`, before parsing. Java, .NET and LLVM main all enforce this limit with that wording (LLVM via oreslang-source.llvm#1251, merged 2026-11-15, with fixtures at depth 128 accepted and 129 rejected).
+
+## Canonical exceptional bang keywords (target)
+
+`trap!`, `throw!`, `raise!`, `panic!` are contiguous exceptional tokens; bare forms remain migration aliases. Keep `!=`, `!eq`, ownership bangs, comments and quoted text distinct. See [exception-control bang spellings v1](../language/exception-control-bang-spellings-v1.md). This is not evidence of historical lexer support.
 
 ## Keywords
 
-The Java lexer reserves these words. The LLVM parser has its own keyword handling, and the two lists have not been compared.
+The historical table lists 93 documented Java reserved words. The two additional target words `ifnot` and `unless` are staged for syntax tooling and candidate compiler branches, not a claim about the historical Java or LLVM revisions. See chapter 23 for separate dated source snapshots.
 
 | Group | Words |
 | --- | --- |
@@ -21,7 +26,7 @@ The Java lexer reserves these words. The LLVM parser has its own keyword handlin
 | Callables | `fnc` `routine` `async` `suspends` `generator` `yield` `nlex` `return` `self` `super` `static` |
 | Visibility | `pub` `private` |
 | Bindings | `const` `val` `let` `mut` |
-| Control flow | `if` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
+| Control flow | `if` `ifnot` `unless` `then` `else` `elif` `elseif` `fi` `do` `done` `end` `while` `for` `of` `loop` `block` `break` `continue` `switch` `match` `matches` `over` `default` |
 | Errors | `try` `catch` `finally` `throw` `raise` `panic` `recover` `trap` `defer` |
 | Actors | `actor` `isoactor` `shared` `untrusted` `spawn` `stop` `rt` |
 | Async and channels | `await` `nb` `cb` `select` `readch` `writech` |
@@ -35,11 +40,25 @@ Some of these are narrower than the table suggests:
 - `critical-read`, `critical-write` and `transform-pipe` are recognized by the parser only in declaration context, so `a-b` stays subtraction. Only `nb-select` is handled by the lexer.
 - These words are not reserved by the Java lexer: `enum`, `supervisor`, `state`, `pipe`, `final`, `on`, `when`, `case`, `first`, `infer`, `record` and `tuple`. Some have contextual meaning in the grammar, and others are target features that compilers reject with a diagnostic.
 
+## Contextual ownership prefix operators
+
+| Operation | Canonical spelling | Legacy compatibility spelling |
+| --- | --- | --- |
+| Transfer unique owner | `take! value` | `rt take value` |
+| Shallow/value copy | `copy! value` | `rt copy value` |
+| Shared read loan | `borrow! value` | `rt borrow value` |
+| Exclusive mutable loan | `borrow! mut value` | `rt borrow mut value`, `rt mut borrow value` |
+| Share/freeze admission | `share! value` | `rt share value` |
+
+These are parser-contextual **operator forms**, not new reserved words. The parser recognizes adjacent word and `!` only in a valid prefix-expression or parameter-ownership context. No whitespace or comment between verb and `!`; never consume `!=` or `!eq` as a suffix. The operand can immediately follow the bang; formatters emit the bang forms with one separating space. `copy!!` is one deep-copy operator, not shallow copy followed by logical NOT. Legacy aliases have identical typed ownership checks, diagnostics and lowering. Do not add `ref!`, `deref!` or `unref!`; `rt ref`, `rt deref` and `rt unref` remain separate checked-handle operations pending a separate decision.
+
+Ownership prefix operations bind at unary precedence; postfix member/index access binds more tightly (`borrow! foo.bar` borrows that place, while `copy! a + b` copies `a`). The legacy `mut borrow!` normalizes to `borrow! mut`; duplicate qualifiers reject. `borrow!mutfoo` borrows the identifier, not a mutable `foo`. `block { statements }` is the explicit nested lexical scope; the checked-handle profile requires all-path cleanup and a nonescaping loan. See [checked-handle call-loan profile](../language/checked-handle-call-loans-v1.md).
+
 ## Linguistic keyword roles and editor highlighting
 
 Keywords may also be described linguistically as nouns (e.g. `actor`), relational verbs (e.g. `implements`), adjectives (e.g. `pub`), or execution qualifiers (e.g. `suspends`). These analogies are for readers and editor tooling, not additional syntax rules. The proposed taxonomy, semantic scopes, reserved-versus-contextual distinctions, and conformance gates appear in [chapter 23](23-keyword-taxonomy-and-highlighting.md).
 
-**This chapter's documented lexer inventory remains authoritative for its cited revisions.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
+**The historical 93-word inventory remains authoritative for its cited revisions; the two explicitly staged target additions are not historical observations.** The taxonomy does not make TARGET spellings reserved or prove that any backend accepts them.
 
 ## Literals
 
@@ -56,14 +75,16 @@ Keywords may also be described linguistically as nouns (e.g. `actor`), relationa
 
 ## Operators
 
-From lowest to highest precedence, following the v0.6 grammar:
+Historical v0.6 operator table (not current target precedence; see the operator contract below):
 
 | Level | Operators | Associativity |
 | --- | --- | --- |
 | Assignment | `=` | Right |
 | Pipeline | `\|>` | Left |
 | Conditional | `? :` | Right |
-| Logical OR | `\|` | Left |
+| Logical OR | `\|\|` (and `\|` inside conditions) | Left |
+| Logical XOR | `^^` | Left |
+| Logical AND | `&&` (and `,` inside conditions) | Left |
 | Equality and identity | `eq` `neq` `!eq` `==` `!=` `is` | Left |
 | Comparison and type tests | `<` `<=` `>` `>=` `is type` `matches` `as` `as?` | Left |
 | Additive | `+` `-` | Left |
@@ -74,148 +95,101 @@ From lowest to highest precedence, following the v0.6 grammar:
 - `eq` and `neq` are the canonical comparisons. `==` and `!=` are accepted aliases.
 - `is` tests identity. Type tests use `is type`, as in `if animal is type Dog dog then`.
 - Inside an `if` or `while` condition, `,` means AND and `|` means OR, and comma binds tighter.
-- The grammar has no `&&`, `||` or bitwise and shift operators.
+- **SUPERSEDED TARGET (2026-11-14):** the former Boolean `^^` proposal is historical. The 2026-11-20 owner decision reserves `^^` for integer XOR; Boolean XOR uses `Xor(bool,bool)`. Boolean `&&` and `||` retain strict bool operands and left-to-right short circuit. See [operator contract](../language/bitwise-and-stream-operators-v1.md).
+- Backend status on 2026-11-14: Java main and LLVM main accept `&&` and `||`. .NET main accepts only the `and`/`or`/`xor` words. All three mains still reject `^^` as reserved. The fixes are oreslang-source.java#3009, oreslang-source.llvm#1728 / #1739 and oreslang-source.net#521, which adds `&&`, `^^` and `||` to the structured frontend.
+- The current target uses statement-leading `^` for return, not infix XOR or exponentiation. Integer `^^`, `&`, `|`, `~`, and checked `<<<`, `>>>`, `ashr` follow the separate operator contract; `<<` and `>>` are typed I/O.
+- Open: whether the condition-only `,` and `|` spellings stay. oreslang-source.java#3009 proposes removing them in favor of `&&` and `||`.
 - Assignment is an expression, but `if x = y then` is rejected.
 - `name = value` in a call is never a named argument. Named value arguments use `name: value` ([chapter 03](03-functions-and-effects.md)).
 - `++` and `--` exist only in a `for` update clause.
 
+### Current target bitwise precedence and token boundaries
+
+From lowest to highest within the operator expression region: Boolean `||`, Boolean `&&`, integer `|`, Integer bitwise XOR `^^`, integer `&`, equality, comparison, shifts `<<< >>> ashr`, additive, multiplicative, unary (including integer `~`), postfix. See the [normative operator grammar](../language/bitwise-and-stream-operators-v1.md). Boolean XOR is the explicit `Xor` call. `^` is statement-leading return only. Compound forms `&= |= ^^= <<<= >>>= ashr=` require writable integer places. Counts must be in `0..63`, never masked. Three adjacent brackets are shifts in expression context; two are typed I/O. Preserve nested generic closers, `|>` pipelines, and `|x| -> expr` lambdas. Legacy condition-only `|` is profile-specific; parenthesize integer OR where that legacy grammar remains active.
+
 Ternary conditions must have static type `bool`. AttoLang has no truthiness conversion.
+
+## Canonical match-arm introducer (target)
+
+Every arm after `over` starts with contextual `on`; `on Ok(ack)`, `on Err(err)` and `on _` are examples. `on default`, `default`, `else` and bare patterns are invalid match arms; `case` and `default` are switch forms. Use `->`, not `=>`. In `do match`, void arm returns complete the arm; a nonvoid return is rejected. In value match, arm values join the common static result type. The formatter must preserve `on` and `on _`, and must not silently repair invalid bare arms or convert match to switch. Historical accepted spellings in this chapter are evidence only, not normative canonical grammar. Formatter and guest admission require independent proof.
+
+## Return-first named callables and explicit `begin`/`end` (target)
+
+The mandatory return-type rule accepts both conventional `fnc name(args) -> T` / `fnc name(args): T` and return-first `fnc T <- name(args)`, `T <- name(args)`, `fnc T • name(args)`, or `T • name(args)` with exact U+2022 BULLET. `T` may be `void`, `infer`, or a concrete return type. Both contiguous `<-` and exact U+2022 BULLET are declaration delimiters, not assignment or binary operators; lookalikes are rejected. Return-first spelling is also valid for class/actor methods in declaration context; existing visibility, ownership and actor isolation rules do not change.
+
+All three body families are supported for return-first declarations: `{ ... }`, `begin ... end`, and `statement; ... end` with no `begin`. Effect-free headers may start on a new line or the historical same-line statement form; `::` requires a physical newline. A trailing effect clause requires `begin`, `::`, or braces. No implicit tail return for these bodies. The latter two require explicit return for a nonvoid result and admit empty bodies for void. Existing name-first `: T -> { ... }` remains valid. The legacy `-> T` comma/end tail-expression form remains distinct from semicolon/end. These variants define the *same* callable signature, and duplicate declarations remain errors.
+
+See [normative return-first contract](https://github.com/atto-lang/atto-spec/blob/main/language/return-first-and-begin-callables-v1.md). Backend support and tests require independent evidence.
+
+The [logical punctuation fixture registry](../contracts/logical-punctuation-v1/contract.json) follows the current target, not the historical v0.6 table. `Xor` is an eager call, not an infix precedence tier; `&&` binds more tightly than `||`.
 
 ## Function forms
 
-**TARGET (decided, 2026-11-14):** AttoLang distinguishes an ordinary *statement body*
-from an Erlang-inspired *comma expression body*. Return-type spelling alone
-does not determine the behavior; the contiguous **`-> Type ::`** header is
-the meaningful expression-body marker.
+**TARGET (decided):** `: T` and `-> T` are both valid return spellings, and `::` may be included or omitted. No one form is the only correct one.
 
-| Form | Body semantics |
-| --- | --- |
-| `fnc f(int x): int { return x; }` | Braced statement body; explicit `return` |
-| `fnc f(int x) -> int { return x; }` | Same braced statement-body semantics |
-| `fnc f(int x) -> int :: x end` | Comma expression body; the last expression is returned implicitly |
-| `fnc f(int x) -> int :: int y = 5, y + x end` | Lexical bindings followed by a final value expression |
-| `fnc f(int x) -> int\n return x;\nend` | Legacy unmarked end-delimited statement body; preserve compatibility |
-
-Equivalent cases apply to `fnc`, `routine`, bare class methods,
-explicit class `mtd` receiver methods, actor instance methods, and static
-class functions wherever those declarations are otherwise legal. An explicit
-`mtd` does not add an extra overload argument for `self`.
-
-```atto
-pub fnc foo(int foo): int {
-    return 5;
-}
-
-pub fnc foo_expression(int foo) -> int ::
-    int x = 5, x + foo
-end
-
-pub routine triple(int n) -> int ::
-    int factor = 3,
-    n * factor
-end
-
-define class Calculator as
-    pub mtd with_receiver(mut self, int n) -> int ::
-        int offset = 2,
-        offset + n
-    end
-
-    pub static fnc one() -> int ::
-        1
-    end
-end
-```
-
-### Comma-body evaluation and return rules
-
-1. Each top-level `,` **sequences** two body items; it does not create a
-   tuple, a list or a pair. Evaluate items strictly left to right and exactly
-   once. `int x = 5` is an immutable local binding under the usual lexical
-   scope, not actor state.
-2. If the declared return type is non-`void`, the final body item may be
-   an expression, which becomes the function's result without writing
-   `return`. The normal type, effect, ownership and definite-return checks
-   still apply. A trailing declaration cannot satisfy a non-`void` return.
-3. An empty body is permitted only where existing return rules admit it,
-   normally `void`. An empty item (`,,`) and a trailing comma before
-   `end` are invalid.
-4. The new comma operator is **not** a general-purpose operator in ordinary
-   expression or brace-body syntax. Nested `f(a, b)`, tuple/record literals,
-   generic `Map<K, V>` arguments, destructuring, lambda parameters, and
-   `match` arms retain their existing comma grammar. Only commas at the
-   sequence body's top level delimit body items.
-5. A `void` body can use comma sequencing for effects without inventing a
-   returned value; an explicitly written `return;` remains supported. For
-   compatibility with existing source, explicit return/semicolon statements
-   inside `-> Type :: ... end` continue to be admitted, but the canonical
-   expression-bodied style omits `return` on its final value.
-6. Parsing and formatting must preserve this body kind and evaluation order;
-   never normalize a comma expression body to a braced statement body without
-   translating the final expression to an explicit return. The two forms are
-   intentionally **not textually interchangeable**.
-
-These rules do not change the meaning of a comma in an `if` or `while`
-condition (the existing condition-conjunction grammar), or commas in a
-caller's parameter and argument lists.
-
-## Lambda forms and explicit same-line results
-
-Lambda bodies follow the callable distinction. The fat arrow `=>`
-introduces an explicit **result type**, not an expression body. The
-slim arrow `->` introduces the expression itself. This is consistent
-with type-level notation `(int, int) => int`.
+As a grammar rule (**TARGET (decided)**), this reads:
 
 ```ebnf
-lambda_head        = ("|" [ lambda_parameters ] "|" | "fnc(" [ parameters ] ")");
-inline_typed       = lambda_head "=>" type_ref "->" inline_sequence;
-inline_typed_alias = lambda_head "(" "=>" type_ref ")" "->" inline_sequence;
-inline_inferred    = lambda_head "->" inline_sequence;
-block_lambda       = lambda_head "->" [ type_ref ] "{" { statement } "}";
-comma_lambda       = lambda_head "->" type_ref "::" comma_sequence "end";
-inline_sequence    = expression | local_binding "," { local_binding "," } expression;
-comma_sequence     = { sequence_item "," } sequence_item;
-sequence_item      = local_binding | expression | compatible_statement;
+callable_body = return_spec [ "::" ] ( block | { statement } "end" ) ;
+return_spec   = (":" | "->") (type_ref | "infer") ;
 ```
 
-Inferred one-line lambdas preserve `|x| -> expression`.
-Typed inline lambdas are canonically `|x| => Type -> expression`.
-The parenthesized `|x| (=> Type) -> expression` is a noncanonical
-but unambiguous alias, and `|x| -> Type => expression` is **rejected**.
-This is independent of the already supported explicit-return
-`|x| -> Type { ... }` and comma `|x| -> Type :: ... end`
-body forms.
+A named callable **must** include this return specification, even for `void`. `infer` is explicitly allowed but not preferred; omitting the annotation is an error and never means `void` by default. This applies to functions, routines, instance/static methods, actor handlers and out-of-line methods. Constructors and contextual lambda inference follow their separate grammar contracts.
+
+So these all declare the same function:
 
 ```atto
-val plus = |x: int| => int -> x + 1;
-val plus_verbose = |x: int| (=> int) -> x + 1;
-val eight = || -> val int x = 5, x + 3;
-val typed_eight = || => int -> val int x = 5, x + 3;
-val explicit = || -> int ::
-    int x = 5,
-    x + 3
-end;
+fnc add(int a, int b): int { return a + b; }
+fnc add(int a, int b) -> int { return a + b; }
+fnc add(int a, int b): int :: { return a + b; }
+fnc add(int a, int b) -> int :: { return a + b; }
+
+fnc add(int a, int b): int ::
+  return a + b;
+end
+
+fnc add(int a, int b) -> int ::
+  return a + b;
+end
+
+fnc add(int a, int b): int
+  return a + b;
+end
+
+fnc add(int a, int b) -> int
+  return a + b;
+end
 ```
 
-Only a leading local declaration makes an unmarked inline comma sequence
-unambiguous. An otherwise bare `|x| -> a, b` is not a general-purpose
-comma expression because the comma can belong to an enclosing argument list.
-General expression sequences use `:: ... end` with an explicit result
-type. Argument delimiters, generic commas, tuple fields, pattern commas and
-`if` conjunction commas are unrelated syntax.
+The same rule applies to methods. A file may mix forms, since one declaration's form does not affect another's.
 
-For a lambda used as a `|>` stage, the unparenthesized inline lambda ends
-before the next pipeline stage. To place a nested `|>` *inside* that
-lambda expression, group the inner expression. Multiple lambda parameters
-receive fields of **one statically known tuple** of matching arity; the
-pipeline does not invent additional arguments or spread arrays.
+Only the first two forms run on free functions today. See [chapter 19](19-observed-status-2026-11-03.md).
 
-An explicit `void` lambda may perform an effect as its last expression,
-provided it returns `void`. A non-`void` lambda's terminal expression
-must match the declared result type. Existing braced lambdas require an
-explicit `return` for non-`void` results. Nested lexical scopes,
-borrows, throws and suspensions preserve the same static gates as the
-corresponding statement bodies.
+**PROPOSED** parsing rules, because leaving out `::` can make the end of the return type unclear:
+
+1. The return type is read as far as it can go. Without `::`, the `|` in `-> int |x| ...` continues a union type, and the `[` in `-> Vector [const a] = f();` continues a sequence shape. In these cases the author writes `::` to end the type.
+2. A `{` right after the return type or `::` always opens a brace body, which then needs no `end`. A body in the `end` form therefore cannot start with a `{` destructure. Write `const {a} = f();` instead.
+3. Newlines do not separate the return type from the body, because AttoLang has no automatic semicolon insertion.
+
+**PROPOSED** formatter rule: the formatter keeps the form the author wrote and does not rewrite one into another.
+
+### Candidate comma and inline lambda forms
+
+The versioned comma-body candidate is documented in [chapter 03](03-functions-and-effects.md#comma-callable-bodies-versioned-candidate). In the existing profile `::` remains a header delimiter, including after return-first effects. In a separately admitted profile, name-first `-> T :: ... end` sequences top-level comma items and returns its final expression; unmarked semicolon bodies require explicit return. Reject empty/trailing items, terminal declarations in non-void bodies and ambiguous inline argument commas.
+
+Typed inline lambda target: `|params| => T -> expression`, with `|params| (=> T) -> expression` a compatibility alias; reject `|params| -> T => expression`. The inferred `|params| -> expression`, explicit-result brace body `|params| -> T { ... }`, and candidate typed comma body remain distinct. Inline local sequences require a leading binding or explicit grouping; `|x| -> a, b` does not capture a surrounding argument separator. A pipeline passes one value, and multiple lambda parameters require a statically typed tuple of matching arity. An ungrouped lambda stage ends at the next top-level `|>`. Preserve scope, ownership, return type and evaluation order.
+
+### Negated conditionals (TARGET)
+
+See [negated conditionals](ifnot-unless.md) and the [machine-readable contract](../contracts/ifnot-unless-v1.json). The value form requires `else` and `fi`; the `do` imperative form permits optional `else` and closes with `fi`; the brace form permits optional `else` and closes with matching braces only. The boolean head is evaluated once and inverted; `elif` predicates are positive. Invalid non-boolean predicates and unsafe negated binding heads are rejected. This is not evidence of compiler execution.
+
+## Candidate binding type-query annotation
+
+See [static binding type queries](../language/return-binding-type-query-target-v1.md). The proposed `typeof name` and `typeof(name)` forms are not additions to the verified accepted-spelling table; the existing callable-signature production and contextual `infer` remain distinct.
+
+## Typed local constant syntax (target)
+
+`T name = expression;` and `const T name = expression;` are equivalent typed local constants; `const name: T = expression;` is the type-right form. A runtime initializer cannot silently become `val`. `const mut` is explicit, and bare `mut T name` is rejected in this local grammar. Fields and contextual pattern bindings are separate. See [chapter 27](27-implicit-const-and-const-mut.md).
 
 ## Statements and semicolons
 
