@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Conditional expression versus statement forms](spec/27-value-conditionals-and-do-if.md): strict target, preserving the separately gated arm-local v2 profile.
+
 - [Checked directional I/O](language/io-direction-shorthand-v1.md), [prefix/postfix reads](language/postfix-channel-read-expression-v1.md), and [mixed endpoint pipes](language/mixed-endpoint-pipe-v1.md): single-operation and continuous graph contracts; host models only, not portable guest certification.
 - [Pipeline failure accounting](language/pipeline-effect-proof-v1.md), [handler boundaries](language/pipeline-handler-boundaries-v1.md), and [declared actor ingress](language/declared-actor-pipe-signatures-v1.md): checked effects and lifecycle targets with independently gated compiler/runtime evidence.
 

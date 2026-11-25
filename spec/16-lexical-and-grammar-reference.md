@@ -137,6 +137,10 @@ See [normative return-first contract](https://github.com/atto-lang/atto-spec/blo
 
 The [logical punctuation fixture registry](../contracts/logical-punctuation-v1/contract.json) follows the current target, not the historical v0.6 table. `Xor` is an eager call, not an infix precedence tier; `&&` binds more tightly than `||`.
 
+## Conditional form boundaries (TARGET)
+
+Use `do if ... then ... fi` or `if ... { ... }` for imperative code. The bare keyword-delimited form requires a value-producing else arm. `ifnot`/`unless` invert the initial bool only, with identical delimiter and type rules. The separately gated v2 conditional arm block permits final arm-local return; ordinary statement return remains callable-local. See [conditional grammar](27-value-conditionals-and-do-if.md) and [v2 extension](27-conditional-expression-modes.md). Preserve the historical lexer inventory and all existing callable forms.
+
 ## Function forms
 
 **TARGET (decided):** `: T` and `-> T` are both valid return spellings, and `::` may be included or omitted. No one form is the only correct one.
