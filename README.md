@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Deep-learning computation proposal](language/deep-learning-computation-v1.md): exploratory model declarations and shape-aware tensor/autodiff contracts, not global grammar ratification or backend support.
+
 - [Fatal-fault containment evidence](spec/28-fatal-fault-containment-evidence.md): independently scoped claims, physical retirement and safe isolated verification; no backend certification.
 
 
