@@ -42,8 +42,10 @@ fnc compute(int value): int {
 ```ebnf
 export_decl = "export", export_visibility, [ export_kind ], identifier, ";" ;
 export_visibility = "pub", [ "[", "pkg", "]" ] ;
-export_kind = "class" | "fnc" | "actor" | "enum" ;
+export_kind = "class" | "fnc" | "actor" | "enum" | "module" ;
 ```
+
+Named module exports obey the [namespace and module visibility contract](namespaced-exports-v1.md). `use namespace Name;` is a file identity header, not an exportable target; a public module does not implicitly publish its private members. Module-aware linker conformance is a **target**, not browser-backend proof.
 
 Other declaration kinds (for example `struct`, `record`, `trait`,
 `interface`, or `type`) can join the `export_kind` set only when supported
@@ -70,9 +72,13 @@ declaration can be unambiguously resolved.
 6. Export names must refer to declarations in the owning compilation module
    scope. Imported symbols are not implicitly re-exported. Namespaces must
    not grant visibility into unrelated namespaces by unqualified name lookup.
-7. Multiple exports of the same symbol within a scope are an error, including
-   repeated exports with identical visibility; contradictory visibility
-   declarations must not be silently merged.
+7. Identical source exports resolving to the **same owner, local declaration,
+   external name, kind and effective visibility** are idempotent: they yield
+   one source/ABI binding. An inferred-kind export and the same explicitly
+   typed export may be identical, as may matching implicit `pub` provenance
+   and an explicit export. Conflicting aliases, scopes, declaration kinds,
+   external-name collisions and attempts to disclose explicitly private
+   declarations are errors, never silently widened.
 8. Missing export targets, wrong explicit kinds, malformed visibility
    brackets, and illegal nested exports are compile errors. Diagnostics
    should identify the source position of the export.
@@ -94,7 +100,9 @@ declaration can be unambiguously resolved.
 | `export pub foo;` targeting overloaded functions | Accept, preserve overload set |
 | `export pub class foo;` targeting only a function | Reject: kind mismatch |
 | `export pub Missing;` | Reject: unresolved symbol |
-| Exporting the same symbol twice | Reject: duplicate export |
+| Identical inferred/explicit exports of the same resolved binding | Accept: idempotent, one binding |
+| Exports of one symbol with conflicting visibility scopes | Reject: visibility conflict |
+| Two distinct source symbols with the same exported alias | Reject: external-name collision |
 | `export pub[other] Foo;` | Reject: invalid visibility |
 | Export inside a function or class body | Reject: invalid scope |
 | Different package imports `pub[pkg]` symbol | Reject at link/import stage |
