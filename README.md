@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Functors and nested ADTs](spec/23-functors-and-nested-adts.md): target exact mapped return types, nested Result/Option, transpose/flatten, ownership, and AOT proof gates. Host reference tests are not guest execution evidence.
+
 - [Generic callable signatures v1](language/generic-callables-v1.md): target contract for `fnc foo<T>(...) : T { ... }`, `fnc foo<T>(...) -> T ... end`, bounded inference, named/defaulted type arguments, and full-AOT specialization. Its case registry is **NOT_EXECUTED**; compiler support remains independently gated.
 
 - [Mailman actor delivery v1](language/mailman-actor-delivery-v1.md): candidate proof-gated ownership transfer, checked cross-actor leases, immutable sharing and deep-copy/copy-elision contract. [Host-only model fixtures](conformance/mailman-actor-delivery-v1.json) and [tests](tests/mailman-actor-delivery-v1.test.mjs); no compiler/runtime execution or backend parity claimed.
