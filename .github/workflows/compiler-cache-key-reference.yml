@@ -1,0 +1,27 @@
+name: Compiler cache key reference envelope
+on:
+  pull_request:
+    paths:
+      - 'tests/compiler-cache-key-reference.mjs'
+      - 'proposals/incremental-compilation-unit-boundaries-v1.md'
+      - '.github/workflows/compiler-cache-key-reference.yml'
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify exact head and execute reference
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(git write-tree)" = "$(git rev-parse HEAD^{tree})"
+          git diff --quiet
+          git rev-parse HEAD HEAD^{tree}
+          node tests/compiler-cache-key-reference.mjs
