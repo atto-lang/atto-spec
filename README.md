@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Actor creation effect `spawns` v1](language/actor-spawns-effect-v1.md): explicit spawn-capable callable effects, nested actor parentage, tenant-scoped authorization, quotas, lifecycle fencing and 26 proposed conformance cases (19 source / 7 runtime). **Target proposal; no compiler or guest parity certified.**
+
 - [Actor self-organization and telemetry sidecars v1](language/actor-self-organization-v1.md): proposed capability-scoped discovery, atomic child reconciliation, graph transactions and isolated observability sidecars. Bounded Node model tests are **HOST_ONLY**; compiler and runtime guest support remains unverified.
 
 - [Implicit receiver and qualified calls v1](language/implicit-receiver-qualified-calls-v1.md): desired method-family precedence and distinct `self.`, `pkg::` and `imports::` lookup, including sealed-actor intrinsic protection. Its [26-case conformance matrix](conformance/implicit-receiver-qualified-calls-v1.json) and Node tests are **host-only**; real compiler/runtime/AOT parity is **not verified**.
