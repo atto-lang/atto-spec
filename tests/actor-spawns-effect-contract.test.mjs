@@ -79,7 +79,7 @@ test('all source cases specify target outcomes and negative diagnostics', () => 
   const expectedCodes = new Set([
     'E_SPAWNS_REQUIRED', 'E_PURE_SPAWNS',
     'E_SPAWNS_DUPLICATE', 'E_SPAWNS_EFFECT_MISMATCH',
-    'E_SPAWN_IN_CRITICAL'
+    'E_SPAWN_IN_CRITICAL', 'E_SUSP_REQUIRED'
   ]);
   for (const c of registry.source_cases) {
     assert.ok(c.id && c.source && c.rationale);
