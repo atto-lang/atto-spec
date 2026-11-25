@@ -185,6 +185,10 @@ are reference models, not compiler-generated guest ABI proofs. The shared
 test registry (atto-platform-conformance PR #76) marks all native backends
 NOT VERIFIED until exact source-to-guest tests run.
 
+## Explicit lifetime relations (target)
+
+The [lifetime design](27-inferred-lifetimes.md) describes named `lt! a` binders and named `lt=a` arguments, inferred default lifetimes and proof requirements for returned `Borrow<T>` / `BorrowMut<T>` views. Elide only with a unique proved origin, including a receiver; multiple possible origins require a verified relationship. No apostrophe or pointer/borrow sigils. The separate candidate checked-handle bang aliases do not amend the existing canonical spelling or grant pointer rights. Preserve explicit consuming formals in the opt-in borrow-default profile and reject unsupported lowering without an artifact.
+
 ## Lifetimes across suspension
 
 `await`, `select`, `nb` task creation, cancellation, and actor turn boundaries are suspension or ownership checkpoints. A loan can cross only if its owner is pinned for the full continuation, aliasing remains valid, cleanup and cancellation are generation-fenced, and no conflicting turn can access the region. A critical writer or reactor callback may not accidentally hold an actor-state loan across an unrelated suspension.

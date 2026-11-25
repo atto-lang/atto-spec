@@ -141,6 +141,10 @@ The [logical punctuation fixture registry](../contracts/logical-punctuation-v1/c
 
 Use `do if ... then ... fi` or `if ... { ... }` for imperative code. The bare keyword-delimited form requires a value-producing else arm. `ifnot`/`unless` invert the initial bool only, with identical delimiter and type rules. The separately gated v2 conditional arm block permits final arm-local return; ordinary statement return remains callable-local. See [conditional grammar](27-value-conditionals-and-do-if.md) and [v2 extension](27-conditional-expression-modes.md). Preserve the historical lexer inventory and all existing callable forms.
 
+## Explicit lifetime argument syntax (target)
+
+Named lifetime parameters use `lt! a` (alias `lifetime! a`), with `lt=a` as a named type argument in supported borrow types. Lifetime names use their own type-level namespace; reject unbound, positional and apostrophe lifetime syntax. These forms do not change checked-handle spelling, ordinary arithmetic or boolean operators. See [lifetime design](27-inferred-lifetimes.md).
+
 ## Function forms
 
 **TARGET (decided):** `: T` and `-> T` are both valid return spellings, and `::` may be included or omitted. No one form is the only correct one.
