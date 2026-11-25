@@ -9,7 +9,8 @@
 | `source >> val binding`, `val binding << source` | Exactly one checked read |
 | `sink << value` | Exactly one checked write |
 | `value |> callable`, `callable <| value` | Functional application, never a stream pump |
-| `source pipe sink` | A continuous connection between typed endpoints |
+| `source pipe sink` | A continuous connection flowing LEFT to RIGHT |
+| `sink rpipe source` | A continuous connection flowing RIGHT to LEFT |
 | `spawn A() pipe spawn B()` | Existing actor pipeline, now a specialization of the same connection model |
 
 `source >> sink` and `sink << source` MUST NOT be interpreted as continuous pumping. They are invalid unless the right/left side is a legal single-value operation. No `|>>` / `<<|` continuous operators are introduced.
@@ -88,9 +89,18 @@ The compiler source-only reference-model test suite `tests/pipe_contract_referen
 ## Syntax and precedence
 
 ```ebnf
-pipe_expression = pipeline_operand, { "pipe", pipeline_operand };
-pipeline_operand = spawn_expression | endpoint_expression ;
+pipe_expression = forward_pipe_expression | reverse_pipe_expression ;
+forward_pipe_expression = pipeline_operand, { "pipe", pipeline_operand };
+reverse_pipe_expression = pipeline_operand, { "rpipe", pipeline_operand };
+pipeline_operand = spawn_expression | endpoint_expression | contextual_stream_capture ;
 ```
+
+`pipe` connects each left stage into the right stage, whereas `rpipe`
+connects each right stage into the left stage. Do not treat `pipe` as
+bidirectional or direction-inferred. In-pipeline `Stream<T>` declarations,
+owned graph lifetimes, and reverse-order stage validation are separately
+specified in [directed-rpipe-and-stream-capture-v1.md](directed-rpipe-and-stream-capture-v1.md).
+That extension is still a **draft, non-executable candidate**.
 
 `pipe` is a keyword, not an overloadable binary function. It binds more loosely than member access, constructors and function application. A complete chain is **one owned connection graph**, not several separately spawned discarded `PipeHandle` values. If actor-only legacy `|` is supported, it is accepted **only between explicit spawned actor stages**, not for channel/stream mixing, and the formatter should canonicalize actor pipelines to `pipe`.
 
