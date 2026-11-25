@@ -62,6 +62,9 @@ A parser must distinguish a declaration `<...>` from expression comparison,
 nested `<...>` types and the `->` return/body markers by grammar position,
 not by capitalization or regex.
 
+
+Square brackets are not an alternate generic declaration or call grammar. For example, `identity[T=int](42)` and `fnc identity[T](T value): T` are invalid generic forms. See the [generic delimiter contract](../spec/02-types-and-patterns.md#generic-delimiters-and-designated-collection-type-notation-owner-decision-2026-11-25) for the distinct designated collection type shorthand. Named runtime argument labels continue to use colons; named generic arguments use equals within angle brackets.
+
 ## Binding and inference
 
 - Each type parameter is a **type**, not a dynamic `Any` or a runtime value.
