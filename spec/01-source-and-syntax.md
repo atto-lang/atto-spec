@@ -39,7 +39,6 @@ The samples use one of several valid function forms: `: T` and `-> T` are both r
 - Public declarations use `pub` in positions admitted by the grammar; canonical module spelling is `define pub module`. Module members are private unless exported.
 - Classes are nominal. Class nesting inside classes is not permitted; constructors use an explicit `constructor(...)` declaration rather than a Java-style class-name constructor.
 - Actor declarations use `define actor Name as ... end`. Actors are specialized classes, not synonyms for threads, services or regular classes.
-- `define persistent actor Name as state {} ... end` is the target durable actor declaration with one mutable, sealed state container; `persistent` is contextual, not a globally reserved identifier. See [persistent actor storage contract](22-persistent-actors-and-storage.md).
 - `define supervisor Name as ... end` declares a distinct runtime-owned nominal supervisor (TARGET), not a class or actor. Supervisor **instances** may supervise instances of other supervisors; declarations are not lexically nested. See [supervisor hierarchy](13-supervisor-hierarchies.md).
 - `define macro` is an intended compile-time feature; expansion timing, hygiene, capabilities and backend admission remain PROPOSED rather than assumed.
 
@@ -77,6 +76,22 @@ fi
 while should_continue() do
   rt cooperate
 done
+```
+
+Both `ifnot` and `unless` negate the **first** boolean condition and evaluate it exactly once. They follow the same expression-versus-statement distinction as `if`: a value form has **mandatory** `else` and `fi` with compatible arm types; a `do ifnot/unless ... then` statement has **optional** `else` and closes with `fi`; a braced imperative form has optional `else` and **no `fi`**. The resulting `elif` conditions, if any, are not implicitly negated. Neither keyword supports postfix `unless`. Refutable pattern heads and conditional `as let` bindings in the negated head remain rejected until sound narrowing is implemented. See [the semantic contract](../contracts/ifnot-unless-v1.json) and [conditional-expression grammar PR #183](https://github.com/atto-lang/atto-spec/pull/183).
+
+```atto
+do ifnot ready then
+  start_worker();
+else
+  notify_ready();
+fi
+
+unless should_stop {
+  process_next();
+}
+
+val int selected = unless ready then 5 else 6 fi;
 ```
 
 The **target** early-exit spelling is `guard condition { terminal_failure_path }` with **no `else` or `fi`**. A comma-separated guard list checks each clause once, left to right. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
