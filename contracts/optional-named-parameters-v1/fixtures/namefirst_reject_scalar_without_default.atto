@@ -1,0 +1,3 @@
+// REJECT: non-Option omittable slot without explicit default.
+fnc invalid(x?: int): int { return 42; }
+pub fnc main(): int { return invalid(); }

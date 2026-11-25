@@ -2,13 +2,17 @@
 
 **Status: DRAFT; profile-dependent security contract.**
 
+**Canonical naming:** [TenantVM](tenant-vm-terminology.md) denotes the per-tenant execution domain; historical IsolateVM identifiers describe the same conceptual boundary. Naming alone does not certify hostile-tenant containment.
+
 ## Threat and authority model
 
-Language-level actor confinement is **not** an OS sandbox. Actor kind controls runtime policy: trusted shared, private/isolated, or untrusted actors may have different capabilities and transport. Actual memory/CPU fault isolation requires a verified isolate, process, sandbox or platform mechanism.
+Language-level actor confinement is **not** an OS sandbox. Hostile tenants may share one OS process only inside independently verified per-tenant TenantVM/isolate containment boundaries; **a separate OS process is not universally mandatory**. An allocator arena, thread, unchecked cage or user-supplied provenance marker alone is insufficient. A process sandbox remains an optional stronger deployment profile. Actor kind controls runtime policy: trusted shared, private/isolated, or untrusted actors may have different capabilities and transport. Actual memory/CPU fault isolation requires a verified isolate, process, sandbox or platform mechanism.
 
 The guest does not grant itself host access merely by importing a package, declaring an actor or invoking a privileged method.
 
 ## Deny-by-default permissions
+
+The [hosted permission target](../language/host-permissions-v1.md) specifies the flags-2-env schema, immutable artifact ceiling and trusted operation-time enforcement. It preserves the verified same-process TenantVM boundary when sufficient; process-fatal fault containment remains separately gated by chapter 28. No permission parser or model certifies hostile guest enforcement.
 
 The target permission categories are `read`, `write`, `net`, `env`, `run`, `sys`, `ffi`, and `import`. Missing authority fails closed; an explicit deny overrides any allow. Effective authority is the **intersection** of independently trusted host/OS ceiling, packaged artifact ceiling, runtime request, current actor/isolate policy and delegated child policy.
 
