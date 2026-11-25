@@ -94,7 +94,7 @@ unless should_stop {
 val int selected = unless ready then 5 else 6 fi;
 ```
 
-The **target** early-exit spelling is `guard condition { terminal_failure_path }` with **no `else` or `fi`**. A comma-separated guard list checks each clause once, left to right. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
+The **target** early-exit syntax admits both `guard condition { terminal_failure_path }` and `guard condition else terminal_failure_path end`. The guard condition expresses what must hold to continue; a failing condition runs the failure path, which MUST explicitly return from the enclosing function on every possible path (`return value` or `return;` for void; verified lexical `^` is equivalent). `throw`, `raise`, `panic`, `break`, and `continue` cannot discharge this return requirement. The two forms must lower identically, and the formatter preserves the authored block style. A comma-separated guard list checks each clause once, left to right. The brace form has no owned `else`; the keyword form owns `else ... end`, never `fi`. `guard name is Some` is the proposed explicit `Option<T>` presence narrowing without `name = name`, but this payload variant requires ownership-proof-backed compiler implementation before admission; see [guard contract](15-guard.md).
 
 An `if expression as const/let name` binding tests **presence**, not truthiness. `const` prevents mutation of the binding; `let` permits it within ordinary ownership rules. `final` is not a conditional-binding keyword.
 
