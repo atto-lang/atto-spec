@@ -33,6 +33,10 @@ Borrow checking is not optional for a native backend. Aliased writes, use-after-
 
 Compact operands (`copy!value`, `borrow!mut value`) normalize to one ASCII space after the bang. The historical `mut borrow! value` is a migration alias for `borrow! mut value`. Prefix precedence is unary with postfix member/index expressions binding tighter; evaluate each operand once. Duplicate `mut` qualifiers reject. The [checked-handle call-loan profile](../language/checked-handle-call-loans-v1.md) defines all-path retirement, explicit lexical `block` scopes and versioned borrow-default call proof boundaries.
 
+## Implicit argument borrowing (target)
+
+The [versioned borrow-default profile](../language/implicit-argument-borrow-v1.md) makes ordinary nonprimitive object formals temporary loans. `inspect(foo)` and `inspect(borrow! foo)` have identical read-loan facts for a proven read-only parameter. `update(mut foo)` requires writable owner authority, a nonconflicting exclusive loan and a sealed callee write effect. Frozen data, sealed foreign actor state and ambiguous provenance never gain write rights. Borrow checks include subsequent arguments, exceptional edges, cleanup and all-path returned-loan provenance. Primitive scalars retain value passing. Explicit consuming `take! T` formals and explicit `take! owner` arguments are separate; `copy!!`, `share!` and `rebind` retain their own contracts. Legacy owned-formal behavior requires an explicit migration profile; do not silently switch it. No general compiler or ABI certification is implied.
+
 ## Explicit capability extensions: `freeze!`, `weak!`, and `pin!` (TARGET)
 
 These are **contextual prefix operations** (the word followed immediately by `!`), not
@@ -180,6 +184,10 @@ Drop and named lifetimes via a separate conservative lt! verifier. These
 are reference models, not compiler-generated guest ABI proofs. The shared
 test registry (atto-platform-conformance PR #76) marks all native backends
 NOT VERIFIED until exact source-to-guest tests run.
+
+## Explicit lifetime relations (target)
+
+The [lifetime design](27-inferred-lifetimes.md) describes named `lt! a` binders and named `lt=a` arguments, inferred default lifetimes and proof requirements for returned `Borrow<T>` / `BorrowMut<T>` views. Elide only with a unique proved origin, including a receiver; multiple possible origins require a verified relationship. No apostrophe or pointer/borrow sigils. The separate candidate checked-handle bang aliases do not amend the existing canonical spelling or grant pointer rights. Preserve explicit consuming formals in the opt-in borrow-default profile and reject unsupported lowering without an artifact.
 
 ## Lifetimes across suspension
 

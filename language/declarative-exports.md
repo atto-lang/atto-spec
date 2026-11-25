@@ -42,8 +42,10 @@ fnc compute(int value): int {
 ```ebnf
 export_decl = "export", export_visibility, [ export_kind ], identifier, ";" ;
 export_visibility = "pub", [ "[", "pkg", "]" ] ;
-export_kind = "class" | "fnc" | "actor" | "enum" | "module" ;
+export_kind = "class" | "fnc" | "actor" | "enum" | "module" | "const" ;
 ```
+
+The `const` export kind targets existing unconditional value constants; preserve visibility, explicit-private rejection and alias identity. See [constant imports](constant-imports-v1.md).
 
 Named module exports obey the [namespace and module visibility contract](namespaced-exports-v1.md). `use namespace Name;` is a file identity header, not an exportable target; a public module does not implicitly publish its private members. Module-aware linker conformance is a **target**, not browser-backend proof.
 

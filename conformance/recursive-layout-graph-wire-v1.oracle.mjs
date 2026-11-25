@@ -1,6 +1,7 @@
 // Source-free contract oracle; not a guest/backend result.
 function model(){
   function layout(nodes, edges) {
+    if(new Set(nodes).size!==nodes.length)throw Error("duplicate layout");
     const indegree = new Map(nodes.map(n=>[n,0])), out=new Map(nodes.map(n=>[n,[]]));
     for(const [a,b,inline] of edges){
       if(!indegree.has(a)||!indegree.has(b))throw Error("unknown layout");
@@ -11,9 +12,10 @@ function model(){
     return count===nodes.length;
   }
   function decode(w,limits={nodes:16,edges:32},publish=()=>{}){
-    function exact(x,keys){return x!==null&&typeof x==="object"&&!Array.isArray(x)&&Object.keys(x).sort().join(",")===keys.slice().sort().join(",");}
+    function exact(x,keys){return x!==null&&typeof x==="object"&&!Array.isArray(x)&&Object.keys(x).length===keys.length&&keys.every(k=>Object.hasOwn(x,k));}
     function deny(){throw Error("invalid graph");}
     if(!exact(w,["version","root","objects"])||w.version!==1||!Array.isArray(w.objects)||w.objects.length===0||w.objects.length>limits.nodes||!Number.isSafeInteger(w.root)||w.root<0||w.root>=w.objects.length)deny();
+    if(!Number.isSafeInteger(limits.nodes)||limits.nodes<1||!Number.isSafeInteger(limits.edges)||limits.edges<0)deny();
     let edges=0;
     for(let i=0;i<w.objects.length;i++){
       const n=w.objects[i];
@@ -35,6 +37,8 @@ function model(){
   const tests=[];
   function check(name,f){if(!f())throw Error(name);tests.push(name);}
   function rejects(w,limits){let published=0;try{decode(w,limits,()=>published++);return false;}catch{return published===0;}}
+  check("duplicate layout refused",()=>{try{layout(["A","A"],[]);return false;}catch{return true;}});
+  check("invalid limit refused",()=>rejects(wire([node(0)]),{nodes:NaN,edges:0}));
   check("inline self cycle",()=>!layout(["A"],[["A","A",true]]));
   check("mutual inline cycle",()=>!layout(["A","B"],[["A","B",true],["B","A",true]]));
   check("explicit reference cuts cycle",()=>layout(["A","B"],[["A","B",true],["B","A",false]]));

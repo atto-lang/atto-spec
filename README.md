@@ -31,7 +31,46 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
-- [Recursive layouts and identity graphs v1](language/recursive-layout-graph-wire-v1.md): separate alias, inline-layout and finite-inhabitation proofs; bounded actor-local identity, deep copy and explicit graph wire profile. Source-free model only; no guest verification.
+- [Recursive layouts and typed identity graphs](language/recursive-layout-graph-wire-v1.md): target independent alias, layout and inhabitation proofs, candidate graph profile distinct from existing tree codecs. No wire or guest admission.
+
+- [Unsafe lexical proof boundary](language/unsafe-blocks-v1.md): fail-closed target for independently authorized trusted host operations, not guest-native admission or a permission grant.
+
+- [Hosted permission policy](language/host-permissions-v1.md): independent ceilings, explicit deny, runtime revocation and fail-closed native admission target.
+
+- [Hosted asynchronous HTTP and filesystem](language/hosted-async-http-fs-v1.md): target APIs with typed errors, scoped host capabilities, lifetime and backpressure; host-only evidence is not linked guest support.
+
+- [Deep-learning computation proposal](language/deep-learning-computation-v1.md): exploratory model declarations and shape-aware tensor/autodiff contracts, not global grammar ratification or backend support.
+
+- [Fatal-fault containment evidence](spec/28-fatal-fault-containment-evidence.md): independently scoped claims, physical retirement and safe isolated verification; no backend certification.
+
+
+- [Browser compiler integration profile](spec/23-browser-compiler-profile.md): dated Wasm/ESM execution evidence, tenant-worker topology and explicitly unsupported target features.
+
+- [Actor attached state and guarded activation](language/actor-attached-state-and-lifecycle-v1.md): nominal schema ownership, initialization fence and scoped state access target; no compiler certification.
+
+- [Typed actor job envelopes and acknowledgements](language/actor-job-envelope-v1.md): candidate single-worker dispatch, admission versus settlement, bounded volatile and durable ledger distinctions; not an implemented guest ABI.
+
+- [Typed constant imports and startup environment constants](language/constant-imports-v1.md): per-declaration once-only immutable values; current v2 selector rules remain authoritative.
+
+- [Bounded reactive admission and lazy collections](spec/23-pull-push-and-lazy-collections.md): target demand, ownership, terminal race and physical accounting; host model only.
+
+- [Inferred and explicit named lifetimes](spec/27-inferred-lifetimes.md): target provenance, lifetime elision and checked loan relations; checked-handle bang aliases remain an independent unratified proposal.
+
+- [Typed task payloads and inline sync](language/typed-task-payload-sync-v1.md) and [TaskFuture control](language/task-future-control-v1.md): independently scheduled children, affine result receipts, same-thread inline scopes and cancellation/retirement targets; compiler evidence independently gated.
+
+- [Conditional expression versus statement forms](spec/27-value-conditionals-and-do-if.md): strict target, preserving the separately gated arm-local v2 profile.
+
+- [Checked directional I/O](language/io-direction-shorthand-v1.md), [prefix/postfix reads](language/postfix-channel-read-expression-v1.md), and [mixed endpoint pipes](language/mixed-endpoint-pipe-v1.md): single-operation and continuous graph contracts; host models only, not portable guest certification.
+- [Pipeline failure accounting](language/pipeline-effect-proof-v1.md), [handler boundaries](language/pipeline-handler-boundaries-v1.md), and [declared actor ingress](language/declared-actor-pipe-signatures-v1.md): checked effects and lifecycle targets with independently gated compiler/runtime evidence.
+
+- [Type tests, conversion and scoped using](language/type-tests-casts-and-using-v1.md): candidate explicit type predicates, branch-local capture and checked conversion; no universal execution claim.
+
+- [Adversarial sequence conformance](language/seq-adversarial-conformance-v1.md) and [void return vectors](conformance/void-early-return-v1.json): target tests, not portable execution certification.
+
+- [Field-sensitive borrowing and projected actor-state receivers v1](language/field-sensitive-borrow-effects-v1.md): target typed disjoint places/NLL, authenticated method effects, and projected receiver write ceilings; not guest-certified.
+
+- [Caret return and scoped sequences](language/return-shorthand-and-sequences-v1.md): contextual return syntax and comma sequences; portable execution independently gated.
+- [Opt-in v2 callable-body migration](language/callable-body-migration-v2.md): v1 remains the default; draft version selector and checked migration only.
 
 - [Result/Option payload discard patterns v1](language/adt-payload-discard-patterns-v1.md): `Ok()` / `Err()` / `Some()` and `(_)` wildcard patterns discard payloads without inventing bindings, with guarded/exhaustive matching and AOT verification requirements. **Proposal only**; no universal backend parity claimed.
 

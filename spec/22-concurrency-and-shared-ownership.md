@@ -24,6 +24,45 @@ These are declaration-shape examples, not executable conformance fixtures. Ordin
 
 All mutable state containers, including actor `state {}`, are sealed. `critical-read` grants compatible immutable scoped loans; `critical-write` grants one exclusive scoped loan and excludes conflicting readers/writers. A compiler must reason about nested referents and aliases, not only the state variable's binding. Serial scheduling does not waive loan lifetime, escape, suspension or cleanup checks. State loans cannot outlive the region or cross suspension without an explicit proven safe continuation protocol.
 
+The [attached state and lifecycle proposal](../language/actor-attached-state-and-lifecycle-v1.md) specifies one equivalent inline or nominally attached schema per actor incarnation. Successful mailbox admission is not proof of activation or execution; no receive may execute before definite initialization. Its syntax remains a target with independent parser, compiler and runtime gates.
+
+## Critical scopes, scalar copy-out and actor-boundary effects
+
+A critical callback is a compiler-owned lexical state loan, not a general
+guest callback that may perform arbitrary effects. During a live
+`critical-read` or `critical-write` scope, unproved suspension, mailbox
+admission/commit, actor hops, task capture, foreign calls and I/O are
+disallowed. Nested/reentrant scope admission must fail closed until a
+separate deadlock-safe ordering contract is proved. Ordinary live borrows
+that might alias the state cannot overlap critical admission unless the
+compiler has authenticated non-aliasing provenance.
+
+A compiler may copy out an independently owned **scalar** value from a
+guarded actor field *within* the scope when its typed MIR proves that the
+copy contains no reference, pointer, borrowed view, or capability into the
+actor arena. The guard must be exited (and runtime reader/writer admission
+released) **before** any mailbox send or suspension using that copy. The
+current canonical Rust V0 oracle provides `CriticalCopyI64` for this narrow
+`i64`-only operation; broader Copy types require separate recursive
+ownership proofs. Merely naming an expression "copy" does not make
+nested mutable referents safe.
+
+An inline source expression such as `self.send(s.count)` inside a
+`critical-read` body can be accepted only if the compiler can
+**prove and lower** an effect-equivalent sequence: guarded scalar read,
+owned copy-out, scope release, then nonparking send. Otherwise it is a
+compile-time rejection, never a mailbox call holding the state loan.
+In particular, the compiler may not silently change the ordering of
+multiple side effects, drop error paths, or let a callback leak the state
+view. The runtime must independently fence generation, physical
+retirement, and canceled sends.
+
+Cross-backend admission requires executed identical `.atto` tests for
+safe copy-out/send-after-exit, denied send-during-loan, denied state-view
+escape, read-only mutation, wrong-owner copy-out and failure cleanup.
+Source-level AST acceptance or a host-only Rust MIR model alone does not
+prove Java/Graal, LLVM AOT, or .NET NativeAOT behavior.
+
 ## Actor heaps and stacks
 
 Every actor owns a guest heap/allocation domain and a logical stack domain. Custom arenas are an implementation strategy. Concurrent turns need distinct live frames/continuations within the actor's accounted stack domain; they cannot concurrently mutate one ordinary stack pointer. Stack overflow containment and quota accounting follow chapter 18.

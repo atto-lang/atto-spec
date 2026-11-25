@@ -12,6 +12,8 @@ The guest does not grant itself host access merely by importing a package, decla
 
 ## Deny-by-default permissions
 
+The [hosted permission target](../language/host-permissions-v1.md) specifies the flags-2-env schema, immutable artifact ceiling and trusted operation-time enforcement. It preserves the verified same-process TenantVM boundary when sufficient; process-fatal fault containment remains separately gated by chapter 28. No permission parser or model certifies hostile guest enforcement.
+
 The target permission categories are `read`, `write`, `net`, `env`, `run`, `sys`, `ffi`, and `import`. Missing authority fails closed; an explicit deny overrides any allow. Effective authority is the **intersection** of independently trusted host/OS ceiling, packaged artifact ceiling, runtime request, current actor/isolate policy and delegated child policy.
 
 CLI permission flags should follow a Deno-like model and be parsed consistently across all implementations using [flags-2-env](https://github.com/flags-2-env). A parser library is not proof of backend enforcement. Permission grant scopes, symbolic links, DNS rebinding, process arguments and environment inheritance require enforcement at the actual I/O operation boundary, not just compile-time inspection.

@@ -4,7 +4,7 @@ Status: TARGET, NOT_EXECUTED by any guest compiler. This chapter refines the
 existing copyable-ownership-v1 and primitive-object-storage-java-llvm-v1
 contracts; it does not ratify new grammar, change the legacy copy! edition,
 or authorize automatic sharing. Coordinate Java #560/#561/#565/#1713,
-LLVM #427 and serialization #48 before promotion.
+LLVM #427 and serialization #48 before admitting implementation. The existing checked structural preflight in serialization #48 remains a separate tree-value API; it does not authorize graph decoding or deep copy.
 
 ## Separate three independent proofs
 
@@ -52,7 +52,7 @@ Keep a bounded identity-to-destination map and allocate private destination
 shells before populating outgoing edges. Repeated source identities map to
 one fresh destination identity; a backedge points to its copied destination.
 No constructors, reflection, JIT, user callbacks, raw addresses or resource
-duplication. Source remains unchanged; publish only after all fields validate.
+duplication. Preserve the existing Copyable/DeepCopyable distinction, checked immutable interned sharing, zero-argument copy methods, call-loan ownership and temporary cleanup obligations. This proposal does not ratify any graph wire ABI. Source remains unchanged; publish only after all fields validate.
 On error/cancellation, discard the entire unpublished allocation transaction.
 Do not infer Sendable, Copyable, or serialization eligibility from DeepCopyable.
 
@@ -84,7 +84,7 @@ The source-free reference model covers a deliberately restricted Node/Other
 schema with int32 payload and optional strong next/alias edges, logical
 object/edge bounds, and inline layout admission. It is not a wire parser,
 actual memory allocator, actor runtime, compiler, or proof of quota units
-for production. Its choices of dense IDs and caps are proposed for review.
+for production. Its choices of dense IDs and caps are proposed for review. Treat the model inputs as structured trusted fixture data only, not an untrusted deserialized byte stream.
 Backend conformance must independently execute recursive ADTs, class layouts,
 invalid cycles, generic growth, cyclic and diamond copies, byte-level
 malformed wire inputs, allocation failure, rollback, stale generations,

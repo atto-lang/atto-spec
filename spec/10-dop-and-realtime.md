@@ -52,3 +52,8 @@ A hard-real-time claim requires a bounded worst-case execution-time argument, ta
 Benchmarks should record exact commit and target CPU model, processor quota, frequency conditions, worker count, actor workload, cold/warm behavior, p50/p95/p99 latency, tail outliers, cache misses, branch misses, allocations, collector pauses, queue depth, steal/migration count, NUMA transfers, and GPU queue timing where relevant.
 
 Make performance regressions visible, but do not make cache placement a language correctness rule. Correctness tests precede optimization claims.
+
+
+## Independent real-time proof target
+
+The [unified effect model](../language/unified-inferred-effects-v1.md) separates inferred may-effects, effective authority and measured/proved cost. Neither purity, a closed effect row nor successful host-model tests certify bounded execution or hard real time. Preserve target-specific WCET, physical allocation, stack and scheduler gates.
