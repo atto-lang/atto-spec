@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "language": "AttoLang",
+  "feature": "checked-pipe-observer-lifecycle",
+  "status": "candidate-contract-no-guest-parity",
+  "contract": "language/pipe-observers-and-io-pipe-v1.md",
+  "backends": [
+    "java",
+    "llvm",
+    "net",
+    "rust-wasm",
+    "forge"
+  ],
+  "caseCount": 32,
+  "cases": [
+    {
+      "id": "direction-forward",
+      "phase": "compile",
+      "expect": "accept",
+      "assertion": "source pipe transform pipe sink has edges source→transform→sink",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "direction-reverse",
+      "phase": "compile",
+      "expect": "accept",
+      "assertion": "sink rpipe transform rpipe source has exactly the same directed edges",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "direction-io-pipe",
+      "phase": "compile",
+      "expect": "accept",
+      "assertion": "io.pipe(source,sink) is source pipe sink and returns checked setup Result",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "wrong-io-direction",
+      "phase": "compile",
+      "expect": "reject",
+      "assertion": "io.pipe(sink,source) may not auto-reverse or infer direction",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "mismatched-types",
+      "phase": "compile",
+      "expect": "reject",
+      "assertion": "nominal item types and actor sends/receives/emits roles must agree",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "mixed-pipe-direction",
+      "phase": "parse",
+      "expect": "reject",
+      "assertion": "mixed pipe and rpipe without explicit separate graphs is invalid",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "nonterminal-observer",
+      "phase": "compile",
+      "expect": "reject",
+      "assertion": "observer decoration cannot consume stream DATA or appear mid-graph",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "observer-terminal-forward",
+      "phase": "compile",
+      "expect": "accept",
+      "assertion": "terminal pipe observer attaches before graph activation",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "observer-terminal-reverse",
+      "phase": "compile",
+      "expect": "accept",
+      "assertion": "terminal rpipe observer decorates whole graph, not DATA",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "observer-zero-arg",
+      "phase": "compile",
+      "expect": "accept",
+      "assertion": "observer(||->...) observes #settled, not implicit #error catch",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "unhandled-construction",
+      "phase": "compile",
+      "expect": "reject",
+      "assertion": "ignored Result<PipeHandle,PipeSetupError> cannot suppress setup errors",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "event-early",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "early #error listener receives first terminal error once",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "event-late-replay",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "late #error listener asynchronously replays settled error once",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "event-priority",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "specific terminal event precedes #settled within dispatch batch",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "settled-tagged",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "#settled receives tagged Success/Failure/Cancelled PipeOutcome",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "get-done-shared",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "get_done is shareable awaited result that settles exactly once",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "observer-throw-isolated",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "observer callback failure never replaces primary pipeline failure",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "observer-unsubscribe",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "unsubscription before delivery cancels pending callback and frees capture",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "observer-quota",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "bounded subscriptions fail closed on quota, no unbounded callback growth",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "reentrant-subscription",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "callback registering another callback causes no duplicate or sync recursion",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "first-cause-wins",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "competing failures and cancel preserve first primary cause",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "cancel-barrier",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "cancel request wakes blocked operations but get_done waits physical quiescence",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "eof-drain-failure",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "write failure while draining after EOF never emits #complete",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "bounded-backpressure",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "0/1/N capacity suspends cooperatively and wakes on error/cancel/EOF",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "partial-prefix",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "partial write reports committed byte prefix without implicit retry",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "indeterminate-write",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "unknown admission returns IndeterminateWrite and forbids automatic replay",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "linear-release",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "uncommitted item released or returned exactly once after quiescence",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "external-endpoint",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "shared/borrowed stdio and channels are not auto-closed by pipe",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "data-result-err",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "Result.Err and Option.None items remain DATA; None is distinct from EOF",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "trap-async",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "trap around setup cannot swallow later asynchronous get_done Err",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "actor-panic-control",
+      "phase": "runtime",
+      "expect": "runtime-check",
+      "assertion": "panic reaches authenticated supervisor CONTROL, never observer catch",
+      "status": "target-not-verified"
+    },
+    {
+      "id": "callback-permission",
+      "phase": "compile",
+      "expect": "reject",
+      "assertion": "actor-local io namespace cannot implicitly gain process stdio pipe permission",
+      "status": "target-not-verified"
+    }
+  ],
+  "receiptRequirements": [
+    "source_commit_sha",
+    "source_tree_sha",
+    "compiler_version",
+    "backend_name",
+    "test_case_id",
+    "compile_result_and_diagnostic",
+    "guest_executed_boolean",
+    "executed_steps_nonzero",
+    "test_log_sha256",
+    "observed_event_sequence",
+    "committed_and_released_counts",
+    "supervisor_control_receipt_if_applicable"
+  ]
+}

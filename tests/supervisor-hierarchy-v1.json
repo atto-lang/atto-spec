@@ -1,0 +1,115 @@
+{
+  "schema": "attolang.supervisor-hierarchy.reference.v1",
+  "evidence": "SOURCE_FREE_MODEL_ONLY_NOT_GUEST_EXECUTION",
+  "nodes": [
+    {
+      "id": "root",
+      "kind": "supervisor",
+      "parent": null,
+      "tenant": "tenant_a",
+      "policy": {
+        "strategy": "one_for_one",
+        "max_restarts": 3,
+        "window_ms": 5000
+      }
+    },
+    {
+      "id": "api",
+      "kind": "supervisor",
+      "parent": "root",
+      "tenant": "tenant_a",
+      "order": 0,
+      "restart": "permanent",
+      "policy": {
+        "strategy": "one_for_all",
+        "max_restarts": 3,
+        "window_ms": 5000
+      }
+    },
+    {
+      "id": "data",
+      "kind": "supervisor",
+      "parent": "root",
+      "tenant": "tenant_a",
+      "order": 1,
+      "restart": "permanent",
+      "policy": {
+        "strategy": "rest_for_one",
+        "max_restarts": 2,
+        "window_ms": 5000
+      }
+    },
+    {
+      "id": "http",
+      "kind": "actor",
+      "parent": "api",
+      "tenant": "tenant_a",
+      "order": 0,
+      "restart": "permanent"
+    },
+    {
+      "id": "auth",
+      "kind": "actor",
+      "parent": "api",
+      "tenant": "tenant_a",
+      "order": 1,
+      "restart": "transient"
+    },
+    {
+      "id": "cache",
+      "kind": "supervisor",
+      "parent": "data",
+      "tenant": "tenant_a",
+      "order": 0,
+      "restart": "permanent",
+      "policy": {
+        "strategy": "one_for_one",
+        "max_restarts": 1,
+        "window_ms": 3000
+      }
+    },
+    {
+      "id": "db",
+      "kind": "actor",
+      "parent": "data",
+      "tenant": "tenant_a",
+      "order": 1,
+      "restart": "permanent"
+    },
+    {
+      "id": "cache_worker",
+      "kind": "actor",
+      "parent": "cache",
+      "tenant": "tenant_a",
+      "order": 0,
+      "restart": "transient"
+    }
+  ],
+  "expected": {
+    "local_cache_failure": [
+      "cache_worker"
+    ],
+    "escalated_cache_supervisor": [
+      "cache",
+      "db"
+    ],
+    "api_failure": [
+      "http",
+      "auth"
+    ],
+    "root_api_failure": [
+      "api"
+    ],
+    "transient_normal_exit": [],
+    "shutdown": [
+      "db",
+      "cache_worker",
+      "cache",
+      "data",
+      "auth",
+      "http",
+      "api",
+      "root"
+    ]
+  }
+}
