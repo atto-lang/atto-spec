@@ -38,7 +38,7 @@ That an actor's failure restarts the actor, including on stack exhaustion and in
 
 ## Stacks
 
-An actor does not need its own native stack for containment. Turns run to completion, so no native frames survive between turns, and a guarded stack per carrier thread is enough. A backend needs per-actor native stacks only if it suspends actors mid-frame.
+An actor does not require a dedicated OS-thread stack, but **each live receive invocation and independently scheduled child Task owns a distinct logical execution stack**. A suspended receive retains its invocation identity, live frames and bounded continuation roots even when its carrier thread is released. Ordinary actors are concurrent by default and admit several live receive invocations, each on a separate stack; a `define serial actor` does not admit a second DATA receive while the first remains suspended. Separate stacks never form a shared mutable frame store. See [chapter 25](25-receive-invocation-stacks.md) for lifecycle, quotas, generation fencing and backend obligations.
 
 **TARGET:** every backend that runs untrusted actors MUST:
 
@@ -60,7 +60,7 @@ Status of rules 5 to 8 (for item 7, the restart part):
 
 | Backend | Overflow contained to the actor? | Per-actor quota | Proper tail calls |
 | --- | --- | --- | --- |
-| LLVM tenant VM | Yes, with restart. Exhaustion inside a runtime call is contained | No: the limit is the carrier's stack | No guarantee |
+| LLVM tenant VM | Yes, with restart. Exhaustion inside a runtime call is contained | Yes, per VM, in PR #1566, not yet merged: `actor_stack_bytes` gives the same depth on every carrier | No guarantee |
 | LLVM native, no tenant VM | No: the process dies with SIGSEGV | No | No guarantee |
 | Java/GraalVM | No: the program exits with status 1 | No | No guarantee |
 | .NET | No: a CLR stack overflow ends the process, which is why tenants run through the native core | No | No guarantee |
