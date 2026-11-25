@@ -1,0 +1,99 @@
+{
+  "schema": "atto.entry-map-upsert.v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "source": "atto-spec#69",
+  "guest_required": true,
+  "description": "Nominal immutable Entry fat-arrow syntax and mutable Map upsert/presence behavior. No backend guest evidence is implied.",
+  "vectors": [
+    {
+      "id": "entry-literal-basic",
+      "kind": "positive",
+      "source": "let Entry<string,int> e = \"foo\" => 5;",
+      "expect": "nominal Entry<string,int>"
+    },
+    {
+      "id": "entry-infer",
+      "kind": "positive",
+      "source": "let e = \"foo\" => 5;",
+      "expect": "nominal Entry<string,int>"
+    },
+    {
+      "id": "entry-factory-equivalent",
+      "kind": "positive",
+      "source": "let Entry<string,int> e = Entry.of(\"foo\", 5);",
+      "expect": "equivalent key/value and nominal type"
+    },
+    {
+      "id": "map-nested-entry",
+      "kind": "positive",
+      "source": "let Map<string,Entry<string,int>> m = {\"key\" => (\"foo\" => 5)};",
+      "expect": "Map item delimiter distinct from parenthesized Entry"
+    },
+    {
+      "id": "map-mutation-sequence",
+      "kind": "positive",
+      "fixture": "conformance/entry-map-upsert-v1.atto",
+      "expect": "guest main exit code 5"
+    },
+    {
+      "id": "try-add-existing",
+      "kind": "positive",
+      "source": "let mut Map<string,int> m = {\"foo\" => 5}; let bool inserted = m.try_add(\"foo\" => 7); assert.false(inserted); assert.equal(m.get(\"foo\").unwrap(), 5);",
+      "expect": "duplicate false and unchanged value"
+    },
+    {
+      "id": "entry-nonassociative",
+      "kind": "negative",
+      "source": "let Entry<string,int> e = \"foo\" => 5 => 6;",
+      "diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "entry-bad-arity",
+      "kind": "negative",
+      "source": "let Entry<string> e = \"foo\" => 5;",
+      "diagnostic": "E_TYPE_ARITY"
+    },
+    {
+      "id": "entry-bad-context",
+      "kind": "negative",
+      "source": "let Entry<string,int> e = 1 => \"bad\";",
+      "diagnostic": "E_TYPE"
+    },
+    {
+      "id": "entry-not-record",
+      "kind": "negative",
+      "source": "let Entry<string,int> e = {key:\"foo\",value:5};",
+      "diagnostic": "E_TYPE"
+    },
+    {
+      "id": "entry-immutable-projection",
+      "kind": "negative",
+      "source": "let Entry<string,int> e = \"foo\" => 5; e.value = 6;",
+      "diagnostic": "E_IMMUTABLE"
+    },
+    {
+      "id": "map-no-mut-authority",
+      "kind": "negative",
+      "source": "let Map<string,int> m = {\"foo\" => 5}; m.set(\"foo\",6);",
+      "diagnostic": "E_MUTABILITY"
+    },
+    {
+      "id": "map-wrong-value",
+      "kind": "negative",
+      "source": "let mut Map<string,int> m = {\"foo\" => 5}; m.add(\"bar\" => true);",
+      "diagnostic": "E_TYPE"
+    },
+    {
+      "id": "map-duplicate-literal",
+      "kind": "negative",
+      "source": "let Map<string,int> m = {\"foo\" => 1,\"foo\" => 2};",
+      "diagnostic": "E_DUPLICATE"
+    },
+    {
+      "id": "map-missing-unwrap",
+      "kind": "negative",
+      "source": "let Map<string,int> m = {\"foo\" => 5}; return m.get(\"missing\").unwrap();",
+      "diagnostic": "E_MISSING_VALUE"
+    }
+  ]
+}
