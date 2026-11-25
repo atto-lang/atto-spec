@@ -1,0 +1,32 @@
+name: Repository capability inventory v1
+on:
+  pull_request:
+    paths:
+      - 'contracts/repository-capabilities-v1.schema.json'
+      - 'scripts/validate-capabilities.mjs'
+      - 'tests/repository-capabilities.test.mjs'
+      - 'atto-capabilities.json'
+      - '.github/workflows/capability-inventory.yml'
+  push:
+    paths:
+      - 'contracts/repository-capabilities-v1.schema.json'
+      - 'scripts/validate-capabilities.mjs'
+      - 'tests/repository-capabilities.test.mjs'
+      - 'atto-capabilities.json'
+      - '.github/workflows/capability-inventory.yml'
+permissions:
+  contents: read
+jobs:
+  structural-inventory-only:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Execute offline schema guard regression tests
+        run: node --test tests/repository-capabilities.test.mjs
+      - name: Validate repository's own capability record
+        run: node scripts/validate-capabilities.mjs atto-capabilities.json --repo atto-lang/atto-spec
+      - name: Evidence boundary
+        run: echo 'STRUCTURAL_METADATA_ONLY; no AttoLang guest was executed or certified'

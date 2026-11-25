@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const c=JSON.parse(readFileSync(new URL("./cases.json",import.meta.url),"utf8"));
+assert.equal(c.schema,"atto.readonly-shape-projection/v1");
+assert.equal(c.status,"HOST_WITNESS_CONTRACT_NOT_GUEST_ABI");
+assert.equal(c.max_fields,32);
+assert.equal(c.cases.length,16);
+assert.deepEqual(c.cases.map(c=>c.id),Array.from({length:16},(_,i)=>"SP"+String(i+1).padStart(3,"0")));
+assert.equal(c.cases.filter(c=>c.expected==="ACCEPT").length,3);
+assert.equal(c.cases.filter(c=>c.expected==="REJECT").length,13);
+assert.equal(c.cases[0].source_slot,0);
+assert.equal(c.cases[1].source_slot,1);
+assert.equal(c.example.expected_result,84);
+assert.equal(c.example.execution_status,"TARGET_GUEST_NOT_EXECUTED");
+console.log("readonly-shape-projection-v1: 16 source-only vectors; 0 guest executions");
