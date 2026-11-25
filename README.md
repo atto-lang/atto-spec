@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [ActorGroup typed pub/sub v1](language/actor-pubsub-v1.md): group membership is distinct from topic subscriptions; bounded RELIABLE atomic fan-out, affine cancellation and incarnation fencing are TARGET, not yet backend-verified.
+
 - [Primitive, aggregate and object storage v1 — Java/LLVM](language/primitive-object-storage-java-llvm-v1.md): **draft target** for inline scalars, nominal Struct/structural Record, identity classes, actor-private heap handles and verified implicit borrowing. [30 target cases](conformance/primitive-object-storage-java-llvm-v1.json) are **NOT_EXECUTED** on Java and LLVM.
 
 - [Control-loop and actor unmanaged memory v1](language/control-and-actor-unmanaged-memory-v1.md): **draft target** for separate control/actor Ref32 memory domains, versioned offset-vs-slot ABIs, unmanaged JVM/.NET guest payloads and measured zero-managed-allocation hot paths; no backend certification.
