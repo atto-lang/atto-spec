@@ -16,6 +16,10 @@ fnc choose() -> infer { return 42; }
 
 A constructor has no return annotation, since construction is not an ordinary return-valued callable; lambdas retain separately specified contextual inference. See the [normative return-type contract](https://github.com/atto-lang/atto-spec/blob/main/language/explicit-callable-return-types-v1.md). This is an accepted target; backend execution and formatter parity remain separately gated.
 
+## Candidate static binding type queries
+
+Explicit `infer` is already part of the target return annotation contract. The separate [static binding type query proposal](../language/return-binding-type-query-target-v1.md) describes `typeof name` and parenthesized compatibility input; it does not certify backend support or permit omitted annotations.
+
 ## Signatures and visibility
 
 ```atto
