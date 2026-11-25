@@ -81,3 +81,67 @@ Versioned schema IDs, field IDs and explicit migration are mandatory before inco
 Shared registry: `atto-lang/atto-platform-conformance/contracts/actor-persistence-v1.json`. Interface/ABI manifest: `atto-lang/atto-common-source/contracts/actor-persistence-interfaces-v1.json`.
 
 Test acceptance requires separate proof of lexer/parser, semantic checks, generated AOT codecs, native/guest execution, forced-kill-after-commit vs before-commit recovery, snapshot migration, failure and replay, plus independence of actor-owned heaps. Tests of contract structure or a host reference model are **NOT_EXECUTED_BY_BACKEND**, never evidence of automatic disk persistence. No source organization or alternate Actions runner is assumed to have tested a backend until an actual populated job is inspected.
+
+
+## Proposed compiler-generated durable turn ABI (draft extension)
+
+The current executable scalar Wasm fixture in atto-durable-objects.atto is
+not a general actor ABI. The following is an implementation contract for
+the next vertical slice, not new user-visible keywords or a fixed wire
+layout. The normal `define durable actor` declaration remains the source
+of truth. The compiler generates a sealed dispatch table and typed
+snapshot/command/reply codecs ahead of time. All backends must support AOT;
+no mandatory runtime reflection, dynamic code generation or JIT.
+
+- **Deployment manifest:** stable actor type ID, ABI version, source/build
+  provenance, artifact SHA-256, accepted message type IDs, snapshot and
+  reply schema versions, codec IDs and bounded resource profile. A trusted
+  deployment authority binds the manifest to tenant and namespace. Guests
+  and incoming requests cannot select executable paths, artifact digests,
+  storage handles, ownership epochs or privileged host import tables.
+- **Turn inputs:** broker-authenticated stable logical identity, immutable
+  owned snapshot bytes (or explicit confirmed absence), typed bounded
+  command envelope, stable request ID and schema IDs. Epoch/revision are
+  broker fencing metadata, never a guest-authoritative capability.
+  Generated decoder rejects unknown tags, unsupported schemas, overlong
+  values and trailing bytes before dispatch. No raw host pointers or
+  mutable references crossing the ABI; buffer lengths, allocations and
+  ownership transfer must be checked before use.
+- **Dispatch:** runtime selects the compiler-generated private receive
+  entry for the declared message type. Init is runtime-only on confirmed
+  first activation. Normal actor state is sealed; no active critical loan
+  crosses a suspension or checkpoint. One exclusive turn remains admitted
+  across suspension until physically quiescent. Unsupported backend
+  lowering must fail closed with a diagnostic, not silently simulate an
+  actor using a host callback.
+- **Turn outputs:** a typed proposed snapshot, reply or application
+  rejection, and bounded typed durable effects. Output bytes are validated
+  against the admitted manifest. Guests cannot publish external success,
+  mutate authoritative storage, mint identities or directly access the
+  trusted broker. The broker atomically commits snapshot/revision, exact
+  request receipt, optional alarm intent and outbox before publication.
+  Crash/ambiguous commit is resolved from storage, not by guessing.
+- **Retirement:** a persisted dispatch marker precedes execution; a
+  supervisor resolves an abandoned marker only after proving physical
+  retirement or a fencing boundary that denies all authority. Epoch change
+  alone does not stop an old execution. Local process-runner lock inheritance
+  is a cooperating single-host technique, not distributed lease proof.
+  Resource exhaustion is a typed failure; after confirmed stop, bounded
+  retries may lead to durable dead-letter retention without success receipt.
+- **Version changes:** deployment manifests and stored schemas cannot be
+  substituted on retry. Explicit authenticated migration/upgrade must
+  drain active turns, fence previous code, transform and validate snapshots
+  and retain existing receipt semantics. Schema compatibility is not
+  artifact identity. No silent reinterpretation of pending commands.
+
+First conformance target: actual compiled durable actor with sealed
+persistable integer state and two typed message variants, restart/replay
+and fault injection across the real store boundary. Include negative
+tests for unauthorized type/artifact/tenant substitution, unbounded or
+malformed envelopes, direct receive/init, active borrow at checkpoint,
+bad reply schema, stale receipt, crash before commit, crash after commit,
+and orphan retirement. Run Java/GraalVM, LLVM, .NET NativeAOT, Wasm and
+Cranelift individually; distinguish source rejection, host-only tests and
+executed compiled guest receipts. This draft does not mandate one machine
+ABI for all architectures and does not claim that compiler-generated
+dispatch or codecs already exist.

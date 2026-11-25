@@ -1,0 +1,17 @@
+name: Return type contract (host only)
+on:
+  pull_request:
+    paths: ['language/return-type-queries-and-inference-v1.md', 'tests/return-type-contract.test.mjs', '.github/workflows/return-type-contract.yml']
+  push:
+    paths: ['language/return-type-queries-and-inference-v1.md', 'tests/return-type-contract.test.mjs', '.github/workflows/return-type-contract.yml']
+permissions:
+  contents: read
+jobs:
+  reference-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - run: node --test tests/return-type-contract.test.mjs
