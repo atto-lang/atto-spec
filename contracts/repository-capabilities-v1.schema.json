@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atto-lang.github.io/contracts/repository-capabilities-v1.schema.json",
+  "title": "AttoLang repository capability snapshot v1",
+  "description": "Source-repository advisory feature inventory. Not a compiler or execution attestation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "repository", "role", "source_state",
+    "feature_status", "certification", "evidence"
+  ],
+  "properties": {
+    "schema": { "const": "atto.repository-capabilities.v1" },
+    "repository": {
+      "type": "string",
+      "pattern": "^atto-lang/[a-z0-9._-]+$"
+    },
+    "role": {
+      "enum": ["compiler", "runtime", "platform", "library", "tooling", "demo", "governance", "conformance", "site"]
+    },
+    "source_state": { "enum": ["scaffold", "implementation"] },
+    "feature_status": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
+      "additionalProperties": {
+        "enum": ["not_executed", "passed", "failed", "unsupported"]
+      }
+    },
+    "certification": { "const": "NOT_CERTIFIED" },
+    "evidence": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["feature", "status", "source_head_sha", "execution_kind", "workflow_url"],
+        "properties": {
+          "feature": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "status": { "enum": ["passed", "failed", "unsupported"] },
+          "source_head_sha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+          "execution_kind": { "enum": ["guest", "host", "parser", "unavailable"] },
+          "workflow_url": { "type": "string", "pattern": "^https://github[.]com/atto-lang/[a-z0-9._-]+/actions/runs/[1-9][0-9]*$" }
+        }
+      }
+    }
+  }
+}
