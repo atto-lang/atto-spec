@@ -83,14 +83,47 @@ callable_signature  = callable_head, [return_before],
 explicit_body       = "{", statements, "}"
                     | "begin", statements, "end"
                     | "as", statements, "end" ; (* existing Atto form *)
-shortcut_body       = HARD_NEWLINE, statements, "end" ;
+shortcut_body       = [ "::" ], HARD_NEWLINE, statements, "end" ;
 ```
 
 `return_after` is permitted **only** if no `return_before` or prefix `T•` return type is present. Otherwise diagnose `E_RETURN_TYPE_CONFLICT`. A signature can have at most one declared result type and each failure kind occurs at most once. Any `return_after` must be **the last header construct**: reject `throws`, `raises` or `panics` after it with `E_EFFECT_ORDER`. A return type before the effect list may be `: T`, `-> T` or the independently specified prefix `T•` syntax. A return type after the effect list always uses `-> T`.
 
-Any signature may use an explicit `{...}`, `begin ... end`, or existing valid `as ... end` body. In the *new* inline-effect forms, an unadorned `... end` body **without** `begin` is admitted **only** if the signature ends in a trailing `return_after` and is separated from its first statement by a hard newline outside all balanced type delimiters. Comments and blank lines may intervene. The newline must be tokenized even when normal whitespace is discarded elsewhere. `{` and `begin` unambiguously take precedence over this shortcut; a newline cannot turn an incomplete return type into a body.
+Any signature may use an explicit `{...}`, `begin ... end`, or existing valid `as ... end` body. In the *new* inline-effect forms, an unadorned `... end` body **without** `begin` or `::` is admitted **only** if the signature ends in a trailing `return_after` and is separated from its first statement by a hard newline outside all balanced type delimiters. When the return type precedes the inline effects (`-> T`, `: T`, `T <-` or exact U+2022 `T •`), the parser requires an explicit `begin`, `::`, or brace delimiter after the complete effect list. `::` is also permitted directly after an effect-free return-first callable header (and is optional there). A `::` body begins on the next physical source line; it has ordinary statement semantics with mandatory explicit nonvoid returns, never the separate legacy comma-tail implicit return. Comments and blank lines may intervene. The newline must be tokenized even when normal whitespace is discarded elsewhere. `{` and `begin` unambiguously take precedence over this shortcut; a newline cannot turn an incomplete return type into a body.
 
 Legacy declarations **without** any new inline effects keep their preexisting body syntax and formatting. A formatter may not remove `begin` or `as` based on indentation guesses.
+
+## Owner amendment: return-first optional begin and effect-final :: (2026-11-21)
+
+The accepted return-first separators are contiguous ASCII `<-` and exact U+2022 BULLET `•`, with optional `fnc`. These are **alternative** declarations with exactly the same typed callable signature. For effect-free return-first declarations, an ordinary newline-started statement/`end` body needs no `begin`. Adding `::` after `)` is allowed for clarity. For an effect list following the return type, an explicit `begin` or `::` (or braces) marks the end of `throws`/`raises`/`panics`. The effect types must be parsed and validated before the delimiter; an effect after the delimiter is invalid.
+
+```atto
+fnc int <- double_answer(int value)
+  return value * 2;
+end
+
+fnc int • double_answer(int value) ::
+  return value * 2;
+end
+
+fnc int <- double_answer(int value)
+raises Foo
+begin
+  if value > 3 then
+    raise! new Foo();
+  fi
+  return value * 2;
+end
+
+fnc int <- double_answer(int value)
+raises Foo ::
+  if value > 3 then
+    raise! new Foo();
+  fi
+  return value * 2;
+end
+```
+
+All four snippets are alternative bodies for the **same function**, not definitions to place together in one scope. `Foo` must be a verified nominal `Error` subclass satisfying the raised-effect capability requirements. The canonical `raise!` source spelling is tracked independently in [spec PR #146](https://github.com/atto-lang/atto-spec/pull/146). No backend may claim it executes this example simply because the parser accepts the header; actual exceptional runtime guest results and no-artifact negatives are required. Reject missing `end`, a duplicate `::`, `::` inside a type/effect list, and nonvoid fallthrough.
 
 ## All of these are valid design-intent forms
 
@@ -154,7 +187,7 @@ The generic example is syntactic intent; `ParseError<T>` must actually extend `E
 2. `@Throws() fnc f() { throw X(); }`: effect bound violation (or incomplete proof). Likewise for `@Raises()` and `raise`.
 3. `@Throws(string)`, unknown error types, confusing user-defined `atto.core.Throws`, malformed generics, nonconstant annotation arguments: fail before emission.
 4. Any `throws ... raises ... -> T throws ...`: `E_EFFECT_ORDER`; multiple return types: `E_RETURN_TYPE_CONFLICT`.
-5. `fnc f() throws X` followed by unbraced body without `begin`: `E_BODY_DELIMITER`. An implicit shortcut missing `HARD_NEWLINE`: `E_BODY_NEWLINE`.
+5. `fnc f() throws X` followed by an unbraced body without `begin` or `::`: `E_BODY_DELIMITER`. A return-first effect-bearing declaration similarly requires `begin`, `::` or braces. An implicit shortcut or `::` body missing `HARD_NEWLINE`: `E_BODY_NEWLINE`.
 6. Absent effect proof for an imported/foreign/virtual call: reject or explicitly require a trusted effect contract. Do not presume purity.
 7. Overrides widening throws, raises, or panics beyond the base method: fail before lowering.
 8. Nonexecutable actor receive, foreign unwinding, and continuous pipeline support must reject rather than silently claim semantics.
