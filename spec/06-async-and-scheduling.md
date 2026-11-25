@@ -23,6 +23,10 @@ val result = await work
 
 `do nb { ... }` explicitly discards a Task handle but not its supervision obligation. A Task has a structured parent, may be cancelled, and must not capture mutable actor state or escaping stack borrows. `await task` joins its result; a Task is not an actor and has no default mailbox.
 
+## TaskFuture and inline task target
+
+The [typed task contract](../language/typed-task-payload-sync-v1.md) and [TaskFuture control contract](../language/task-future-control-v1.md) refine historical task spellings: independently scheduled `task<T>` produces `TaskFuture<T>`, with one ownership-consuming result projection to `Future<T>`; `sync task<T>` produces T inline on the caller thread, with no fabricated child. The historical `nb` task spelling above is separately versioned migration syntax. A potentially migrating inline continuation must reject; never park a carrier to implement same-thread execution. All retirement and ownership gates remain mandatory. This is a target, not portable guest evidence.
+
 ## Channels, select and backpressure
 
 ### Channel wait modes and result discard

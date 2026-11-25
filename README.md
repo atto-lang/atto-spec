@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Typed task payloads and inline sync](language/typed-task-payload-sync-v1.md) and [TaskFuture control](language/task-future-control-v1.md): independently scheduled children, affine result receipts, same-thread inline scopes and cancellation/retirement targets; compiler evidence independently gated.
+
 - [Conditional expression versus statement forms](spec/27-value-conditionals-and-do-if.md): strict target, preserving the separately gated arm-local v2 profile.
 
 - [Checked directional I/O](language/io-direction-shorthand-v1.md), [prefix/postfix reads](language/postfix-channel-read-expression-v1.md), and [mixed endpoint pipes](language/mixed-endpoint-pipe-v1.md): single-operation and continuous graph contracts; host models only, not portable guest certification.
