@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Fatal-fault containment evidence](spec/28-fatal-fault-containment-evidence.md): independently scoped claims, physical retirement and safe isolated verification; no backend certification.
+
 
 - [Browser compiler integration profile](spec/23-browser-compiler-profile.md): dated Wasm/ESM execution evidence, tenant-worker topology and explicitly unsupported target features.
 
