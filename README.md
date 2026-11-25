@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Authenticated incremental build cache](proposals/incremental-compilation-unit-boundaries-v1.md): proposed unit identity and provenance, never an authorization to reuse an untrusted artifact.
+
 - [Recursive layouts and typed identity graphs](language/recursive-layout-graph-wire-v1.md): target independent alias, layout and inhabitation proofs, candidate graph profile distinct from existing tree codecs. No wire or guest admission.
 
 - [Unsafe lexical proof boundary](language/unsafe-blocks-v1.md): fail-closed target for independently authorized trusted host operations, not guest-native admission or a permission grant.
