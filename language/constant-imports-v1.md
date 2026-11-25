@@ -15,7 +15,7 @@ define const string internal_key = "not-exported";
 
 // app.atto
 import const status_valid, status_not_found as missing from "std.http";
-import const status_valid as ok from pkg "std.http";
+import const status_valid as ok from std.http;
 import const threshold from "./thresholds.atto";
 
 pub fnc main(): int {
@@ -31,7 +31,7 @@ const_import_spec = export_path, [ "as", identifier ] ;
 
 The `const` keyword after `import` is a **declaration-kind filter**, not an initializer or runtime expression. `import const * as ns` is not a valid v1 form: namespace-wide imports continue to use `import * as ns`, with typed member access for each exported symbol. An unqualified `import name from ...` retains the existing general kind-checked import semantics; `import const` explicitly requires a statically declared constant. No brace destructuring or mixed-kind list after a single `import const`.
 
-For package identity, `from "std.http"` is an unambiguous dotted namespace selector and is equivalent to `from pkg "std.http"` in the same resolver context. A quoted `./name.atto` or `../name.atto` denotes a file source, with existing root and path-traversal checks; `from pkg "+/name"` remains the existing explicit project-rooted package spelling. A bare non-dotted package selector still requires `pkg` (no accidental fallback to cwd/host paths). Classifying a selector must never execute imported code or inspect runtime properties. The `std.http` example is a package/namespace identity, **not** a file called `std.http`.
+**V1 compatibility only; for v2, [static imports v2](static-imports-v2.md) is authoritative.** Bare/quoted registered builtins use the same authenticated identity; `pkg` denotes external identity only, mixed groups and direct typed paths remain valid, and namespace aliases use `define alias`. For historical v1 package identity, `from "std.http"` is an unambiguous dotted namespace selector and is equivalent to `from pkg "std.http"` in the same resolver context. A quoted `./name.atto` or `../name.atto` denotes a file source, with existing root and path-traversal checks; `from pkg "+/name"` remains the existing explicit project-rooted package spelling. A bare non-dotted package selector still requires `pkg` (no accidental fallback to cwd/host paths). Classifying a selector must never execute imported code or inspect runtime properties. The `std.http` example is a package/namespace identity, **not** a file called `std.http`.
 
 ## File and namespace declaration rules
 
@@ -44,7 +44,7 @@ For package identity, `from "std.http"` is an unambiguous dotted namespace selec
 
 The two environment APIs **must not be silently unified**:
 
-- `std.env.read_env(KEY)` (and legacy `os.read_env(KEY)`) is a **trusted static initializer form only**. It is admitted only in a `define [pub] const string` initializer, with a compile-time string key (including a pure constexpr string binding). It is neither a general runtime `std_env.get` call nor a build-time constexpr value. A user-defined function with the same spelling is not trusted.
+- `std.env.read_env(KEY)` (and legacy `os.read_env(KEY)`) is a **trusted static initializer form**. Its admission as a static initializer requires a `define [pub] const string` initializer, with a compile-time string key (including a pure constexpr string binding). It is neither a general runtime `std_env.get` call nor a build-time constexpr value. Existing ordinary legacy `os.read_env` calls retain their total runtime contract; this amendment does not introduce or remove ordinary runtime calls to the qualified form. A user-defined function with the same spelling is not trusted.
 - The startup accessor is **total** under the existing file/module-constant contract: missing, empty/invalid, denied and unavailable keys produce `""` without throwing or raising; the permission and validity gates must run **before host-value lookup**. A denied key may never be inspected, logged, or inferred from error differences. In particular, this does **not** grant ambient access to the process environment.
 - The runtime `std_env.get(KEY)` family has its own Option/Result and permission semantics: absence is distinct from an empty present value, and denial is an **error**, not fallback to absence. Refactoring static initialization through the runtime API must not accidentally change either contract.
 - A compiled AOT image contains only the initializer description and constant identity, not the build host's environment values. Runtime deployment supplies an authorized immutable launch snapshot; each declaration initializes once per launch, and imported aliases reuse the value. Each separate launch of the *same binary* must observe its own authorized snapshot.
@@ -56,7 +56,7 @@ The two environment APIs **must not be silently unified**:
 - `import const x as y` introduces a **read-only local alias** `y` for the exported constant `x`. Assignment (`y = ...`, `y += ...`, mutable borrow, or a write through an unsafe alias) is rejected. Aliases do not re-export the constant and never change its owning package identity.
 - A target must be a declared constant. A function/class/module/actor named `x` is rejected by `import const x` with `E_IMPORT_KIND`; an absent symbol with `E_UNBOUND`; inaccessible visibility with `E_PRIVATE`; colliding/duplicate local aliases with `E_DUPLICATE`.
 - Compile-time constants are folded by the typed evaluator and may be referenced by dependent constexpr declarations across files/packages, preserving checked arithmetic/overflow, cycles and visibility. A runtime-once constant is *not* constexpr merely because the binding is immutable; using it in a constexpr-required expression fails.
-- A startup-once environment-backed constant is initialized once per program instance/isolated deployment unit in dependency order, before reads and actor dispatch. Importing it twice never duplicates initialization. Importing does not grant `std.env.read_env` or `os.read_env` capabilities to a denied module. No constant is baked from the build host environment into an AOT binary. The `std.env` path is resolved to the reserved standard namespace identity; user-defined lookalike functions do not gain static-initializer permission. A public environment-backed const is visible to authorized importers, so secrets should normally remain private.
+- A startup-once environment-backed constant is initialized once per declared constant per program instance/isolated deployment unit in dependency order, before reads and actor dispatch. Importing it twice never duplicates initialization. Importing does not grant `std.env.read_env` or `os.read_env` capabilities to a denied module. No constant is baked from the build host environment into an AOT binary. The `std.env` path is resolved to the reserved standard namespace identity; user-defined lookalike functions do not gain static-initializer permission. A public environment-backed const is visible to authorized importers, so secrets should normally remain private.
 - Reject dependency/initializer cycles (`E_CONST_CYCLE`) and unresolved selectors; keep any import side-effect accounting explicit for tree shaking. The package resolver may share already-initialized immutable values between authorized imports but must not expose mutable storage or leak secrets via diagnostics.
 - The filename/namespace header rule remains: a `use namespace ...;` header, if present, precedes every `import`, including `import const`, and all other top-level declarations. Imports must precede ordinary declarations in v1.
 
@@ -67,7 +67,7 @@ A declarative `export pub const x;` or inferred `export pub x;` may expose an ex
 | Source situation | Expected |
 | --- | --- |
 | `define pub const int status_valid = 200;` imported from `"std.http"` | Bind `status_valid` as immutable `int`; guest returns 200 |
-| Two selected constants, aliasing, and `from pkg "std.http"` | Same static target identities and values |
+| Two selected constants, aliasing, and builtin `from std.http` | Same static target identities and values |
 | `import const limit from "./limits.atto";` | Resolve public file-scoped constant |
 | Import a private constant in another package | `E_PRIVATE` |
 | Import public `fnc` or class with `import const` | `E_IMPORT_KIND` |

@@ -1,0 +1,3 @@
+// expect-error: type
+fnc bad(int x): int -> true;
+pub fnc main(): int { return bad(2); }

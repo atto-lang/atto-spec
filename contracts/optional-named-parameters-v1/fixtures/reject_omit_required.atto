@@ -1,0 +1,7 @@
+fnc required(int x): int {
+  return x;
+}
+
+pub fnc main(): int {
+  return required(omit);
+}
