@@ -1,8 +1,8 @@
 # Equality operators: value versus identity (draft)
 
-> Status: proposal for review. This document does not claim compiler implementation or backend parity.
+> Status: alternative edition proposal, NOT RATIFIED. Current [chapter 17](../spec/17-primitives-and-core-types.md) and [chapter 16](../spec/16-lexical-and-grammar-reference.md) govern ordinary source: `eq`/`neq` are value comparisons, `==`/`!=` are legacy aliases, and `is` is identity. The alternative below is not a change to those defaults. It requires an explicitly versioned migration and actual compiler/formatter evidence before adoption.
 
-## Decision
+## Alternative proposal (not the current language decision)
 
 | Operator | Primitive operands | Reference operands |
 | --- | --- | --- |
@@ -101,7 +101,7 @@ x neq y;   // logical negation of x eq y
 2. First attempt source-org Actions and inspect actual job scheduling/completion; a queued or skipped job is not a pass.
 3. If Actions budget blocks execution, use a permitted private alternate org/repo with available Actions minutes. Mirror the **exact source Git tree** into a temporary test branch, verifying each blob SHA, file mode, and tree SHA. Never depend on a cross-org checkout token or copy secrets.
 4. Run parser, semantic, formatter, negative compilation, AOT runtime, and cross-backend conformance checks from that mirror. Record workflow run URL, SHA, test totals, failures, and any unavailable backend.
-5. Do not mark this draft ready until semantic questions are resolved and real CI evidence exists. Clean up temporary mirror branches after evidence is retained.
+5. Do not ratify this alternative edition or advertise its implementation until semantic questions are resolved and real compiled guest CI evidence exists. Clean up temporary mirror branches after evidence is retained.
 
 **Verification status:** This document is a test plan, not an executed CI report.
 
@@ -177,7 +177,7 @@ This `self` identity check is not a recursive call to `equals()`. It
 compares stable object handles directly. Primitive or mismatched-class
 operands still trigger `E_IDENTITY_TYPE`.
 
-The Rust/browser compiler implements this bounded same-class profile; it
+Historical Rust/browser implementation notes describe this bounded same-class profile; it
 does not imply general self-as-value semantics, virtual inheritance,
 dynamic dispatch, actor capability identity, or default `Object.equals()`.
 

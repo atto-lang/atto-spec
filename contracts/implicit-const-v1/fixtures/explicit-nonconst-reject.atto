@@ -1,0 +1,8 @@
+fnc runtime_value() -> int ::
+  stdio.println(0);
+  return 42;
+end
+fnc main() -> int ::
+  const int value = runtime_value();
+  return value;
+end

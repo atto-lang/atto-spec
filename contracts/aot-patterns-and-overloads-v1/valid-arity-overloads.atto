@@ -1,0 +1,6 @@
+fnc scale(int value): int { return value * 2; }
+fnc scale(int value, int factor): int { return value * factor; }
+
+pub fnc main(): int {
+    return scale(20) + scale(1, 2);
+}
