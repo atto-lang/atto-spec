@@ -156,3 +156,28 @@ test('bounded exploration reports a pruned frontier explicitly',()=>{
  assert.equal(report.frontier_pruned,true);
  assert.equal(report.exhausted,false);
 });
+
+
+test('actor handlers cannot impersonate another asset owner; genuine owner and trusted root handoff work',()=>{
+ const scenario={actors:[{id:'a',handlers:{}},{id:'b',handlers:{}},
+  {id:'c',handlers:{steal:[{op:'transfer',asset:'asset',from:'a',to:'c'}]}}],
+  owners:{asset:'a'},tasks:[{id:'p',steps:[{op:'send',to:'c',tag:'steal'}]}]};
+ for(let seed=1;seed<=64;seed++){
+  const t=schedule(scenario,{seed});
+  assert.equal(t.status,'failed');
+  assert.match(t.failure.message,/without authority/);
+  assert.equal(t.final_state.owners.asset,'a');
+  assert.deepEqual(schedule(scenario,{seed,replay:t}),t);
+ }
+ const owned={actors:[{id:'a',handlers:{give:[{op:'transfer',asset:'asset',from:'a',to:'b'}]}},{id:'b',handlers:{}}],
+  owners:{asset:'a'},tasks:[{id:'p',steps:[{op:'send',to:'a',tag:'give'}]}]};
+ assert.equal(schedule(owned).final_state.owners.asset,'b');
+ owned.tasks=[{id:'p',steps:[{op:'transfer',asset:'asset',from:'a',to:'b'}]}];
+ assert.equal(schedule(owned).final_state.owners.asset,'b');
+});
+test('missing assertions, absent state and unused forced prefixes cannot certify a pass',()=>{
+ assert.throws(()=>schedule({actors:[],tasks:[{id:'p',steps:[{op:'assert',key:'missing'}]}]}),/invalid assertion/);
+ const absent=schedule({actors:[],tasks:[{id:'p',steps:[{op:'assert',key:'missing',value:0}]}]});
+ assert.equal(absent.status,'failed');
+ assert.throws(()=>schedule({actors:[],tasks:[]},{prefix:['step:p']}),/unused forced choices/);
+});
