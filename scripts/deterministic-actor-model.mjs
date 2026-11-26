@@ -27,6 +27,7 @@ function validateSteps(steps) {
     }
     if (['sleep','timer_send'].includes(s.op)) demand(safeInteger(s.after, 1), 'invalid timer delay');
     if (s.op === 'add') demand(safeInteger(s.by ?? 1), 'invalid delta');
+    if (s.op === 'assert') demand(validId(s.key) && safeInteger(s.value), 'invalid assertion');
   }
 }
 function build(scenario) {
@@ -39,10 +40,12 @@ function build(scenario) {
     for (const [tag, steps] of Object.entries(a.handlers)) {demand(validId(tag), 'invalid message tag');validateSteps(steps);}
     actors[a.id] = {generation:1, version:1, serial:a.serial !== false, handlers:a.handlers};
   }
-  const tasks = Object.create(null);
+  const tasks = Object.create(null), taskIds = new Set();
   for (const t of scenario.tasks) {
-    demand(validId(t.id) && !tasks[t.id] && !t.id.startsWith('delivery.'), 'duplicate or invalid task');
+    demand(validId(t.id) && !taskIds.has(t.id) && !t.id.startsWith('delivery.'), 'duplicate or invalid task');
+    taskIds.add(t.id);
     validateSteps(t.steps);
+    if (t.steps.length === 0) continue;
     tasks[t.id] = {pc:0, steps:t.steps, locals:{}, wake:null, actor:null, generation:null};
   }
   const shared = scenario.shared ?? {};
@@ -149,7 +152,7 @@ function execute(s, choice) {
         const prev=s.shared[op.key];demand(safeInteger(prev) && safeInteger(prev+(op.by??1)), 'invalid counter addition');
         s.shared[op.key]=prev+(op.by??1);break;
       }
-      case 'assert': demand(s.shared[op.key]===op.value,'property failed: '+op.key);break;
+      case 'assert': demand(Object.hasOwn(s.shared,op.key) && s.shared[op.key]===op.value,'property failed: '+op.key);break;
       case 'yield': break;
       default: throw Error('unsupported operation');
     }
@@ -196,6 +199,7 @@ export function schedule(scenarioInput,{seed=1,replay=null,prefix=[],maxSteps=MA
     choices.push(event);
     if (failure) break;
   }
+  demand(prefix.length <= choices.length, 'unused forced choices');
   const result={schema:SCHEMA,evidence:'REFERENCE_MODEL_ONLY_NOT_GUEST_EXECUTION',seed,scenario_hash:scenarioHash,status:failure?'failed':'completed',failure,events:choices,final_hash:hash(state),final_state:state};
   if (replay) demand(replay.events.length===choices.length && replay.final_hash===result.final_hash &&
     JSON.stringify(replay.final_state)===JSON.stringify(result.final_state) &&
