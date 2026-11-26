@@ -6,8 +6,8 @@ test('method spelling corpus covers every backend without certifying execution',
   assert.equal(m.status,'CANDIDATE_NOT_EXECUTED');
   assert.deepEqual(Object.keys(m.compiler_targets).sort(),['atto','cranelift','forge','hdl','java','js','llvm','net','realtime','rs','wasm']);
   assert.ok(Object.values(m.compiler_targets).every(v=>v==='NOT_EXECUTED'));
-  assert.equal(m.cases.length,39);
-  assert.equal(new Set(m.cases.map(c=>c.id)).size,39);
+  assert.equal(m.cases.length,120);
+  assert.equal(new Set(m.cases.map(c=>c.id)).size,120);
   for(const kind of ['interface','trait']){
     for(const spelling of ['bare','fnc','mtd']){
       const p=m.cases.find(c=>c.id===kind+'.'+spelling+'.positive');
@@ -81,4 +81,42 @@ test('obsolete introducer cannot be disguised as a contextual name or by comment
       assert.equal(c.status,'NOT_EXECUTED');
     }
   }
+});
+
+function extendedCases(){
+  const cases=[];
+  const base={entry:'main.atto',status:'NOT_EXECUTED'};
+  for(const kind of ['class','actor','struct','interface','trait']){
+    for(const name of ['ping','mtd','method']){
+      for(const [form,marker] of [['public','pub method '],['tab','method\t'],['newline','method\n'],['block-comment','method /* declaration marker */ ']]){
+        const body=['interface','trait'].includes(kind)?';':' { return 42; }';
+        cases.push({id:kind+'.obsolete-matrix.'+name+'.'+form,expect:'syntax_reject',...base,source:'define '+kind+' C as '+marker+name+'(): int'+body+' end\npub fnc main(): int { return 0; }\n',diagnostic_family:'OBSOLETE_METHOD_INTRODUCER',no_artifact:true});
+      }
+    }
+  }
+  for(const spelling of ['bare','fnc','mtd']){
+    const prefix=spelling==='bare'?'':spelling+' ';
+    for(const [form,header,body,call] of [
+      ['trivia',prefix+'/* declaration */ ping()', '42', 'ping()'],
+      ['multiline',prefix+'ping(\n)', '42', 'ping()'],
+      ['self',prefix+'ping(self)', '42', 'ping()'],
+      ['value',prefix+'ping(int n)', 'n + 2', 'ping(40)'],
+      ['self-value',prefix+'ping(self, int n)', 'n + 2', 'ping(40)'],
+      ['split-self',prefix+'ping(self)(int n)', 'n + 2', 'ping(40)'],
+      ['formal-comment',prefix+'ping(/* formal */ int n)', 'n + 2', 'ping(40)']
+    ]){
+      cases.push({id:'class.accept-matrix.'+spelling+'.'+form,expect:'compile_and_run',...base,source:'define class C as pub '+header+': int { return '+body+'; } end\npub fnc main(): int { return new C().'+call+'; }\n',expected_return_int:42});
+    }
+  }
+  return cases;
+}
+
+test('extended trivia and receiver matrix has exact source and expected outcomes',()=>{
+  const expected=extendedCases();
+  assert.equal(expected.length,81);
+  assert.equal(expected.filter(c=>c.expect==='syntax_reject').length,60);
+  assert.equal(expected.filter(c=>c.expect==='compile_and_run').length,21);
+  const actual=m.cases.filter(c=>c.id.includes('.obsolete-matrix.')||c.id.includes('.accept-matrix.'));
+  assert.deepEqual(actual,expected);
+  assert.equal(new Set(m.cases.map(c=>c.source)).size,m.cases.length);
 });
