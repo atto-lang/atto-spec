@@ -379,6 +379,62 @@
       "scenario": "brand does not grant permission or effect escalation",
       "expected": "REJECT",
       "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB053",
+      "kind": "static",
+      "scenario": "ordinary Symbol UUID identical to a tag identifier cannot satisfy typed brand membership",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB054",
+      "kind": "static",
+      "scenario": "same shape and brand but changed ownership mode or member effect upper bound",
+      "expected": "NOT_EQUAL",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB055",
+      "kind": "static",
+      "scenario": "generic containing an actor-local borrow cannot derive Send from attached user marker",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB056",
+      "kind": "static",
+      "scenario": "opaque newtype with matching representation cannot gain another brand by conversion without validated construction",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB057",
+      "kind": "runtime",
+      "scenario": "descriptor with matching UUID but wrong declaration kind or package authority",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB058",
+      "kind": "runtime",
+      "scenario": "brand attachment policy change invalidates dependent structural witness and importer proof caches",
+      "expected": "INVALIDATE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB059",
+      "kind": "runtime",
+      "scenario": "implementation-only method body change preserves public brand witness when its verified effects and dependencies are unchanged",
+      "expected": "PRESERVE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB060",
+      "kind": "runtime",
+      "scenario": "wire payload contains valid Symbol UUID but missing trusted brand schema and construction proof",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
     }
   ]
 }
