@@ -398,3 +398,55 @@ effect solver, position drift, failed-build rollback, adding an export that
 resolves an earlier negative lookup, and unchanged sibling namespaces in
 a changed authenticated package. These remain a bounded profile, not general
 red-green dependency invalidation or full backend parity.
+
+#### All compiler owners: distinct reuse and execution evidence
+
+The acceptance matrix MUST enumerate every atto-source.* repository.
+A successful bounded native or RTL artifact differential is not proof of
+general namespace linking, typed-IR reuse, or persistent cache authority.
+Record the exact source commit, physical root tree and material workflow
+(or test) blob; record actual executed compilation and guest/simulation
+steps, target/ABI, exact work counters and diagnostics. Separate these
+capabilities rather than inferring one from another:
+
+- Java: independently checked unit reuse and actual trusted JVM execution;
+  strict untrusted native-isolate execution remains a separate gate.
+- .NET: frozen provider parsing reuse, exact frozen CIL artifact reuse,
+  and separately linked NativeAOT guest differential. A CIL hit is not a
+  persisted native executable hit. A cold miss runs ordinary CFG and
+  module linkage verification. Returned CIL arrays cannot alias the memo.
+- Rust: authenticated local and frozen registry stage witnesses, persistent
+  final-artifact reuse, source and closed namespace check reuse. External
+  durable authority and independently reusable typed/codegen units remain open.
+- JavaScript: validate the entire scalar module IR, reuse only exact
+  checked function fragments keyed by function slot and canonical IR
+  including call target indices. Rebuild exports every time. Slot drift,
+  changed call target and changed arity must not silently bind old code.
+- LLVM: bounded process-local native IR reuse binds exact source and
+  execution profile; actual clang-linked native differential, not a
+  browser-Wasm frontend test. No persistent or per-unit native IR claim.
+- Forge: bounded process-local runtime-argument assembly reuse binds
+  exact source and native architecture. Assemble and execute the actual
+  x86-64 output; ARM64 emission is not ARM64 execution.
+- Cranelift: bounded host-target relocatable object reuse, executed via
+  the checked status/out-pointer native ABI. No JIT fallback claim.
+- HDL: exact immutable parser-admitted AST and emitted RTL reuse, with
+  actual RTL simulation and failed-input rollback. No general actor or
+  software ABI parity claim.
+- Wasm integration: run the actual Rust cold/warm/edited guest artifacts
+  under the appropriate browser ABI. Keep the strict native core Wasm
+  admission contract separate (bounded exported memory, exact export
+  inventory); do not weaken it to accept incompatible browser artifacts.
+- Atto-authored compiler: stage-0 scalar seed is executable but not a
+  general compiler. Stage-1 source pipeline and verified typed units
+  are prerequisites for incremental parity; a Rust or JS host model
+  cannot substitute for actual Atto-authored compiler execution.
+- Realtime: repository bootstrap; executable deterministic source
+  admission/lowering and bounded target-specific timing/memory contracts
+  are prerequisites. No real-time certification or cache parity yet.
+
+All profiles must reject invalid source without committing staged state;
+compare accepted output to independent clean builds. Exact source or
+validated IR equality is a conservative first experiment, not general
+red-green invalidation. Where a compiler does not yet support a required
+profile, report NOT_IMPLEMENTED or UNSUPPORTED and leave acceptance open.
