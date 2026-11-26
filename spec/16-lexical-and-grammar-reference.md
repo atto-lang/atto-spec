@@ -8,7 +8,19 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 
 - Source files are UTF-8. New source uses `.atto`, and legacy source uses `.ores`.
 - Identifiers and keywords are case-sensitive.
-- An identifier starts with a letter or `_` and continues with letters, digits or `_`. The Java lexer accepts any Unicode letter. Whether every backend must do the same is open (S-22).
+- An identifier starts with a letter or `_` and continues with letters, digits or `_`. **TARGET (Greek identifier parity, 2026-11-26):** every compiler must accept the Greek letters α–ω (U+03B1–U+03C9, including final sigma ς) and Α–Ρ / Σ–Ω (U+0391–U+03A1 / U+03A3–U+03A9) wherever ordinary identifiers are legal, including start and continuation positions. The reserved keyword set and case-sensitive name resolution are unchanged. In particular, φ, π, ε and ρ are ordinary variable names, not built-in constants or operators. Greek support is a required minimum, not a limit on existing Unicode support. The full Unicode identifier profile, normalization, and confusable-character policy remain open under S-22.
+
+### Greek identifier parity acceptance
+
+```atto
+define fnc int greek_sum(int φ, int π) {
+    let int ε = 30;
+    let int ρ = 40;
+    return φ + π + ε + ρ;
+}
+```
+
+Calling `greek_sum(10, 20)` must return 100. Conformance must also exercise Greek local and parameter names with digits, underscores and ASCII letters (e.g. `ρ2`, `ε_value`, `xφ`), case-sensitive distinct bindings (`φ` and `Φ`), and visually similar distinct names (`ρ` and Latin `p`). Unbound names must reject, and existing source-control/bidi rejection must remain intact. A Greek identifier alone must not require guest heap allocation, runtime Unicode decoding, reflection, or a JIT; debug and ABI metadata may retain names when necessary. Do not change quoted or unquoted Symbol literal rules, introduce implicit aliases, or reserve Greek letters as operators. Compiler-backed guest execution and negative tests on the exact revision are required before claiming backend parity.
 - `//` starts a line comment. `/* ... */` is a block comment, and block comments nest.
 - **TARGET (decided, 2026-11-14):** block comments nest at most 128 deep. Opening a 129th level is a compile error, reported as `block comment nesting exceeds 128`, before parsing. Java, .NET and LLVM main all enforce this limit with that wording (LLVM via oreslang-source.llvm#1251, merged 2026-11-15, with fixtures at depth 128 accepted and 129 rejected).
 
