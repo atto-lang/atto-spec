@@ -4,7 +4,7 @@
 
 ## Decision
 
-- **copy! expression** means *shallow copy*. Evaluate its operand exactly once. For an identity-bearing class, construct a **fresh concrete root object** and copy every immediate field without recursively copying referenced objects. Embedded value fields are copied by value. Immutable references may be reused; mutable references may be reused **only** when a statically verified sharing/ownership capability makes that alias legal.
+- **copy! expression** means *shallow copy*. Evaluate its operand exactly once. For an identity-bearing class, construct a **fresh concrete root object** and copy every immediate field without recursively copying referenced objects. Embedded value fields are copied by value. Immutable references may be reused; mutable descendants may be retained only by a verified, transactional conversion to transitively read-only sharing across every alias. Unfreezable or unproved edges reject.
 - **copy!! expression** means *deep copy*. Evaluate its operand exactly once. Construct a **fresh mutable graph**, recursively duplicating owned mutable reachable objects, while preserving internal repeated references and cycles where the backend admits a verified graph copier. Proven immutable interned data may be shared.
 - **obj.copy()** corresponds to copy! obj and **obj.copy_deep()** corresponds to copy!! obj, subject to the same static witness and dynamic subtype obligations.
 - The two public methods accept **zero arguments**. Implementation-specific allocation/graph context is an **invisible compiler/runtime parameter**, not a user-visible argument. Application-specific variants may have named methods like copy_with(options), but operators NEVER forward arguments.
@@ -138,7 +138,7 @@ val d = original.copy_deep();
 
 All identity-bearing Atto classes inherit the **names** copy and copy_deep from root Object. They do **not** inherit permission to use either method: the resolved receiver must have a verified Copyable<Self> or DeepCopyable<Self> witness, respectively. A bare Object-typed erased reference requires verified virtual witness dispatch or fails E_COPY_UNPROVEN; a method declaration, annotation, cast, or FFI stub is not proof. This avoids the unsound promise that arbitrary handles, actors, or native resources can always be copied.
 
-A class/aggregate may obtain a **Copyable** shallow witness only after proof of safe field-wise shallow copying, including inherited fields. **DeepCopyable is explicitly opt-in for nominal classes and structs** (owner decision 2026-11-25). The declaration must explicitly implement the compiler-recognized core DeepCopyable<Self> interface/trait (illustrative spelling below); an inferred layout, ordinary Copyable, Object method, annotation, cast, or structural lookalike is not consent. After opt-in the compiler may synthesize the complete verified deep-copy implementation without handwritten methods. Explicit consent alone is insufficient: recursively verify all owned mutable nominal nodes, inherited fields, generic instantiations, container elements, and possible concrete dynamic types. Intrinsic scalars and standard structural containers use compiler/core-defined witnesses constrained by their elements; they cannot bypass missing nominal consent even when empty or an ADT variant is inactive. @NoCopy/@NonCopyable overrides opt-in; @WarnOnCopy remains a lint. The existing shallow proof rule is unchanged by this deep-only policy.
+A class/aggregate may obtain a **Copyable** shallow witness only after proof of safe field-wise shallow copying, including inherited fields. **DeepCopyable is explicitly opt-in for nominal classes and structs** (owner decision 2026-11-25). The declaration must explicitly implement the compiler-recognized core DeepCopyable<Self> interface/trait (illustrative spelling below); an inferred layout, ordinary Copyable, Object method, annotation, cast, or structural lookalike is not consent. After opt-in the compiler may synthesize the complete verified deep-copy implementation without handwritten methods. Explicit consent alone is insufficient: recursively verify all owned mutable nominal nodes, inherited fields, generic instantiations, container elements, and possible concrete dynamic types. Intrinsic scalars and standard structural containers use compiler/core-defined witnesses constrained by their elements; they cannot bypass missing nominal consent even when empty or an ADT variant is inactive. @NoCopy/@NonCopyable overrides opt-in; @WarnOnCopy remains a lint. Shallow admission is independently governed by the read-only sharing rule below; explicit nominal deep opt-in remains unchanged.
 
 ~~~atto
 define class Snapshot implements DeepCopyable<Snapshot> as
@@ -264,15 +264,16 @@ implicit argument borrowing or a new implicit cloning rule.
   by its explicitly declared ownership mode and existing lifetime rules.
   Unproven cases reject; do not silently select an expensive deep copy.
 - copy! creates a fresh shallow root, including independent outer collection
-  storage. Every retained edge must be transitively immutable with proven
-  lifetime, or an explicitly declared, authenticated shared capability with
-  the appropriate read/write synchronization and ownership authority.
+  storage. Every retained mutable descendant must become transitively read-only
+  through ALL aliases in the same verified ownership domain. This includes
+  the original owner, the new root, earlier aliases, loans, iterators, method
+  receivers and erased or imported references. Existing unique ownership may
+  be converted only with a proven freeze/share transition; unfreezable edges,
+  outstanding exclusive loans and opaque resources reject E_COPY_SHALLOW_ALIAS.
   Merely being a reference, a val binding, a Java reference, a JS object,
   a slice descriptor, a pointer or a reference-counted allocation is not proof.
-  A nested exclusive mutable edge rejects with E_COPY_SHALLOW_ALIAS, even
-  through imported classes, inherited fields, collection elements, erased
-  types, or closures. A verified shared wrapper is visible in its type and
-  is not represented as independently owned mutable state.
+  The source and target root slots remain independently writable where their
+  declarations permit mutation, unless the root itself is a shared descendant.
 - copy!! detaches every reachable mutable identity, including the pointee of
   a mutable shared wrapper, or rejects if no verified reconstruction is
   possible. Only transitively immutable, lifetime-proven backing can be reused.
@@ -339,11 +340,47 @@ cross-backend enforcement remain separate gates.
 | Borrowed view/slice, unique handle, actor, mutex, channel, socket | Reject without a type-specific verified capability; never copy raw ownership | Reject unless a separately proved deep reconstruction operation exists |
 | Shared<T>, immutable reference | Retain same child with authorized sharing and correct refcount/lifetime | Recursively duplicate if contract calls for it; immutable backing may be reused |
 
-A shallow copy must **not** copy a raw pointer/unique owner handle in a way that creates two independently droppable owners. For a mutable child reference that can legally be shared, preserve the reference identity and introduce exactly the checked sharing/lifetime obligations of the field type. If the child is exclusive/unshareable, fail with E_COPY_SHALLOW_ALIAS and suggest copy!! (if available), a deliberately shareable wrapper, or a resource-specific API. This is deliberate: copy! cannot promise a legal shallow copy of literally *every* object.
+A shallow copy must **not** duplicate a raw unique owner handle. Preserve the descendant identity, convert every path to read-only authority transactionally, and enforce lifetime/retention independently. Unproved transitions reject E_COPY_SHALLOW_ALIAS. A backend lacking this capability must retain its existing conservative rejection, not allow writable aliases.
 
 For arrays, copy! duplicates the **outer buffer and immediate element slots** (if element representation is inline; copy by value). Reference-typed element slots retain their referents only under share permission. A shallow array copy is not just copying the array descriptor/address, because then the outer container itself would still alias. Empty typed collections must still have an admitted element/key/value plan; no unproved generic specialization may pass only because runtime length is zero.
 
-Shallow sharing is not actor transfer: actor-private references must not become accessible to another actor through a copy. Borrowed aliases may not be extended past their valid lifetime or out of critical regions. Shared children remain subject to read/write synchronization and borrower exclusion. A shallow copy is not a shortcut around ownership or mutation isolation.
+Shallow sharing is not actor transfer: actor-private references must not become accessible to another actor through a copy. Borrowed aliases may not be extended past their valid lifetime or out of critical regions. Shared children remain transitively read-only until exclusive ownership and absence of conflicting loans are proved; synchronization alone is not permission to write. A shallow copy is not a shortcut around ownership or mutation isolation.
+
+## Read-only shallow sharing: executable semantic profile (2026-11-25)
+
+- A fresh root owns its independent slots, including map entries, array slots,
+  class fields and record fields. Mutation of scalar slots, replacement/removal
+  of references and insertion of newly owned values is legal under the normal
+  declaration and collection rules. Closed records do not gain undeclared fields.
+- A retained mutable identity shared between independent roots is transitively
+  read-only. Replacing a reference detaches that path; it does not mutate the
+  shared referent. Adding a new slot that points at an already shared identity
+  does not grant write permission. Key hash/equality invariants remain mandatory.
+- Write recovery requires proof of one remaining owning domain/path group and
+  no live conflicting loans, including read loans. Multiple paths within a
+  single owner need not permanently freeze data. Multiple independent copies
+  must each release their rights before recovery. No automatic thaw of
+  permanently immutable values or previously freed/stale references.
+- Cycles matter: if the new root retains a path to the original root itself,
+  the original root is also read-only until that shared reachability ends.
+- Before publication, verify every required type capability, domain, generation,
+  conflicting loan, and budget. Failed copy must leave original rights unchanged.
+  Atomic admission/retirement is required; no check-then-write races, no cross-
+  actor private heap sharing, no mutation through FFI or indirect callbacks.
+  Statically reject known forbidden writes (E_COPY_READONLY); dynamically
+  uncertain access requires a verified guarded capability or compile rejection.
+- No implicit copy-on-write. Explicit copy!! of shared backing creates a fresh
+  mutable graph only if all deep opt-in and ownership proofs are present.
+
+The host oracle `tests/copy-readonly-sharing-v1.test.mjs` independently
+recomputes root reachability for every access. This deliberately slow oracle
+is not a runtime implementation or a claim of compiled guest support. It
+uses a conservative phase-1 hard denial of noncopyable descendants and
+abstracts away typed layout, real allocation/reclamation, scheduling and
+nominal deep-consent checks. Production needs efficient read-only capability
+tracking, generation fences and verified write barriers rather than graph
+rescanning on every write. The older v2 explicit mutable-share oracle is
+historical only where it conflicts with this profile.
 
 ## Deep-copy graph protocol
 
@@ -465,7 +502,7 @@ Copying data into another actor's arena requires a **destination-aware allocatio
 
 1. Parser + formatter round-trip both bang spellings and reject copy! !x as an accidental deep copy, missing operand, and invalid user arguments to the operators.
 2. Actual compiled guest tests: copy! Array<int> allocates a new outer buffer; copy! Array<Shared<Array<int>>> creates a new outer buffer but retains child references; copy!! Array<Array<int>> duplicates children; nested repeated child pointers remain repeated within the deep result, not shared with source; deep cycles succeed only with verified memoized support.
-3. Actual negative guest tests: copying nested exclusive owners shallowly, unshareable actor/private handles, @NoCopy, unproved erased types, source-identity copy return, shallow alias in deep result, wrong subtype, unverified custom override, wrong effect, dangling borrowed view, and resource double-drop.
+3. Actual negative guest tests: copying nested owners without a verified read-only transition, writing shared descendants through either root or earlier aliases, unshareable actor/private handles, @NoCopy, unproved erased types, source-identity copy return, shallow alias in deep result, wrong subtype, unverified custom override, wrong effect, dangling borrowed view, and resource double-drop.
 4. Test custom copy() versus copy_deep() overrides, their independent baselines, zero argument arity, once-only source evaluation, ancestor hook composition, and failure rollback.
 5. Require exact-source compiler-backed parser/type/lowering/guest and native-AOT/sanitizer evidence independently from Java/GraalVM, LLVM, .NET, Wasm, Forge and Rust/JS where supported. Host-only graph tests are **not** compiler support. A zero-step Actions run is **NOT_EXECUTED**.
 
