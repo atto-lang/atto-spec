@@ -130,6 +130,9 @@ checked and trap on overflow; the helpers below report overflow as values.
 * `alloc/arena`: bump placement over an explicit `(used, capacity)` cursor:
   `place(used,cap,size,align): Option<int>`, `advance(used,cap,size,align)`,
   `remaining(used,cap)`, `reset()`.
+  `remaining` returns zero if either argument is negative or `used >= cap`;
+  otherwise it returns `cap - used`. It is total over signed 64-bit inputs:
+  invalid cursors never increase available capacity or cause arithmetic overflow.
 * `alloc/vec`: owned `Array<int>` buffers: `sum_range(start,count)`
   (count clamped to 0..8 in v1), `replace_middle(a,b,c,replacement)`.
 * `std/io`: `write_int(v)`, `write_str(s)`, `write_line(s)`.
