@@ -98,7 +98,7 @@ the callee observes a different root identity; `inspect(borrow! x)` sees
 the original; shallow legal shared children retain identity while deep
 mutable children do not; `consume(take! copied)` consumes once; bare copy
 temporaries to consuming formals reject; `copy!` of a unique nested mutable
-child rejects with E_COPY_SHALLOW_ALIAS; failures, exceptions and cancellation
+child without proven read-only loan admission rejects with E_COPY_SHALLOW_ALIAS; failures, exceptions and cancellation
 run correct loan cleanup/drop; copied temporaries cannot escape as borrowed
 results; repeated arguments obey left-to-right evaluation and live-loan
 conflicts. Keep separate backend statuses and exact-head guest receipts.
@@ -268,7 +268,7 @@ implicit argument borrowing or a new implicit cloning rule.
   through ALL aliases in the same verified ownership domain. This includes
   the original owner, the new root, earlier aliases, loans, iterators, method
   receivers and erased or imported references. Existing unique ownership may
-  be converted only with a proven freeze/share transition; unfreezable edges,
+  be converted only with a proven scoped read-loan or separately authorized immutable sharing transition; unfreezable edges,
   outstanding exclusive loans and opaque resources reject E_COPY_SHALLOW_ALIAS.
   Merely being a reference, a val binding, a Java reference, a JS object,
   a slice descriptor, a pointer or a reference-counted allocation is not proof.
@@ -307,7 +307,7 @@ merely crash at runtime. Keep exact-head/tree and stepful execution receipts.
 | Case | Required behavior |
 | --- | --- |
 | Scalar assignment or flat scalar array copy! | Independent mutable slots; source unchanged |
-| Nested owned Array<Array<int>>, Map values, inherited class field, closure capture | copy! rejects E_COPY_SHALLOW_ALIAS |
+| Nested owned Array<Array<int>>, Map values, inherited class field | copy! admits only with verified lexical read loans; otherwise E_COPY_SHALLOW_ALIAS |
 | Nested mutable graph copy!! | Mutating either graph leaves the other unchanged |
 | Shallow explicitly shared guarded field | Retain authorized child identity; no unguarded write or ownership duplication |
 | Deep explicitly shared mutable field | Reconstruct detached pointee or reject; never retain writable source alias |
@@ -381,6 +381,64 @@ nominal deep-consent checks. Production needs efficient read-only capability
 tracking, generation fences and verified write barriers rather than graph
 rescanning on every write. The older v2 explicit mutable-share oracle is
 historical only where it conflicts with this profile.
+
+## Lexical shallow-copy loans (owner clarification, 2026-11-25)
+
+For a shallow copy that retains owned mutable descendants, the initial
+profile uses a scoped read loan, not permanent freezing or a second
+owner. The fresh root has independent slots, but the retained graph has
+read-only authority through both roots and every pre-existing alias.
+
+~~~atto
+let Person a = new Person();
+
+block {
+    val b = copy! a;
+    stdio.println(b.scores);
+    // a.scores.add(42); // E_COPY_READONLY
+    // b.scores.add(42); // E_COPY_READONLY
+}
+
+a.scores.add(42); // legal if no other loan survives
+~~~
+
+- Use explicit block {} for standalone lexical scopes. The compiler records
+  the source ownership origin, each retained mutable identity or a proven
+  conservative region, and the dependent result lifetime. A reference
+  slot in the shallow root is a read-loan capability, not a duplicated
+  owner. Existing immutable backing requires only its usual lifetime proof.
+- While a dependent copy or derived read view survives, neither the source
+  nor the copy can write, take!, move!, drop!, or mutably borrow the retained
+  graph. A conflicting write through an earlier alias, iterator, method,
+  capture or FFI must also reject. Independent scalar/root slots may be
+  changed when permitted. A root that is itself reachable through a retained
+  cycle is subject to the same loan.
+- For phase 1 use conservative lexical lifetimes: dependent copies stay in
+  their source's proven region, cannot return as owned values, be stored in
+  longer-lived objects, cross actor/task boundaries or survive suspension
+  without separate proof. A copy of a loan-backed copy must preserve the
+  original provenance and must not extend its lifetime. Reject taking or
+  dropping the source owner while dependent loans survive. Explicitly
+  moving the dependent root within its region does not erase its loan.
+- Replacing a copy's reference slot with a newly owned value does not
+  mutate the borrowed descendant. Releasing that loan early is allowed
+  only when all paths and derived views for that loan are proved dead;
+  otherwise retain it until lexical cleanup. Source replacement must not
+  destroy or transfer borrowed backing.
+- Restore exclusive write authority only after the last overlapping loan
+  ends and the source remains live and unique. On normal block exit, early
+  return, break, continue, exceptional unwind or cancellation, release
+  admitted loans exactly once in reverse lifetime order. Never thaw frozen
+  backing. Admission is transactional: a failed copy cannot strand a loan
+  or publish a partially initialized root.
+- copy!! is distinct: require explicit DeepCopyable nominal consent and
+  recursively proven capabilities; detach the graph or reject. Do not
+  silently convert copy! into copy!! or automatic copy-on-write.
+
+The additional host-only lexical-loan oracle
+tests/copy-lexical-loan-v1.test.mjs checks these state transitions. It is
+not a compiler, a runtime allocation proof, or a replacement for guest
+execution.
 
 ## Deep-copy graph protocol
 
