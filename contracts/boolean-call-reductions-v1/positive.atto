@@ -1,0 +1,23 @@
+// Expected process exit: 42. Compile and execute with each backend.
+// No host-language replacement or constant success return is evidence.
+fnc scalar(bool a, bool b): bool {
+  return Xor(a, b) && !And(a, b) && Or(a, b);
+}
+
+pub fnc main(): int {
+  val bool scalar_xor = Xor(true, false);
+  val bool scalar_and = And(true, false);
+  val bool scalar_or = Or(true, false);
+  val bool array_xor = Xor([true, false]);
+  val bool array_and = And([true, false, true, true, true]);
+  val bool array_or = Or([true, false, true, false]);
+  if !scalar_xor || scalar_and || !scalar_or then return 1; fi
+  if !array_xor || array_and || !array_or then return 2; fi
+  if !scalar(true, false) || !scalar(false, true) || scalar(true, true) || scalar(false, false) then return 3; fi
+  if !And([]) || Or([]) || Xor([]) then return 4; fi
+  if And([false]) || !Or([true]) || !Xor([true]) || Xor([false]) then return 5; fi
+  if !Xor([true, true, true]) || Xor([true, true]) then return 6; fi
+  val Array<bool> values = [true, false, true];
+  if And(values) || !Or(values) || Xor(values) || !values[0] then return 7; fi
+  return 42;
+}
