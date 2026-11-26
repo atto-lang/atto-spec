@@ -8,9 +8,9 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 
 - Source files are UTF-8. New source uses `.atto`, and legacy source uses `.ores`.
 - Identifiers and keywords are case-sensitive.
-- An identifier starts with a letter or `_` and continues with letters, digits or `_`. **TARGET (Greek identifier parity, 2026-11-26):** every compiler must accept the Greek letters α–ω (U+03B1–U+03C9, including final sigma ς) and Α–Ρ / Σ–Ω (U+0391–U+03A1 / U+03A3–U+03A9) wherever ordinary identifiers are legal, including start and continuation positions. The reserved keyword set and case-sensitive name resolution are unchanged. In particular, φ, π, ε and ρ are ordinary variable names, not built-in constants or operators. Greek support is a required minimum, not a limit on existing Unicode support. The full Unicode identifier profile, normalization, and confusable-character policy remain open under S-22.
+- An identifier starts with a letter or `_` and continues with letters, digits or `_`. **TARGET (Unicode identifier minimum, 2026-11-26):** every compiler must accept basic Greek letters α–ω (including final sigma ς), Α–Ρ and Σ–Ω, and Unicode Han-script letters (including Chinese Hanzi and Japanese Kanji, supplementary-plane ideographs and compatibility ideographs classified as letters), plus 〇 (U+3007), at the start or continuation of ordinary identifiers. The reserved keyword set and case-sensitive name resolution are unchanged. Greek and Han names are ordinary variables, not implicit constants, operators or transliterations. This is a minimum, not a limit on existing Unicode support. The full Unicode identifier profile, Unicode version, normalization, and confusable policy remain open under S-22.
 
-### Greek identifier parity acceptance
+### Greek and Han identifier parity acceptance
 
 ```atto
 define fnc int greek_sum(int φ, int π) {
@@ -20,9 +20,24 @@ define fnc int greek_sum(int φ, int π) {
 }
 ```
 
-Calling `greek_sum(10, 20)` must return 100. Conformance must also exercise Greek local and parameter names with digits, underscores and ASCII letters (e.g. `ρ2`, `ε_value`, `xφ`), case-sensitive distinct bindings (`φ` and `Φ`), and visually similar distinct names (`ρ` and Latin `p`). Unbound names must reject, and existing source-control/bidi rejection must remain intact. A Greek identifier alone must not require guest heap allocation, runtime Unicode decoding, reflection, or a JIT; debug and ABI metadata may retain names when necessary. Do not change quoted or unquoted Symbol literal rules, introduce implicit aliases, or reserve Greek letters as operators. Compiler-backed guest execution and negative tests on the exact revision are required before claiming backend parity.
+Calling `greek_sum(10, 20)` must return 100. Conformance must also exercise Greek local and parameter names with digits, underscores and ASCII letters (e.g. `ρ2`, `ε_value`, `xφ`), case-sensitive distinct bindings (`φ` and `Φ`), and visually similar distinct names (`ρ` and Latin `p`). Unbound names must reject, and existing source-control/bidi rejection must remain intact. A Greek identifier alone must not require guest heap allocation, runtime Unicode decoding, reflection, or a JIT; debug and ABI metadata may retain names when necessary. Do not change quoted or unquoted Symbol literal rules, introduce implicit aliases, or reserve Greek or Han letters as operators. Compiler-backed guest execution and negative tests on the exact revision are required before claiming backend parity.
 - `//` starts a line comment. `/* ... */` is a block comment, and block comments nest.
 - **TARGET (decided, 2026-11-14):** block comments nest at most 128 deep. Opening a 129th level is a compile error, reported as `block comment nesting exceeds 128`, before parsing. Java, .NET and LLVM main all enforce this limit with that wording (LLVM via oreslang-source.llvm#1251, merged 2026-11-15, with fixtures at depth 128 accepted and 129 rejected).
+
+Han acceptance additionally requires executing a guest function such as:
+
+```atto
+define fnc int 合計(int 数量, int 價格) {
+    let int 結果 = 数量 * 價格;
+    return 結果;
+}
+```
+
+`合計(3, 7)` returns 21. Test simplified/traditional characters (`价格`, `價格`), Japanese Kanji (`変数`, `結果`), supplementary ideograph `𠮷` (U+20BB7), and mixed ASCII/Han names. Distinct spellings remain distinct; no automatic simplified/traditional conversion, case folding, or compatibility folding. No extra guest storage solely for an identifier. Hiragana and Katakana are not decided by this minimum.
+
+### Unicode Boolean negation (TARGET)
+
+`¬` (U+00AC) is a prefix Boolean NOT operator with exactly the same typing, precedence, evaluation count, and result as unary `!` (and `not` wherever supported). `¬true` is false, `¬false` is true, `¬¬b` is b, and `¬a && b` means `(¬a) && b`. An operand must be Boolean; no integer truthiness, bitwise complement, postfix or infix form, or composite `¬=` / `¬eq` is introduced. Keep `!=`, `!eq`, ownership bangs, and exception bangs separate. Lex the original character as a distinct source spelling and map it only in unary-expression parsing to the existing typed NOT operation. Comments and strings retain the original character. No runtime Unicode processing or allocation is required for this operator. Verify guest execution, precedence, side-effect evaluation exactly once, invalid operand rejection, and unchanged legacy operator boundaries.
 
 ## Canonical exceptional bang keywords (target)
 
