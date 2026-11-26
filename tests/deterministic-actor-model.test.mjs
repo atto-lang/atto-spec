@@ -123,3 +123,49 @@ test('mailbox does not reorder admitted messages to the same serial actor',()=>{
   assert.deepEqual(delivered.map(e=>e.choice),['deliver:m1','deliver:m2']);
  }
 });
+
+test('empty tasks retire without a bogus step and duplicate empty ids still reject',()=>{
+ const s={actors:[],tasks:[{id:'empty',steps:[]}]};
+ const t=schedule(s);
+ assert.equal(t.status,'completed');
+ assert.equal(t.events.length,0);
+ assert.deepEqual(Object.keys(t.final_state.tasks),[]);
+ assert.throws(()=>schedule({...s,tasks:[s.tasks[0],s.tasks[0]]}),/duplicate/);
+});
+
+test('terminal sleep retains actor turn until virtual wake, preserving serial admission',()=>{
+ const s={actors:[{id:'worker',handlers:{first:[{op:'sleep',after:7}],second:[{op:'add',key:'count'}]}}],shared:{count:0},tasks:[{id:'p',steps:[{op:'send',to:'worker',tag:'first'},{op:'send',to:'worker',tag:'second'}]}]};
+ for(let seed=1;seed<=20;seed++){
+  const t=schedule(s,{seed});
+  assert.equal(t.status,'completed');
+  assert.equal(t.final_state.shared.count,1);
+  assert.equal(t.final_state.clock,7);
+  const second=t.events.find(e=>e.choice==='deliver:m2');
+  assert.equal(second.time,7);
+  assert.deepEqual(schedule(s,{seed,replay:t}),t);
+ }
+});
+
+test('terminal sleep is cancellable and stale wake is not dispatched',()=>{
+ const s={actors:[],tasks:[{id:'sleeper',steps:[{op:'sleep',after:9}]},{id:'killer',steps:[{op:'cancel',target:'sleeper'}]}]};
+ const t=schedule(s,{prefix:['step:sleeper','step:killer']});
+ assert.equal(t.status,'completed');
+ assert.equal(t.final_state.cancelled,1);
+ assert.equal(t.final_state.clock,0);
+ assert.equal(t.events.length,2);
+});
+
+test('replay refuses forged evidence class and unused forced choices',()=>{
+ const s={actors:[],tasks:[{id:'x',steps:[{op:'yield'}]}]};
+ const t=schedule(s);
+ assert.throws(()=>schedule(s,{replay:{...t,evidence:'GUEST_EXECUTION'}}),/header mismatch/);
+ assert.throws(()=>schedule(s,{prefix:['step:x','step:x']}),/unused forced choices/);
+});
+
+test('bounded exploration cannot certify exhaustion when alternative prefixes remain',()=>{
+ const s={actors:[],tasks:Array.from({length:20},(_,i)=>({id:'task'+i,steps:[{op:'yield'}]}))};
+ const t=explore(s,{maxSchedules:1});
+ assert.equal(t.explored,1);
+ assert.equal(t.exhausted,false);
+ assert.equal(explore({actors:[],tasks:[]},{maxSchedules:1}).exhausted,true);
+});
