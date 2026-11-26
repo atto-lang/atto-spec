@@ -185,15 +185,17 @@ fnc process_packet(Packet packet) -> Result<Response, Error>
 The opening brace of a contract map belongs to that clause, not the executable body. Consume its balanced contents before looking for the next clause, result annotation or body opener. The executable brace may be on the same line as the last header token or a later line. Whitespace and comments do not change the signature. The final result annotation after one or more contract clauses permits a physical-newline ordinary statement body through matching `end` without `begin`. A return-before-contract signature requires an explicit body opener as in the existing failure-clause rule; do not extend implicit body opening to it in this amendment.
 
 ```ebnf
-name_first_contract_header = named_head, ( return_spec, contract_clause, { contract_clause }
-                          | contract_clause, { contract_clause }, return_spec ) ;
+name_first_contract_header = named_head, ( return_before, contract_clause, { contract_clause }
+                          | contract_clause, { contract_clause }, return_after ) ;
+return_before = (":" | "->"), return_type ;
+return_after = "->", return_type ;
 contract_clause = failure_clause | effects_clause | budget_clause ;
 effects_clause = "effects", "{", checked_effect_entries, "}" ;
 budget_clause = "budget", "{", checked_budget_entries, "}" ;
-(* Existing return_spec, failure_clause and entry grammars apply. *)
+(* Existing return_type, failure_clause and entry grammars apply. *)
 ```
 
-For the before-contract alternative require a brace body, begin/end, or the existing explicit statement separator. For the after-contract alternative allow a brace body, begin/end, or a physical-newline statement/end body. The return type is mandatory exactly once. No clauses may follow a trailing return annotation or occur after body opening. Existing no-contract callable syntax, return-first prefix rules, explicit inline-expression forms and edition-specific comma-tail rules are unchanged. Nested generic and callable types and nested body delimiters must be parsed structurally, not by searching text for arrows or braces.
+For the before-contract alternative require a brace body, begin/end, or the existing explicit statement separator. For the after-contract alternative allow a brace body, begin/end, or a physical-newline statement/end body. The return type is mandatory exactly once. As in the established failure-signature grammar, the trailing result uses `->` (not `:`). No clauses may follow a trailing return annotation or occur after body opening. The implicit statement-body boundary is a physical newline after the last result-type token, not a newline within a generic type, comment, or contract map before that token. A same-line brace or `begin` remains explicit. Never recover from a malformed contract header by reclassifying its tokens as a body, a comma-tail expression, or an unannotated callable. Existing no-contract callable syntax, return-first prefix rules, explicit inline-expression forms and edition-specific comma-tail rules are unchanged. Nested generic and callable types and nested body delimiters must be parsed structurally, not by searching text for arrows or braces.
 
 Normalize all five spellings to the same checked signature and ordinary-statement body in HIR; preserve source spans, effect rows, budget constraints, ownership, failure types and receiver/visibility. Syntax does not define new resource units, weaken any budget or grant effect authority. A backend without complete enforcement of a declared bound must reject before artifact emission rather than drop metadata. Duplicate clauses or duplicate map keys reject, as do malformed maps, missing/duplicate result annotations, invalid body boundaries and unmatched delimiters. Existing Error ancestry and transitive effect checks remain mandatory. Formatting preserves result placement, explicit body family and all clause contents by default; any optional normalization requires checked equivalence and idempotence.
 
