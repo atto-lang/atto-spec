@@ -26,7 +26,7 @@ define actor Foo as
 end
 ```
 
-At actor member scope, `state {` introduces storage and `state machine as` introduces behavior. Inside the machine, `state Name as ... end` declares a graph node; it cannot introduce another actor storage schema. `machine` is contextual in this candidate, not a new globally reserved identifier. Reject a duplicate machine, malformed or ambiguous declarations, node declarations at actor-member scope, and storage declarations inside a machine. Formatter must preserve distinction and not rewrite or move storage. A graph node may later carry its own typed payload, but it is not a second general mutable actor container. The active node and version are runtime-owned metadata, not assignable actor fields. Do not prescribe syntax for transition bodies or payloads before grammar review.
+At actor member scope, `state {` introduces storage and `state machine as` introduces behavior. Inside the machine, `state Name as ... end` declares a graph node; it cannot introduce another actor storage schema. `machine` is contextual in this candidate, not a new globally reserved identifier. Reject a duplicate machine, malformed or ambiguous declarations, node declarations at actor-member scope, and storage declarations inside a machine. Formatter must preserve distinction and not rewrite or move storage. A graph node may later carry its own typed payload, but it is not a second general mutable actor container. The active node and version are runtime-owned metadata, not assignable actor fields. The contextual grammar extension below proposes transition actions; node payload grammar remains deferred.
 
 ## Execution, ownership and commit
 
@@ -37,7 +37,7 @@ At actor member scope, `state {` introduces storage and `state machine as` intro
 - Each event/completion/timer is fenced by actor identity, incarnation and where appropriate state activation generation; reentry into a node creates a fresh activation. Stale events cannot affect a newer activation. Exhausted counters and bounded queues fail before mutation; no wrapping.
 - Runtime-owned priority supervisor CONTROL is not a machine DATA event. Preserve throw/raise/panic semantics and do not permit a machine to intercept its own panic.
 - Retries rerun an eligible operation with bounded attempts, delay and deadline; failed uncommitted state is discarded. Undo is an explicit inverse **new committed** transition, not a version rewind. External compensation is a separate effect with an independently recorded outcome, stable idempotency identity and reconciliation for ambiguous completion. No automatic rollback of external I/O or promise of exactly-once remote effects.
-- Storage profiles remain orthogonal. Volatile actors need no disk. Persistent/durable actors need separately verified storage, fencing, crash recovery and permissions. Hierarchy, parallel regions, history, scoped resources and migration are later extensions, not requirements for the first flat profile.
+- Storage profiles remain orthogonal. Volatile actors need no disk. Persistent/durable actors need separately verified storage, fencing, crash recovery and permissions. Hierarchy, parallel regions and history remain later extensions; scoped resources and migration are separate profiles described below, not requirements for the first flat profile.
 
 ## Required portable acceptance cases
 
