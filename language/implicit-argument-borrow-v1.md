@@ -5,6 +5,9 @@ Scope: AttoLang `.atto` function, class-method and actor-method *argument* owner
 
 ## Motivation and default
 
+The intended AttoLang language default is a scoped read-only borrow for every ordinary nonprimitive argument to fnc and mtd. Versioned opt-in modes are migration mechanisms for existing compiler implementations, not the intended permanent language default. Unmigrated implementations must explicitly reject unsupported ownership semantics under the new profile rather than silently consume the argument. Primitive value scalars remain by-value; explicit consuming formals and `take!` calls are separate. The [Pointer<T> receiver and argument contract](pointer-explicit-methods-v2.md#borrow-by-default-for-all-function-and-method-boundaries) applies this same rule to pointer capabilities, with distinct mutating and consuming receiver effects.
+
+
 A nonprimitive reference-backed argument should not require redundant `borrow!` at every ordinary synchronous call site or `Borrow<T>` in every formal declaration. **The omission changes syntax only, never the borrow-checker proof obligations.**
 
 ```atto
