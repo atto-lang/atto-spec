@@ -169,3 +169,37 @@ test('bounded exploration cannot certify exhaustion when alternative prefixes re
  assert.equal(t.exhausted,false);
  assert.equal(explore({actors:[],tasks:[]},{maxSchedules:1}).exhausted,true);
 });
+
+
+test('assertions require a real counter and an explicit safe integer expectation',()=>{
+ const scenario={actors:[],tasks:[{id:'p',steps:[{op:'assert',key:'absent'}]}]};
+ assert.throws(()=>schedule(scenario),/invalid assertion/);
+ assert.throws(()=>schedule({actors:[],tasks:[{id:'p',steps:[{op:'assert',value:0}]}]}),/invalid assertion/);
+ assert.equal(schedule({actors:[],tasks:[{id:'p',steps:[{op:'assert',key:'absent',value:0}]}]}).status,'failed');
+ assert.equal(schedule({actors:[],shared:{count:0},tasks:[{id:'p',steps:[{op:'assert',key:'count',value:0}]}]}).status,'completed');
+});
+test('exploration detects a real lost update and replays both outcomes',()=>{
+ const scenario={actors:[],shared:{count:0},tasks:[
+  {id:'a',steps:[{op:'load',key:'count',as:'x'},{op:'store',key:'count',local:'x'}]},
+  {id:'b',steps:[{op:'add',key:'count'}]}
+ ]};
+ const result=explore(scenario,{maxSchedules:32});
+ assert.deepEqual([...new Set(result.traces.map(t=>t.final_state.shared.count))].sort(),[0,1]);
+ for(const trace of result.traces) assert.deepEqual(schedule(scenario,{replay:trace}),trace);
+});
+test('delivery cannot exceed the live task cap or consume the refused message',()=>{
+ const scenario={actors:[worker],shared:{count:0,ticks:0},tasks:[
+  {id:'sender',steps:[{op:'send',to:'worker',tag:'increment'},{op:'yield'}]},
+  ...Array.from({length:255},(_,i)=>({id:'task'+i,steps:[{op:'yield'}]}))
+ ]};
+ const failed=schedule(scenario,{prefix:['step:sender','deliver:m1']});
+ assert.equal(failed.status,'failed');
+ assert.match(failed.failure.message,/live task budget/);
+ assert.equal(Object.keys(failed.final_state.tasks).length,256);
+ assert.equal(failed.final_state.mailbox.length,1);
+ assert.equal(failed.final_state.consumed,0);
+ assert.deepEqual(schedule(scenario,{replay:failed}),failed);
+ const allowed=schedule(scenario,{prefix:['step:sender','step:sender','deliver:m1']});
+ assert.equal(allowed.status,'completed');
+ assert.equal(allowed.final_state.shared.count,1);
+});
