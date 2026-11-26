@@ -133,6 +133,20 @@ The singleton declaration keyword is `singleton`, not Scala-style `object`. Sing
 
 `match` destructures values/patterns, `switch` dispatches on equality/constant cases, and `if x is type Dog dog` performs nominal refinement. `x as T` is a checked cast; `x as? T` returns `Option<T>` on mismatch. No dynamic reflection is required merely to implement a source-level type test when static metadata is enough.
 
+### Match arm introducers
+
+Ordinary patterns require `on`, including literals, constructor patterns without `is`, and the wildcard `on _`. A type-test pattern may begin directly with `is`; `on is` remains equivalent input syntax. This rule applies to statement and value matches, with explicit or piped subjects, and either outer delimiter. The formatter prefers `is` for a type-test arm and must preserve comments and arm boundaries. It must not remove `on` from any other pattern.
+
+```atto
+const int x = match value over {
+    on 42 -> 100;
+    is int -> -20;
+    on _ -> 0;
+};
+```
+
+A literal arm followed by a type-test arm is an ordered specialization: the literal is tried first, then the type test, then the remaining fallback. This narrow overlap is permitted without `match first`; other overlapping explicit patterns retain the existing proof rules. Unreachable arms remain diagnosable, and the fallback is needed only where the subject domain is not already exhausted. Both spellings of the type-test arm have identical binding, guard, ownership and evaluation semantics. Use an explicit semicolon or comma after an expression arm before a bare `is` arm so that an infix type test inside the expression is not confused with the next arm. No change to switch or select syntax is implied.
+
 Overlap, priority (`match first`), exhaustiveness, numeric equality (`1` versus `1.0`), wildcard arms and Symbol identity must be specified and tested consistently; their unsettled edges are catalogued in [open questions](12-open-questions.md).
 
 ## Wire portability
