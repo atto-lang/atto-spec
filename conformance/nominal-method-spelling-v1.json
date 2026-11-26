@@ -21,7 +21,7 @@
     "free_module_namespace_static_fnc": "preserve",
     "out_of_line_receiver_mtd": "preserve"
   },
-  "notes": "Candidate complete .atto sources. Run all three spellings independently; equivalent acceptance and guest result, not necessarily equal binary bytes. Negative fixture requires semantic missing-obligation diagnostic, not parser/unsupported failure. Do not count source-only or host checks as production parity.",
+  "notes": "Candidate complete .atto sources. Run all three spellings independently; equivalent acceptance and guest result, not necessarily equal binary bytes. Negative fixtures require the declared semantic diagnostic, not parser/unsupported failure. Contextual class name cases are candidates requiring compiler-backed confirmation. Do not count source-only or host checks as production parity.",
   "cases": [
     {
       "id": "interface.bare.positive",
@@ -122,6 +122,159 @@
       "entry": "main.atto",
       "source": "define trait Required as mtd ping(): int; end\ndefine class C implements Required as end\npub fnc main(): int { return 0; }\n",
       "diagnostic_family": "MISSING_INSTANCE_OBLIGATION",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.ping.bare.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define class C as pub ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.ping.fnc.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define class C as pub fnc ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.ping.mtd.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define class C as pub mtd ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.ping.bare-mtd.duplicate",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define class C as pub ping(): int { return 42; } pub mtd ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "DUPLICATE_INSTANCE_METHOD",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.ping.mtd-fnc.duplicate",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define class C as pub mtd ping(): int { return 42; } pub fnc ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "DUPLICATE_INSTANCE_METHOD",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.ping.fnc-bare.duplicate",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define class C as pub fnc ping(): int { return 42; } pub ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "DUPLICATE_INSTANCE_METHOD",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.mtd.bare.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define class C as pub mtd(): int { return 42; } end\npub fnc main(): int { return new C().mtd(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.mtd.fnc.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define class C as pub fnc mtd(): int { return 42; } end\npub fnc main(): int { return new C().mtd(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.mtd.mtd.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define class C as pub mtd mtd(): int { return 42; } end\npub fnc main(): int { return new C().mtd(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.mtd.bare-mtd.duplicate",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define class C as pub mtd(): int { return 42; } pub mtd mtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "DUPLICATE_INSTANCE_METHOD",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.mtd.mtd-fnc.duplicate",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define class C as pub mtd mtd(): int { return 42; } pub fnc mtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "DUPLICATE_INSTANCE_METHOD",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.mtd.fnc-bare.duplicate",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define class C as pub fnc mtd(): int { return 42; } pub mtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "DUPLICATE_INSTANCE_METHOD",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.method.bare.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define class C as pub method(): int { return 42; } end\npub fnc main(): int { return new C().method(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.method.fnc.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define class C as pub fnc method(): int { return 42; } end\npub fnc main(): int { return new C().method(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.method.mtd.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define class C as pub mtd method(): int { return 42; } end\npub fnc main(): int { return new C().method(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.method.bare-mtd.duplicate",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define class C as pub method(): int { return 42; } pub mtd method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "DUPLICATE_INSTANCE_METHOD",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.method.mtd-fnc.duplicate",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define class C as pub mtd method(): int { return 42; } pub fnc method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "DUPLICATE_INSTANCE_METHOD",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.method.fnc-bare.duplicate",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define class C as pub fnc method(): int { return 42; } pub method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "DUPLICATE_INSTANCE_METHOD",
       "no_artifact": true,
       "status": "NOT_EXECUTED"
     }
