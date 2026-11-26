@@ -189,6 +189,8 @@ races, plus formatter round-trip and native AOT across the compiler targets.
 Unsupported forms must fail closed before emitting code. Existing parser
 compatibility and runtime tests do not establish this new feature.
 
+Counted selection and optional continuous selection are defined as a target in [counted select v1](../language/counted-select-v1.md). Counted forms return Future<Array<T>>, with explicit await for collection.
+
 `process.stdout` / `stderr` / `stdin` and `stdio.out` / `err` / `in` are channel-style standard streams by design; `stdio.in.stream()` and `Observable.from_ch(stdio.in)` are target adapters. Network stream framing and backpressure are part of the contract, not consequences of merely using a Channel type.
 
 The [immediate channel probe target](27-channel-immediate-probes.md) replaces the historical Boolean guest-write probe with a typed recoverable ownership result; `try readch` remains `Option<T>` with closed/drained failure. This is a target, not cross-backend proof.
