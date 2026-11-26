@@ -301,3 +301,29 @@ source pins, and no cache changes after failed semantic checks. This
 whole-package final-artifact test is not proof of selective parse, typed-IR,
 codegen or relink reuse. A second importing package and per-unit counters
 remain mandatory for the full tracker #53 acceptance fixture.
+
+#### Transactional source-local transformation memo
+
+The initial process-local memo may reuse deterministic manifest import
+rewrites and extracted local import paths only when the current source
+bytes authenticate against the supplied trusted lock and the exact
+manifest bytes, canonical file path, source digest and effective target
+agree with the previous accepted snapshot. The memo must not cache
+authority, visibility decisions, typed IR, borrow/effect proofs or
+generated code under these witnesses. The complete current graph and
+provider authority are still admitted. Cold mode does not use previous
+memo entries. Successful compiler publication or authenticated artifact
+reuse commits the staged memo; any diagnostic or publication failure
+leaves the previous memo untouched. Deletion and manifest/target changes
+must not allow stale entries to survive. Expose rewrite and rewrite-reuse
+counts separately from parsing, rechecking, code generation and linking.
+
+A bounded trusted-host Rust experiment may expose an explicit opt-in
+library feature for the locked-snapshot profile. It must not change
+default compiler behavior, expose a guest signing service, or infer
+host authority from caller-supplied version strings. Require independently
+attested compiler/toolchain identities, separate protected authority
+and cache roots, independently current epoch pin, host-provisioned key,
+and local lease fencing. A library feature alone is not production
+deployment approval; external rollback-resistant authority, its recovery
+protocol, platform ports, and independent review remain requirements.
