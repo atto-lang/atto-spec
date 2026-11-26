@@ -6,8 +6,8 @@ test('method spelling corpus covers every backend without certifying execution',
   assert.equal(m.status,'CANDIDATE_NOT_EXECUTED');
   assert.deepEqual(Object.keys(m.compiler_targets).sort(),['atto','cranelift','forge','hdl','java','js','llvm','net','realtime','rs','wasm']);
   assert.ok(Object.values(m.compiler_targets).every(v=>v==='NOT_EXECUTED'));
-  assert.equal(m.cases.length,12);
-  assert.equal(new Set(m.cases.map(c=>c.id)).size,12);
+  assert.equal(m.cases.length,30);
+  assert.equal(new Set(m.cases.map(c=>c.id)).size,30);
   for(const kind of ['interface','trait']){
     for(const spelling of ['bare','fnc','mtd']){
       const p=m.cases.find(c=>c.id===kind+'.'+spelling+'.positive');
@@ -19,6 +19,40 @@ test('method spelling corpus covers every backend without certifying execution',
       assert.equal(p.source.split('\n')[0],n.source.split('\n')[0]);
       assert.equal(p.status,'NOT_EXECUTED');
       assert.equal(n.status,'NOT_EXECUTED');
+    }
+  }
+});
+
+test('contextual class method names dispatch and collide across spellings',()=>{
+  const declaration=(name,spelling)=>`pub ${spelling==='bare'?'':spelling+' '}${name}(): int { return 42; }`;
+  for(const name of ['ping','mtd','method']){
+    for(const spelling of ['bare','fnc','mtd']){
+      const c=m.cases.find(c=>c.id===`class.${name}.${spelling}.positive`);
+      assert.equal(c.expect,'compile_and_run');
+      assert.equal(c.expected_return_int,42);
+      assert.equal(c.source,`define class C as ${declaration(name,spelling)} end\npub fnc main(): int { return new C().${name}(); }\n`);
+    }
+    for(const [first,second] of [['bare','mtd'],['mtd','fnc'],['fnc','bare']]){
+      const c=m.cases.find(c=>c.id===`class.${name}.${first}-${second}.duplicate`);
+      assert.equal(c.expect,'semantic_reject');
+      assert.equal(c.no_artifact,true);
+      assert.equal(c.diagnostic_family,'DUPLICATE_INSTANCE_METHOD');
+      assert.equal(c.source,`define class C as ${declaration(name,first)} ${declaration(name,second)} end\npub fnc main(): int { return 0; }\n`);
+    }
+  }
+});
+
+test('every candidate remains unexecuted and has a disjoint outcome contract',()=>{
+  for(const c of m.cases){
+    assert.equal(c.status,'NOT_EXECUTED');
+    assert.equal(c.entry,'main.atto');
+    if(c.expect==='compile_and_run'){
+      assert.equal(c.expected_return_int,42);
+      assert.ok(!Object.hasOwn(c,'diagnostic_family')&&!Object.hasOwn(c,'no_artifact'));
+    }else{
+      assert.equal(c.expect,'semantic_reject');
+      assert.equal(c.no_artifact,true);
+      assert.ok(!Object.hasOwn(c,'expected_return_int'));
     }
   }
 });
