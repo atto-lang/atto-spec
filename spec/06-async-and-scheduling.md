@@ -238,6 +238,24 @@ registration latency and fairness on actual guest runs. Layout choices
 (AoS, SoA, slabs) are not observable language ABI. Cache invalidation
 must respect actor/tenant generation and hot reload.
 
+A cache may own one descriptor reference for the current generation and
+share that immutable descriptor block across arbitrarily many independently
+admitted invocations. Structural mutation invalidates the cache, not any
+in-flight reference; retired generations retain independent FAIR state.
+Release the generation and descriptor storage only after its final owner
+retires. No recycled storage address is a valid completion identity: retain
+an invocation-specific non-reusable token or checked generation until late
+callbacks cannot observe recycled state. Quota accounting counts pending
+invocations even when they share one descriptor block. Admission failure
+must not consume data, increment pending accounting or change FAIR credit.
+A normal winner, cancellation, timeout, actor STOP and failed registration
+must converge on one retirement transition. Cancellation and commit compete
+at the same linearization boundary; only the winning transition may release
+its resources. Benchmark cache hits separately from mutation, and measure
+whole-runtime task/Future/result allocations separately from descriptor
+allocation. A zero-copy descriptor path is not a zero-allocation runtime
+claim.
+
 **Promotion gate.** Require compiled guest positive and negative
 fixtures for list/map construction, stable keys under replace/remove,
 same/old-generation overlapping FAIR operations, duplicate cases,
