@@ -1,0 +1,31 @@
+name: Primitive type naming reference
+on:
+  pull_request:
+    paths:
+      - 'contracts/primitive-type-naming-v1.json'
+      - 'language/primitive-type-naming-v1.md'
+      - 'reference-checks/primitive-type-naming-v1.mjs'
+      - 'tests/primitive-type-naming-v1.test.mjs'
+      - '.github/workflows/primitive-type-naming-v1.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'contracts/primitive-type-naming-v1.json'
+      - 'language/primitive-type-naming-v1.md'
+      - 'reference-checks/primitive-type-naming-v1.mjs'
+      - 'tests/primitive-type-naming-v1.test.mjs'
+      - '.github/workflows/primitive-type-naming-v1.yml'
+permissions:
+  contents: read
+jobs:
+  reference-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/primitive-type-naming-v1.test.mjs
