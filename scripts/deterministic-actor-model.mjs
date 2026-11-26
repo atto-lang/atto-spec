@@ -27,6 +27,7 @@ function validateSteps(steps) {
     }
     if (['sleep','timer_send'].includes(s.op)) demand(safeInteger(s.after, 1), 'invalid timer delay');
     if (s.op === 'add') demand(safeInteger(s.by ?? 1), 'invalid delta');
+    if (s.op === 'assert') demand(validId(s.key) && safeInteger(s.value), 'invalid assertion');
   }
 }
 function build(scenario) {
@@ -82,13 +83,15 @@ function execute(s, choice) {
   if (kind === 'deliver') {
     const index = s.mailbox.findIndex(m => m.id === id);
     demand(index >= 0, 'nonexistent mailbox entry');
-    const [m] = s.mailbox.splice(index,1);
+    const m = s.mailbox[index];
     const a = s.actors[m.to];
     demand(a.generation === m.generation, 'stale mailbox admission');
     const steps = a.handlers[m.tag];
     demand(steps, 'unknown message handler');
     const tid = 'delivery.'+m.id;
     demand(!s.tasks[tid], 'duplicate handler task');
+    if (steps.length) demand(Object.keys(s.tasks).length < MAX_TASKS, 'live task budget exceeded');
+    s.mailbox.splice(index,1);
     if (steps.length) s.tasks[tid] = {pc:0, steps, locals:Object.create(null), wake:null, actor:m.to, generation:a.generation};
     s.consumed++;
   } else if (kind === 'timer') {
@@ -158,7 +161,7 @@ function execute(s, choice) {
         const prev=s.shared[op.key];demand(safeInteger(prev) && safeInteger(prev+(op.by??1)), 'invalid counter addition');
         s.shared[op.key]=prev+(op.by??1);break;
       }
-      case 'assert': demand(s.shared[op.key]===op.value,'property failed: '+op.key);break;
+      case 'assert': demand(Object.hasOwn(s.shared,op.key) && s.shared[op.key]===op.value,'property failed: '+op.key);break;
       case 'yield': break;
       default: throw Error('unsupported operation');
     }
