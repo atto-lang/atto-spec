@@ -99,3 +99,9 @@ Each case must be compiled through the real frontend/type checker/IR/backend and
 | PM-020 | exact-head native optimized and sanitizer guest, Wasm guest and target-specific AOT proof; no runtime compiler |
 
 Require source/head/tree and compiler/artifact digests, actual executed steps, guest results and independent negative rejection receipts. Keep current v1 conformance in force. Add these as target-only records to the shared conformance repo before promotion; do not mark any backend PASS on the basis of this document.
+
+## Common lowering and acceptance integration
+
+The target inventory is now tracked by [conformance #631](https://github.com/atto-lang/atto-platform-conformance/pull/631): 20 operation effect rows and 20 case categories across eleven backends, all NOT_EXECUTED for guest evidence. The inventory is not an acceptance receipt.
+
+A success-conditional ownership argument is not an ordinary eager take! evaluation: until a typed transactional call effect and a failure-path owner location are specified in common IR, reject alloc_value/write_at/replace_at of non-Copy values rather than silently consuming or duplicating them. The initial executable profile may restrict these to Copy elements. For fallible cleanup, the caller must not regain an already-dropped element. A view cannot close the source region and cannot perform owner-only take_at/replace_at. Readonly ref! local leases continue to require explicit unref! on every admitted exit until a separately verified cleanup profile exists. The same_location operation compares live region generation/domain/offset, not content or raw address; stale inputs fail rather than returning an arbitrary equality result.
