@@ -118,6 +118,7 @@ checked and trap on overflow; the helpers below report overflow as values.
   `min(a,b)`, `max(a,b)`, `clamp(v,lo,hi)`, `checked_add(a,b): Option<int>`,
   `checked_sub(a,b): Option<int>`, `saturating_add(a,b)`,
   `saturating_sub(a,b)`, `pow(base,exp)` (traps on overflow).
+* `core/bool`: `And`, `Or`, `Xor` — compiler-bound named Boolean reductions, automatically available through the core prelude. Scalar calls require at least two `bool` operands; a single `Array<bool>` argument uses the read-only reduction contract. No hidden allocation, scheduler, host I/O or `std` dependency. The canonical binding, evaluation order, empty-array identities, shadowing and supported-profile rules are defined in [Canonical Boolean operators](../docs/CANONICAL_BOOLEAN_OPERATORS_V1.md). Explicit unit exports must resolve to the same intrinsic identity, not an eager scalar wrapper.
 * `core/cmp`: `compare(a,b)` → -1/0/1, `between(v,lo,hi): bool`,
   `min3(a,b,c)`, `max3(a,b,c)`.
 * `core/option`: `is_some(o)`, `is_none(o)`, `unwrap_or(o,d)`, `or(a,b)`,
