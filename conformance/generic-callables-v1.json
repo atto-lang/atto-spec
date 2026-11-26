@@ -345,14 +345,14 @@
       "id": "collection_map_alias",
       "expectation": "accept",
       "feature": "generic_delimiters_v2",
-      "source": "fnc pass(Map[string, int] value): Map<string, int> { return value; } pub fnc main(): int { return 42; }",
+      "source": "fnc pass(Map[string, int] value): Map<string, int> { return rt take value; } pub fnc main(): int { return 42; }",
       "status": "NOT_EXECUTED"
     },
     {
       "id": "collection_nested_delimiters",
       "expectation": "accept",
       "feature": "generic_delimiters_v2",
-      "source": "fnc pass(Map<string, Array[int]> value): Map<string, Array<int>> { return value; } pub fnc main(): int { return 42; }",
+      "source": "fnc pass(Map<string, Array[int]> value): Map<string, Array<int>> { return rt take value; } pub fnc main(): int { return 42; }",
       "status": "NOT_EXECUTED"
     },
     {
