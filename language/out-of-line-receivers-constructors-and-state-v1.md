@@ -99,7 +99,7 @@ type Point = struct {
         return self.x * self.y;
     }
 
-    mtd bool * is_origin() {
+    mtd is_origin() : bool {
         return self.x == 0 && self.y == 0;
     }
 }
@@ -120,13 +120,13 @@ type Point = struct {
     return self.x + self.y;
 } with mtd int <- product() {
     return self.x * self.y;
-} with mtd bool * is_origin() {
+} with mtd is_origin() : bool {
     return self.x == 0 && self.y == 0;
 }
 ```
 
 - In type-declaration context, an attachment is either `with` followed by one member declaration or `with { ... }` containing member declarations. Chained and grouped attachments normalize to the same owner/member AST. Ordinary statement bodies, field-update expressions and arbitrary expressions are not attachment members. The existing expression-level `value with {field: expr}` remains a distinct grammar; no change to trait composition or copy-and-update semantics.
-- In method headers `mtd R • name(...)`, `mtd R <- name(...)`, and `mtd R * name(...)` are equivalent return-type-first signature spellings. The asterisk is a separator in that syntactic position, not a pointer or multiplication operator. Resolve the complete return type and header context before interpreting it; preserve existing admitted callable signature forms and formatter token spelling. Constructor headers use `constructor(args)` with no return separator and implicit under-construction self.
+- In method headers `mtd R • name(...)`, `mtd R <- name(...)`, and `mtd name(...): R` are equivalent return-type declaration spellings. The first two are prefix forms and the colon form is postfix. `mtd R * name(...)` is not a return-type separator spelling and must be rejected in this context. Preserve other independently admitted callable signature forms and formatter token spelling; the three forms above normalize to the same signature. Constructor headers use `constructor(args)` with no return separator and implicit under-construction self.
 - Existing callable modifiers and effects apply according to the ordinary method grammar; readonly receiver is the default, checked exclusive receiver authority is required for mutation, and static members have no instance self. Overload selection ignores separator spelling; duplicate normalized signatures (including out-of-line definitions) reject. Do not manufacture visibility or receiver capabilities by using an attachment.
 - Constructors select overloads statically, evaluate call arguments once in source order, and initialize each required field before read/escape. On failure destroy only initialized subobjects once; no implicit zero/default synthesis. Once a custom constructor exists, direct external aggregate syntax must not bypass it, including field-equals shorthand and unverified copy-and-update reconstruction. Ordinary checked copying of already valid values remains governed by the ownership contract.
 - The attached declaration lowers to the same static member and constructor representation as out-of-line declarations, without per-instance method storage, required vtables, boxing, JIT, reflection or mandatory heap allocation. A value constructor may initialize its final destination directly if effects and lifetime semantics are preserved.
@@ -138,7 +138,8 @@ type Point = struct {
 | --- | --- |
 | Exact grouped Point source above | Accept; guest outputs 30, 200, false |
 | Equivalent chained Point source | Same typed result and observable behavior |
-| Each of the three signature separators | Same return type, name and dispatch |
+| Each of the three return-type forms (`•`, `<-`, postfix `:`) | Same return type, name and dispatch |
+| `mtd bool * is_origin()` | Reject as an invalid return-type separator |
 | Two methods differing only in separator | Reject duplicate signature |
 | Attached and out-of-line duplicate member | Reject duplicate signature |
 | Constructor overload by distinct arity/type | Accept with static resolution |
