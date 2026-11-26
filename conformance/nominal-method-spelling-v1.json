@@ -19,9 +19,10 @@
     "bare_instance": "preserve",
     "explicit_instance_mtd": "preserve",
     "free_module_namespace_static_fnc": "preserve",
-    "out_of_line_receiver_mtd": "preserve"
+    "out_of_line_receiver_mtd": "preserve",
+    "obsolete_method_introducer": "reject_not_rewrite"
   },
-  "notes": "Candidate complete .atto sources. Run all three spellings independently; equivalent acceptance and guest result, not necessarily equal binary bytes. Negative fixtures require the declared semantic diagnostic, not parser/unsupported failure. Contextual class name cases are candidates requiring compiler-backed confirmation. Do not count source-only or host checks as production parity.",
+  "notes": "Candidate complete .atto sources. Run all three spellings independently; equivalent acceptance and guest result, not necessarily equal binary bytes. Semantic negatives require the declared semantic diagnostic; syntax negatives require obsolete-marker rejection, not an unsupported-profile failure. The word method is an ordinary callable name, never a declaration introducer. Contextual class name cases are candidates requiring compiler-backed confirmation. Do not count source-only or host checks as production parity.",
   "cases": [
     {
       "id": "interface.bare.positive",
@@ -275,6 +276,51 @@
       "entry": "main.atto",
       "source": "define class C as pub fnc method(): int { return 42; } pub method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
       "diagnostic_family": "DUPLICATE_INSTANCE_METHOD",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.obsolete-method.reject",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "source": "define class C as method ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor.obsolete-method.reject",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "source": "define actor C as method ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "struct.obsolete-method.reject",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "source": "define struct C as method ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.obsolete-method.reject",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "source": "define interface C as method ping(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.obsolete-method.reject",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "source": "define trait C as method ping(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
       "no_artifact": true,
       "status": "NOT_EXECUTED"
     }
