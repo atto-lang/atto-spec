@@ -26,3 +26,7 @@ Use matching manifest fixtures across independent builds, processes, machines an
 All compiler roles (Java/GraalVM, LLVM, Forge, .NET, independent Wasm, Rust, Cranelift, JS and HDL where applicable) remain NOT_EXECUTED for this contract. Host models, fixture integrity, and source-only checks do not certify compiler or guest execution. Hardware targets without a distributed runtime must explicitly report unsupported transport rather than invent a different equality rule.
 
 A larger identity format is a separately negotiated future profile, not an alternative implicit representation of v1. Standard UUIDs are 128 bits, not 256 bits.
+
+### Shared target vectors
+
+[Machine-readable UUID and registry cases](../conformance/distributed-symbol-identity-v1.json) (blob `50dad96248eb8e08cf6780bf8d5512ac933f4707`) define four positive payload encodings, seven malformed payloads and seven registry/handle cases. The payload-only classifier checks byte length, then UUID version, then variant; successful payload validation alone never grants registry admission. The all-zero/random-bit extrema are format tests, not acceptable evidence of CSPRNG generation. A swapped GUID-field-order vector catches the illustrated endian mistake, but implementations must not assume every byte-order mistake can be detected by the version/variant bits. All eleven profiles remain NOT_EXECUTED; the registry cases still require concrete manifest and runtime fixtures. A source-free consistency check of the corpus is not guest conformance.
