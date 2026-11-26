@@ -6,34 +6,49 @@ This candidate refines the existing [state-container contract](../spec/state-con
 
 ## Syntax and admission
 
-A state container owns its mutable fields. The canonical spelling is:
+A state container owns its mutable fields. The canonical proposed spelling is `state_ro` / `state_w`:
 
 ```atto
 define state container Counter as
   state { let int count: 0; }
 
   pub increment(int amount): void {
-    handle_state(critical-write |s| -> {
+    state_w(|s| -> {
       s.count = s.count + amount;
     });
   }
 
   pub read_count(): int {
-    return handle_state(critical-read |s| -> s.count);
+    return state_ro(|s| -> s.count);
   }
 end
 ```
 
+* `state_ro(callback)` and `handle_state_ro(callback)` normalize to `handle_state(critical-read callback)`.
+* `state_w(callback)` and `handle_state_w(callback)` normalize to `handle_state(critical-write callback)`.
+* All five intrinsic names are sealed in protected actor and state-container methods. Exact direct `self.` qualification is equivalent to a bare invocation; ordinary method dispatch, first-class references, overrides, and indirect calls cannot mint lease authority. The short names are contextual, not new globally reserved keywords. Reject lexical shadowing that would obscure an intrinsic in a protected method.
+* A short or long alias already specifies its authority: a second critical-mode keyword is invalid. Binder mutability is inferred from the mode. Aliases must share typed IR, admission, cleanup, diagnostics and AOT/runtime behavior; no extra dynamic dispatch is permitted.
 * `critical-write` requests an exclusive write loan for one receiver instance.
 * `critical` is an alias for **exclusive write**, not a shared read.
 * `critical-read` requests read-only authority. It must never create a write
   ticket or mutate fields; on restricted scalar profiles the only admitted
-  syntax is a by-value `s.field` projection. Read blocks in such profiles
-  are an error, including empty blocks.
+  syntax may be limited to a by-value `s.field` projection, including the equivalent single-return block if implemented. Empty or effectful read blocks must not be admitted as write regions. Multi-field owned snapshots under one lease are the general target, not an implied property of restricted scalar implementations.
 * Compound keyword tokens use contiguous ASCII spelling: `critical-read`,
   `critical-write`; `critical -read` is never a synonym.
 * Direct mutable-state field access, including same-class access on another
   instance, is not a substitute for the checked lexical loan.
+
+## General target: consistent snapshots and typed results
+
+```atto
+pub snapshot(): Tuple[int, int] {
+    return state_ro(|s| -> {
+        return (s.balance, s.transactions);
+    });
+}
+```
+
+Both projections must occur under a single shared lease, and the returned tuple must contain independently owned scalar values. No split acquisitions or borrowed state may escape. The same names and semantics apply to actors and mutable state containers; unsupported actor, tuple, graph, or expression-position profiles must reject rather than simulate. Direct method-return scalar write results must be snapshotted before release and returned only after release. General binding-position write expressions are a target obligation, not evidence of implementation.
 
 ## Safety and ownership obligations
 
