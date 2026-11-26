@@ -203,3 +203,22 @@ test('delivery cannot exceed the live task cap or consume the refused message',(
  assert.equal(allowed.status,'completed');
  assert.equal(allowed.final_state.shared.count,1);
 });
+
+
+test('a due timer rejected by full mailbox admission remains accounted for',()=>{
+ const scenario={actors:[{id:'worker',handlers:{hold:[{op:'sleep',after:10}],tick:[]}}],
+  tasks:[{id:'p',steps:[{op:'send',to:'worker',tag:'hold'},{op:'timer_send',to:'worker',tag:'tick',after:1},
+   ...Array.from({length:1024},()=>({op:'send',to:'worker',tag:'tick'}))]}]};
+ const prefix=['step:p','deliver:m1','step:delivery.m1',...Array(1025).fill('step:p'),'timer:t2'];
+ const failed=schedule(scenario,{prefix});
+ assert.equal(failed.status,'failed');
+ assert.match(failed.failure.message,/mailbox budget exceeded/);
+ assert.equal(failed.final_state.clock,1);
+ assert.equal(failed.final_state.mailbox.length,1024);
+ assert.equal(failed.final_state.timers.length,1);
+ assert.equal(failed.final_state.timers[0].id,'t2');
+ assert.equal(failed.final_state.consumed,1);
+ assert.equal(failed.final_state.fenced,0);
+ assert.equal(failed.final_state.cancelled,0);
+ assert.equal(schedule(scenario,{replay:failed}).final_hash,failed.final_hash);
+});
