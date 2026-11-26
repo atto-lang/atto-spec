@@ -44,7 +44,23 @@ test("bang forms remain contextual operators, not invented reserved words", () =
   assert.match(chapter16, /deep-copy operator/);
 });
 
-test("no unsupported ref bang aliases are invented", () => {
-  assert.ok(chapter04.includes("does not invent " + tick + "ref!" + tick));
-  assert.ok(chapter16.includes("Do not add " + tick + "ref!" + tick));
+test("ref bang aliases are scoped to proven local Pointer authority", () => {
+  assert.match(chapter04, /contextual typing proves a borrowed-local Pointer<T>/);
+  assert.match(chapter04, /does not destroy the referent/);
+  assert.match(chapter16, /only with a proven borrowed-local Pointer<T> authority/);
+  assert.match(chapter16, /Unsupported or ambiguous contexts reject/);
+  assert.match(vocabulary, /Other checked-handle families are not automatically admitted/);
+  assert.match(chapter16, /Keep unary address-of and dereference forbidden/);
+});
+
+test("ordinary pointer arguments borrow and consuming receivers remain explicit", () => {
+  const pointer = read("language/pointer-explicit-methods-v2.md");
+  const defaults = read("language/implicit-argument-borrow-v1.md");
+  assert.match(pointer, /default for nonprimitive object arguments to fnc and mtd is a scoped readonly borrow/);
+  assert.match(defaults, /Versioned opt-in modes are migration mechanisms/);
+  assert.match(pointer, /inspect\(p\).*inspect\(borrow! p\).*BorrowRead/);
+  assert.match(pointer, /update\(mut p\).*update\(borrow! mut p\).*BorrowWrite/);
+  assert.match(pointer, /explicitly consuming receiver\/operator; not admitted through a borrowed formal/);
+  assert.match(pointer, /No heap wrapper, refcount or allocation merely to pass a borrow/);
+  assert.match(pointer, /Primitive|primitive value scalars/);
 });
