@@ -71,3 +71,77 @@ All cases initially NOT_EXECUTED. A parser-only result, host oracle, old branch 
 - atto-step-function-demo #9 and atto-ai-agent-coordination-demo #12: saga/guarded workflow candidates; retain explicit external effect reconciliation rather than claiming their host/demo behavior is native machine support.
 - atto-spec #257: deterministic scheduler oracle changes; complementary, not a production scheduler.
 - All linked candidates require exact-current-head overlap resolution and fresh compiler execution before integration. This proposal does not supersede or close any of them.
+
+
+## Contextual grammar extension: sagas, invariants and lifecycle
+
+Owner direction: support native `saga {}`, `migrate`, `invariant`, `owned`, `enter` and `exit` without changing the inline mutable `state {}` container. Candidate grammar, not existing compiler support. No global keyword reservation: ordinary identifiers retain these spellings outside the corresponding declaration/statement position. Recognize complete introducers at the correct syntactic scope; strings, comments and symbols cannot introduce declarations.
+
+```ebnf
+Machine = "state", "machine", "as", MachineMember*, "end";
+MachineMember = Initial | Node | Final | Invariant;
+Initial = "initial", "state", Identifier, ";";
+Node = "state", Identifier, "as", NodeMember*, "end";
+Final = "final", "state", Identifier, ";";
+NodeMember = EventRule | TimerRule | Invariant | Owned | Enter | Exit;
+EventRule = "on", EventPattern, ["when", PureExpr], "->", Identifier,
+            [TransitionAction], ";";
+TimerRule = "after", DurationExpr, "->", Identifier, [TransitionAction], ";";
+TransitionAction = CallableEffectClause, Block;
+Invariant = "invariant", "|", Identifier, "|", "->", PureExpr, ";";
+Owned = "owned", Type, Identifier, ";";
+Enter = "enter", CallableEffectClause, Block;
+Exit = "exit", CallableEffectClause, Block;
+Saga = "saga", "{", SagaStep+, "}";
+SagaStep = "step", Identifier, ":", CallExpr, "{",
+           [RetryPolicy], (Compensation | Irreversible), "}";
+Compensation = "compensate", CallExpr, ";";
+Irreversible = "irreversible", ";";
+RetryPolicy = "retry", "{", RetryField+, "}";
+Migration = "migrate", "from", SchemaVersion, "to", SchemaVersion, Block;
+```
+
+Reuse existing expression, type, block and callable effect grammar. Earlier examples omit semicolons for readability; reconcile leaf terminators with the actual parser before ratification. Require one initial node, unique named saga steps, at most one enter/exit per node, explicit compensation or irreversible disposition, unique retry fields and migration edges. Reject unknown successors, unreachable nodes and outgoing rules from terminal nodes. Malformed contextual constructs fail closed rather than silently selecting alternate grammar. Owned is a resource scope, not a second ownership system: preserve existing checked ownership transfer operations.
+
+### Invariants and lifecycle
+
+- Actor-level invariants cover sealed storage; machine/node invariants cover relevant snapshots. A candidate explicit immutable binder is `invariant |s| -> s.balance >= 0;`. No ambient direct field access. Node invariants apply only while active. Class invariants require a separate construction/mutation-boundary contract.
+- Invariants are total, pure, bounded and non-suspending. Check activation, each commit (including ordinary checked writes), destination entry, undo and migration, not transient intermediate edits. Failure prevents publication. Elide only proven checks. Fatal faults preserve supervisor policy.
+- Initial activation stages initial enter before DATA execution. State-changing events stage source exit, transition body, then destination enter. External self-transition renews activation; any future internal transition has separate semantics. No hooks on rejected guards. Hooks may run on aborted attempts; only one successful local commit publishes changes.
+- Hooks declare effects and use authenticated guarded state loans against staged storage. No suspension, I/O, nested guard, unknown-effect callback or irreversible destruction within atomic transition. Stage postcommit resource operations and receive typed completion events; entering does not imply successful external acquisition. A final node ends machine transitions, not necessarily actor lifetime or pending cleanup.
+- Owned slots are activation-private; require definite initialization and exclusive transfer or retirement. A staged move must preserve the old owner on abort; no borrowed reference survives exit. Track physical retirement separately, bound pending cleanup, and fence DONE until completion. Non-reversible cleanup cannot execute speculatively. No live handles, pointers or process-local leases in durable snapshots.
+
+### Saga execution and retry
+
+- Native structured sequential saga is allowed in ordinary callables and actor handlers, never under a live state loan or within an atomic transition. A transition may commit a saga intent and consume its result in a later turn. Parallel/nested sagas and expression result typing need separate specification. No effect authority comes from syntax.
+- Reserve bounded ledger capacity and stable workflow/step/effect identity before dispatch. Retries keep the logical effect key, increment a checked attempt number, and preserve the original typed input. Compensation has a distinct stable key and consumes the original authenticated success receipt. Record success before starting the next step; durable mode persists intent and receipt with a transactional outbox or equivalent. Volatile mode has no restart guarantee.
+- Retry only classified transient failures with proven non-execution or authorized idempotent/reconciled effects. max_attempts includes first attempt; validate finite delay, maximum delay, deadline, backoff and jitter. Saturating arithmetic and monotonic clock prevent overflow. Persist decisions in durable mode; use virtual time in tests. Deadline/cancellation stops new attempts but cannot erase unknown outcomes.
+- Definitive failure before execution triggers compensation of completed compensable steps in reverse completion order. An indeterminate forward or compensation outcome blocks progression until reconciled; timeout alone is not proof of failure. Authenticated identical receipts are idempotent; conflicting/stale receipts reject. Failed compensation retains an obligation and retry/escalation path. Irreversible steps are explicit and disallowed in a profile promising full compensability. Never claim exactly-once external effects.
+- Rollback discards uncommitted local edits. Undo is a new typed inverse transition with fresh commit version and invariant checks. Compensation is a separate external effect. Panic reaches supervisor CONTROL; it is not a catchable saga state.
+
+### Migration
+
+- Migrate is a schema-evolution declaration, not an arbitrary runtime command or capability grant. Positive increasing source/destination schema versions differ from commit versions and activation epochs. Require one explicit upgrade path; reject missing/ambiguous paths, cycles and unsupported downgrade.
+- Transform typed old immutable snapshots into validated new snapshots. Map all live node IDs, serializable payloads, queued message schemas, timers, dedup entries and unfinished saga obligations or reject. Stable portable IDs replace process pointers and enum ordinals. No silent deletion of an effect or escalation of permissions.
+- Quiesce new DATA execution and fence old completions. Stage migration and all invariants, persist the new snapshot and epoch atomically or through a crash-recoverable equivalent, then resume. Failure preserves the old recoverable snapshot. No external I/O during transformation. Recovery observes a coherent old or new schema, never both; hot-reload remains gated on real quiescence and crash tests.
+
+## Extended portable acceptance requirements
+
+| ID | Required behavior |
+| --- | --- |
+| SM15 | Contextual introducers coexist with ordinary identifiers, comments and strings; formatter keeps storage distinct |
+| SM16 | Enter/exit ordering at activation and external self-transition; no hooks on guard rejection |
+| SM17 | Hook failure aborts data, node, version and resource transfer together |
+| SM18 | Actor/node invariant failure at activation, transition and ordinary write prevents publication |
+| SM19 | Effectful/suspending invariant, hook under live loan, and escaping state-owned borrow reject |
+| SM20 | Move abort preserves old owner; commit retires or transfers exactly once; physical cleanup fences DONE |
+| SM21 | Saga records receipts before next step; definitive failure compensates in reverse completion order |
+| SM22 | Unknown forward outcome blocks progress and compensation; unknown compensation blocks unwinding |
+| SM23 | Bounded retry includes first attempt, checked deadline/delay, stable effect key and deterministic jitter |
+| SM24 | Duplicate receipt idempotence; conflicting/stale receipt refusal; irreversible steps cannot claim rollback |
+| SM25 | Crash around durable intent, dispatch, receipt and compensation commit retains obligations |
+| SM26 | Migration preserves obligations and stable IDs; unknown node/version and ambiguous path reject |
+| SM27 | Migration abort preserves old snapshot; recovery sees coherent old/new schema; stale events fenced |
+| SM28 | Volatile profile has no persistence guarantee; unsupported durable/migration/resource profile fails closed |
+
+All new cases initially NOT_EXECUTED for compiler/guest targets. Host reference tests are not parser, ownership, resource-retirement, native-effect or crash-recovery evidence. First admit the flat volatile machine; durability, saga and migration have independent capability gates.
