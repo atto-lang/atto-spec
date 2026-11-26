@@ -6,7 +6,7 @@
 
 Each source file is compiled with one explicit profile:
 
-- `core` (always): `Option<T>`, `Result<T,E>`, their variants `Some`, `None`, `Ok`, `Err`; `Error`, `Array`, `Slice`, tuples, `Pair`, `Range`, `Iterator`, and foundational comparison/conversion/formatting traits where implemented. Primitive scalar keywords/types are available independently of imports.
+- `core` (always): `Option<T>`, `Result<T,E>`, their variants `Some`, `None`, `Ok`, `Err`; `Error`, `Array`, `Slice`, tuples, `Pair`, `Range`, `Iterator`, and foundational comparison/conversion/formatting traits where implemented. Primitive scalar keywords/types are available independently of imports. Named Boolean reductions `And`, `Or`, and `Xor` are core prelude callable bindings from `atto.core/bool`, not hosted `std` APIs. They require no allocator for scalar calls. Ordinary declarations/imports take precedence over these convenience spellings; resolved core calls retain their special evaluation contract. Unsupported profiles fail closed before emission; see [Canonical Boolean operators](../docs/CANONICAL_BOOLEAN_OPERATORS_V1.md).
 - `alloc` (only with a real allocator and ownership support): additionally `String` (owned UTF-8 string), `List`, `Vec`, `Map`, `Set`, `Box`. A backend MAY preserve an existing no-allocator `string` or `String` scalar/view spelling as a documented compatibility subset; it MUST NOT misrepresent that view as an owned, allocator-backed `String`.
 - `std` (hosted): builds on `alloc` but does not implicitly grant FS, network, process or other capabilities. Specialized `HashMap`, `HashSet`, `Entry`, `LinkedList`, `Deque`, `Channel`, `Mutex`, `ActorRef`, `Path` and similar types require explicit imports or an independently specified intrinsic syntax.
 
