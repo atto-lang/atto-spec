@@ -166,9 +166,87 @@ Migrate them to the explicit procedural form after checking return scopes,
 or use await of a Future when the arm returns a value. Legacy detached nb
 statements need explicit lifecycle migration, not token deletion.
 The deprecated alias applies to tracked expressions, not historical
-detached behavior. The dynamic select-from wait-mode migration must be
-coordinated separately so existing Option-valued calls do not silently change
-type; the intended direction is Future by default with explicit await.
+detached behavior. The dynamic select-from migration follows the proposed
+contract below; existing calls require an explicit migration, not silent
+type changes.
+
+### Dynamic selection plans (TARGET, proposed hardening)
+
+| Form | Proposed result and control boundary |
+| --- | --- |
+| `select [policy] from plan` | Future<R>; returns without logically suspending the caller |
+| `await select [policy] from plan` | R; ordinary cooperative await |
+| `nb select [policy] from plan` | Deprecated tracked alias for the same Future<R> |
+| `try select [policy] from plan` | Option<R>; immediate probe; no pending waiters on a miss |
+
+R is the selection result, not the payload of an arbitrarily chosen
+channel. Preserve the existing ordinal result for immutable plans; a
+keyed dynamic plan needs a typed result with stable key, ordinal within
+the captured snapshot and structural version. Exact public type names
+and generic arguments for heterogeneous payloads remain a separate
+decision. Do not silently unwrap or flatten Option or Future values
+when migrating old source; reject incompatible bindings. The target
+table is not a claim of backend implementation. Empty-plan, all-closed
+and default-only outcomes must receive common explicit diagnostics or
+result contracts before cross-backend promotion; never spin on an
+impossible selection.
+
+**Plan vs invocation.** A reusable plan owns inert case descriptors,
+not live registrations, a winner, a continuation or a cancellation
+token. Evaluate and validate operands once per construction or mutation.
+Snapshot ordered keys and descriptors at selection invocation; replacing
+or deleting a key cannot retarget a pending selection. Copy input
+containers without retaining mutable aliases; retained keys must have
+stable immutable value identity. Validate ownership, domain and
+capability constraints before any effectful arm commits, including
+after a channel changes capability. Failed mutations cannot change
+keys, descriptors, version or cursor. A successful structural mutation
+publishes one new version without wraparound. Bound plan size and
+pending registrations independently, including retained snapshots.
+
+**Arbitration.** All cases compete for one commit in the authoritative
+channel/Future coordinator. A successful read or write is irrevocable;
+losers must not consume, enqueue or transfer ownership. Duplicate
+channel/Future cases cannot create multiple commits. FAIR credit is
+generation-local and advances only on committed non-default winners;
+an immediate miss, failure before commit, default or cancellation
+before commit does not advance it. Same-generation concurrent
+selections observe authoritative FAIR state at arbitration, not a
+private stale creation-time cursor. A late old-generation winner
+cannot overwrite the newer generation's cursor. FIRST preserves
+captured order, RANDOM uses the backend's admitted random policy.
+
+**Lifetime and effects.** Registration and cleanup are bounded by the
+owning task/actor/tenant. Stop, cancellation and generation retirement
+revoke losing waiters exactly once, release all quotas and prevent
+stale guest callbacks. Cancellation after commit cannot roll back
+the committed channel operation. Retained descriptors cannot capture
+lexical borrows or unrepeatable move-only write payloads; no implicit
+cross-domain transfer of a plan or captured capability. Do not cancel
+a shared Future producer merely because its select listener lost.
+An unawaited Future requires tracked ownership; no detached discard.
+Whether ordinary select starts registration eagerly or on first await,
+and repeated-await semantics, must be specified explicitly before
+promotion; neither choice may change the invocation snapshot or allow
+double commitment. No OS-thread parking or guest execution on
+producer/reactor threads.
+
+**Optimization.** Reuse immutable versioned descriptors and proven
+loop-invariant expressions; never reuse live waiters or completion
+authority across invocations. Measure allocations, retained bytes,
+registration latency and fairness on actual guest runs. Layout choices
+(AoS, SoA, slabs) are not observable language ABI. Cache invalidation
+must respect actor/tenant generation and hot reload.
+
+**Promotion gate.** Require compiled guest positive and negative
+fixtures for list/map construction, stable keys under replace/remove,
+same/old-generation overlapping FAIR operations, duplicate cases,
+rendezvous, cancellation before/after commit, close/drain, dropped
+Future, stale actor generation, quota rollback, capability changes
+and no implicit await. Check exact source head/tree, actual executed
+compiler and guest steps, native AOT where applicable, and independent
+review. Unsupported variants fail closed before code emission; a
+host-only model or zero-step CI does not certify guest behavior.
 
 Only the enclosing select specifies wait mode and policy. Both delimiters
 have identical semantics. Require at least one arm, at most one default
