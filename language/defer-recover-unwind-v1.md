@@ -139,8 +139,9 @@ caller-side `trap expression` discharges only ordinary `throws` of the
 expression; neither mechanism discharges `raises`. Consequently a function
 that catches its own ordinary throw, or traps that throw, can be invoked
 inside `defer`, `recover`, or `finally` without causing a false rejection.
-A cleanup body's remaining escaping throw/raise is rejected before Wasm
-emission, including indirect calls through a cycle. Callback registration
+In the historical restricted browser profile, a cleanup body's remaining
+escaping throw/raise is rejected before Wasm emission, including indirect
+calls through a cycle; see the extended callback target below. Callback registration
 does **not** discharge its enclosing function's effect merely because a
 `recover` exists: an outer caller's `catch` or `trap` must retain priority.
 Effects of potential unreachable statements/handlers may still be
@@ -179,9 +180,10 @@ transfer rules are:
 - `E(call f(args)) = E(f) ∪ ⋃ E(args)`.
 - Explicit `return`, `throw`, `raise` and other structurally proven
   terminal exits cut off effects of *following* unreachable statements.
-- `defer`, `recover`, and `finally` callback bodies must have no
-  escaping `throw` or `raise`; factory-registration arguments are separately
-  evaluated before callback registration.
+- In the restricted browser profile, `defer`, `recover`, and `finally`
+  callback bodies must have no escaping `throw` or `raise`; the extended
+  defer/recover target below specifies boundary panic conversion. Factory
+  arguments are evaluated separately before callback registration.
 
 These rules are intentionally conservative around conditional reachability
 and do not constitute general whole-program proof of the `panic` channel,
@@ -246,6 +248,94 @@ fnc load(string id): int {
   rather than native thread-local or Java thread-affine handlers.
   Physical child/actor quiescence and ownership/lock retirement are
   prerequisites for releasing an actor arena.
+
+## Extended callback and suspendable unwind target (2026-11-25)
+
+This section supersedes the older **target** restriction on escaping throw/raise
+for defer/recover; the historical browser admission restriction remains in force
+until the backend proves the new lowering. It does not change the established
+ordinary-catch search, explicit recovery binders, or cancellation precedence.
+
+```atto
+defer cleanup();
+defer count = 2;
+defer cleanup;
+defer || -> { cleanup(); };
+defer (|int foo| -> || -> { stdio.println(foo); })(5);
+defer await close_async();
+defer count = await get_two();
+susp defer { await close_async(); };
+susp defer || -> { await close_async(); };
+susp recover |err, cursor| -> { await report(err); return 42; };
+```
+
+- A block or non-callable-valued statement is delayed in its entirety; an
+  explicit lambda, named callable value or statically callable-valued factory
+  expression is evaluated once at registration, then invoked at exit. The
+  resolved static type decides the distinction, never dynamic inspection.
+  Overload or callable/statement ambiguity must diagnose rather than guess.
+  Factory evaluation and capture initialization are atomic with respect to
+  registration; failure before publication follows ordinary lexical effects.
+  To delay a factory invocation itself, put it in an explicit block.
+- Cleanup invokes a nullary callable; a recovery callable has the exact
+  ErrorView/RecoveryCursor parameters and enclosing result type. Named and
+  factory-produced recovery callables obey the same rules. Bare recover
+  blocks remain rejected; handler binders must be explicit. Callback return
+  cannot replace a pending enclosing return except via the recovery contract.
+  Ordinary non-Result statement results may be discarded; fallible Result
+  values require explicit handling or explicit discard, never implicit panic.
+- An ordinary braced defer is nonsuspending; `susp defer` and `susp recover`
+  admit transitive suspension in a suspension-capable context. A braceless
+  delayed statement containing an explicit await (including assignment RHS)
+  infers suspendable cleanup; a suspendable callable value requires explicit
+  `susp`. Registration-time effects are checked independently. Await operand
+  typing is unchanged: the example `defer await 42;` is a syntax target,
+  not a decision to make integers awaitable. Unsupported effects fail closed.
+- An ordinary throw or raise escaping the invoked cleanup/recovery boundary
+  becomes a compiler/runtime-authenticated panic. A nested matching handler
+  can handle an eligible error before it reaches that boundary. Explicit
+  panic and cancellation remain distinct, never caught by ordinary catch,
+  trap or recover. The conversion happens before any enclosing ordinary
+  catch search for that new failure. Registration-time failures do not use
+  this conversion. Preserve the original failure and the new cause.
+- Use the existing terminal precedence: host fatal/forced termination >
+  cancellation > panic > raise > throw > successful completion. In a
+  cancellation unwind a callback panic is retained as supplemental failure
+  rather than changing the primary cancellation; this is deliberately
+  consistent with the existing contract. The first panic remains primary
+  among equally ranked failures. Keep bounded, ordered diagnostic records
+  (including overflow count); do not allocate unbounded chains or trust
+  host-provided failure tags. Continue remaining safe defers LIFO, once
+  each, including nested lexical defers. Panic makes pending recoveries
+  ineligible. A failing recover cannot invoke itself or the next handler
+  except via an already valid terminal cursor delegation.
+- Callback lifetime begins at registration and ends after completion or
+  physical retirement. Suspend/resume retains pending outcome, frame,
+  resource guards, capture ownership, cancellation and one-shot cursor
+  authority. A return expression is evaluated once before cleanup and
+  task completion/actor DONE publication occurs only after safe cleanup
+  quiescence. No reentrant DATA turn, foreign-thread callback, stale wake
+  or incarnation reuse. Reject unsafe borrows/critical locks over await.
+  Cancellation shields cleanup within a bounded runtime policy; timeout
+  is a failure/retirement path, never fake success or premature free.
+- AOT lowering must use typed continuation and unwind state machines, no
+  mandatory JIT/reflection. All atto-source.* roles independently report
+  positive execution, negative diagnostic/no artifact, unsupported, or
+  NOT_EXECUTED. Synchronous and suspendable paths share ordering and
+  failure rules; finally retains its existing independently gated profile.
+
+Required additional traces: delayed assignment versus early factory
+capture, factory failure with no partial registration, bare await and
+assignment await equivalence, return snapshot plus suspended cleanup,
+throw/raise escaping cleanup versus locally handled error, pending
+throw plus cleanup panic (both identities retained), multiple cleanup
+panics (first primary), cancel plus cleanup panic (cancel primary),
+recover failure (no next-handler success), cursor delegation across
+suspension, nested defers, cancellation/wakeup race, actor generation
+fencing, unsafe borrow/lock rejection, and no guest emission for
+unsupported forms. The first actual compiler evidence must establish
+each observable trace; source-level assertions alone do not establish
+support.
 
 ## Mandatory conformance traces
 
