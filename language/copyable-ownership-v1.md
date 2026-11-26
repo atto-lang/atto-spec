@@ -138,7 +138,31 @@ val d = original.copy_deep();
 
 All identity-bearing Atto classes inherit the **names** copy and copy_deep from root Object. They do **not** inherit permission to use either method: the resolved receiver must have a verified Copyable<Self> or DeepCopyable<Self> witness, respectively. A bare Object-typed erased reference requires verified virtual witness dispatch or fails E_COPY_UNPROVEN; a method declaration, annotation, cast, or FFI stub is not proof. This avoids the unsound promise that arbitrary handles, actors, or native resources can always be copied.
 
-A class/aggregate obtains its **Copyable** witness automatically if the compiler can prove a field-wise shallow plan, including inherited fields. A separate **DeepCopyable** witness is derived if the compiler can prove recursive duplication of mutable owned state. Users do not need to write implements Copyable or copy() in the common case. An explicit implements clause or positive annotation cannot grant an unproved capability; @NoCopy/NoCopy prohibits copying by default; @WarnOnCopy remains a lint.
+A class/aggregate may obtain a **Copyable** shallow witness only after proof of safe field-wise shallow copying, including inherited fields. **DeepCopyable is explicitly opt-in for nominal classes and structs** (owner decision 2026-11-25). The declaration must explicitly implement the compiler-recognized core DeepCopyable<Self> interface/trait (illustrative spelling below); an inferred layout, ordinary Copyable, Object method, annotation, cast, or structural lookalike is not consent. After opt-in the compiler may synthesize the complete verified deep-copy implementation without handwritten methods. Explicit consent alone is insufficient: recursively verify all owned mutable nominal nodes, inherited fields, generic instantiations, container elements, and possible concrete dynamic types. Intrinsic scalars and standard structural containers use compiler/core-defined witnesses constrained by their elements; they cannot bypass missing nominal consent even when empty or an ADT variant is inactive. @NoCopy/@NonCopyable overrides opt-in; @WarnOnCopy remains a lint. The existing shallow proof rule is unchanged by this deep-only policy.
+
+~~~atto
+define class Snapshot implements DeepCopyable<Snapshot> as
+    pub let int version = 0;
+    pub val Array<int> values = new Array<int>();
+end
+
+define struct Point implements DeepCopyable<Point> as
+    int x;
+    int y;
+end
+
+define class NotOptedIn as
+    pub let int value = 0;
+end
+
+val source = new Snapshot();
+val detached = copy!! source;  // verified generated plan
+val other = new NotOptedIn();
+// copy!! other;               // E_COPY_OPT_IN_REQUIRED
+// other.copy_deep();           // same rejection
+~~~
+
+The snippets specify the target nominal interface contract, not existing parser support. Each concrete nominal subtype that can introduce owned state must explicitly opt in; an inherited method or a base witness cannot authorize a new concrete layout automatically. Import and erased dispatch must preserve the authenticated declaration witness, and recursive opted-in SCCs must be verified together, never by assuming an unfinished proof. A class/struct without deep-copy opt-in remains usable by ordinary lawful value/loan/transfer operations; this does not disable intrinsic scalar copies or verified shallow copy. No reflection, serialization round-trip, generic fallback or compiler optimizer may bypass the permission check.
 
 For identity-bearing classes, the verified method returns **new Self** (a new logical root identity for the *concrete dynamic subtype*), as refined by fresh-return-types-v1.md. This does **not** imply unique ownership of all nested fields after a shallow copy. A type's copy! may be legal under shared child handles but fail a new unique Self refinement; a mutable root is independently owned while reachable children retain their authorized sharing. For scalar/identity-free values no fresh allocation is required.
 
@@ -154,7 +178,7 @@ define class SearchIndex as
     pub let int revision = 0;
 end
 
-define class Snapshot as
+define class Snapshot implements DeepCopyable<Snapshot> as
     pub let int version = 0;
     pub val Array<int> values = new Array<int>();
 end
@@ -288,6 +312,8 @@ merely crash at runtime. Keep exact-head/tree and stepful execution receipts.
 | Deep explicitly shared mutable field | Reconstruct detached pointee or reject; never retain writable source alias |
 | Read-only binding over mutable pointee | Does not establish transitive immutability or share proof |
 | Cyclic graph and diamond graph; two successive copies | Preserve within-copy topology, isolate all three graphs |
+| Nominal class/struct without explicit DeepCopyable | copy!! and copy_deep() reject, even for flat layouts; opted-in safe equivalents succeed |
+| Generic/nested/derived nominal node lacks opt-in | Reject through empty containers, inactive variants, inherited or erased dispatch |
 | NonCopyable through inactive Option or empty typed collection | Copy denied where the declared owned layout requires forbidden capability |
 | Erased or foreign layout without proof | Fail closed, including dynamic override and FFI |
 | Ordinary assignment/return/argument/capture of affine class | No hidden clone or second owner; legal scoped loan where specified |
@@ -327,10 +353,10 @@ A backend incapable of proving cycles, heterogeneous polymorphism, lazy fields, 
 
 ## Overrides and Object dispatch
 
-The compiler synthesizes no-argument copy() and copy_deep() for derivable types. Each method may be overridden **independently**; override signatures take no user arguments and retain their verified fresh-root return refinement.
+The compiler synthesizes no-argument copy() for admitted shallow types and copy_deep() only after explicit nominal opt-in and verified derivation. Each method may be overridden **independently**; override signatures take no user arguments and retain their verified fresh-root return refinement.
 
 ~~~atto
-define class Person as
+define class Person implements DeepCopyable<Person> as
     val string name = "";
     val Array<int> scores = Array.of();
 
@@ -361,6 +387,7 @@ A direct fresh-return override without super is allowed only when a separately v
 **Normative objective:** when one source value is copied for independent actors, each explicit copy!! operation creates a **separate mutable graph**, independent both of the source and of every other recipient's graph. A copy must not leak writable aliases via nested arrays, maps, class fields, inheritance, closures, ADTs, shared mutable smart pointers, or repeated references. Immutable data with a proven cross-actor lifetime/Sendable permission may retain an immutable backing store. A mutable Shared<T> pointee MUST be deeply cloned or fail closed; calling share! to preserve the same mutable identity is an independent operation with different contracts.
 
 ~~~atto
+// WorkItem explicitly implements DeepCopyable<WorkItem>.
 val original = new WorkItem();
 worker_a.send(copy!! original);
 worker_b.send(copy!! original);
@@ -399,7 +426,7 @@ The emitted descriptor need not contain a **runtime-walkable fields array**: a s
 
 1. Resolve the source's **concrete dynamic type ID**, not merely its static Object/base type. Dispatch through a link-time known/registered **verified DeepCopyable witness**. For a base-typed reference pointing to Derived, allocate a Derived shell in the correct target allocation domain, never slice to Base.
 2. Before following references, allocate the shell **without replaying effectful constructors, destructors or arbitrary field initializers**, memoize source identity to unpublished target, and then copy all Base and Derived instance state exactly once in deterministic layout order. Scalar fields are copied by value; nested mutable owned references recurse through their **concrete type's** emitted function with the *same* GraphCopyContext. Verify subtype/generic witnesses, private/hidden fields, overlap/union tags, weak references and resource policies before admission.
-3. If Base implements/overrides copy_deep(), an inherited dispatch on Derived must still copy **Derived**. The generated whole-concrete-type baseline behind super.copy_deep() is a reserved nonvirtual compiler operation, not a virtual call back to Base.copy_deep() that recurses and not a Base-only memberwise clone. AOT-generated hook chaining includes verified base and derived user hooks at most once each in deterministic ancestor-to-descendant order. Reentrant deep-copy of a graph node consults the memo instead of creating a second shell. Reject uncomposable hooks or any hook that publishes a partially constructed target.
+3. If Base implements/overrides copy_deep(), dispatch on Derived requires Derived's own explicit opt-in and verified concrete witness, then must still copy **Derived**. The generated whole-concrete-type baseline behind super.copy_deep() is a reserved nonvirtual compiler operation, not a virtual call back to Base.copy_deep() that recurses and not a Base-only memberwise clone. AOT-generated hook chaining includes verified base and derived user hooks at most once each in deterministic ancestor-to-descendant order. Reentrant deep-copy of a graph node consults the memo instead of creating a second shell. Reject uncomposable hooks or any hook that publishes a partially constructed target.
 4. Distinguish **user-visible no-argument** copy_deep() from the **compiler-internal** helper copy_deep_into(source, ctx, destination_domain) / generated vtable entry. The hidden ctx and allocation domain can be passed by registers/ABI or specialized compile-time constants; neither becomes an optional user argument.
 5. All reachable types and dispatch targets must have a compiled witness in the final AOT image or separately **precompiled**, integrity-checked registration module with a compatible layout/provenance ABI (for intentional hot loading). No runtime code synthesis, general reflection-based constructor invocation, dynamic class loading as a proof substitute, or fallback to raw memcpy on reference-bearing objects. Unknown, erased, unregistered, stale-layout, noncopyable, or open-world objects MUST reject deterministically (E_COPY_AOT_WITNESS or E_COPY_LAYOUT) rather than silently clone incomplete state.
 6. Foreign/native fields need an explicit verified hook/descriptor or are noncopyable. Private fields are accessible to the generated compiler code but remain protected from user programs. Backend optimizations may elide descriptor iteration or use direct memcpy **only for representation-trivial, identity-free fields** with an established Copy proof.
@@ -421,6 +448,7 @@ Copying data into another actor's arena requires a **destination-aware allocatio
 
 ## Required negative diagnostics
 
+- E_COPY_OPT_IN_REQUIRED: nominal class/struct lacks explicit core DeepCopyable consent, including reachable concrete subtypes and nested nominal fields.
 - E_COPY_UNPROVEN: missing appropriate mode-specific witness, unresolved generic/dispatch, wrong Object virtual target.
 - E_COPY_FORBIDDEN: @NoCopy, unique resource, actor-private disallowed type, or forbidden payload.
 - E_COPY_SHALLOW_ALIAS: mutable nested alias is not shareable or would create two unique/droppable owners.
