@@ -3,12 +3,18 @@ on:
   push:
     paths:
       - 'tests/boolean-operator-reference.mjs'
+      - 'tests/core-boolean-library-contract.mjs'
+      - 'language/core-alloc-std-libraries-v1.md'
+      - 'language/automatic-prelude-v1.md'
       - 'contracts/boolean-call-reductions-v1/**'
       - 'docs/CANONICAL_BOOLEAN_OPERATORS_V1.md'
       - '.github/workflows/boolean-call-reductions.yml'
   pull_request:
     paths:
       - 'tests/boolean-operator-reference.mjs'
+      - 'tests/core-boolean-library-contract.mjs'
+      - 'language/core-alloc-std-libraries-v1.md'
+      - 'language/automatic-prelude-v1.md'
       - 'contracts/boolean-call-reductions-v1/**'
       - 'docs/CANONICAL_BOOLEAN_OPERATORS_V1.md'
       - '.github/workflows/boolean-call-reductions.yml'
@@ -27,3 +33,4 @@ jobs:
         run: |
           git rev-parse HEAD HEAD^{tree}
           node tests/boolean-operator-reference.mjs
+          node tests/core-boolean-library-contract.mjs
