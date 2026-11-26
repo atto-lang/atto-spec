@@ -97,9 +97,11 @@ function execute(s, choice) {
   } else if (kind === 'timer') {
     const i = s.timers.findIndex(t => t.id === id);
     demand(i >= 0, 'unknown timer');
-    const [timer] = s.timers.splice(i,1);
+    const timer = s.timers[i];
+    // Keep a due timer represented until delivery admission or generation fencing succeeds.
     if (s.actors[timer.to].generation !== timer.generation) s.fenced++;
     else enqueue(s,timer.to,timer.tag);
+    s.timers.splice(i,1);
   } else {
     demand(kind === 'step', 'unknown choice');
     const t = s.tasks[id]; demand(t && t.pc <= t.steps.length, 'unknown task step');
