@@ -132,6 +132,79 @@ execution evidence**.
   or insert/delete `begin` or `::` without proven parser and
   effect-equivalence. Retain the author's body-boundary choice by default.
 
+## Flexible contract headers: effects, budget and result placement (2026-11-26)
+
+**Accepted syntax target (language-owner direction); enforcement and compiler parity independently gated.** The inline contract sequence includes existing `throws`, `raises`, `panics`, and the structured `effects { ... }` and `budget { ... }` clauses. The same result annotation may occur before all clauses or after all clauses. These five forms are alternative declarations, not overloads. Placeholder comments below are schematic; a nonvoid executable fixture must supply a valid return on every reachable normal path.
+
+```atto
+fnc process_packet(Packet packet) -> Result<Response, Error>
+    effects { allocate: 0, suspend: false }
+    budget { stack: 4096, operations: 10000 }
+begin
+    // implementation
+end
+```
+
+```atto
+fnc process_packet(Packet packet)
+    effects { allocate: 0, suspend: false }
+    budget { stack: 4096, operations: 10000 }
+-> Result<Response, Error>
+begin
+    // implementation
+end
+```
+
+```atto
+fnc process_packet(Packet packet)
+    effects { allocate: 0, suspend: false }
+    budget { stack: 4096, operations: 10000 }
+-> Result<Response, Error>
+    // implementation
+end
+```
+
+```atto
+fnc process_packet(Packet packet)
+    effects { allocate: 0, suspend: false }
+    budget { stack: 4096, operations: 10000 }
+-> Result<Response, Error> {
+    // implementation
+}
+```
+
+```atto
+fnc process_packet(Packet packet) -> Result<Response, Error>
+    effects { allocate: 0, suspend: false }
+    budget { stack: 4096, operations: 10000 }
+{
+    // implementation
+}
+```
+
+The opening brace of a contract map belongs to that clause, not the executable body. Consume its balanced contents before looking for the next clause, result annotation or body opener. The executable brace may be on the same line as the last header token or a later line. Whitespace and comments do not change the signature. The final result annotation after one or more contract clauses permits a physical-newline ordinary statement body through matching `end` without `begin`. A return-before-contract signature requires an explicit body opener as in the existing failure-clause rule; do not extend implicit body opening to it in this amendment.
+
+```ebnf
+name_first_contract_header = named_head, ( return_spec, contract_clause, { contract_clause }
+                          | contract_clause, { contract_clause }, return_spec ) ;
+contract_clause = failure_clause | effects_clause | budget_clause ;
+effects_clause = "effects", "{", checked_effect_entries, "}" ;
+budget_clause = "budget", "{", checked_budget_entries, "}" ;
+(* Existing return_spec, failure_clause and entry grammars apply. *)
+```
+
+For the before-contract alternative require a brace body, begin/end, or the existing explicit statement separator. For the after-contract alternative allow a brace body, begin/end, or a physical-newline statement/end body. The return type is mandatory exactly once. No clauses may follow a trailing return annotation or occur after body opening. Existing no-contract callable syntax, return-first prefix rules, explicit inline-expression forms and edition-specific comma-tail rules are unchanged. Nested generic and callable types and nested body delimiters must be parsed structurally, not by searching text for arrows or braces.
+
+Normalize all five spellings to the same checked signature and ordinary-statement body in HIR; preserve source spans, effect rows, budget constraints, ownership, failure types and receiver/visibility. Syntax does not define new resource units, weaken any budget or grant effect authority. A backend without complete enforcement of a declared bound must reject before artifact emission rather than drop metadata. Duplicate clauses or duplicate map keys reject, as do malformed maps, missing/duplicate result annotations, invalid body boundaries and unmatched delimiters. Existing Error ancestry and transitive effect checks remain mandatory. Formatting preserves result placement, explicit body family and all clause contents by default; any optional normalization requires checked equivalence and idempotence.
+
+### Additional conformance requirements
+
+- Five independent source fixtures with an actual explicit return and identical observable output; a mixed header containing all five contract kinds with both result positions and each admitted body boundary.
+- Test comments, blank lines, nested generic results, nested statement blocks, contract-map closing braces adjacent to body-opening braces, and brace opener on a separate line.
+- Reject duplicated return/effects/budget clauses, repeated map keys, malformed/unclosed maps, clauses after trailing result or after body start, same-line implicit bodies, missing end, and ordinary nonvoid fallthrough.
+- Enforce the same checked effects and resource ceilings in all equivalent variants; exercise rejected allocation/suspension or budget violations where the corresponding semantic profile defines them. No unchecked metadata erasure or backend-specific silent acceptance.
+- Repeat across fnc/routine and applicable inline/static/out-of-line methods, formatter and browser frontend; require pinned compiled guest execution or negative no-artifact diagnostics from each supported compiler. Unsupported or unexecuted cases are not passes. These are test requirements, not execution receipts.
+
 ## Safety obligations and target boundary
 
 All declared ordinary errors must have `Error & Throwable` ancestry,
