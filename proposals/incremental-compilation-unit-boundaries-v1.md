@@ -262,3 +262,42 @@ implicit fallback. Explicit cold mode bypasses lookup and rebuilds;
 after rotation the host must cold rebuild or provision a fresh cache
 namespace. No guest API, implicit production activation, or signing
 arbitrary caller-provided artifacts.
+
+#### Local authority adapter and rotation fencing candidate
+
+For a local Linux x86-64 host, a protected authority directory distinct
+from the cache root may hold the bounded active record (never master
+or receipt key bytes). The trusted host supplies the current independently
+authenticated pin and epoch master. All cooperating sessions acquire a
+shared descriptor-relative directory lease before reading that record and
+hold it through source admission, artifact lookup, cold compilation and
+publication. An exclusive rotation lease must conflict with all live
+shared leases. A reader holding an old epoch cannot publish after a
+successful rotation through this adapter. Busy rotation is a retryable
+host condition, not permission to proceed without a lease.
+
+Provisioning is explicit and refuses an existing active record. Rotation
+uses compare-and-swap against the old pin, authenticates the previous
+master, requires increasing epoch and a changed master, and verifies the
+next independently provided pin before publication. Write only the record
+to an exclusive pending inode, fsync it, rename within the same directory,
+then fsync the directory. A failure after rename is an indeterminate
+durability result: re-admit against current external authority before use.
+Reject nonregular, linked, oversized or non-owner-only active records
+before opening for data. Require a trusted local filesystem, procfs and
+protected ancestors. Advisory locks do not defend against a malicious
+same-UID writer or replaced authority roots. A restored record must fail
+against an independently retained current pin. Restoring both the external
+authority and record is outside this candidate's rollback protection.
+The provider that maintains current pins and synchronizes rotation across
+host restarts remains a production gate; no claim of hardware-backed or
+distributed rollback resistance.
+
+Initial acceptance uses a twelve-source locked package with ten files
+declaring three namespaces and two unnamespaced modules. The clean and
+warm guest return 42; an independently repinned edit to one unnamespaced
+provider returns 43. Require cold/warm byte identity, rejection of stale
+source pins, and no cache changes after failed semantic checks. This
+whole-package final-artifact test is not proof of selective parse, typed-IR,
+codegen or relink reuse. A second importing package and per-unit counters
+remain mandatory for the full tracker #53 acceptance fixture.
