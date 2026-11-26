@@ -22,6 +22,23 @@ The operand executes once. `trap! None` (with a known Option type) returns Ok(No
 
 For an inline `sync task<T>`, an escaping unwrap Throw reaches the dynamically enclosing caller trap after normal exceptional cleanup. No new scheduler identity, implicit rollback, retry or cancellation is introduced. Effects already performed remain visible according to the language's ownership/writeback rules; later statements do not execute. For an independently scheduled task, test the ordinary error at the actual join/await boundary separately; do not turn terminal task failures into ordinary errors. Optimizations may eliminate checks only with a stable proof, including guard narrowing, alias mutation, task writeback and suspension invalidation.
 
+### Pipelined typed match (November 26 user decision)
+
+```atto
+declare type Bounded = int where self >= 1 and self <= 42;
+
+pub fnc main() -> int {
+    val Option<int> x = None;
+
+    return trap! x.unwrap() |> match<int>  over
+        on Ok(n): int -> n,
+        on Err(): int -> 42,
+    end;
+}
+```
+
+The exact source is a required positive fixture returning 42. The `declare type` refinement declaration is admitted in addition to the already-supported bare declaration spelling. Its presence does not refine unrelated int expressions. A typed subjectless match stage takes the preceding pipeline value, evaluated once, as its subject. The parse is `(trap! x.unwrap()) |> match<int> over ... end`: trap ends before entering the match arms. An ordinary throw in the selected arm is not caught by that upstream trap; panic/raise/cancellation remain terminal according to their own rules. Only the selected arm runs. `match<int>` denotes the arm result type, not the subject type; `Err()` discards its payload without changing its type or weakening ownership rules. Require positive None and Some (distinct fallback), bare trap migration spelling, effectful receiver evaluated once, arm throw outside the upstream trap, and rejection of wrong receiver/arity or nonexhaustive/ill-typed match. Compile-time folding is valid only if all observable effects and cleanup are preserved. Parser/host-only evidence does not establish backend parity.
+
 ### Required compiled guest cases (authored expectations, not executed evidence)
 
 ```atto
