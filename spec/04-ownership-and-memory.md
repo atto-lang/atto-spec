@@ -19,7 +19,7 @@ Under [chapter 27](27-implicit-const-and-const-mut.md), `const mut` means an unr
 
 The legacy forms have **the same typing, ownership effects, proof obligations, diagnostics and lowering** as their canonical bang equivalents. They are accepted only for source compatibility; formatters and new examples MUST emit the bang forms. A backend MUST NOT give the legacy spelling weaker checks or a different runtime representation.
 
-This preference does not invent `ref!`, `deref!` or `unref!`. The existing `rt ref`, `rt deref` and `rt unref` operations remain separately specified checked-handle operations until a future language decision defines alternatives. It also does not make `rt` a general ownership escape hatch: unlisted `rt` operations are not authorized by this table.
+This preference does not invent `ref!`, `deref!` or `unref!`. The separate [Pointer<T> v1 profile](../language/pointer-aot-safety-v1.md) is the scoped exception: when contextual typing proves a borrowed-local Pointer<T>, `ref!`, `deref!` and `unref!` are equivalent to `rt ref`, `rt deref` and `rt unref`. For other checked-handle families no alias or rights change follows from this chapter. The local release consumes the lease, returns void and does not destroy the referent. It also does not make `rt` a general ownership escape hatch: unlisted `rt` operations are not authorized by this table.
 
 ```atto
 val packet = make_packet()
