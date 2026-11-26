@@ -486,3 +486,58 @@ substitute for trusted linker authority: a removed/added/rebound unit
 can affect importers in either the old or current graph. An incomplete
 or failed lookup is not proof of independence. Keep editor diagnostics
 and semantic proof/artifact reuse distinct.
+
+
+#### Candidate exact bound-input final-artifact reuse (opt-in v2)
+
+The conservative full-lock final-artifact policy remains the default.
+A separate experimental stage may reuse a final artifact after a provider
+lock changes only if the exact compiler-ready input is unchanged after
+fresh authentication, current import resolution and all required semantic
+admission. It is not permission to use the old lock or an old binding
+graph. Current trusted pins must come from independent host authority.
+
+The candidate registry-wasm-bound-input-v2 stage uses its own configuration
+domain and binds the complete ordered compiler-ready token stream with
+positions, every approved package name and exact manifest digest, the
+root lock and entry, compiler/toolchain identity and target. Never reuse
+v1 full-lock records as v2 records. Other backends require a reviewed
+equivalent complete compiler-input witness that includes every relevant
+semantic/codegen input; a public signature, source hash alone, or partial
+lowered IR cannot substitute. If completeness cannot be demonstrated,
+continue using the full-lock policy. Persisted artifacts must be
+authenticated under the existing scope/epoch lease, not a new trust root.
+
+Authenticate and admit unnamespaced files as package inventory without
+granting implicit namespace membership; an explicitly requested derived
+namespace is distinct. A syntax-only check on unlinked local files must
+not be described as whole-package semantic verification. Reject stale
+pins, incompatible explicit headers, duplicate selected declarations,
+private/foreign calls, and malformed admitted input before lookup.
+Do not cache a failed resolution. Never claim authority from a directory
+name alone. Maintain transactional memo updates and evidence-mode denial.
+This policy authorizes final artifact reuse only, not independently cached
+typed IR or native object code.
+
+Cross-backend acceptance (actual compiler and guest execution):
+1. Cold build returns 42; warm reuse is byte-identical.
+2. A newly authenticated body edit to an unlinked local source changes
+   its lock but not the exact resolved input. Reuse the final artifact
+   without code generation; separately report fresh admission work.
+3. Restart the compiler session and repeat against the new current pin.
+   Require an authenticated persistent hit, not an in-process memo hit.
+4. An edit to the selected provider produces 43 and a cache miss;
+   compare bytes/behavior with a separate clean compile.
+5. Changing provider manifest/version/export domain causes a miss even
+   if emitted bytes would be identical. Changing root/target/compiler/
+   toolchain/authority must preserve the existing key separation rules.
+6. A stale lock, malformed source or denied current binding cannot read
+   the cached artifact or mutate the accepted memo/artifact set.
+7. The old full-lock profile remains independently keyed, with its
+   conservative invalidation behavior.
+
+Track these cases separately for Java, Rust, .NET, LLVM, Cranelift,
+Forge, JS and HDL. Wasm integration consumes actual upstream artifacts;
+Atto and Realtime require real compiler implementation. Unsupported
+lanes remain open. Do not treat an implementation proposal, a source
+audit, or a runner with no executed steps as passing evidence.
