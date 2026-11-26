@@ -20,7 +20,7 @@ end
 
 The unannotated form such as *fnc f() { }* must be rejected. Never implicitly treat a missing return annotation as void, or as infer.
 
-Grammar: **named_callable := named_head required_return_spec body**, where **required_return_spec := ( ':' | '->' ) (type_ref | 'infer')**.
+Grammar for a name-first callable without inline contracts: **named_callable := named_head required_return_spec body**, where **required_return_spec := ( ':' | '->' ) (type_ref | 'infer')**. With inline failure, effects or budget clauses, the single required return spec can precede or follow the entire contract sequence; see [flexible contract headers and body boundaries](java-style-failure-signature-bodies-v1.md#flexible-contract-headers-effects-budget-and-result-placement-2026-11-26).
 
 Applies to top-level fnc/routine, inline class and actor methods (including instance method shorthand and static fnc), out-of-line mtd receiver methods, and named effect-bearing callables. Actor receive handlers must declare void. Constructors are not return-valued callable declarations and have no result annotation. Contextually inferred lambdas are governed separately by language/lambda-return-types-v1.md; this requirement does not silently make lambda result annotations mandatory.
 
