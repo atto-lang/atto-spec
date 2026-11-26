@@ -1,0 +1,129 @@
+{
+  "schema": "atto.nominal-method-spelling.v1",
+  "status": "CANDIDATE_NOT_EXECUTED",
+  "compiler_targets": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "rs": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "cranelift": "NOT_EXECUTED",
+    "js": "NOT_EXECUTED",
+    "hdl": "NOT_EXECUTED",
+    "atto": "NOT_EXECUTED",
+    "realtime": "NOT_EXECUTED"
+  },
+  "formatting": {
+    "legacy_instance_fnc": "remove",
+    "bare_instance": "preserve",
+    "explicit_instance_mtd": "preserve",
+    "free_module_namespace_static_fnc": "preserve",
+    "out_of_line_receiver_mtd": "preserve"
+  },
+  "notes": "Candidate complete .atto sources. Run all three spellings independently; equivalent acceptance and guest result, not necessarily equal binary bytes. Negative fixture requires semantic missing-obligation diagnostic, not parser/unsupported failure. Do not count source-only or host checks as production parity.",
+  "cases": [
+    {
+      "id": "interface.bare.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define interface Required as ping(): int; end\ndefine class C implements Required as pub ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.bare.missing",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define interface Required as ping(): int; end\ndefine class C implements Required as end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "MISSING_INSTANCE_OBLIGATION",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.fnc.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define interface Required as fnc ping(): int; end\ndefine class C implements Required as pub ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.fnc.missing",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define interface Required as fnc ping(): int; end\ndefine class C implements Required as end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "MISSING_INSTANCE_OBLIGATION",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.mtd.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define interface Required as mtd ping(): int; end\ndefine class C implements Required as pub ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.mtd.missing",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define interface Required as mtd ping(): int; end\ndefine class C implements Required as end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "MISSING_INSTANCE_OBLIGATION",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.bare.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define trait Required as ping(): int; end\ndefine class C implements Required as pub ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.bare.missing",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define trait Required as ping(): int; end\ndefine class C implements Required as end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "MISSING_INSTANCE_OBLIGATION",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.fnc.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define trait Required as fnc ping(): int; end\ndefine class C implements Required as pub ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.fnc.missing",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define trait Required as fnc ping(): int; end\ndefine class C implements Required as end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "MISSING_INSTANCE_OBLIGATION",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.mtd.positive",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "source": "define trait Required as mtd ping(): int; end\ndefine class C implements Required as pub ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.mtd.missing",
+      "expect": "semantic_reject",
+      "entry": "main.atto",
+      "source": "define trait Required as mtd ping(): int; end\ndefine class C implements Required as end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "MISSING_INSTANCE_OBLIGATION",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    }
+  ]
+}
