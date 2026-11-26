@@ -450,3 +450,39 @@ compare accepted output to independent clean builds. Exact source or
 validated IR equality is a conservative first experiment, not general
 red-green invalidation. Where a compiler does not yet support a required
 profile, report NOT_IMPLEMENTED or UNSUPPORTED and leave acceptance open.
+
+#### Host receipt interoperability and evidence mode (2026-11-25)
+
+All implemented compiler cache candidates use the same canonical v1
+key and HMAC receipt byte format. JavaScript and HDL use Node host crypto,
+with descriptor-only plain metadata, dense bounded dependency arrays,
+native byte-buffer slots, no shared backing, and defensive copies.
+LLVM and Cranelift share the Rust primitives; Forge uses host OpenSSL
+SHA-256/HMAC and constant-time comparison. The canonical key and tag
+vectors are identical across these implementations, not separate backend
+hash conventions. None of these primitives grants source authentication,
+permission to load code, protected durable storage or rollback-resistant
+key authority. Do not expose signing to guest or browser code.
+
+A cache may not silently substitute an artifact or memoized semantic
+check for a requested compiler evidence side effect. When borrow-event
+export is active, Rust's authenticated HostSession rejects both cold
+and incremental locked/registry builds with E_CACHE_EVIDENCE_MODE before
+touching authority, store, or memo. The caller must separately invoke
+ordinary clean compilation to obtain the actual evidence stream.
+Never publish synthetic evidence or a partial event stream from a
+warm artifact. Future traced/cache profiles need explicit, verified
+evidence artifacts and independent replay rules.
+
+For Java's legacy named-package layout API, layout is an explicit
+input to each invocation. Strict and legacy committed layouts and
+cache state are separate; an invalid new layout or failed build cannot
+destroy accepted prior state. Distinct roots claiming the same unpinned
+package name are denied until independently pinned instance identities
+are available. Preserve the same invariant for persistent key witnesses.
+
+Editor reverse-dependency refresh planning is complementary, not a
+substitute for trusted linker authority: a removed/added/rebound unit
+can affect importers in either the old or current graph. An incomplete
+or failed lookup is not proof of independence. Keep editor diagnostics
+and semantic proof/artifact reuse distinct.
