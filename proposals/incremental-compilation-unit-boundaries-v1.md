@@ -361,3 +361,40 @@ separately from typed-IR/codegen counters. An edited provider conservatively
 invalidates final guest output and triggers full compilation on a miss.
 This profile is not the full multi-file cross-package acceptance matrix
 and provides no independent durable external authority.
+
+#### Closed namespace semantic-check memo and callable signature telemetry
+
+The direct-function registry lane may memoize a successful isolated
+semantic check of a closed namespace in the current host process only.
+Admission still authenticates the current source inventory, determines
+the actual binding graph, checks current visibility and rejects free calls
+and callable capture before any proof reuse. The memo compares the full
+exact ordered token stream including source positions for the same package
+name and namespace in the pinned compiler/target session. No hash-only
+comparison, public signature-only reuse, or cached negative lookup is
+admitted. Closed units cannot depend on another namespace's typed state;
+nominal lanes do not consult this memo. On a miss perform the existing
+isolated parser/checker and host-import rejection. Stage memo replacements
+until authenticated final-artifact reuse or successful compile/publication.
+Re-authenticate and resolve all root bindings every time, including prior
+negative lookups, even when closed checks can be reused.
+
+For telemetry, a partial scalar callable-interface digest may frame public
+function names in canonical order, parameter names/order, scalar parameter
+and result types, parameter mutability, declared purity/exception bounds,
+and inferred escaping throw/raise from the existing typed call-graph effect
+solver. It is not a complete public ABI, ownership or effect contract:
+nominal/generic layout, constants, reexports, visibility outside the
+function inventory, fatal panics and broader effects require more proof.
+The digest must NOT authorize skipping checks of a changed unit or root.
+Record exact isolated checks/reuses separately from partial signature
+changes; unchanged signatures are not evidence of unchanged implementation.
+A final-artifact miss still checks and emits the whole linked program.
+No independently reusable typed IR or object code is claimed.
+
+Test actual cold/warm/edited guests, a named parameter change with unchanged
+positional behavior, a transitive escaping exception change in the typed
+effect solver, position drift, failed-build rollback, adding an export that
+resolves an earlier negative lookup, and unchanged sibling namespaces in
+a changed authenticated package. These remain a bounded profile, not general
+red-green dependency invalidation or full backend parity.
