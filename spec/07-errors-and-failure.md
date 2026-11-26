@@ -114,7 +114,7 @@ analysis still includes exceptional behavior of the catch handler and
 neither ordinary catch nor trap can intercept raise or panic. Thus a helper
 that locally handles its own throw may be called from `defer`, `recover`,
 or `finally`, while a helper with an escaping throw/raise remains rejected
-there. A registered recover does not erase a function's inferred effects,
+in this restricted browser profile. A registered recover does not erase a function's inferred effects,
 since an outer caller's catch/trap still has precedence. Conservative
 overapproximation remains for unreachable paths; full CFG-sensitive
 effect inference and actor/async parity are not established.
@@ -146,6 +146,8 @@ registrations to synchronous top-level function bodies and factory captures
 to scalar/string values. This section defines intended language semantics;
 it does not assert actor/async/Java/LLVM parity. See the normative candidate
 in `atto-spec/language/defer-recover-unwind-v1.md`.
+
+**Extended target (2026-11-25):** [Deferred cleanup and recovery chains](../language/defer-recover-unwind-v1.md#extended-callback-and-suspendable-unwind-target-2026-11-25) defines delayed single statements, named/nullary callbacks, explicit bound factories, braceless await, `susp defer` and `susp recover`. A throw/raise escaping an invoked defer/recover callback converts to panic at that boundary, preserving the original pending cause and bounded supplemental diagnostics. A failure during registration is an ordinary lexical effect, not a cleanup panic. Existing restricted browser rejection of escaping callback effects remains until the new target is implemented and verified. Explicit recovery binders, caller catch/trap precedence, non-recoverability of panic/cancellation, and cancellation precedence are unchanged. The existing `finally` profile remains independently gated. No backend support is implied.
 
 ## Cleanup and effect precedence
 
