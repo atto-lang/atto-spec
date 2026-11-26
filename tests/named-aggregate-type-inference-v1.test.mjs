@@ -74,3 +74,14 @@ test('projection rejects wrong kind and invisible aliases',()=>{
   assert.equal(projectParameterField(child,params,'input','c'),'int');
   assert.throws(()=>projectParameterField(s,params,'input','c'),/E_UNKNOWN_TYPE/);
 });
+
+test('sparse aggregate descriptors fail before publishing aliases',()=>{
+  const s=new TypeScope();
+  for (const [kind,items] of [['Tuple',Array(1)],['Record',Array(1)],['struct',Array(2)]]) {
+    assert.throws(()=>s.infer(kind,'Broken',items),/E_TYPE_INFER_AMBIGUOUS/);
+    assert.throws(()=>s.resolve('Broken'),/E_UNKNOWN_TYPE/);
+  }
+  const descriptor=s.infer('Tuple','T',['int']);
+  assert.throws(()=>s.checkLiteral('Tuple','T',Array(1)),/E_TYPE_INFER_AMBIGUOUS/);
+  assert.equal(s.resolve('T'),descriptor);
+});

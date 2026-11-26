@@ -10,6 +10,10 @@ function identifier(name) {
 }
 function shape(kind, items) {
   if (!kinds.has(kind) || !Array.isArray(items) || !items.length || items.length > 64) fail('E_TYPE_INFER_AMBIGUOUS');
+  // Array.map skips holes; reject missing descriptors before publishing a type.
+  for (let i = 0; i < items.length; i++) {
+    if (!Object.hasOwn(items,i)) fail('E_TYPE_INFER_AMBIGUOUS');
+  }
   const seen = new Set();
   const fields = items.map(item => {
     if (kind === 'Tuple') {
