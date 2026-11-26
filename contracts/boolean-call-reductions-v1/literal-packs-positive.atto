@@ -1,0 +1,9 @@
+// Literal-only Boolean packs. Expected process exit 42.
+// This does not establish general Array<bool> allocation, borrowing or reuse.
+pub fnc main(): int {
+  if !Xor([true, false]) || And([true, false, true, true, true]) || !Or([true, false, true, false]) do return 1; fi
+  if !And([]) || Or([]) || Xor([]) do return 2; fi
+  if And([false]) || !And([true]) || Or([false]) || !Or([true]) || Xor([false]) || !Xor([true]) do return 3; fi
+  if !Xor([true, true, true]) || Xor([true, true]) do return 4; fi
+  return 42;
+}

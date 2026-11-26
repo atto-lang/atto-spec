@@ -1,0 +1,12 @@
+// Scalar-only target. Expected process exit 42.
+// No Array storage, user shadowing, or explicit-import support is implied.
+fnc scalar(bool a, bool b): bool {
+  return Xor(a, b) && !And(a, b) && Or(a, b);
+}
+pub fnc main(): int {
+  if !scalar(true, false) || !scalar(false, true) || scalar(true, true) || scalar(false, false) do return 1; fi
+  if !And(true, true, true) || And(true, false, true) do return 2; fi
+  if Or(false, false, false) || !Or(false, true, false) do return 3; fi
+  if !Xor(true, true, true) || Xor(true, true) do return 4; fi
+  return 42;
+}
