@@ -440,6 +440,50 @@ tests/copy-lexical-loan-v1.test.mjs checks these state transitions. It is
 not a compiler, a runtime allocation proof, or a replacement for guest
 execution.
 
+### Whole-slot replacement and transactional detachment
+
+A slot's write permission and the referenced identity's write permission are
+independent. A shallow copy may retain a read-only referent in a writable slot.
+Both original and copy may replace the whole slot with a separately admitted
+value, provided the containing object is writable and the slot declaration,
+element/key type and lifetime rules allow replacement. In particular:
+
+- Evaluate the receiver, slot selector and replacement expression once in the
+  prescribed order. Validate type and ownership, including a prospective
+  move and all affected sharing/loan rights, before publishing the replacement.
+  A failed replacement must not release the old path or consume a donor owner.
+- Overwriting a slot is not a write through its old reference. Replacing with
+  a fresh owned graph, an admitted move, a scalar, or None where typed permits
+  is legal. Replacing with another shared reference does not grant mutation.
+  Immutable slots, writes inside a shared containing object and undeclared
+  closed-record fields remain forbidden.
+- Release only the replaced path's retention after successful publication.
+  Repeated references, cycles, other roots, outstanding read loans and
+  permanently immutable backing can all prevent write recovery.
+- Map key hash/equality restrictions, collection shape, bounds, drop/finalizer
+  ordering, concurrent access and actor generation fencing remain independent
+  obligations. No implicit deep copy or copy-on-write occurs.
+
+Candidate source example (compiler-backed verification still required):
+
+~~~atto
+define class Person as
+    let Array<int> scores = Array.of(10, 20);
+end
+let Person original = new Person();
+let Person copied = copy! original;
+copied.scores = Array.of(40, 50);
+copied.scores.add(60);
+// Original scores regain write access only if no other paths/loans forbid it.
+original.scores.add(30);
+~~~
+
+The Java ShallowSlotDomain draft (#1881) exercises an opaque identity-based
+runtime substrate with transactional replacement and bounded root reachability
+accounting. It is not integrated guest execution or a production performance
+claim; the real compiler must emit typed slot operations and preserve all
+mutability/loan constraints.
+
 ## Deep-copy graph protocol
 
 copy!! uses a **single copy context for the entire operation**: a source-identity-to-target map, allocation arena/domain, and rollback ledger. For an admitted mutable graph, allocate a fresh destination shell, register it **before** visiting children, and fill fields recursively with the *same* context. This preserves both repeated aliases and cycles. Each original mutable object gets one corresponding fresh object. Never expose a partially built graph; failure releases unpublished allocations exactly once. The source remains valid and unchanged.
