@@ -40,9 +40,12 @@ function build(scenario) {
     actors[a.id] = {generation:1, version:1, serial:a.serial !== false, handlers:a.handlers};
   }
   const tasks = Object.create(null);
+  const taskIds = new Set();
   for (const t of scenario.tasks) {
-    demand(validId(t.id) && !tasks[t.id] && !t.id.startsWith('delivery.'), 'duplicate or invalid task');
+    demand(validId(t.id) && !taskIds.has(t.id) && !t.id.startsWith('delivery.'), 'duplicate or invalid task');
     validateSteps(t.steps);
+    taskIds.add(t.id);
+    if (!t.steps.length) continue;
     tasks[t.id] = {pc:0, steps:t.steps, locals:{}, wake:null, actor:null, generation:null};
   }
   const shared = scenario.shared ?? {};
@@ -80,13 +83,15 @@ function execute(s, choice) {
   if (kind === 'deliver') {
     const index = s.mailbox.findIndex(m => m.id === id);
     demand(index >= 0, 'nonexistent mailbox entry');
-    const [m] = s.mailbox.splice(index,1);
+    const m = s.mailbox[index];
     const a = s.actors[m.to];
     demand(a.generation === m.generation, 'stale mailbox admission');
     const steps = a.handlers[m.tag];
     demand(steps, 'unknown message handler');
     const tid = 'delivery.'+m.id;
     demand(!s.tasks[tid], 'duplicate handler task');
+    if (steps.length) demand(Object.keys(s.tasks).length < MAX_TASKS, 'live task budget exceeded');
+    s.mailbox.splice(index,1);
     if (steps.length) s.tasks[tid] = {pc:0, steps, locals:{}, wake:null, actor:m.to, generation:a.generation};
     s.consumed++;
   } else if (kind === 'timer') {
@@ -97,8 +102,19 @@ function execute(s, choice) {
     else enqueue(s,timer.to,timer.tag);
   } else {
     demand(kind === 'step', 'unknown choice');
-    const t = s.tasks[id]; demand(t && t.pc < t.steps.length, 'unknown task step');
+    const t = s.tasks[id]; demand(t && t.pc <= t.steps.length, 'unknown task step');
     if (t.actor) demand(s.actors[t.actor].generation === t.generation, 'stale actor task');
+    // A sleeping terminal operation still owns its serial actor turn.
+    // Resume is an explicit scheduled transition, even at end of handler.
+    if (t.wake !== null) {
+      demand(t.wake <= s.clock, 'task resumed before wake');
+      t.wake = null;
+    }
+    if (t.pc === t.steps.length) {
+      delete s.tasks[id];
+      s.transitions++;
+      return;
+    }
     const op = t.steps[t.pc++];
     const actor = id;
     switch(op.op) {
@@ -153,7 +169,7 @@ function execute(s, choice) {
       case 'yield': break;
       default: throw Error('unsupported operation');
     }
-    if (s.tasks[id] && t.pc >= t.steps.length) delete s.tasks[id];
+    if (s.tasks[id] && t.pc >= t.steps.length && t.wake === null) delete s.tasks[id];
   }
   s.transitions++;
 }
@@ -207,6 +223,7 @@ export function schedule(scenarioInput,{seed=1,replay=null,prefix=[],maxSteps=MA
 export function explore(scenario,{seed=1,maxSchedules=128,maxSteps=MAX_STEPS}={}) {
   demand(safeInteger(maxSchedules,1)&&maxSchedules<=1024,'invalid exploration budget');
   const pending=[[]],seen=new Set(['[]']),traces=[];
+  let frontierPruned=false;
   while(pending.length && traces.length<maxSchedules) {
     const prefix=pending.shift();
     const trace=schedule(scenario,{seed,prefix,maxSteps});
@@ -217,9 +234,12 @@ export function explore(scenario,{seed=1,maxSchedules=128,maxSteps=MAX_STEPS}={}
         if(alternative===event.choice)continue;
         const path=[...trace.events.slice(0,i).map(e=>e.choice),alternative];
         const key=JSON.stringify(path);
-        if(!seen.has(key)&&pending.length+traces.length<maxSchedules*16) {seen.add(key);pending.push(path);}
+        if(!seen.has(key)) {
+          if(pending.length+traces.length<maxSchedules*16) {seen.add(key);pending.push(path);}
+          else frontierPruned=true;
+        }
       }
     }
   }
-  return {schema:SCHEMA,evidence:'REFERENCE_MODEL_ONLY_NOT_GUEST_EXECUTION',explored:traces.length,exhausted:pending.length===0,traces};
+  return {schema:SCHEMA,evidence:'REFERENCE_MODEL_ONLY_NOT_GUEST_EXECUTION',explored:traces.length,exhausted:pending.length===0&&!frontierPruned,frontier_pruned:frontierPruned,traces};
 }
