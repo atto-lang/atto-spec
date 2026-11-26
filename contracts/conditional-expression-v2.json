@@ -7,15 +7,20 @@
       "braced": "if bool { statements } [else { statements }]",
       "terminator": "braced if is self-delimiting; never consumes fi; stray fi rejected",
       "produces_value": false,
-      "keyword_legacy": "legacy edition only: if bool then statements [else statements] fi",
-      "keyword_canonical": "do if bool then statements [else statements] fi"
+      "keyword_legacy": "migration only: do if bool then statements or if bool then statements",
+      "keyword_canonical": "if bool do statements [else statements] fi"
     },
     "expression_if": {
-      "syntax": "if bool then expression [elif bool then expression]* else expression fi",
+      "syntax": "if bool then value_sequence [elif bool then value_sequence]* else value_sequence fi",
       "else_required": true,
       "produces_value": true,
       "condition_type": "bool",
-      "max_arms": 128
+      "max_arms": 128,
+      "value_sequence": {
+        "comma": "left_to_right_last_expression",
+        "semicolon": "left_to_right_lexical_statements_last_expression",
+        "trailing_semicolon": "preserves_final_value"
+      }
     },
     "ternary": {
       "syntax": "bool ? expression_or_arm_block : expression_or_arm_block",
@@ -25,10 +30,10 @@
   },
   "arm_block": {
     "scope": "lexical_no_closure",
-    "tail": "final_unterminated_expression_yields_value",
-    "final_return": "final_return_expression_yields_arm_only; optional semicolon",
-    "other_returns": "ordinary_fn_return",
-    "trailing_semicolon": "discarded_value_not_valid_for_value-required_arm",
+    "tail": "ternary_requires_explicit_arm_result",
+    "final_return": "return_or_caret_yields_arm_only; optional semicolon",
+    "other_returns": "outside_expression_arm_ordinary_fn_return",
+    "trailing_semicolon": "value_if_preserves_tail; ternary_requires_explicit_result",
     "empty": "Unit_not_valid_for_value-required_arm",
     "branch_evaluation": "selected_branch_only",
     "check_both_types": true,
@@ -37,12 +42,12 @@
     "required_value_type": "non_void"
   },
   "backend_claims": {
-    "rust_browser": "implementation_PR_open_unverified",
-    "java": "draft_pr_open_unverified",
-    "llvm": "not_verified",
-    "net": "not_verified",
-    "forge": "not_verified",
-    "wasm": "not_verified"
+    "rust_browser": "not_verified_revised_contract",
+    "java": "not_verified_revised_contract",
+    "llvm": "not_verified_revised_contract",
+    "net": "not_verified_revised_contract",
+    "forge": "not_verified_revised_contract",
+    "wasm": "not_verified_revised_contract"
   },
   "cases": [
     {
@@ -72,7 +77,7 @@
     {
       "id": "ternary_block_tail",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int { const int v = true ? { const int x = 40; x + 2 } : { 7 }; return v; }",
+      "source": "pub fnc main(): int { const int v = true ? { const int x = 40; return x + 2; } : { return 7; }; return v; }",
       "expected_result": 42
     },
     {
@@ -84,7 +89,7 @@
     {
       "id": "unselected_arm_effects",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int { let int n = 0; const int v = true ? { n = n + 1; 42 } : { n = n + 10; 7 }; return v + n; }",
+      "source": "pub fnc main(): int { let int n = 0; const int v = true ? { n = n + 1; return 42; } : { n = n + 10; return 7; }; return v + n; }",
       "expected_result": 43
     },
     {
@@ -108,19 +113,19 @@
     {
       "id": "block_requires_value",
       "kind": "reject_compile",
-      "source": "pub fnc main(): int { return true ? { let int n = 5; } : { 4 }; }",
+      "source": "pub fnc main(): int { return true ? { let int n = 5; } : { return 4; }; }",
       "expected_diagnostic": "E_VALUE_ARM"
     },
     {
       "id": "block_semi_discards_tail",
       "kind": "reject_compile",
-      "source": "pub fnc main(): int { return true ? { 5; } : { 4 }; }",
+      "source": "pub fnc main(): int { return true ? { 5; } : { return 4; }; }",
       "expected_diagnostic": "E_VALUE_ARM"
     },
     {
       "id": "block_scope_is_lexical",
       "kind": "reject_compile",
-      "source": "pub fnc main(): int { const int v = true ? { const int secret = 5; secret } : { 4 }; return secret; }",
+      "source": "pub fnc main(): int { const int v = true ? { const int secret = 5; return secret; } : { return 4; }; return secret; }",
       "expected_diagnostic": "E_UNBOUND"
     },
     {
@@ -132,7 +137,7 @@
     {
       "id": "nested_brace_preserves_parent_fi",
       "kind": "accept_execute",
-      "source": "pub fnc main(): int { do if true then if true { return 42; } fi return 0; }",
+      "source": "pub fnc main(): int { if true do if true { return 42; } fi return 0; }",
       "expected_result": 42
     },
     {
@@ -164,6 +169,54 @@
       "kind": "reject_compile",
       "source": "pub fnc main(): int { if true then return 42; fi return 0; }",
       "expected_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "imperative_suffix_do",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { if true do return 42; else return 0; fi }",
+      "expected_result": 42
+    },
+    {
+      "id": "value_if_comma_true",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val int status = if true then 200, 300 else 500, 400 fi; return status; }",
+      "expected_result": 300
+    },
+    {
+      "id": "value_if_comma_false",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val int status = if false then 200, 300 else 500, 400 fi; return status; }",
+      "expected_result": 400
+    },
+    {
+      "id": "value_if_semicolon_tail",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val int status = if false then 200; 300; else 500; 400; fi; return status; }",
+      "expected_result": 400
+    },
+    {
+      "id": "ternary_caret_local",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val int status = true ? { 200; ^ 300; } : { 500; ^ 400; }; return status + 1; }",
+      "expected_result": 301
+    },
+    {
+      "id": "value_if_lazy_order",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { let int n = 0; val int v = if true then n = n + 1; n = n * 2; 40; else n = 99; 0; fi; return v + n; }",
+      "expected_result": 42
+    },
+    {
+      "id": "value_if_declaration_only",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { return if true then val int n = 5; else 4 fi; }",
+      "expected_diagnostic": "E_VALUE_ARM"
+    },
+    {
+      "id": "ternary_implicit_tail",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { return true ? { 5 } : { return 4; }; }",
+      "expected_diagnostic": "E_VALUE_ARM"
     }
   ]
 }
