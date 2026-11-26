@@ -107,3 +107,23 @@ rules. A mismatched tuple arity/order or mismatched final sequence type is rejec
 Conformance requires real calls with different values from the type-inference
 exemplars, not constant folding of exemplar fields in place of the parameter.
 Compiler and formatter support remain unverified until exact-head tests run.
+
+### Parenthesis-free sequence return
+
+The following spelling is equally valid:
+
+```atto
+fnc process(Record<T1> input) -> typeof input.c {
+    return seq input.a, input.b, input.c;
+}
+```
+
+In return position, bare `seq` owns the comma-separated sequence up to the
+statement terminator (respecting nested delimiter boundaries). It lowers to
+the same typed sequence AST/IR as `seq (input.a, input.b, input.c)`.
+At least one expression is required; empty sequences and dangling commas
+reject. Nested tuple, call and collection commas belong to their respective
+delimiters. In other contexts preserve the existing delimiter ownership rules
+in atto-spec #81, including its syntactically final call-argument rule for
+bare seq. This is consistent with contextual return work in atto-spec #66.
+The formatter must preserve both semantics and the distinction from a tuple.
