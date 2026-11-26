@@ -292,13 +292,13 @@
       "id": "ternary_bare_record_no_fallback",
       "kind": "reject_compile",
       "source": "pub fnc main(): int { val v = true ? {status: 42} : Record.of(status: 7); return 0; }",
-      "expected_diagnostic": "E_SYNTAX"
+      "expected_diagnostic": "E_VALUE_ARM"
     },
     {
       "id": "ternary_bare_map_no_fallback",
       "kind": "reject_compile",
       "source": "pub fnc main(): int { val v = true ? {\"status\" => 42} : Record.of(status: 7); return 0; }",
-      "expected_diagnostic": "E_SYNTAX"
+      "expected_diagnostic": "E_VALUE_ARM"
     }
   ]
 }

@@ -52,5 +52,5 @@ test('direct ternary arms distinguish aggregate constructors from executable blo
     assert.equal(byId.get(id).expected_result,expected);
   }
   for (const id of ['ternary_empty_bare_block','ternary_bare_record_no_fallback','ternary_bare_map_no_fallback']) assert.equal(byId.get(id).kind,'reject_compile');
-  assert.equal(byId.get('ternary_empty_bare_block').expected_diagnostic,'E_VALUE_ARM');
+  for (const id of ['ternary_empty_bare_block','ternary_bare_record_no_fallback','ternary_bare_map_no_fallback']) assert.equal(byId.get(id).expected_diagnostic,'E_VALUE_ARM');
 });
