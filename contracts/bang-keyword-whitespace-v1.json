@@ -11,6 +11,7 @@
     "copy!",
     "copy!!",
     "take!",
+    "move!",
     "borrow!",
     "share!",
     "pin!",
@@ -417,6 +418,61 @@
     {
       "id": "take-bang-nbsp",
       "source": "take! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "move-bang-space",
+      "source": "move! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-tab",
+      "source": "move!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-lf",
+      "source": "move!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-crlf",
+      "source": "move!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-formfeed",
+      "source": "move!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-verticaltab",
+      "source": "move!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-word",
+      "source": "move!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "move-bang-paren",
+      "source": "move!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "move-bang-comment",
+      "source": "move!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "move-bang-eof",
+      "source": "move!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "move-bang-nbsp",
+      "source": "move! value",
       "expect": "E_BANG_KEYWORD_WHITESPACE"
     },
     {
