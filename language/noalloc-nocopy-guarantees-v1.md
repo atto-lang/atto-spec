@@ -22,6 +22,26 @@ define fnc Buffer <- process(Buffer data) { return data; }
 
 The same annotations compose with name-first `define fnc process(Buffer data) -> Buffer`, `: Buffer`, and `: Buffer ->` brace forms. Normalize annotations to independent typed obligations, irrespective of order. Reject duplicates, arguments on these markers, and unsupported placements. No backend may silently ignore a recognized guarantee.
 
+### Abbreviated return-first declarations (confirmed 2026-11-26)
+
+Both of the following are accepted callable spellings, including their annotations:
+
+~~~atto
+@nocopy
+define int <- process(int data) {
+    return data;
+}
+~~~
+
+~~~atto
+@nocopy
+int <- process(int data) {
+    return data;
+}
+~~~
+
+The explicit return-first arrow is the declaration discriminator; `fnc` and `define` may be omitted in this form. The two spellings normalize to the same callable as `define fnc int <- process(int data)` and must not become distinct overloads. The same annotation obligations apply with either marker alone or both together, and ordinary unannotated forms are also valid. This does not imply that arbitrary name-first headers may omit keywords, nor introduce a value-level left-arrow operator. Types, ownership, visibility, duplicate declarations and body admission remain governed by existing rules. Scalar guest execution is required before declaring backend support; syntax alone does not establish Buffer proof.
+
 ## Proof scope
 
 * noalloc: zero dynamic guest storage admissions, including guest-managed arenas, pools when a new logical allocation occurs, boxes, closure/continuation frames and hidden runtime helpers attributable to this invocation. Reusing already-owned storage and bounded stack/register storage is allowed. Host process allocation/GC is a separate metric; guest-induced host allocation must be accounted for, not hidden behind the host boundary.
