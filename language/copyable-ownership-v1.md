@@ -440,6 +440,14 @@ tests/copy-lexical-loan-v1.test.mjs checks these state transitions. It is
 not a compiler, a runtime allocation proof, or a replacement for guest
 execution.
 
+### Symmetric field permissions and fresh additions (owner clarification, 2026-11-26)
+
+- For a successful `copy! a`, neither `a` nor its copy has write authority over a retained shared referent, directly or transitively. The source has no privileged writer role. Assignment into a nested member, in-place collection operations, compound mutation of shared storage, mutable method receivers and mutable borrows are all writes to that storage, not whole-slot replacement.
+- Either independently writable root may completely replace its own mutable field with a fresh or independently owned value; subsequent reads and writes of that replacement are permitted under ordinary type, mutability, lifetime and ownership rules. Inline identity-free fields are independently copied values, not shared referents. A replacement must not confer write access to the other root or to a still-shared descendant of the replacement graph.
+- Either root may add a genuinely new field/entry/slot when its declared type and collection or structural-shape rules permit addition. Fresh independently owned backing is immediately readable and writable there; a new slot holding an existing shared reference remains transitively read-only. Adding a field to a retained shared child is itself a forbidden write. Closed nominal classes and records do not gain arbitrary fields; use a separately admitted shape-changing construction where applicable.
+- `copy!!` continues to produce independently owned mutable storage, subject to nominal deep-copy consent and verified graph-copy obligations. Neither operator grants mutation of intrinsically immutable fields.
+- Require symmetric positive guest cases for fresh additions and whole-slot replacement on both source and copy; negative cases for new aliases to shared descendants, additions inside a shared child, and mutation through earlier aliases or mutable methods. A backend without the relevant structural/collection feature must report it unsupported, not treat parser rejection as successful ownership enforcement. Preserve the existing multiple-copy, loan retirement and transactional failure cases.
+
 ### Whole-slot replacement and transactional detachment
 
 A slot's write permission and the referenced identity's write permission are
