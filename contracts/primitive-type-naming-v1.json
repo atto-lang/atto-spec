@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "status": "TARGET_ONLY_NOT_EXECUTED",
+  "profile": "primitive-type-naming-v1",
+  "primitives": [
+    "bool",
+    "int",
+    "uint",
+    "i8",
+    "i16",
+    "i32",
+    "i64",
+    "u8",
+    "u16",
+    "u32",
+    "u64",
+    "float",
+    "f32",
+    "f64",
+    "bigint",
+    "decimal",
+    "complex",
+    "complex64",
+    "complex128",
+    "string",
+    "void"
+  ],
+  "compatibilityAliases": {
+    "boolean": "bool"
+  },
+  "legacyAliasesRequiringProfileMigration": {
+    "Bool": "bool",
+    "String": "string"
+  },
+  "wrapperCandidates": {
+    "Bool": "bool",
+    "Integer": "int",
+    "String": "string"
+  },
+  "futureWrapperCandidates": {
+    "UInteger": "uint",
+    "Int8": "i8",
+    "Int16": "i16",
+    "Int32": "i32",
+    "Int64": "i64",
+    "UInt8": "u8",
+    "UInt16": "u16",
+    "UInt32": "u32",
+    "UInt64": "u64",
+    "Float": "float",
+    "Float32": "f32",
+    "Float64": "f64",
+    "BigInteger": "bigint",
+    "Decimal": "decimal",
+    "Complex": "complex"
+  },
+  "rules": {
+    "caseSensitive": true,
+    "implicitBoxing": false,
+    "implicitUnboxing": false,
+    "capitalizationDeterminesStorage": false,
+    "wrapperResolution": "authenticated-declaration-identity",
+    "legacyProfileRequired": true
+  },
+  "backends": {
+    "atto-source.java": "NOT_EXECUTED",
+    "atto-source.llvm": "NOT_EXECUTED",
+    "atto-source.net": "NOT_EXECUTED",
+    "atto-source.wasm": "NOT_EXECUTED",
+    "atto-source.forge": "NOT_EXECUTED",
+    "atto-source.cranelift": "NOT_EXECUTED",
+    "atto-source.rs": "NOT_EXECUTED",
+    "atto-source.js": "NOT_EXECUTED",
+    "atto-source.hdl": "NOT_EXECUTED",
+    "atto-source.atto": "NOT_EXECUTED",
+    "atto-source.realtime": "NOT_EXECUTED"
+  }
+}
