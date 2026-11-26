@@ -249,3 +249,7 @@ A `T: Copy`, `T: Sendable`, `T: Serializable` or `T: Shareable` bound must **nev
 Each backend must declare **SUPPORTED**, **UNSUPPORTED**, or **NOT_EXECUTED** separately for: (1) lexical unary `&`/`*` rejection, (2) preserved binary `&`/`*` behavior, (3) the borrowed-local `Pointer<T>` profile, (4) owning-region `Pointer<T>`, (5) handle non-`Copy`/non-`Serializable`/non-`Sendable` gates, and (6) any explicitly authorized same-domain transfer. **Unsupported syntax must fail closed without an output artifact**, not silently compile as native pointers. A host library helper, static spec fixture or zero-step CI run is not implementation evidence. Require current-head guest/compiler tests and exact artifact receipts; leave existing drafts unmerged until those tests and independent review pass.
 
 Target-only cross-backend inventory: [atto-platform-conformance #30](https://github.com/atto-lang/atto-platform-conformance/pull/30). Preserve any stricter tenant security restrictions.
+
+## Expanded method vocabulary (v2 candidate)
+
+See [explicit typed pointer methods v2](pointer-explicit-methods-v2.md) for the additive, target-only method vocabulary, authority constraints and systems-programming acceptance matrix. It does not supersede this v1 profile or certify any compiler.
