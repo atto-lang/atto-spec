@@ -12,7 +12,32 @@ Operands must be bool; no implicit conversion or truthiness. Comparison binds ti
 
 Neither uppercase nor lowercase word operators are newly reserved by this decision. Historical AND/OR/XOR, comma and pipe spellings require profile-specific migration; do not silently rewrite effects. Integer `^^` is not Boolean XOR, and single caret is statement return, never binary power or XOR. Bare ampersand/pipe are not canonical Boolean operators.
 
-The historical scalar And/Or intrinsic short-circuit proposal is **not** a verified portable function-call behavior; retain existing profile-specific semantics until separately reconciled. Xor(bool,bool) evaluates both inputs, exactly once in order. No variadic overload, shadowing rule or extra grammar is introduced here.
+## Named Boolean reductions (proposed portable target)
+
+This section reconciles the requested scalar and array calls with the existing Java intrinsic tests. It is a target, not a claim of backend implementation. It does not introduce new infix operators or general user-defined variadic overloads.
+
+| Resolved core call | Valid scalar arity | One array argument | Empty array |
+| --- | --- | --- | --- |
+| `And` | two or more bools | all elements true | true |
+| `Or` | two or more bools | at least one true | false |
+| `Xor` | two or more bools | odd count of true elements | false |
+
+```atto
+val bool scalar_xor = Xor(true, false);
+val bool scalar_and = And(true, false);
+val bool scalar_or = Or(true, false);
+val bool array_xor = Xor([true, false]);
+val bool array_and = And([true, false, true, true, true]);
+val bool array_or = Or([true, false, true, false]);
+```
+
+The expected results are respectively true, false, true, true, false, true. XOR is parity, not “exactly one true”: three true inputs produce true, and two produce false. Singleton arrays return their element. A zero-argument call or a single scalar is invalid; `[]` receives contextual Boolean array typing. All scalar and array elements must statically be bool, including operands skipped at runtime. No integer truthiness, mixed scalar/array argument list, nested array, or implicit generic conversion is admitted by this contract.
+
+For calls resolved to the core intrinsic identity, scalar And and Or evaluate left to right exactly once per reached argument, stopping at false or true respectively; scalar Xor evaluates every operand exactly once left to right unless a failure interrupts it. A single array expression is evaluated exactly once before reduction. In particular, array literal elements are evaluated normally in source order; an early decisive value does not skip a later effect or failure during construction. Reduction itself is read-only; borrowing a typed array must not consume, mutate, copy, or retain it. A temporary follows normal lifetime/drop rules.
+
+Unqualified calls require no explicit import. Where the qualified `BooleanOps` intrinsic namespace is admitted, it has identical semantics. Resolve ordinary declarations/imports first according to the language's name resolution rules; never recognize an intrinsic solely from its short spelling. A same-named user function retains its own argument evaluation and ownership rules. General List/Slice, explicit generic arguments, and callable reification are outside this initial array contract unless independently specified.
+
+Backends without the relevant aggregate/lifetime lowering must diagnose unsupported source before publishing artifacts. Scalar and array support are independent; acceptance, host-reference results, and actual compiled guest execution are distinct. Verify typed local declarations, dynamic inputs, nested calls, all truth vectors through length six, array reuse, empty/singleton arrays, late invalid operands, skipped versus reached failures, left-to-right order, non-Boolean rejection and shadowing. Run optimized and unoptimized paths and actual AOT/guest targets where available. Keep old profile-specific behavior explicitly identified until the portable target is integrated.
 
 ## Verification
 

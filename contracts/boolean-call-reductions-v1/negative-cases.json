@@ -1,0 +1,110 @@
+{
+  "status": "target; not executed compiler evidence",
+  "cases": [
+    {
+      "id": "And-zero-arity",
+      "source": "fnc bad(): bool { return And(); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "And-scalar-singleton",
+      "source": "fnc bad(): bool { return And(true); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "And-int",
+      "source": "fnc bad(): bool { return And(true, 1); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "And-skipped-invalid",
+      "source": "fnc bad(): bool { return And(false, 1); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "And-mixed-array",
+      "source": "fnc bad(): bool { return And([true, 1]); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "And-two-arrays",
+      "source": "fnc bad(): bool { return And([true], [false]); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "And-nested-array",
+      "source": "fnc bad(): bool { return And([[true]]); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Or-zero-arity",
+      "source": "fnc bad(): bool { return Or(); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Or-scalar-singleton",
+      "source": "fnc bad(): bool { return Or(true); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Or-int",
+      "source": "fnc bad(): bool { return Or(true, 1); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Or-skipped-invalid",
+      "source": "fnc bad(): bool { return Or(true, 1); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Or-mixed-array",
+      "source": "fnc bad(): bool { return Or([true, 1]); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Or-two-arrays",
+      "source": "fnc bad(): bool { return Or([true], [false]); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Or-nested-array",
+      "source": "fnc bad(): bool { return Or([[true]]); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Xor-zero-arity",
+      "source": "fnc bad(): bool { return Xor(); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Xor-scalar-singleton",
+      "source": "fnc bad(): bool { return Xor(true); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Xor-int",
+      "source": "fnc bad(): bool { return Xor(true, 1); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Xor-skipped-invalid",
+      "source": "fnc bad(): bool { return Xor(true, 1); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Xor-mixed-array",
+      "source": "fnc bad(): bool { return Xor([true, 1]); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Xor-two-arrays",
+      "source": "fnc bad(): bool { return Xor([true], [false]); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    },
+    {
+      "id": "Xor-nested-array",
+      "source": "fnc bad(): bool { return Xor([[true]]); }\npub fnc main(): int { return 42; }\n",
+      "expected": "compile-time rejection before artifact emission"
+    }
+  ]
+}
