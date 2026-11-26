@@ -327,3 +327,37 @@ and cache roots, independently current epoch pin, host-provisioned key,
 and local lease fencing. A library feature alone is not production
 deployment approval; external rollback-resistant authority, its recovery
 protocol, platform ports, and independent review remain requirements.
+
+#### Experimental registry-root cache profile
+
+A single independently lock-pinned application source may import an
+explicit host-approved set of 1–16 independently authenticated frozen
+registry snapshots. No ambient registry acquisition, transitive dependency
+resolution, or implicit authority from a package name is admitted by this
+profile. The application manifest and its sole source are authenticated
+before lookup; duplicate names or self dependencies fail closed. Aggregate
+source and binding-witness bytes are bounded at 4 MiB each.
+
+The final-artifact stage is registry-wasm-module, distinct from the local
+locked-snapshot stage. Its key binds the application identity, entry path,
+trusted application lock digest, actual resolved token stream (including
+positions, compiler-private explicit token tags and framed payloads), all
+approved provider names and lock digests in canonical order, compiler,
+toolchain, target and configuration. Every approved lock is included even
+if unused. The existing registry resolver performs current binding and
+visibility checks before lookup; successful cold compilation passes the
+same ordinary semantic checker and emitter. No token witness is a typed
+IR authorization.
+
+Process-local immutable provider views may be reused only for an unchanged
+approved name, trusted lock digest and target in the same host-attested
+session. All current manifest, lock and raw inventory bytes are still
+reauthenticated. Resolve the entire current application graph every time.
+Stage the replacement view map; commit it only after authenticated
+artifact reuse or successful compilation and publication. Cold mode
+reconstructs all views; rotation clears both source and provider memos.
+Report freshly authenticated providers, rebuilt views and reused views
+separately from typed-IR/codegen counters. An edited provider conservatively
+invalidates final guest output and triggers full compilation on a miss.
+This profile is not the full multi-file cross-package acceptance matrix
+and provides no independent durable external authority.
