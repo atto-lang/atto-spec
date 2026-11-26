@@ -1,0 +1,109 @@
+{
+  "schema": "atto.distributed-symbol-wire-v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "payload_bytes": 16,
+  "positives": [
+    {
+      "id": "network-order",
+      "uuid": "00112233-4455-4677-8899-aabbccddeeff",
+      "hex": "00112233445546778899aabbccddeeff"
+    },
+    {
+      "id": "variant-low",
+      "uuid": "00000000-0000-4000-8000-000000000000",
+      "hex": "00000000000040008000000000000000"
+    },
+    {
+      "id": "variant-high",
+      "uuid": "ffffffff-ffff-4fff-bfff-ffffffffffff",
+      "hex": "ffffffffffff4fffbfffffffffffffff"
+    },
+    {
+      "id": "distinct-identity",
+      "uuid": "00112233-4455-4677-8899-aabbccddeefe",
+      "hex": "00112233445546778899aabbccddeefe"
+    }
+  ],
+  "negatives": [
+    {
+      "id": "short",
+      "hex": "00112233445546778899aabbccddee",
+      "reason": "LENGTH"
+    },
+    {
+      "id": "long",
+      "hex": "00112233445546778899aabbccddeeff00",
+      "reason": "LENGTH"
+    },
+    {
+      "id": "nil",
+      "hex": "00000000000000000000000000000000",
+      "reason": "VERSION"
+    },
+    {
+      "id": "version-7",
+      "hex": "00112233445576778899aabbccddeeff",
+      "reason": "VERSION"
+    },
+    {
+      "id": "variant-0",
+      "hex": "00112233445546770899aabbccddeeff",
+      "reason": "VARIANT"
+    },
+    {
+      "id": "variant-11",
+      "hex": "0011223344554677c899aabbccddeeff",
+      "reason": "VARIANT"
+    },
+    {
+      "id": "guid-field-order",
+      "hex": "33221100554477468899aabbccddeeff",
+      "reason": "VERSION"
+    }
+  ],
+  "registry_cases": [
+    {
+      "id": "unresolved-valid",
+      "hex": "00112233445546778899aabbccddeefe",
+      "expected": "REJECT_UNKNOWN_NO_MUTATION"
+    },
+    {
+      "id": "known-but-unauthorized",
+      "hex": "00112233445546778899aabbccddeeff",
+      "expected": "REJECT_DENIED_NO_MUTATION"
+    },
+    {
+      "id": "same-declaration-different-uuid",
+      "expected": "REJECT_CONFLICT_NO_MUTATION"
+    },
+    {
+      "id": "same-uuid-different-declaration",
+      "expected": "REJECT_CONFLICT_NO_MUTATION"
+    },
+    {
+      "id": "same-spelling-distinct-namespace",
+      "expected": "DISTINCT_IDENTITY"
+    },
+    {
+      "id": "stale-generation-same-slot",
+      "expected": "REJECT_STALE_HANDLE"
+    },
+    {
+      "id": "same-uuid-distinct-live-registry",
+      "expected": "EQUAL_BY_UUID_NOT_SLOT"
+    }
+  ],
+  "profiles": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "rs": "NOT_EXECUTED",
+    "cranelift": "NOT_EXECUTED",
+    "js": "NOT_EXECUTED",
+    "hdl": "NOT_EXECUTED",
+    "realtime": "NOT_EXECUTED",
+    "atto": "NOT_EXECUTED"
+  }
+}
