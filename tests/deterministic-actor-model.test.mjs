@@ -123,3 +123,36 @@ test('mailbox does not reorder admitted messages to the same serial actor',()=>{
   assert.deepEqual(delivered.map(e=>e.choice),['deliver:m1','deliver:m2']);
  }
 });
+
+test('terminal sleep retains serial ownership until the wake transition',()=>{
+ const s={actors:[{id:'worker',handlers:{first:[{op:'sleep',after:10}],second:[{op:'add',key:'count'}]}}],shared:{count:0},tasks:[{id:'p',steps:[{op:'send',to:'worker',tag:'first'},{op:'send',to:'worker',tag:'second'}]}]};
+ const t=schedule(s,{prefix:['step:p','step:p','deliver:m1','step:delivery.m1']});
+ assert.equal(t.status,'completed');
+ assert.equal(t.events.find(e=>e.choice==='deliver:m2').time,10);
+ assert.equal(t.final_state.shared.count,1);
+ assert.deepEqual(schedule(s,{replay:t}),t);
+});
+test('empty root task completes without a phantom step; duplicate ids still reject',()=>{
+ const s={actors:[],tasks:[{id:'empty',steps:[]}]};
+ assert.equal(schedule(s).status,'completed');
+ assert.equal(schedule(s).events.length,0);
+ assert.throws(()=>schedule({...s,tasks:[...s.tasks,...s.tasks]}),/duplicate/);
+});
+test('delivery cannot exceed the live task budget or consume the refused mail',()=>{
+ const s={actors:[worker],shared:{count:0,ticks:0},tasks:[
+  {id:'sender',steps:[{op:'send',to:'worker',tag:'increment'},{op:'yield'}]},
+  ...Array.from({length:255},(_,i)=>({id:'root'+i,steps:[{op:'yield'}]}))
+ ]};
+ const t=schedule(s,{prefix:['step:sender','deliver:m1']});
+ assert.equal(t.status,'failed');
+ assert.match(t.failure.message,/live task budget/);
+ assert.equal(t.final_state.mailbox.length,1);
+ assert.equal(t.final_state.consumed,0);
+ assert.equal(Object.keys(t.final_state.tasks).length,256);
+});
+test('bounded exploration reports a pruned frontier explicitly',()=>{
+ const s={actors:[],tasks:Array.from({length:24},(_,i)=>({id:'root'+i,steps:[{op:'yield'}]}))};
+ const report=explore(s,{maxSchedules:1});
+ assert.equal(report.frontier_pruned,true);
+ assert.equal(report.exhausted,false);
+});
