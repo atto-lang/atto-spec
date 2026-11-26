@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const rank = { normal: 0, return: 0, throw: 1, raise: 2, panic: 3, cancel: 4, fatal: 5 };
 const outcome = (kind, id) => ({kind, id, supplemental: [], overflow: 0});
 function combine(pending, escaped, limit = 4) {
-  if (!(pending.kind in rank) || !(escaped.kind in rank)) throw new Error('unknown outcome');
+  if (!Object.hasOwn(rank, pending.kind) || !Object.hasOwn(rank, escaped.kind)) throw new Error('unknown outcome');
   if (escaped.kind === 'normal' || escaped.kind === 'return') return pending;
   const callback = ['throw','raise'].includes(escaped.kind)
     ? {...escaped, kind: 'panic', origin: escaped.kind} : escaped;
@@ -75,4 +75,5 @@ test('forced fatal stops unsafe subsequent callback execution', () => {
 });
 test('unknown outcomes fail closed', () => {
   assert.throws(()=>combine(outcome('return',0),outcome('forged','x')));
+  assert.throws(()=>combine(outcome('return',0),outcome('toString','x')));
 });
