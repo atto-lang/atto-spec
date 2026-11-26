@@ -40,10 +40,9 @@
     {
       "id": "trap-adjacent",
       "source": "trap!parse_id(\"42\")",
-      "exceptional_tokens": [
-        "trap!"
-      ],
-      "status": "TARGET_ONLY"
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY",
+      "expected_diagnostic": "E_BANG_KEYWORD_WHITESPACE"
     },
     {
       "id": "throw-typed",
@@ -72,10 +71,9 @@
     {
       "id": "throw-adjacent",
       "source": "throw!Error(\"bad\")",
-      "exceptional_tokens": [
-        "throw!"
-      ],
-      "status": "TARGET_ONLY"
+      "exceptional_tokens": [],
+      "status": "TARGET_ONLY",
+      "expected_diagnostic": "E_BANG_KEYWORD_WHITESPACE"
     },
     {
       "id": "legacy-trap",

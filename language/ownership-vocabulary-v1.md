@@ -158,3 +158,6 @@ See the [current AttoLang language specification](https://github.com/atto-lang/a
 
 These regressions are required even if native CI minutes are unavailable;
 NOT EXECUTED is never equivalent to PASSED.
+
+
+Bang-suffixed keyword operators require at least one ASCII whitespace character immediately after the complete suffix (`!` or `!!`). No whitespace or comment is allowed between the keyword and its suffix. A comment alone does not satisfy the following whitespace requirement. Formatters emit one separating space. This does not change `!=`, `!eq`, or ordinary logical NOT. Reject a missing separator rather than interpreting Rust-style keyword invocations.

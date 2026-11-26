@@ -14,6 +14,8 @@ Sources are the Java lexer and `docs/grammar.ebnf` (Oreslang v0.6) in `oreslang-
 
 ## Canonical exceptional bang keywords (target)
 
+Bang-suffixed keyword operators require at least one ASCII whitespace character immediately after the complete suffix (`!` or `!!`). No whitespace or comment is allowed between the keyword and its suffix. A comment alone does not satisfy the following whitespace requirement. Formatters emit one separating space. This does not change `!=`, `!eq`, or ordinary logical NOT. Reject a missing separator rather than interpreting Rust-style keyword invocations.
+
 `trap!`, `throw!`, `raise!`, `panic!` are contiguous exceptional tokens; bare forms remain migration aliases. Keep `!=`, `!eq`, ownership bangs, comments and quoted text distinct. See [exception-control bang spellings v1](../language/exception-control-bang-spellings-v1.md). This is not evidence of historical lexer support.
 
 ## Keywords
@@ -50,9 +52,9 @@ Some of these are narrower than the table suggests:
 | Exclusive mutable loan | `borrow! mut value` | `rt borrow mut value`, `rt mut borrow value` |
 | Share/freeze admission | `share! value` | `rt share value` |
 
-These are parser-contextual **operator forms**, not new reserved words. The parser recognizes adjacent word and `!` only in a valid prefix-expression or parameter-ownership context. No whitespace or comment between verb and `!`; never consume `!=` or `!eq` as a suffix. The operand can immediately follow the bang; formatters emit the bang forms with one separating space. `copy!!` is one deep-copy operator, not shallow copy followed by logical NOT. Legacy aliases have identical typed ownership checks, diagnostics and lowering. Do not add `ref!`, `deref!` or `unref!`; `rt ref`, `rt deref` and `rt unref` remain separate checked-handle operations pending a separate decision.
+These are parser-contextual **operator forms**, not new reserved words. The parser recognizes adjacent word and `!` only in a valid prefix-expression or parameter-ownership context. No whitespace or comment between verb and `!`; never consume `!=` or `!eq` as a suffix. The operand must be separated from the complete bang suffix by whitespace; formatters emit one separating space. `copy!!` is one deep-copy operator, not shallow copy followed by logical NOT. Legacy aliases have identical typed ownership checks, diagnostics and lowering. Do not add `ref!`, `deref!` or `unref!`; `rt ref`, `rt deref` and `rt unref` remain separate checked-handle operations pending a separate decision.
 
-Ownership prefix operations bind at unary precedence; postfix member/index access binds more tightly (`borrow! foo.bar` borrows that place, while `copy! a + b` copies `a`). The legacy `mut borrow!` normalizes to `borrow! mut`; duplicate qualifiers reject. `borrow!mutfoo` borrows the identifier, not a mutable `foo`. `block { statements }` is the explicit nested lexical scope; the checked-handle profile requires all-path cleanup and a nonescaping loan. See [checked-handle call-loan profile](../language/checked-handle-call-loans-v1.md).
+Ownership prefix operations bind at unary precedence; postfix member/index access binds more tightly (`borrow! foo.bar` borrows that place, while `copy! a + b` copies `a`). The legacy `mut borrow!` normalizes to `borrow! mut`; duplicate qualifiers reject. `borrow!mutfoo` is rejected for missing whitespace; `borrow! mutfoo` borrows the identifier. `block { statements }` is the explicit nested lexical scope; the checked-handle profile requires all-path cleanup and a nonescaping loan. See [checked-handle call-loan profile](../language/checked-handle-call-loans-v1.md).
 
 ## Linguistic keyword roles and editor highlighting
 

@@ -1,0 +1,919 @@
+{
+  "schema_version": 1,
+  "status": "LEXICAL_TARGET_ONLY_NOT_BACKEND_EXECUTED",
+  "rule": "E_BANG_KEYWORD_WHITESPACE",
+  "scope": "code-position contextual keyword prefix; separator admission is not semantic acceptance",
+  "keywords": [
+    "trap!",
+    "throw!",
+    "raise!",
+    "panic!",
+    "copy!",
+    "copy!!",
+    "take!",
+    "move!",
+    "borrow!",
+    "share!",
+    "pin!",
+    "drop!",
+    "pipe!",
+    "rpipe!",
+    "stop!",
+    "expand!"
+  ],
+  "backends": [
+    "atto",
+    "cranelift",
+    "forge",
+    "hdl",
+    "java",
+    "js",
+    "llvm",
+    "net",
+    "realtime",
+    "rs",
+    "wasm"
+  ],
+  "cases": [
+    {
+      "id": "trap-bang-space",
+      "source": "trap! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "trap-bang-tab",
+      "source": "trap!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "trap-bang-lf",
+      "source": "trap!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "trap-bang-crlf",
+      "source": "trap!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "trap-bang-formfeed",
+      "source": "trap!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "trap-bang-verticaltab",
+      "source": "trap!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "trap-bang-word",
+      "source": "trap!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "trap-bang-paren",
+      "source": "trap!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "trap-bang-comment",
+      "source": "trap!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "trap-bang-eof",
+      "source": "trap!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "trap-bang-nbsp",
+      "source": "trap! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "throw-bang-space",
+      "source": "throw! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "throw-bang-tab",
+      "source": "throw!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "throw-bang-lf",
+      "source": "throw!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "throw-bang-crlf",
+      "source": "throw!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "throw-bang-formfeed",
+      "source": "throw!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "throw-bang-verticaltab",
+      "source": "throw!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "throw-bang-word",
+      "source": "throw!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "throw-bang-paren",
+      "source": "throw!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "throw-bang-comment",
+      "source": "throw!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "throw-bang-eof",
+      "source": "throw!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "throw-bang-nbsp",
+      "source": "throw! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "raise-bang-space",
+      "source": "raise! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "raise-bang-tab",
+      "source": "raise!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "raise-bang-lf",
+      "source": "raise!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "raise-bang-crlf",
+      "source": "raise!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "raise-bang-formfeed",
+      "source": "raise!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "raise-bang-verticaltab",
+      "source": "raise!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "raise-bang-word",
+      "source": "raise!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "raise-bang-paren",
+      "source": "raise!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "raise-bang-comment",
+      "source": "raise!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "raise-bang-eof",
+      "source": "raise!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "raise-bang-nbsp",
+      "source": "raise! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "panic-bang-space",
+      "source": "panic! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "panic-bang-tab",
+      "source": "panic!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "panic-bang-lf",
+      "source": "panic!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "panic-bang-crlf",
+      "source": "panic!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "panic-bang-formfeed",
+      "source": "panic!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "panic-bang-verticaltab",
+      "source": "panic!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "panic-bang-word",
+      "source": "panic!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "panic-bang-paren",
+      "source": "panic!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "panic-bang-comment",
+      "source": "panic!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "panic-bang-eof",
+      "source": "panic!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "panic-bang-nbsp",
+      "source": "panic! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "copy-bang-space",
+      "source": "copy! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-tab",
+      "source": "copy!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-lf",
+      "source": "copy!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-crlf",
+      "source": "copy!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-formfeed",
+      "source": "copy!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-verticaltab",
+      "source": "copy!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-word",
+      "source": "copy!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "copy-bang-paren",
+      "source": "copy!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "copy-bang-comment",
+      "source": "copy!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "copy-bang-eof",
+      "source": "copy!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "copy-bang-nbsp",
+      "source": "copy! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "copy-bang-bang-space",
+      "source": "copy!! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-bang-tab",
+      "source": "copy!!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-bang-lf",
+      "source": "copy!!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-bang-crlf",
+      "source": "copy!!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-bang-formfeed",
+      "source": "copy!!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-bang-verticaltab",
+      "source": "copy!!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "copy-bang-bang-word",
+      "source": "copy!!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "copy-bang-bang-paren",
+      "source": "copy!!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "copy-bang-bang-comment",
+      "source": "copy!!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "copy-bang-bang-eof",
+      "source": "copy!!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "copy-bang-bang-nbsp",
+      "source": "copy!! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "take-bang-space",
+      "source": "take! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "take-bang-tab",
+      "source": "take!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "take-bang-lf",
+      "source": "take!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "take-bang-crlf",
+      "source": "take!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "take-bang-formfeed",
+      "source": "take!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "take-bang-verticaltab",
+      "source": "take!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "take-bang-word",
+      "source": "take!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "take-bang-paren",
+      "source": "take!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "take-bang-comment",
+      "source": "take!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "take-bang-eof",
+      "source": "take!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "take-bang-nbsp",
+      "source": "take! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "move-bang-space",
+      "source": "move! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-tab",
+      "source": "move!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-lf",
+      "source": "move!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-crlf",
+      "source": "move!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-formfeed",
+      "source": "move!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-verticaltab",
+      "source": "move!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "move-bang-word",
+      "source": "move!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "move-bang-paren",
+      "source": "move!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "move-bang-comment",
+      "source": "move!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "move-bang-eof",
+      "source": "move!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "move-bang-nbsp",
+      "source": "move! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "borrow-bang-space",
+      "source": "borrow! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "borrow-bang-tab",
+      "source": "borrow!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "borrow-bang-lf",
+      "source": "borrow!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "borrow-bang-crlf",
+      "source": "borrow!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "borrow-bang-formfeed",
+      "source": "borrow!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "borrow-bang-verticaltab",
+      "source": "borrow!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "borrow-bang-word",
+      "source": "borrow!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "borrow-bang-paren",
+      "source": "borrow!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "borrow-bang-comment",
+      "source": "borrow!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "borrow-bang-eof",
+      "source": "borrow!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "borrow-bang-nbsp",
+      "source": "borrow! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "share-bang-space",
+      "source": "share! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "share-bang-tab",
+      "source": "share!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "share-bang-lf",
+      "source": "share!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "share-bang-crlf",
+      "source": "share!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "share-bang-formfeed",
+      "source": "share!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "share-bang-verticaltab",
+      "source": "share!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "share-bang-word",
+      "source": "share!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "share-bang-paren",
+      "source": "share!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "share-bang-comment",
+      "source": "share!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "share-bang-eof",
+      "source": "share!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "share-bang-nbsp",
+      "source": "share! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "pin-bang-space",
+      "source": "pin! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pin-bang-tab",
+      "source": "pin!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pin-bang-lf",
+      "source": "pin!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pin-bang-crlf",
+      "source": "pin!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pin-bang-formfeed",
+      "source": "pin!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pin-bang-verticaltab",
+      "source": "pin!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pin-bang-word",
+      "source": "pin!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "pin-bang-paren",
+      "source": "pin!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "pin-bang-comment",
+      "source": "pin!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "pin-bang-eof",
+      "source": "pin!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "pin-bang-nbsp",
+      "source": "pin! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "drop-bang-space",
+      "source": "drop! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "drop-bang-tab",
+      "source": "drop!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "drop-bang-lf",
+      "source": "drop!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "drop-bang-crlf",
+      "source": "drop!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "drop-bang-formfeed",
+      "source": "drop!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "drop-bang-verticaltab",
+      "source": "drop!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "drop-bang-word",
+      "source": "drop!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "drop-bang-paren",
+      "source": "drop!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "drop-bang-comment",
+      "source": "drop!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "drop-bang-eof",
+      "source": "drop!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "drop-bang-nbsp",
+      "source": "drop! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "pipe-bang-space",
+      "source": "pipe! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pipe-bang-tab",
+      "source": "pipe!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pipe-bang-lf",
+      "source": "pipe!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pipe-bang-crlf",
+      "source": "pipe!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pipe-bang-formfeed",
+      "source": "pipe!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pipe-bang-verticaltab",
+      "source": "pipe!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "pipe-bang-word",
+      "source": "pipe!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "pipe-bang-paren",
+      "source": "pipe!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "pipe-bang-comment",
+      "source": "pipe!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "pipe-bang-eof",
+      "source": "pipe!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "pipe-bang-nbsp",
+      "source": "pipe! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "rpipe-bang-space",
+      "source": "rpipe! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "rpipe-bang-tab",
+      "source": "rpipe!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "rpipe-bang-lf",
+      "source": "rpipe!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "rpipe-bang-crlf",
+      "source": "rpipe!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "rpipe-bang-formfeed",
+      "source": "rpipe!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "rpipe-bang-verticaltab",
+      "source": "rpipe!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "rpipe-bang-word",
+      "source": "rpipe!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "rpipe-bang-paren",
+      "source": "rpipe!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "rpipe-bang-comment",
+      "source": "rpipe!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "rpipe-bang-eof",
+      "source": "rpipe!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "rpipe-bang-nbsp",
+      "source": "rpipe! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "stop-bang-space",
+      "source": "stop! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "stop-bang-tab",
+      "source": "stop!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "stop-bang-lf",
+      "source": "stop!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "stop-bang-crlf",
+      "source": "stop!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "stop-bang-formfeed",
+      "source": "stop!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "stop-bang-verticaltab",
+      "source": "stop!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "stop-bang-word",
+      "source": "stop!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "stop-bang-paren",
+      "source": "stop!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "stop-bang-comment",
+      "source": "stop!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "stop-bang-eof",
+      "source": "stop!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "stop-bang-nbsp",
+      "source": "stop! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "expand-bang-space",
+      "source": "expand! value",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "expand-bang-tab",
+      "source": "expand!\tvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "expand-bang-lf",
+      "source": "expand!\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "expand-bang-crlf",
+      "source": "expand!\r\nvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "expand-bang-formfeed",
+      "source": "expand!\fvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "expand-bang-verticaltab",
+      "source": "expand!\u000bvalue",
+      "expect": "SEPARATOR_OK"
+    },
+    {
+      "id": "expand-bang-word",
+      "source": "expand!value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "expand-bang-paren",
+      "source": "expand!(42)",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "expand-bang-comment",
+      "source": "expand!/* gap */ value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "expand-bang-eof",
+      "source": "expand!",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    },
+    {
+      "id": "expand-bang-nbsp",
+      "source": "expand! value",
+      "expect": "E_BANG_KEYWORD_WHITESPACE"
+    }
+  ]
+}

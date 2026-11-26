@@ -9,27 +9,7 @@
       "operation": "copy"
     },
     {
-      "input": "copy!foo",
-      "canonical": "copy! foo",
-      "operation": "copy"
-    },
-    {
-      "input": "copy!eqfoo",
-      "canonical": "copy! eqfoo",
-      "operation": "copy"
-    },
-    {
-      "input": "copy!eqé",
-      "canonical": "copy! eqé",
-      "operation": "copy"
-    },
-    {
       "input": "take! foo",
-      "canonical": "take! foo",
-      "operation": "take"
-    },
-    {
-      "input": "take!foo",
       "canonical": "take! foo",
       "operation": "take"
     },
@@ -39,23 +19,8 @@
       "operation": "borrow"
     },
     {
-      "input": "borrow!foo.bar",
-      "canonical": "borrow! foo.bar",
-      "operation": "borrow"
-    },
-    {
       "input": "borrow! mut foo",
       "canonical": "borrow! mut foo",
-      "operation": "mut_borrow"
-    },
-    {
-      "input": "borrow!mutfoo",
-      "canonical": "borrow! mutfoo",
-      "operation": "borrow"
-    },
-    {
-      "input": "borrow!mut(value)",
-      "canonical": "borrow! mut (value)",
       "operation": "mut_borrow"
     },
     {
@@ -64,34 +29,14 @@
       "operation": "mut_borrow"
     },
     {
-      "input": "borrow!mut foo[0]",
-      "canonical": "borrow! mut foo[0]",
-      "operation": "mut_borrow"
-    },
-    {
       "input": "mut borrow! foo",
       "canonical": "borrow! mut foo",
-      "operation": "mut_borrow"
-    },
-    {
-      "input": "mut borrow!foo[0]",
-      "canonical": "borrow! mut foo[0]",
       "operation": "mut_borrow"
     },
     {
       "input": "share! value",
       "canonical": "share! value",
       "operation": "share"
-    },
-    {
-      "input": "share!value",
-      "canonical": "share! value",
-      "operation": "share"
-    },
-    {
-      "input": "copy!(left + right)",
-      "canonical": "copy! (left + right)",
-      "operation": "copy"
     },
     {
       "input": "rt copy foo",
@@ -193,7 +138,18 @@
     "unref! h",
     "unref!h",
     "unref!(h)",
-    "unref! handles[0]"
+    "unref! handles[0]",
+    "copy!foo",
+    "copy!eqfoo",
+    "copy!eqé",
+    "take!foo",
+    "borrow!foo.bar",
+    "borrow!mutfoo",
+    "borrow!mut(value)",
+    "borrow!mut foo[0]",
+    "mut borrow!foo[0]",
+    "share!value",
+    "copy!(left + right)"
   ],
   "required_compiler_semantic_negative": [
     "use-after-take",

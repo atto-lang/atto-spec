@@ -13,7 +13,7 @@
 
 The `!` must be **immediately contiguous** with the exact keyword (`trap!`, `throw!`, `raise!`, `panic!`). The combined spelling is a single exceptional-control token, not an identifier followed by logical NOT and not a postfix mutation. Case-sensitive spelling and its meaning are unaffected by line endings, comments, Unicode escapes or formatting. A comment or string literal mentioning these bytes is **not** executable exceptional control.
 
-For example, `trap! parse_id("42")` and `trap!parse_id("42")` have the same tokenization; `trap !x` is **not** the canonical bang spelling. A migration-compatible bare `trap` applied to a separately parsed `!x` expression might still have its ordinary expression semantics if that expression is well typed; a formatter must never conflate the two.
+For example, `trap! parse_id("42")` is valid and `trap!parse_id("42")` is rejected; `trap !x` is **not** the canonical bang spelling. A migration-compatible bare `trap` applied to a separately parsed `!x` expression might still have its ordinary expression semantics if that expression is well typed; a formatter must never conflate the two.
 
 ### Delimiters and no accidental keyword capture
 
@@ -46,3 +46,6 @@ Use all eleven `atto-lang/atto-source.*` repositories: `.rs`, `.java`, `.llvm`, 
 For each claimed backend and fixture, require the **same original .atto bytes and Git blob SHA**, exact compiler commit and Git tree, emitted guest digest, toolchain, actually executed positive guest observation or precise compile-negative diagnostic and no artifact, authorized runner job with nonzero executed steps, and independent review. Record `PASS`, `FAIL`, `UNSUPPORTED` or `NOT_EXECUTED` separately. An ordinary panic must never be accidentally caught as a Result or delivered as a forged DATA event.
 
 The active transition is tracked by eleven backend draft PRs (e.g. [Rust #449](https://github.com/atto-lang/atto-source.rs/pull/449), [JS #73](https://github.com/atto-lang/atto-source.js/pull/73), [LLVM #293](https://github.com/atto-lang/atto-source.llvm/pull/293)), and the Error/Result implementation work by [parity issue #20](https://github.com/atto-lang/atto-compilers-parity-testing/issues/20). No backend is certified by this document.
+
+
+Bang-suffixed keyword operators require at least one ASCII whitespace character immediately after the complete suffix (`!` or `!!`). No whitespace or comment is allowed between the keyword and its suffix. A comment alone does not satisfy the following whitespace requirement. Formatters emit one separating space. This does not change `!=`, `!eq`, or ordinary logical NOT. Reject a missing separator rather than interpreting Rust-style keyword invocations.
