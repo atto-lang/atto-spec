@@ -12,9 +12,9 @@ Operands must be bool; no implicit conversion or truthiness. Comparison binds ti
 
 Neither uppercase nor lowercase word operators are newly reserved by this decision. Historical AND/OR/XOR, comma and pipe spellings require profile-specific migration; do not silently rewrite effects. Integer `^^` is not Boolean XOR, and single caret is statement return, never binary power or XOR. Bare ampersand/pipe are not canonical Boolean operators.
 
-## Named Boolean reductions (proposed portable target)
+## Named Boolean reductions (core library contract)
 
-This section reconciles the requested scalar and array calls with the existing Java intrinsic tests. It is a target, not a claim of backend implementation. It does not introduce new infix operators or general user-defined variadic overloads.
+This section reconciles the requested scalar and array calls with the existing Java intrinsic tests. The owning library unit is `atto.core/bool` (`core/bool` shorthand), available in the core prelude even on freestanding targets. `std` inherits these bindings rather than defining a competing implementation. This is a library contract, not a claim of backend implementation. It does not introduce new infix operators or general user-defined variadic overloads.
 
 | Resolved core call | Valid scalar arity | One array argument | Empty array |
 | --- | --- | --- | --- |
@@ -35,7 +35,7 @@ The expected results are respectively true, false, true, true, false, true. XOR 
 
 For calls resolved to the core intrinsic identity, scalar And and Or evaluate left to right exactly once per reached argument, stopping at false or true respectively; scalar Xor evaluates every operand exactly once left to right unless a failure interrupts it. A single array expression is evaluated exactly once before reduction. In particular, array literal elements are evaluated normally in source order; an early decisive value does not skip a later effect or failure during construction. Reduction itself is read-only; borrowing a typed array must not consume, mutate, copy, or retain it. A temporary follows normal lifetime/drop rules.
 
-Unqualified calls require no explicit import. Where the qualified `BooleanOps` intrinsic namespace is admitted, it has identical semantics. Resolve ordinary declarations/imports first according to the language's name resolution rules; never recognize an intrinsic solely from its short spelling. A same-named user function retains its own argument evaluation and ownership rules. General List/Slice, explicit generic arguments, and callable reification are outside this initial array contract unless independently specified.
+Unqualified calls require no explicit import. Explicit imports of `atto.core/bool` must bind the same compiler-recognized identities and preserve scalar laziness; a normal eager forwarding function is not equivalent. Backends lacking explicit core-unit imports must diagnose that unsupported import profile rather than pretending it works. Where the qualified `BooleanOps` intrinsic namespace is admitted, it has identical semantics. Resolve ordinary declarations/imports first according to the language's name resolution rules; never recognize an intrinsic solely from its short spelling. A same-named user function retains its own argument evaluation and ownership rules. General List/Slice, explicit generic arguments, and callable reification are outside this initial array contract unless independently specified.
 
 Backends without the relevant aggregate/lifetime lowering must diagnose unsupported source before publishing artifacts. Scalar and array support are independent; acceptance, host-reference results, and actual compiled guest execution are distinct. Verify typed local declarations, dynamic inputs, nested calls, all truth vectors through length six, array reuse, empty/singleton arrays, late invalid operands, skipped versus reached failures, left-to-right order, non-Boolean rejection and shadowing. Run optimized and unoptimized paths and actual AOT/guest targets where available. Keep old profile-specific behavior explicitly identified until the portable target is integrated.
 
