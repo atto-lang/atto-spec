@@ -65,3 +65,27 @@ export class TypeScope {
     return expected;
   }
 }
+
+// Signature-only reference: parameter descriptors are resolved in the declared
+// type scope, without consulting or evaluating any argument value.
+export function projectParameterField(scope, parameters, parameter, field) {
+  const formal = parameters.get(parameter);
+  if (!formal) fail('E_UNKNOWN_PARAMETER');
+  const descriptor = scope.resolve(formal.alias);
+  if (descriptor.kind !== formal.kind || descriptor.kind === 'Tuple') fail('E_AGGREGATE_KIND');
+  const found = descriptor.fields.find(([name]) => name === field);
+  if (!found) fail('E_NO_FIELD');
+  return found[1];
+}
+
+// Each element is an already checked scalar static type. This model does not
+// evaluate expressions, prove ownership or claim execution-order evidence.
+export function checkSequenceReturn(expected, items) {
+  if (!Array.isArray(items) || items.length === 0) fail('E_EMPTY_SEQUENCE');
+  if (items.length > 128) fail('E_SEQUENCE_LIMIT');
+  for (let i = 0; i < items.length; i++) {
+    if (!Object.hasOwn(items,i) || !types.has(items[i])) fail('E_TYPE_INFER_AMBIGUOUS');
+  }
+  if (items.at(-1) !== expected) fail('E_TYPE_MISMATCH');
+  return expected;
+}
