@@ -57,3 +57,53 @@ new export syntax are outside this first draft.
 Related existing work: record-struct-layout-v1, anonymous-structural-shapes-v1,
 atto-source.llvm#514/#510, atto-source.rs#274/#321, atto-source.java#1155.
 These are distinct initializer/layout proposals, not proof of named type binding.
+
+## Callable boundaries, type projection and sequence expressions
+
+Previously declared module-scope named aggregate bindings are valid in
+callable signatures. A callable parameter of `Record<T1>` exposes the
+closed field names and their static types; a return of `Tuple<T2>` checks
+each element in source order against the declared tuple descriptor.
+For example (each process declaration is an alternative, not an overload):
+
+```atto
+const Record<infer T1> r = (a=true, b="xyz", c=5);
+const Tuple<infer T2> t = (true, "xyz", 5);
+
+fnc process(Record<T1> input) -> Tuple<T2> {
+    return (input.a, input.b, input.c);
+}
+```
+
+```atto
+const Record<infer T1> r = (a=true, b="xyz", c=5);
+
+fnc process(Record<T1> input) -> typeof input.c {
+    return seq (input.a, input.b, input.c);
+}
+```
+
+In this restricted signature form, `typeof parameter.field` is a static
+type projection: resolve the parameter's declared type in the signature
+environment, then resolve its field. The parameter need not have a runtime
+value at declaration time. The projection evaluates neither the parameter nor
+the field; it creates no runtime type object. An unknown parameter or missing
+field, unresolved shape, or incompatible return type is a compile-time error.
+The declared shape, not the current argument value, determines the return type.
+General expression-based typeof and value-dependent types are not introduced
+by this clause.
+
+`seq (e1, e2, ..., en)` uses the existing nonempty comma-sequence expression
+semantics: evaluate once in source order, discard non-final values with
+ordinary ownership/drop rules, and return the last value with its static type.
+Whitespace between seq and the opening parenthesis is permitted. The prefix
+may have heterogeneous types; every expression must still be type-checked
+and preserve effects, errors, and ownership checks. No tuple allocation is
+implied by seq. Ordinary parentheses without seq retain tuple construction.
+A prefix failure prevents later expressions from running. The final type alone
+is checked against the callable return type, with existing contextual conversion
+rules. A mismatched tuple arity/order or mismatched final sequence type is rejected.
+
+Conformance requires real calls with different values from the type-inference
+exemplars, not constant folding of exemplar fields in place of the parameter.
+Compiler and formatter support remain unverified until exact-head tests run.
