@@ -9,7 +9,7 @@
 - **obj.copy()** corresponds to copy! obj and **obj.copy_deep()** corresponds to copy!! obj, subject to the same static witness and dynamic subtype obligations.
 - The two public methods accept **zero arguments**. Implementation-specific allocation/graph context is an **invisible compiler/runtime parameter**, not a user-visible argument. Application-specific variants may have named methods like copy_with(options), but operators NEVER forward arguments.
 - copy! and copy!! require separate capabilities. DeepCopyable does not imply Copyable: a type with uniquely owned mutable descendants may support a deep copy but not a shallow copy. Do not automatically change copy! into copy!! when shallow copying is unsafe.
-- take! transfers ownership of the original. share! shares the original identity with separately verified permissions. Neither is an alias or fallback for either copy operator.
+- take! (equivalently move!) transfers ownership of the original. share! shares the original identity with separately verified permissions. Neither is an alias or fallback for either copy operator.
 
 These are copying operations, **not** ordinary passing/binding: passing a class as a parameter never silently copies it.
 
@@ -261,12 +261,14 @@ implicit argument borrowing or a new implicit cloning rule.
   observationally preserved. Detach before any writable access, including
   nested mutation, mutable borrowing, iterators and native exposure.
   Do not turn shallow rejection into deep acceptance via COW.
-- take! consumes a live owned place, without cloning. Proposed move! is an
-  exact contextual spelling alias for take! (including named-place grammar,
-  evaluation order, diagnostics, MIR, cleanup and invalidation); this is a
-  candidate extension requiring lexer/parser/formatter and guest tests,
-  not an implemented keyword. Canonical formatting remains take! until
-  separately approved. Require whitespace after the full bang spelling.
+- take! consumes a live owned place, without cloning. **move! is an
+  approved exact contextual spelling alias for take!** (owner decision
+  2026-11-25), including named-place grammar, evaluation order, diagnostics,
+  MIR, cleanup and invalidation. It grants no new ownership capability.
+  Canonical formatting remains take!; both source spellings are accepted
+  in the target profile. Require whitespace after the full bang spelling.
+  Bare move remains an ordinary identifier; no rt move alias or move!!
+  operator is introduced. Backend support requires actual guest evidence.
 - borrow! and borrow! mut are scoped loans, not copies or transfers.
   share! explicitly grants an admitted shared capability; neither copy mode
   grants implicit share authority over previously exclusive mutable state.
@@ -289,7 +291,7 @@ merely crash at runtime. Keep exact-head/tree and stepful execution receipts.
 | NonCopyable through inactive Option or empty typed collection | Copy denied where the declared owned layout requires forbidden capability |
 | Erased or foreign layout without proof | Fail closed, including dynamic override and FFI |
 | Ordinary assignment/return/argument/capture of affine class | No hidden clone or second owner; legal scoped loan where specified |
-| take! and candidate move! | Identical ownership effects; reject later read, second move, move during conflicting loan |
+| take! and move! | Identical ownership effects; reject later read, second move, move during conflicting loan |
 | borrow! mut with live reader or escaping loan | Reject; immutable borrow does not confer write authority |
 | Copy allocation failure and concurrent COW write | No partial publication, source mutation, double drop or alias leak |
 
