@@ -60,9 +60,13 @@ end
 
 `catch()` catches an ordinary eligible thrown payload without binding its value, under the admitted failure profile. The base Error profile catches Error; the later trait-conforming non-Error extension requires its independently specified typed admission and cannot be silently coerced to Error.
 It is supported with either block style, e.g. `catch() { handle_error(); }`.
-`catch (Error e)` is the explicit typed form. A single untyped catch binder
-(`catch(e)`) exists in the Java source backend as a compatibility spelling;
-cross-backend acceptance and type inference are not assumed by this contract.
+`catch (Error e)` is the explicit typed form. The owner-selected canonical
+example also admits `catch (e)` as an inferred ordinary guest error binder.
+The binder is scoped to the handler; the base Error profile infers Error,
+and any wider trait-payload profile must preserve the actual admitted
+nominal payload type. Neither form admits raise, panic, cancellation or host
+failures. Cross-backend execution of inferred binders must be proven separately.
+See [the canonical bang example](exception-control-bang-spellings-v1.md#canonical-guest-example).
 Subclass-specific matching is a separate typed-handler implementation: a
 backend must not silently treat an unimplemented subtype as a catch-all.
 

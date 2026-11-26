@@ -25,6 +25,20 @@ For example, `trap! parse_id("42")` and `trap!parse_id("42")` have the same toke
 
 A frontend should tokenize the four exceptional bang forms without changing identifier, comment, string, equality or ownership tokenization. It must not reinterpret a rejected exceptional effect as a host exception, JS `try/catch`, OS process exit, or supervisor notification.
 
+## Canonical guest example
+
+```atto
+pub fnc main(): int {
+    try {
+        throw! new Error("ordinary failure");
+    } catch (err) {
+        return 42;
+    }
+}
+```
+
+The source-level result is `42`. The inferred catch binder is an ordinary eligible guest error, not a host exception. The explicit `catch (Error err)` spelling is also supported by the imperative syntax contract. For new code prefer the bang keyword and explicit `new Error(...)` construction in this example; this does not remove previously admitted constructor forms. A backend unable to lower the inferred binder must diagnose the unsupported capability before emitting a guest.
+
 ## Semantics and safety invariants
 
 1. `trap! expression` evaluates the operand once. On normal scalar/Option completion it produces the single outer Result specified in [trap-to-Result v1](trap-result-v1.md). On an **already Result-typed** operand it preserves the existing Ok/Err representation and any nested Option/Result layers rather than wrapping twice. Only an ordinary **source** `throw!` may be caught as `Err` of the original thrown value with original subtype, payload and identity. The existing portable Error-based profile is unchanged.
