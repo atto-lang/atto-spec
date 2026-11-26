@@ -142,6 +142,90 @@ A class/aggregate obtains its **Copyable** witness automatically if the compiler
 
 For identity-bearing classes, the verified method returns **new Self** (a new logical root identity for the *concrete dynamic subtype*), as refined by fresh-return-types-v1.md. This does **not** imply unique ownership of all nested fields after a shallow copy. A type's copy! may be legal under shared child handles but fail a new unique Self refinement; a mutable root is independently owned while reachable children retain their authorized sharing. For scalar/identity-free values no fresh allocation is required.
 
+## First-class copy policy and performance contract (2026-11-25)
+
+The canonical hard opt-out is the zero-argument `@NoCopy` marker. Accept
+`@NonCopyable` as an exact spelling alias, not an independent capability.
+The following is a target source contract:
+
+~~~atto
+@NoCopy
+define class SearchIndex as
+    pub let int revision = 0;
+end
+
+define class Snapshot as
+    pub let int version = 0;
+    pub val Array<int> values = new Array<int>();
+end
+
+val index = new SearchIndex();
+// copy! index;   // E_COPY_FORBIDDEN
+// copy!! index;  // E_COPY_FORBIDDEN
+val snapshot = new Snapshot();
+val detached = copy!! snapshot;
+~~~
+
+- Hard denial is declaration-owned, survives imports, inheritance, upcasts,
+  erased dispatch and generic specialization, and dominates positive witnesses.
+  An owned field of a noncopyable type blocks any enclosing copy that would
+  duplicate it, even for empty typed collections and inactive optional fields.
+  A shallow copy may retain an independently authorized shared reference only
+  when it does not duplicate the forbidden object itself and lifetime/authority
+  proofs are explicit. No hidden bypass through methods, generated code or FFI.
+- Duplicate markers (including both spellings), arguments and conflicting
+  positive copy annotations are errors. `@WarnOnCopy` is the separate soft
+  cost advisory; no silent fallback from shallow to deep. Moving or borrowing
+  a noncopyable object is not copying it. Serializability is independent;
+  encode/decode cannot be the implementation of a denied copy operation.
+- A future `NonCopyable` interface, if provided, must be a compiler-recognized
+  core nominal identity, not a spelling match on arbitrary user interfaces.
+  It must have the same inherited negative policy and cannot be removed by a
+  subtype. Do not advertise that syntax until nominal witness integration exists.
+- Copy remains an explicit first-class typed IR operation with independent
+  shallow/deep witnesses and fresh concrete identity. No implicit cloning on
+  ordinary argument passing, assignment, actor send or return.
+
+### Optimized lowering tiers
+
+1. Identity-free scalars: use ordinary value transfer; no heap allocation.
+2. Verified flat inline payload: generate a same-concrete-layout allocation
+   followed by a bulk copy or unrolled field stores. Raw byte copy is permitted
+   only for authenticated trivial representation ranges (no ownership handles,
+   reference barriers, uninitialized padding, or resource/drop state).
+3. Flat managed objects and scalar arrays: use a specialized field/buffer copy,
+   preserve required barriers and validate exact layout; do not allocate a
+   graph memo when no identity-bearing child can be traversed.
+4. Acyclic owned trees: generated typed traversal; omit the identity memo only
+   with a proof that no mutable identity can occur twice. Avoid constructors,
+   reflection, serialization round trips, or repeated descriptor derivation on
+   the hot path. Cache/precompile immutable plans by exact concrete type and
+   code/layout generation, not by name or mutable address.
+5. General cyclic/shared graphs: iterative worklist, one identity memo per
+   top-level operation, reserve shells before outgoing edges, preserve alias
+   topology, bounded work/memory, rollback unpublished state. Target expected
+   linear work in reachable nodes, edges and copied payload bytes; no claim of
+   measured complexity until production execution validates it.
+
+All tiers preserve the same observable policy, fresh identity, dynamic subtype,
+and failure atomicity. No graph-copy path transfers actor-private raw handles;
+an actor-local allocation domain and generation must be established first.
+AOT must not require runtime code generation. A backend may fuse allocation
+with a subsequent transfer only after proving lifetime, identity and cleanup
+equivalence.
+
+### Performance acceptance
+
+Benchmark actual compiled guest operations on each supported target: scalar,
+flat class (small/large), flat array, deep tree, shared diamond, self-cycle,
+10k-node cycle and 100k-node stress under an admitted budget. Report time/op,
+bytes copied/s, allocations/op, peak live/scratch bytes, and p50/p95/p99
+latency; distinguish setup, copy and cleanup. Compare against idiomatic
+same-host Rust/C++ native implementations and managed-runtime equivalents,
+using identical logical semantics and independent destination identities.
+Require correctness and negative tests before reporting speed; no fixed speed
+claim or benchmark waiver is implied by this specification.
+
 ## Field, array and collection rules
 
 | Shape | copy! (shallow) | copy!! (deep) |
