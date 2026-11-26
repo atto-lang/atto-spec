@@ -76,6 +76,84 @@ Structs are **nominal value types**, not implicitly boxed identity-bearing class
 
 Without an authored constructor, a fully defined nominal struct retains compiler-proven field initialization `T{foo: "hello", bar: 42}`. The optional shorthand `T(foo="hello",bar=42)` is **only** the already-separately-proposed generated field-initializer form, guarded by exact nominal resolution; it is not ordinary named arguments. Once a custom constructor exists, `T(...)` routes to that constructor using positional/`name:` arguments, and the equals-field shorthand must not ambiguously override it. External direct `T{...}` bypass of user-defined constructor invariants is forbidden; a checked constructor body may initialize its own fields. `new T(...)` is invalid for value structs. A class constructs via `new C(...)`; `C{...}` is not a class factory.
 
+## Struct declaration attachments (owner-approved syntax target, 2026-11-26)
+
+A named declaration `type Point = struct { ... } with { ... }` attaches behavior to the exact nominal struct owner at compile time. It is not a transparent structural alias with methods that leak to other aliases of the same shape. The owner is inferred from the declaration; no explicit receiver or `: self` constructor result marker is required in an attached header.
+
+```atto
+type Point = struct {
+    int x;
+    int y;
+} with {
+
+    constructor(int x, int y) {
+        self.x = x;
+        self.y = y;
+    }
+
+    mtd int • sum() {
+        return self.x + self.y;
+    }
+
+    mtd int <- product() {
+        return self.x * self.y;
+    }
+
+    mtd bool * is_origin() {
+        return self.x == 0 && self.y == 0;
+    }
+}
+```
+
+Within the permitted visibility scope, `let p = Point(10, 20);` constructs a value; `p.sum()`, `p.product()`, and `p.is_origin()` return 30, 200, and false respectively. Existing visibility rules remain in force; use `pub` on a constructor or method intended for external callers.
+
+The chained spelling is equivalent:
+
+```atto
+type Point = struct {
+    int x;
+    int y;
+} with constructor(int x, int y) {
+    self.x = x;
+    self.y = y;
+} with mtd int • sum() {
+    return self.x + self.y;
+} with mtd int <- product() {
+    return self.x * self.y;
+} with mtd bool * is_origin() {
+    return self.x == 0 && self.y == 0;
+}
+```
+
+- In type-declaration context, an attachment is either `with` followed by one member declaration or `with { ... }` containing member declarations. Chained and grouped attachments normalize to the same owner/member AST. Ordinary statement bodies, field-update expressions and arbitrary expressions are not attachment members. The existing expression-level `value with {field: expr}` remains a distinct grammar; no change to trait composition or copy-and-update semantics.
+- In method headers `mtd R • name(...)`, `mtd R <- name(...)`, and `mtd R * name(...)` are equivalent return-type-first signature spellings. The asterisk is a separator in that syntactic position, not a pointer or multiplication operator. Resolve the complete return type and header context before interpreting it; preserve existing admitted callable signature forms and formatter token spelling. Constructor headers use `constructor(args)` with no return separator and implicit under-construction self.
+- Existing callable modifiers and effects apply according to the ordinary method grammar; readonly receiver is the default, checked exclusive receiver authority is required for mutation, and static members have no instance self. Overload selection ignores separator spelling; duplicate normalized signatures (including out-of-line definitions) reject. Do not manufacture visibility or receiver capabilities by using an attachment.
+- Constructors select overloads statically, evaluate call arguments once in source order, and initialize each required field before read/escape. On failure destroy only initialized subobjects once; no implicit zero/default synthesis. Once a custom constructor exists, direct external aggregate syntax must not bypass it, including field-equals shorthand and unverified copy-and-update reconstruction. Ordinary checked copying of already valid values remains governed by the ownership contract.
+- The attached declaration lowers to the same static member and constructor representation as out-of-line declarations, without per-instance method storage, required vtables, boxing, JIT, reflection or mandatory heap allocation. A value constructor may initialize its final destination directly if effects and lifetime semantics are preserved.
+- Explicit owned heap placement of value structs and destructor attachment require reconciliation with the existing prohibition on `new T(...)` and separate lifecycle/capability rules. This syntax amendment does not silently change those rules or admit unsafe destruction.
+
+### Required conformance (all TARGET_NOT_EXECUTED)
+
+| Case | Expected |
+| --- | --- |
+| Exact grouped Point source above | Accept; guest outputs 30, 200, false |
+| Equivalent chained Point source | Same typed result and observable behavior |
+| Each of the three signature separators | Same return type, name and dispatch |
+| Two methods differing only in separator | Reject duplicate signature |
+| Attached and out-of-line duplicate member | Reject duplicate signature |
+| Constructor overload by distinct arity/type | Accept with static resolution |
+| Missing constructor field on a successful path | Reject incomplete initialization |
+| Reading uninitialized field or escaping self | Reject before code generation |
+| Direct field literal or equals shorthand bypassing authored constructor | Reject |
+| Mutation through readonly receiver | Reject |
+| Private member used outside its visibility scope | Reject |
+| Expression-level copy-update and existing trait with syntax | Unchanged |
+| Formatter round-trip for grouped/chained and all separator spellings | Preserve normalized AST and comments |
+| Failure during partial construction | No published value; initialized fields dropped once |
+| AOT value construction and method call | No mandatory per-instance allocation or dispatch table; measure separately |
+
+No case is backend-certified by this text. Exact-head positive guest runs, semantic negative diagnostics, formatter round trips and layout/ownership evidence are required independently for each compiler.
+
 ## Protected class state and containership
 
 `define state on class C as { ... }` is an exactly-once **per-instance** attached state schema with its own private, exclusive storage identity and independent lifetime under the containing instance. State fields use ordinary typed field declarations and initializers and are private regardless of receiver method visibility; the state attachment is not a public field or a static singleton. An initializer is evaluated per instance with checked effects, and every state field is initialized before constructor code receives a usable state guard. Missing initializer or field validity may be admitted only when the compiler can prove definite initialization.
