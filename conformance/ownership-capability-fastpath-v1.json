@@ -449,6 +449,62 @@
       "expectation": "runtime",
       "obligation": "ordinary Weak upgrade with live strong owner must not fail merely on read lease contention",
       "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor.private_heap_stack",
+      "category": "actor",
+      "expectation": "runtime",
+      "obligation": "two actors use disjoint heap and logical stack allocation domains; no raw cross-actor pointers",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor.suspended_frame_owner",
+      "category": "actor",
+      "expectation": "runtime",
+      "obligation": "suspended continuation retains the original actor stack/heap charge, even on carrier migration",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor.foreign_resume",
+      "category": "actor",
+      "expectation": "runtime",
+      "obligation": "wrong-domain or stale-generation resume rejected before touching frame",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor.external_lease_admission_failure",
+      "category": "actor",
+      "expectation": "runtime",
+      "obligation": "failed host lease construction leaves ledger unchanged, with no phantom lifetime owner",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor.independent_completion_leases",
+      "category": "actor",
+      "expectation": "runtime",
+      "obligation": "cancellation or fault settles only its own lifetime charge; retired arena remains pinned until final owner releases",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor.reuse_scrub",
+      "category": "actor",
+      "expectation": "runtime",
+      "obligation": "no old actor data observable after final quiescence and scrub before capacity reuse",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor.quota_sibling_survives",
+      "category": "actor",
+      "expectation": "runtime",
+      "obligation": "actor A stack or heap quota panic does not terminate sibling B",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "actor.host_gc_attribution",
+      "category": "actor",
+      "expectation": "profile",
+      "obligation": "separate guest-owned allocations, guest-induced host allocations and host GC; host-only or source-free evidence cannot certify AOT or zero-GC",
+      "evidence": "NOT_EXECUTED"
     }
   ]
 }
