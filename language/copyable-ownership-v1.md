@@ -226,6 +226,77 @@ using identical logical semantics and independent destination identities.
 Require correctness and negative tests before reporting speed; no fixed speed
 claim or benchmark waiver is implied by this specification.
 
+## No implicit mutable aliasing (2026-11-25 reconciliation)
+
+The language must not reproduce Go-style hidden mutable aliasing. This is a
+strengthening of the existing shallow/deep distinction, not a change to
+implicit argument borrowing or a new implicit cloning rule.
+
+- Ordinary binding, assignment, aggregate construction, field stores, return,
+  closure/task capture, argument passing and actor message admission MUST NOT
+  manufacture a second owning alias to a mutable allocation. Intrinsic Copy
+  values duplicate by value; nonprimitive call arguments may use the scoped
+  read-loan profile. Any other alias, owning transfer or copy must be justified
+  by its explicitly declared ownership mode and existing lifetime rules.
+  Unproven cases reject; do not silently select an expensive deep copy.
+- copy! creates a fresh shallow root, including independent outer collection
+  storage. Every retained edge must be transitively immutable with proven
+  lifetime, or an explicitly declared, authenticated shared capability with
+  the appropriate read/write synchronization and ownership authority.
+  Merely being a reference, a val binding, a Java reference, a JS object,
+  a slice descriptor, a pointer or a reference-counted allocation is not proof.
+  A nested exclusive mutable edge rejects with E_COPY_SHALLOW_ALIAS, even
+  through imported classes, inherited fields, collection elements, erased
+  types, or closures. A verified shared wrapper is visible in its type and
+  is not represented as independently owned mutable state.
+- copy!! detaches every reachable mutable identity, including the pointee of
+  a mutable shared wrapper, or rejects if no verified reconstruction is
+  possible. Only transitively immutable, lifetime-proven backing can be reused.
+  No clone may retain mutable source aliases via an override or opaque FFI.
+  The source and each separate clone are mutually isolated; repeated aliases
+  and cycles *within* each clone preserve topology.
+- Copy-on-write is an implementation optimization, not a third copy mode.
+  It is allowed for either operation only if the required logical identities,
+  topology, lifetime, isolation, cleanup and failure/resource contract are
+  observationally preserved. Detach before any writable access, including
+  nested mutation, mutable borrowing, iterators and native exposure.
+  Do not turn shallow rejection into deep acceptance via COW.
+- take! consumes a live owned place, without cloning. Proposed move! is an
+  exact contextual spelling alias for take! (including named-place grammar,
+  evaluation order, diagnostics, MIR, cleanup and invalidation); this is a
+  candidate extension requiring lexer/parser/formatter and guest tests,
+  not an implemented keyword. Canonical formatting remains take! until
+  separately approved. Require whitespace after the full bang spelling.
+- borrow! and borrow! mut are scoped loans, not copies or transfers.
+  share! explicitly grants an admitted shared capability; neither copy mode
+  grants implicit share authority over previously exclusive mutable state.
+
+### Mandatory compiled conformance obligations
+
+Each case must run through the actual backend frontend and applicable AOT or
+transpiled guest path; negative cases must reject at semantic admission, not
+merely crash at runtime. Keep exact-head/tree and stepful execution receipts.
+
+| Case | Required behavior |
+| --- | --- |
+| Scalar assignment or flat scalar array copy! | Independent mutable slots; source unchanged |
+| Nested owned Array<Array<int>>, Map values, inherited class field, closure capture | copy! rejects E_COPY_SHALLOW_ALIAS |
+| Nested mutable graph copy!! | Mutating either graph leaves the other unchanged |
+| Shallow explicitly shared guarded field | Retain authorized child identity; no unguarded write or ownership duplication |
+| Deep explicitly shared mutable field | Reconstruct detached pointee or reject; never retain writable source alias |
+| Read-only binding over mutable pointee | Does not establish transitive immutability or share proof |
+| Cyclic graph and diamond graph; two successive copies | Preserve within-copy topology, isolate all three graphs |
+| NonCopyable through inactive Option or empty typed collection | Copy denied where the declared owned layout requires forbidden capability |
+| Erased or foreign layout without proof | Fail closed, including dynamic override and FFI |
+| Ordinary assignment/return/argument/capture of affine class | No hidden clone or second owner; legal scoped loan where specified |
+| take! and candidate move! | Identical ownership effects; reject later read, second move, move during conflicting loan |
+| borrow! mut with live reader or escaping loan | Reject; immutable borrow does not confer write authority |
+| Copy allocation failure and concurrent COW write | No partial publication, source mutation, double drop or alias leak |
+
+No backend PASS is implied by these targets. The existing Java shallow-copy
+candidate rejects nested mutable owned layouts; full recursive execution and
+cross-backend enforcement remain separate gates.
+
 ## Field, array and collection rules
 
 | Shape | copy! (shallow) | copy!! (deep) |
