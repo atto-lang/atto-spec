@@ -123,3 +123,33 @@ test('mailbox does not reorder admitted messages to the same serial actor',()=>{
   assert.deepEqual(delivered.map(e=>e.choice),['deliver:m1','deliver:m2']);
  }
 });
+
+
+test('empty tasks complete without scheduling, but identities remain unique',()=>{
+ const scenario={actors:[],tasks:[{id:'empty',steps:[]},{id:'active',steps:[{op:'yield'}]}]};
+ const result=schedule(scenario);
+ assert.equal(result.status,'completed');
+ assert.deepEqual(result.events.map(e=>e.choice),['step:active']);
+ assert.throws(()=>schedule({...scenario,tasks:[{id:'empty',steps:[]},{id:'empty',steps:[]}]}),/duplicate/);
+});
+test('assertions require a real counter and an explicit safe integer expectation',()=>{
+ const scenario={actors:[],tasks:[{id:'p',steps:[{op:'assert',key:'absent'}]}]};
+ assert.throws(()=>schedule(scenario),/invalid assertion/);
+ assert.throws(()=>schedule({actors:[],tasks:[{id:'p',steps:[{op:'assert',value:0}]}]}),/invalid assertion/);
+ assert.equal(schedule({actors:[],tasks:[{id:'p',steps:[{op:'assert',key:'absent',value:0}]}]}).status,'failed');
+ assert.equal(schedule({actors:[],shared:{count:0},tasks:[{id:'p',steps:[{op:'assert',key:'count',value:0}]}]}).status,'completed');
+});
+test('forced prefixes must be fully consumed',()=>{
+ const scenario={actors:[],tasks:[{id:'p',steps:[{op:'yield'}]}]};
+ assert.throws(()=>schedule(scenario,{prefix:['step:p','step:p']}),/unused forced choices/);
+ assert.equal(schedule(scenario,{prefix:['step:p']}).status,'completed');
+});
+test('exploration detects a real lost update and replays both outcomes',()=>{
+ const scenario={actors:[],shared:{count:0},tasks:[
+  {id:'a',steps:[{op:'load',key:'count',as:'x'},{op:'store',key:'count',local:'x'}]},
+  {id:'b',steps:[{op:'add',key:'count'}]}
+ ]};
+ const result=explore(scenario,{maxSchedules:32});
+ assert.deepEqual([...new Set(result.traces.map(t=>t.final_state.shared.count))].sort(),[0,1]);
+ for(const trace of result.traces) assert.deepEqual(schedule(scenario,{replay:trace}),trace);
+});
