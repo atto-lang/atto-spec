@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'language/contract-domain-conformance-v1.md'
+      - 'conformance/contract-domain-conformance-v1.json'
       - 'tests/contract-domain-conformance-v1.test.mjs'
       - '.github/workflows/contract-domain-conformance-v1.yml'
 permissions:
