@@ -1,0 +1,433 @@
+{
+  "schema": "atto-ownership-capability-fastpath-targets-v1",
+  "status": "NOT_EXECUTED",
+  "diagnostics": "proposed families; map existing exact semantic diagnostics; parser errors do not count",
+  "backends": [
+    "java",
+    "llvm",
+    "net",
+    "forge",
+    "wasm",
+    "rs",
+    "cranelift",
+    "js",
+    "hdl",
+    "realtime",
+    "atto"
+  ],
+  "cases": [
+    {
+      "id": "box.move_handle",
+      "category": "box",
+      "expectation": "accept",
+      "obligation": "owner moves once without copying payload",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "box.use_after_take",
+      "category": "box",
+      "expectation": "reject",
+      "obligation": "E_USE_AFTER_MOVE",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "box.move_with_live_loan",
+      "category": "box",
+      "expectation": "reject",
+      "obligation": "E_MOVE_WHILE_BORROWED",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "box.partial_join",
+      "category": "box",
+      "expectation": "reject",
+      "obligation": "E_UNINITIALIZED_PLACE",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "box.partial_user_drop",
+      "category": "box",
+      "expectation": "reject",
+      "obligation": "E_PARTIAL_MOVE_DROP",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "box.unwind_drop",
+      "category": "box",
+      "expectation": "runtime",
+      "obligation": "exactly one payload drop on supported unwind",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "box.foreign_allocator",
+      "category": "box",
+      "expectation": "reject",
+      "obligation": "E_OWNERSHIP_DOMAIN",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.borrow_no_retain",
+      "category": "arc",
+      "expectation": "runtime",
+      "obligation": "borrow performs no observable retain or release",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.shared_alias_mutation",
+      "category": "arc",
+      "expectation": "reject",
+      "obligation": "E_SHARED_MUTATION",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.freeze_nested_alias",
+      "category": "arc",
+      "expectation": "reject",
+      "obligation": "E_SHARE_ALIAS",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.non_sync_payload",
+      "category": "arc",
+      "expectation": "reject",
+      "obligation": "E_NOT_SYNC",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.refcount_limit",
+      "category": "arc",
+      "expectation": "runtime",
+      "obligation": "checked failure before increment; no wrap",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.weak_upgrade_final_drop_race",
+      "category": "arc",
+      "expectation": "runtime",
+      "obligation": "linearizable upgrade or none, exactly one drop",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.weak_control_block",
+      "category": "arc",
+      "expectation": "runtime",
+      "obligation": "payload retires before control block, weak never dereferences",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.strong_cycle",
+      "category": "arc",
+      "expectation": "runtime",
+      "obligation": "reject, explicit weak break, or documented verified reclamation",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.unique_recovery_live_loan",
+      "category": "arc",
+      "expectation": "reject",
+      "obligation": "E_MOVE_WHILE_BORROWED",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic.cas_release_relaxed",
+      "category": "atomic",
+      "expectation": "accept",
+      "obligation": "valid CAS order pair",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic.cas_release_acquire",
+      "category": "atomic",
+      "expectation": "reject",
+      "obligation": "E_ATOMIC_ORDER",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic.cas_acquire_seq_cst",
+      "category": "atomic",
+      "expectation": "reject",
+      "obligation": "E_ATOMIC_ORDER",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic.load_release",
+      "category": "atomic",
+      "expectation": "reject",
+      "obligation": "E_ATOMIC_ORDER",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic.store_acquire",
+      "category": "atomic",
+      "expectation": "reject",
+      "obligation": "E_ATOMIC_ORDER",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic.dynamic_invalid_order",
+      "category": "atomic",
+      "expectation": "runtime",
+      "obligation": "reject before touching cell",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic.overflow",
+      "category": "atomic",
+      "expectation": "runtime",
+      "obligation": "no wrapped update published",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic.release_acquire",
+      "category": "atomic",
+      "expectation": "runtime",
+      "obligation": "published value visible under specified happens-before",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic.relaxed_adjacent_write",
+      "category": "atomic",
+      "expectation": "reject",
+      "obligation": "E_SHARED_MUTATION",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "atomic.unsupported_width",
+      "category": "atomic",
+      "expectation": "profile",
+      "obligation": "explicit unsupported or documented linearizable fallback; no fake lock-free",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "dyn.owned_erasure",
+      "category": "dyn",
+      "expectation": "accept",
+      "obligation": "explicit take and verified nominal interface",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "dyn.borrowed_to_owned",
+      "category": "dyn",
+      "expectation": "reject",
+      "obligation": "E_DYN_OWNERSHIP",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "dyn.non_send_erasure",
+      "category": "dyn",
+      "expectation": "reject",
+      "obligation": "E_NOT_SEND",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "dyn.unknown_effect",
+      "category": "dyn",
+      "expectation": "reject",
+      "obligation": "E_EFFECT_UNKNOWN",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "dyn.erased_drop",
+      "category": "dyn",
+      "expectation": "runtime",
+      "obligation": "concrete payload cleanup exactly once",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "dyn.borrowed_interface_no_alloc",
+      "category": "dyn",
+      "expectation": "runtime",
+      "obligation": "no implicit boxing or retain",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "traits.nested_borrow_detached",
+      "category": "traits",
+      "expectation": "reject",
+      "obligation": "E_BORROW_ESCAPE",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "traits.negative_marker_nested",
+      "category": "traits",
+      "expectation": "reject",
+      "obligation": "E_NOT_SEND",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "traits.nominal_spoof",
+      "category": "traits",
+      "expectation": "reject",
+      "obligation": "E_TRAIT_WITNESS",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "traits.guarded_recursive_send",
+      "category": "traits",
+      "expectation": "accept",
+      "obligation": "all resolved guarded edges and leaves admit Send",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "traits.recursive_unknown_leaf",
+      "category": "traits",
+      "expectation": "reject",
+      "obligation": "E_TRAIT_UNKNOWN",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "traits.unguarded_infinite_layout",
+      "category": "traits",
+      "expectation": "reject",
+      "obligation": "E_INFINITE_LAYOUT",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "traits.send_not_serializable",
+      "category": "traits",
+      "expectation": "reject",
+      "obligation": "E_NOT_SERIALIZABLE",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "traits.serializable_not_sendable",
+      "category": "traits",
+      "expectation": "reject",
+      "obligation": "E_NOT_SENDABLE",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "traits.mutex_send_not_sync_payload",
+      "category": "traits",
+      "expectation": "accept",
+      "obligation": "Mutex<T> Sync when T Send and all domain obligations hold",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "traits.rwlock_send_not_sync_payload",
+      "category": "traits",
+      "expectation": "reject",
+      "obligation": "E_NOT_SYNC",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "traits.thread_affine_drop",
+      "category": "traits",
+      "expectation": "reject",
+      "obligation": "E_OWNERSHIP_DOMAIN",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "loans.disjoint_field",
+      "category": "loans",
+      "expectation": "accept",
+      "obligation": "same root disjoint sibling projections",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "loans.unknown_index",
+      "category": "loans",
+      "expectation": "reject",
+      "obligation": "E_BORROW_CONFLICT",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "loans.last_use",
+      "category": "loans",
+      "expectation": "accept",
+      "obligation": "loan ends before overlapping write",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "loans.defer_late_use",
+      "category": "loans",
+      "expectation": "reject",
+      "obligation": "E_BORROW_CONFLICT",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "loans.loop_may_live",
+      "category": "loans",
+      "expectation": "reject",
+      "obligation": "E_BORROW_CONFLICT",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "loans.guard_suspend",
+      "category": "loans",
+      "expectation": "reject",
+      "obligation": "E_GUARD_SUSPEND",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "loans.pin_without_lifetime",
+      "category": "loans",
+      "expectation": "reject",
+      "obligation": "E_BORROW_SUSPEND",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "loans.cancel_retirement",
+      "category": "loans",
+      "expectation": "runtime",
+      "obligation": "no reuse before physical quiescence",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "loans.tenant_domain",
+      "category": "loans",
+      "expectation": "reject",
+      "obligation": "E_OWNERSHIP_DOMAIN",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "cache.body_edit",
+      "category": "cache",
+      "expectation": "differential",
+      "obligation": "warm and clean same verdict; unrelated functions reused",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "cache.imported_effect_edit",
+      "category": "cache",
+      "expectation": "differential",
+      "obligation": "affected consumers invalidated",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "cache.negative_marker_edit",
+      "category": "cache",
+      "expectation": "differential",
+      "obligation": "affected consumers invalidated",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "cache.destructor_edit",
+      "category": "cache",
+      "expectation": "differential",
+      "obligation": "cleanup and trait dependents invalidated",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "cache.profile_edit",
+      "category": "cache",
+      "expectation": "differential",
+      "obligation": "no stale proof reuse",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "cache.oracle_disagreement",
+      "category": "cache",
+      "expectation": "differential",
+      "obligation": "no guest publication",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "cache.budget_exhaustion",
+      "category": "cache",
+      "expectation": "differential",
+      "obligation": "deterministic rejection; no optimistic proof",
+      "evidence": "NOT_EXECUTED"
+    }
+  ]
+}
