@@ -1,6 +1,6 @@
-# 27 — Value conditionals and imperative `do if`
+# 27 — Value conditionals and imperative `if ... do`
 
-**Status:** TARGET grammar decision, 2026-11-14. A backend is conformant only after actual parser, type-checker, runtime/IR, and negative-fixture evidence at an exact commit. The Java reference compiler currently stages this in the opt-in `parseStrictAtto` entry point; legacy entry points retain historical acceptance for source migration. Do not claim five-backend parity from a spec or parser-only test.
+**Status:** TARGET grammar decision, revised 2026-11-25. Historical backend receipts below do not establish the new syntax. A backend is conformant only after actual parser, type-checker, runtime/IR, and negative-fixture evidence at an exact commit. The Java reference compiler currently stages this in the opt-in `parseStrictAtto` entry point; legacy entry points retain historical acceptance for source migration. Do not claim five-backend parity from a spec or parser-only test.
 
 ## Negated conditional heads: `ifnot` and `unless`
 
@@ -8,10 +8,10 @@
 
 ```atto
 loop {
-    do ifnot ready then break; fi
+    ifnot ready do break; fi
 }
 loop {
-    do unless ready then break; fi
+    unless ready do break; fi
 }
 val int n = unless ready then 5 else 6 fi;
 ifnot ready { retry(); }
@@ -25,16 +25,16 @@ For either keyword, `true` **does not** execute the first arm; `false` **does**.
 | --- | --- | --- | --- |
 | `if/ifnot/unless condition then left else right fi` | Expression | Value of the selected branch | `else` and `fi` |
 | `condition ? left : right` | Expression | Value of the selected branch | Both arms |
-| `do if/ifnot/unless condition then ... [else ...] fi` | Statement | No value | `fi` |
+| `if/ifnot/unless condition do ... [else ...] fi` | Statement | No value | `fi` |
 | `if/ifnot/unless condition { ... } [else { ... }]` | Statement | No value | Matching braces only |
 
-Expression-form `if` requires a boolean condition and compatible static value types on both arms. Evaluate its condition exactly once, evaluate only the selected arm, and honor ownership/move/borrow checks when joining branch results. The initial portable implementation supports a single expression per value arm. The separately gated [v2 arm-block contract](27-conditional-expression-modes.md) specifies tail-expression and final arm-local return rules; this base profile does not automatically admit those extensions.
+Expression-form `if` requires a boolean condition and compatible static value types on both arms. Evaluate its condition exactly once, evaluate only the selected arm, and honor ownership/move/borrow checks when joining branch results. The initial portable implementation supports a single expression per value arm. The revised [v2 arm-block contract](27-conditional-expression-modes.md) is authoritative for comma/semicolon value sequences and explicit ternary arm returns; the base profile does not automatically admit those extensions.
 
-There is no implicit conversion from statement `if` to expression `if`, and no implicit fallback for a keyword-delimited `if` without `do`. The `else` of a value `if` is mandatory; the `else` of a statement `if` is optional.
+There is no implicit conversion from statement `if` to expression `if`. Legacy statement-position then and prefix do if are migration spellings. The `else` of a value `if` is mandatory; the `else` of a statement `if` is optional.
 
 ## Control transfers are not values
 
-A bare `break`, `continue`, or `return` cannot serve as the result of a single-expression `if` arm, even when a backend models unreachable paths using a bottom/never type. No implicit coercion of a control-transfer statement into a value expression is admitted. Such transfers are permitted in a `do if` or brace-style conditional when the enclosing lexical context allows them.
+A bare `break`, `continue`, or `return` cannot serve as the result of a single-expression `if` arm, even when a backend models unreachable paths using a bottom/never type. No implicit coercion of a control-transfer statement into a value expression is admitted. Such transfers are permitted in an `if ... do` or brace-style conditional when the enclosing lexical context allows them.
 
 ```atto
 // OK: a typed conditional value.
@@ -42,7 +42,7 @@ val int selected = if ready then 7 else 9 fi;
 
 // OK: a loop exit, never a value.
 loop {
-    do if complete then break; fi
+    if complete do break; fi
     work();
 }
 
@@ -71,30 +71,33 @@ val int answer = if ready then break else 7 fi;
 ```ebnf
 if_head   = "if" | "ifnot" | "unless" ;
 if_expr   = if_head bool_expr "then" expr "else" expr "fi" ;
-if_stmt   = "do" if_head bool_expr "then" { stmt } [ "else" { stmt } ] "fi"
+if_stmt   = if_head bool_expr "do" { stmt } [ "else" { stmt } ] "fi"
           | if_head bool_expr "{" { stmt } "}" [ "else" "{" { stmt } "}" ] ;
-ternary   = expr "?" expr ":" expr ;
+ternary   = expr "?" ternary_arm ":" ternary_arm ;
+ternary_arm = explicit_result_block | expr ;
 ```
 
-Context is significant: `return if ...`, assignment initializers, call arguments and parentheses require expressions, whereas a statement-level `do if` or brace-style `if` is an imperative statement. The lexer reserves `do` and `if` separately; do not add a fused `do-if` token. Both imperative syntaxes lower through the same conditional statement representation; value `if` may share checked lowering with the ternary expression.
+Context is significant: `return if ...`, assignment initializers, call arguments and parentheses require expressions, whereas a statement-level `if ... do` or brace-style `if` is an imperative statement. The lexer reserves `do` and `if` separately; do not add a fused `do-if` token. Both imperative syntaxes lower through the same conditional statement representation; value `if` may share checked lowering with the ternary expression.
 
-The formatter preserves `do if` versus brace-style `if`; it must never silently rewrite a value-form conditional into imperative statements. New source and regression fixtures use `.atto`. Legacy `.ores` remains for explicit compatibility tests.
+At direct ternary-arm entry, bare `{` commits to `explicit_result_block`; never fall back to an aggregate literal. Explicit aggregate operands use `struct{...}` or `Record.of(...)`. See the [aggregate arm rules](27-conditional-expression-modes.md#aggregate-arms-and-brace-disambiguation) for empty aggregates, nested expressions, compatibility and formatter behavior.
+
+The formatter preserves `if ... do` versus brace-style `if`; it must never silently rewrite a value-form conditional into imperative statements. New source and regression fixtures use `.atto`. Legacy `.ores` remains for explicit compatibility tests.
 
 ## Required diagnostics and conformance gates
 
 | Input condition | Required outcome |
 | --- | --- |
-| `if true then break; fi` in a loop | Compile failure: use `do if` |
+| `if true then break; fi` in a loop | Compile failure: use `if ... do` |
 | `return if true then 1 fi;` | Compile failure: missing `else` value |
 | `return if true then break else 1 fi;` | Compile failure: control transfer is not an expression value |
-| `do if true then break; fi` in a loop | Accepted and exits the loop |
-| `do ifnot true then break; fi` in a loop | Accepted; **does not break** |
-| `do unless true then break; fi` in a loop | Accepted; **does not break** |
-| `do ifnot false then break; fi` in a loop | Accepted; exits loop |
-| `do unless false then break; fi` in a loop | Accepted; exits loop |
-| `do unless false then break; fi` outside a loop | Compile failure: invalid loop exit |
+| `if true do break; fi` in a loop | Accepted and exits the loop |
+| `ifnot true do break; fi` in a loop | Accepted; **does not break** |
+| `unless true do break; fi` in a loop | Accepted; **does not break** |
+| `ifnot false do break; fi` in a loop | Accepted; exits loop |
+| `unless false do break; fi` in a loop | Accepted; exits loop |
+| `unless false do break; fi` outside a loop | Compile failure: invalid loop exit |
 | `return unless false then 7 else 9 fi;` | Accepted; returns 7 |
-| `do if true then break; fi` outside a loop | Compile failure: invalid loop exit |
+| `if true do break; fi` outside a loop | Compile failure: invalid loop exit |
 | `if ready { act(); } else { retry(); }` | Accepted statement, no `fi` |
 | `return if ready then 1 else 2 fi;` | Accepted typed expression, selected branch only |
 | `return ready ? 1 : 2;` | Accepted typed expression, selected branch only |
@@ -114,4 +117,4 @@ Verify nested loops, statement termination, call arguments, true/false evaluatio
 
 ## Migration
 
-Legacy parsers accepted keyword-delimited imperative `if ... then ... fi` and mandatory `fi` after a braced `if`. Migration must be explicit: rewrite imperative keyword branches to `do if ... then ... fi`, and remove redundant `fi` from braced statements in canonical Atto source. Maintain old parser entry points only for deliberate compatibility until migration is complete; the canonical strict Atto grammar must fail closed.
+Legacy parsers accepted keyword-delimited imperative `if ... then ... fi` and mandatory `fi` after a braced `if`. Migration must be explicit: rewrite imperative keyword branches to `if ... do ... fi`, and remove redundant `fi` from braced statements in canonical Atto source. Maintain old parser entry points only for deliberate compatibility until migration is complete; canonical output uses the new delimiters; legacy parsing remains explicitly migration-scoped.

@@ -1,44 +1,69 @@
-# 27 — Statement if, expression if and conditional value blocks
+# 27 — Imperative conditionals and value-producing branches
 
-**Status: TARGET / draft. No backend is certified by this document.** This contract refines the existing statement-only conditional-expression v1 contract and the draft value-block/range PR #32. It deliberately specifies the requested arm-local `return` syntax, which is **not** equivalent to a function return.
+**Status: TARGET; executable backend verification pending.** This revision records the user-approved conditional syntax and supersedes conflicting earlier conditional-mode proposals.
 
-## Three distinct forms
+## Canonical forms
 
 ```atto
-// 1. Imperative, not value-producing. A closing fi is not necessary.
-if ready {
-  process()
-} else {
-  recover()
-}
-
-// 2. Value-producing. This form requires else and closes with fi.
-const int v = if true then
-  5
+if ready do
+    process();
 else
-  4
-fi;
+    recover();
+fi
 
-// 3. Value-producing ternary with optional lexical arm blocks.
-const int w = true ? 5 : 4;
-const int x = true ? { return 5 } : { return 4 };
-const int y = true ? { const int n = 4; n + 1 } : { 4 };
+val int v = if ready then 200 else 500 fi;
+val int w = ready ? 200 : 500;
 ```
 
-The strict canonical keyword-delimited **statement** form is `do if condition then ... else ... fi`. The historical form without `do` is admitted only in an explicitly selected legacy migration profile and never supplies an implicit result. The base single-expression conditional grammar and `ifnot`/`unless` proposal (#183) remain independent of this staged block-valued extension. A braced statement `if` must **not consume** a trailing `fi`. A stray `fi` after a standalone braced `if` is a syntax error. An immediately following `fi` may instead close a surrounding keyword-delimited conditional, and the parser must preserve that enclosing delimiter. Braced statement arms contain normal statements; any `return` exits the enclosing callable.
+`if/ifnot/unless condition do ... [elif condition do ...] [else ...] fi` is imperative: no implicit value, ordinary function return and loop transfers. Existing braced statement if remains self-delimiting and does not consume a following fi. Historical prefix `do if ... then` and statement-position `if ... then` are migration spellings, not canonical output. Do not reinterpret expression-position then as imperative. Preserve legacy parser behavior where necessary for migration.
 
-The value `if` is an *expression-position* construct. Block-valued arms and arm-local final return are a separately gated v2 target, not automatic admission in the base single-expression profile. It has a required `else`, optional `elif` arms (at most 128), strict bool predicates and a common static result type. A value `if` must never be rewritten as a statement `if` during formatting. Desugaring into an equivalent right-associated ternary is permitted only after respecting `if`/`fi` nesting and branch scope. Assignment inside the condition is forbidden.
+## Value if
 
-## Conditional arm blocks
+A value if requires else, fi, strict bool predicates and compatible non-void static result types. Optional elif arms use then. The final expression of each selected arm produces its value. A comma-separated expression sequence evaluates left to right, discarding intermediate values. A semicolon-separated statement/expression sequence evaluates left to right in lexical scope; the last expression yields its value even with a trailing semicolon.
 
-A block immediately after `?`, `:`, `then`, `elif ... then` or `else` in a value conditional is a **lexical arm block**. It is not a lambda, closure, async task, record literal or independently permitted standalone value-block syntax.
+```atto
+val int x = if ready then 200, 300 else 500, 400 fi;
+val int y = if ready then
+    200;
+    300;
+else
+    500;
+    400;
+fi;
+```
 
-The last *unterminated* expression supplies the arm value. Additionally, a final `return expression` (with or without a semicolon) supplies **that arm's value**, not the result of the enclosing function. This contextual exception matches the explicit user-facing ternary example and the Java draft #2797. Normal `return` elsewhere keeps its function-return meaning. A final expression followed by a semicolon discards its value; a missing arm value is a compiler error.
+Both yield 300 when ready and 400 otherwise. The final expression must be reachable and value-producing. Declaration-only, empty, void, incompatible and missing-value arms are rejected. Comma in the condition retains its existing condition-only meaning; nested call/collection separators are not arm separators. No global comma operator is introduced.
 
-Prior statements execute in order in a new lexical scope. Arm locals cannot leak. Both arms must type-check to the same compatible **non-void** result type and ownership/effect restrictions still apply. A `void` or `Unit`-only conditional belongs in statement position (`if ... { ... } else { ... }`) instead; a value-required conditional cannot silently discard the branch result. Unsupported branch-result profiles must fail at type checking, before code emission. Exactly one predicate evaluation and only the selected arm's effects execute. Right-associative ternary nesting and contextual postfix `?` propagation must remain distinct.
+## Ternary
 
-This decision **supersedes** draft PR #32's generic block paragraph that forbids arm-local `return`. General-purpose standalone value blocks are a separately versioned feature and must not inherit this arm-only rule accidentally.
+Single-expression ternary is equivalent to single-expression value if, with right associativity. A multi-statement ternary arm requires braces and explicit arm-local return or caret; an implicit tail alone is not canonical. Explicit result terminators are optional before the closing brace.
 
-## Verification gate
+```atto
+val int a = ready ? { 200; return 300; } : { 500; return 400; };
+val int b = ready ? { 200; ^ 300; } : { 500; ^ 400; };
+```
 
-The canonical source vectors and errors are in `contracts/conditional-expression-v2.json`. Compiler implementation is not proof: require real exact-head native/wasm/AOT guest execution, negative type/error tests, formatter round-trip preservation, branch laziness, ownership/effect proof and backend-specific receipts. CI that never ran steps is NOT_EXECUTED. Older v1 statements/ternaries must retain behavior.
+These returns exit the expression arm, not the enclosing function. Every reachable normal completion path supplies a value; return outside an expression arm retains ordinary meaning. The existing historical implicit ternary tail, where implemented, may be admitted in an explicitly selected migration profile, never silently substituted for explicit canonical return. No general standalone value-block, lambda or closure admission follows from this grammar.
+
+### Aggregate arms and brace disambiguation
+
+At the immediate start of either ternary arm, a bare `{` always opens an executable arm block, even when empty or when its contents resemble Record or Map fields. No lookahead, expected type, or parse-failure fallback may reinterpret it as an aggregate. A normal completion of an empty block is not a value. Use `struct{...}` for an explicit anonymous struct value (with field labels `name: value`) and `Record.of(...)` for explicit Record construction (identifier named arguments `name: value`). These are target constructor spellings, not a claim that they already exist in every compiler. `struct{}` and `Record.of()` denote their respective empty aggregates, subject to valid type/layout admission. They never denote empty executable blocks. Existing Record and Map literal forms outside direct ternary-arm entry are unchanged; ordinary explicitly grouped expressions retain their existing grammar. A named nominal struct initializer remains a separate form and must retain its nominal identity.
+
+```atto
+val s = ready ? struct{status: 200} : struct{status: 500};
+val r = ready ? Record.of(status: 200) : Record.of(status: 500);
+val t = ready ? { return struct{status: 200}; } : struct{status: 500};
+val u = ready ? Record.of(status: 200) : { ^ Record.of(status: 500); };
+```
+
+The formatter must preserve these syntactic categories and never emit a bare aggregate brace literal as the first token of a direct ternary arm. The arm parser dispatches on its initial token; constructor field colons and nested conditional colons are consumed by their own grammar, not mistaken for the outer separator. Both arms must type-check, preserve aggregate identity and layout, and evaluate field expressions once in source order only in the selected arm. Use typed joins/destination storage without mandatory heap allocation or closures. No implicit Record-to-struct conversion is introduced. Unsupported aggregate shapes fail before artifact emission; backend support remains unverified.
+
+## Shared semantics and lowering
+
+Evaluate the predicate once and only the selected branch. Check both branch types, scopes and ownership statically. Transfer the selected result before reverse-order cleanup of remaining branch locals; do not duplicate an owned result or allow loans to escape. Lower to branch CFG and typed join/PHI or destination-passing storage, with no mandatory heap allocation, runtime code generation or tracing GC. AOT and actor/suspension cleanup need separate proof.
+
+Formatter canonicalizes legacy imperative delimiters to if ... do ... fi, preserves value then, and retains explicit ternary arm return/caret. Do not change value/statement category or reorder expressions.
+
+## Verification
+
+The canonical source vectors and negative cases are in contracts/conditional-expression-v2.json. Require exact-head compiled guest execution, AOT where supported, negative checks, branch laziness and ownership cleanup, formatter round trips and backend receipts. A queued or zero-step CI run is NOT_EXECUTED. No backend is certified by this document.
