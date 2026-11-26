@@ -105,3 +105,26 @@ Require source/head/tree and compiler/artifact digests, actual executed steps, g
 The target inventory is now tracked by [conformance #631](https://github.com/atto-lang/atto-platform-conformance/pull/631): 20 operation effect rows and 20 case categories across eleven backends, all NOT_EXECUTED for guest evidence. The inventory is not an acceptance receipt.
 
 A success-conditional ownership argument is not an ordinary eager take! evaluation: until a typed transactional call effect and a failure-path owner location are specified in common IR, reject alloc_value/write_at/replace_at of non-Copy values rather than silently consuming or duplicating them. The initial executable profile may restrict these to Copy elements. For fallible cleanup, the caller must not regain an already-dropped element. A view cannot close the source region and cannot perform owner-only take_at/replace_at. Readonly ref! local leases continue to require explicit unref! on every admitted exit until a separately verified cleanup profile exists. The same_location operation compares live region generation/domain/offset, not content or raw address; stale inputs fail rather than returning an arbitrary equality result.
+
+## Borrow-by-default for all function and method boundaries
+
+The language default for nonprimitive object arguments to fnc and mtd is a scoped readonly borrow; it is not an opt-in language semantics switch. The existing [borrow-default migration profile](implicit-argument-borrow-v1.md) remains a staged implementation mechanism only. Unmigrated compiler paths must not silently move an object under the new contract.
+
+An ordinary Pointer<T> or PointerView<T> formal borrows the existing capability, not its ownership or a fresh capability token. Explicit Borrow<T> and borrow! spellings have equivalent read-loan facts. For a writable formal the caller must request an exclusive loan with mut or borrow! mut; the callee must have a proven write effect. The same rule applies to instance method receivers (including implicit this), static method arguments and synchronous local actor methods; remote actor messages use their separate transfer rules.
+
+| Call shape | Typed effect |
+| --- | --- |
+| inspect(p) / inspect(borrow! p) | BorrowRead; caller retains unique owner |
+| update(mut p) / update(borrow! mut p) | BorrowWrite; caller retains unique owner |
+| p.read_at(i) / p.len() | BorrowRead receiver; no capability duplication |
+| p.write_at(i, v) | BorrowWrite receiver, subject to existing source rights |
+| p.take_at(i) / p.replace_at(i, v) | exclusive receiver loan plus owner-only element authority; no region-owner transfer |
+| p.slice(i, n) / p.slice_mut(i, n) | readonly/exclusive child loan tied to receiver lifetime |
+| p.close() / unref! p | explicitly consuming receiver/operator; not admitted through a borrowed formal |
+| consume(take! p) | explicit consuming formal and caller move; no automatic move from ordinary call |
+
+For method calls, the receiver expression is evaluated once; the statically sealed receiver effect determines read, exclusive write or explicit consuming access. No method may upgrade a readonly local ref! lease, and no borrowed formal or view may close, unref, retain or export the underlying owner's token. A borrowed receiver with a proved mutable region loan may mutate elements but owner-only element take/replace require additional authority explicitly carried by the loan; no implicit promotion.
+
+All call loans include subsequent argument evaluation, nested calls and all normal/exceptional exits; borrowed results are tied to the originating receiver or formal. Reject unproved suspension, escape, rebind, callbacks, alias conflicts, and unknown external effects. For primitive value scalars the ordinary call remains by value. No automatic Copy/Clone/Sendable/Serializable for Pointer<T>. No heap wrapper, refcount or allocation merely to pass a borrow; backend ABI moves of a handle are not semantic copies.
+
+Target tests: implicit/explicit readonly calls are equivalent; mutable argument forms equivalent; read-only write and borrowed close/unref rejected; owner still usable after non-consuming call; receiver evaluation exactly once; conflicting argument/receiver loans rejected; returned view cannot outlive owner; primitive ABI unchanged; unsupported method or actor crossing rejected. These are target cases, not claims of executed compiler support.
