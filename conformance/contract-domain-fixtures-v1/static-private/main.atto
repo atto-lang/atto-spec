@@ -1,0 +1,7 @@
+define static contract Identity<T> as
+  fnc make(T value) -> T;
+end
+define class Wrong implements static Identity<int> as
+  static fnc make(int value) -> int { return value; }
+end
+pub fnc main(): int { return 42; }

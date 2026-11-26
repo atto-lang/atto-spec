@@ -5,6 +5,8 @@ on:
       - 'language/contract-domain-conformance-v1.md'
       - 'conformance/contract-domain-conformance-v1.json'
       - 'tests/contract-domain-conformance-v1.test.mjs'
+      - 'tests/contract-domain-fixtures-v1.test.mjs'
+      - 'conformance/contract-domain-fixtures-v1/**'
       - '.github/workflows/contract-domain-conformance-v1.yml'
 permissions:
   contents: read
@@ -23,5 +25,5 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          node --test tests/contract-domain-conformance-v1.test.mjs
+          node --test tests/contract-domain-conformance-v1.test.mjs tests/contract-domain-fixtures-v1.test.mjs
           echo 'HOST_ONLY: no compiler or guest parity certification.'

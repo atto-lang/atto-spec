@@ -1,0 +1,13 @@
+define trait First as
+  pub ping(): int { return 1; }
+end
+define trait Second as
+  pub ping(): int { return 2; }
+end
+define class Resolved implements First, Second as
+  pub ping(): int { return 42; }
+end
+pub fnc main(): int {
+  val Resolved obj = new Resolved();
+  return obj.ping();
+}
