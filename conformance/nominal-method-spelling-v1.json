@@ -323,6 +323,42 @@
       "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
       "no_artifact": true,
       "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.obsolete-method.mtd.plain.reject",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "source": "define class C as method mtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.obsolete-method.mtd.comment.reject",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "source": "define class C as method /* obsolete */ mtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.obsolete-method.method.plain.reject",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "source": "define class C as method method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.obsolete-method.method.comment.reject",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "source": "define class C as method /* obsolete */ method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true,
+      "status": "NOT_EXECUTED"
     }
   ]
 }
