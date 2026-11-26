@@ -25,7 +25,17 @@
     "ternary": {
       "syntax": "bool ? expression_or_arm_block : expression_or_arm_block",
       "associativity": "right",
-      "produces_value": true
+      "produces_value": true,
+      "arm_entry": {
+        "bare_braces": "executable_arm_block_only",
+        "struct_literal": "struct{...}",
+        "record_constructor": "Record.of(...)",
+        "empty_block": "reject_missing_value",
+        "empty_aggregates": "distinct_values_subject_to_type_layout",
+        "fallback": "never_reinterpret_block_as_aggregate",
+        "scope": "direct_ternary_arm_entry_only",
+        "formatter": "preserve_arm_category"
+      }
     }
   },
   "arm_block": {
@@ -217,6 +227,78 @@
       "kind": "reject_compile",
       "source": "pub fnc main(): int { return true ? { 5 } : { return 4; }; }",
       "expected_diagnostic": "E_VALUE_ARM"
+    },
+    {
+      "id": "ternary_struct_true",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val v = true ? struct{status: 42} : struct{status: 7}; return v.status; }",
+      "expected_result": 42
+    },
+    {
+      "id": "ternary_struct_false",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val v = false ? struct{status: 42} : struct{status: 7}; return v.status; }",
+      "expected_result": 7
+    },
+    {
+      "id": "ternary_record_true",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val v = true ? Record.of(status: 42) : Record.of(status: 7); return v.status; }",
+      "expected_result": 42
+    },
+    {
+      "id": "ternary_record_false",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val v = false ? Record.of(status: 42) : Record.of(status: 7); return v.status; }",
+      "expected_result": 7
+    },
+    {
+      "id": "ternary_struct_block_return",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val v = true ? { return struct{status: 42}; } : struct{status: 7}; return v.status; }",
+      "expected_result": 42
+    },
+    {
+      "id": "ternary_record_block_caret",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val v = false ? Record.of(status: 7) : { ^ Record.of(status: 42); }; return v.status; }",
+      "expected_result": 42
+    },
+    {
+      "id": "ternary_nested_record_field",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val v = true ? Record.of(status: false ? 7 : 42) : Record.of(status: 0); return v.status; }",
+      "expected_result": 42
+    },
+    {
+      "id": "ternary_empty_struct",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val v = true ? struct{} : struct{}; return 42; }",
+      "expected_result": 42
+    },
+    {
+      "id": "ternary_empty_record",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { val v = false ? Record.of() : Record.of(); return 42; }",
+      "expected_result": 42
+    },
+    {
+      "id": "ternary_empty_bare_block",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { val v = true ? {} : {}; return 0; }",
+      "expected_diagnostic": "E_VALUE_ARM"
+    },
+    {
+      "id": "ternary_bare_record_no_fallback",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { val v = true ? {status: 42} : Record.of(status: 7); return 0; }",
+      "expected_diagnostic": "E_SYNTAX"
+    },
+    {
+      "id": "ternary_bare_map_no_fallback",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { val v = true ? {\"status\" => 42} : Record.of(status: 7); return 0; }",
+      "expected_diagnostic": "E_SYNTAX"
     }
   ]
 }

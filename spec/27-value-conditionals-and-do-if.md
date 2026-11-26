@@ -73,10 +73,13 @@ if_head   = "if" | "ifnot" | "unless" ;
 if_expr   = if_head bool_expr "then" expr "else" expr "fi" ;
 if_stmt   = if_head bool_expr "do" { stmt } [ "else" { stmt } ] "fi"
           | if_head bool_expr "{" { stmt } "}" [ "else" "{" { stmt } "}" ] ;
-ternary   = expr "?" expr ":" expr ;
+ternary   = expr "?" ternary_arm ":" ternary_arm ;
+ternary_arm = explicit_result_block | expr ;
 ```
 
 Context is significant: `return if ...`, assignment initializers, call arguments and parentheses require expressions, whereas a statement-level `if ... do` or brace-style `if` is an imperative statement. The lexer reserves `do` and `if` separately; do not add a fused `do-if` token. Both imperative syntaxes lower through the same conditional statement representation; value `if` may share checked lowering with the ternary expression.
+
+At direct ternary-arm entry, bare `{` commits to `explicit_result_block`; never fall back to an aggregate literal. Explicit aggregate operands use `struct{...}` or `Record.of(...)`. See the [aggregate arm rules](27-conditional-expression-modes.md#aggregate-arms-and-brace-disambiguation) for empty aggregates, nested expressions, compatibility and formatter behavior.
 
 The formatter preserves `if ... do` versus brace-style `if`; it must never silently rewrite a value-form conditional into imperative statements. New source and regression fixtures use `.atto`. Legacy `.ores` remains for explicit compatibility tests.
 

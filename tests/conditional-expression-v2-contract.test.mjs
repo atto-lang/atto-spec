@@ -37,3 +37,20 @@ test('value sequences and explicit ternary results are distinct', () => {
   for (const [id, value] of [['value_if_comma_true',300],['value_if_comma_false',400],['value_if_semicolon_tail',400],['ternary_caret_local',301],['value_if_lazy_order',42],['imperative_suffix_do',42]]) assert.equal(c.cases.find(x => x.id === id).expected_result,value);
   for (const id of ['value_if_declaration_only','ternary_implicit_tail']) assert.equal(c.cases.find(x => x.id === id).kind,'reject_compile');
 });
+
+
+test('direct ternary arms distinguish aggregate constructors from executable blocks', () => {
+  const a = c.forms.ternary.arm_entry;
+  assert.equal(a.bare_braces, 'executable_arm_block_only');
+  assert.equal(a.struct_literal, 'struct{...}');
+  assert.equal(a.record_constructor, 'Record.of(...)');
+  assert.equal(a.fallback, 'never_reinterpret_block_as_aggregate');
+  assert.equal(a.scope, 'direct_ternary_arm_entry_only');
+  const byId = new Map(c.cases.map(x => [x.id, x]));
+  for (const [id, expected] of [['ternary_struct_true',42],['ternary_struct_false',7],['ternary_record_true',42],['ternary_record_false',7],['ternary_struct_block_return',42],['ternary_record_block_caret',42],['ternary_nested_record_field',42],['ternary_empty_struct',42],['ternary_empty_record',42]]) {
+    assert.equal(byId.get(id).kind,'accept_execute');
+    assert.equal(byId.get(id).expected_result,expected);
+  }
+  for (const id of ['ternary_empty_bare_block','ternary_bare_record_no_fallback','ternary_bare_map_no_fallback']) assert.equal(byId.get(id).kind,'reject_compile');
+  assert.equal(byId.get('ternary_empty_bare_block').expected_diagnostic,'E_VALUE_ARM');
+});

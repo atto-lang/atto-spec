@@ -45,6 +45,19 @@ val int b = ready ? { 200; ^ 300; } : { 500; ^ 400; };
 
 These returns exit the expression arm, not the enclosing function. Every reachable normal completion path supplies a value; return outside an expression arm retains ordinary meaning. The existing historical implicit ternary tail, where implemented, may be admitted in an explicitly selected migration profile, never silently substituted for explicit canonical return. No general standalone value-block, lambda or closure admission follows from this grammar.
 
+### Aggregate arms and brace disambiguation
+
+At the immediate start of either ternary arm, a bare `{` always opens an executable arm block, even when empty or when its contents resemble Record or Map fields. No lookahead, expected type, or parse-failure fallback may reinterpret it as an aggregate. A normal completion of an empty block is not a value. Use `struct{...}` for an explicit anonymous struct value (with field labels `name: value`) and `Record.of(...)` for explicit Record construction (identifier named arguments `name: value`). These are target constructor spellings, not a claim that they already exist in every compiler. `struct{}` and `Record.of()` denote their respective empty aggregates, subject to valid type/layout admission. They never denote empty executable blocks. Existing Record and Map literal forms outside direct ternary-arm entry are unchanged; ordinary explicitly grouped expressions retain their existing grammar. A named nominal struct initializer remains a separate form and must retain its nominal identity.
+
+```atto
+val s = ready ? struct{status: 200} : struct{status: 500};
+val r = ready ? Record.of(status: 200) : Record.of(status: 500);
+val t = ready ? { return struct{status: 200}; } : struct{status: 500};
+val u = ready ? Record.of(status: 200) : { ^ Record.of(status: 500); };
+```
+
+The formatter must preserve these syntactic categories and never emit a bare aggregate brace literal as the first token of a direct ternary arm. The arm parser dispatches on its initial token; constructor field colons and nested conditional colons are consumed by their own grammar, not mistaken for the outer separator. Both arms must type-check, preserve aggregate identity and layout, and evaluate field expressions once in source order only in the selected arm. Use typed joins/destination storage without mandatory heap allocation or closures. No implicit Record-to-struct conversion is introduced. Unsupported aggregate shapes fail before artifact emission; backend support remains unverified.
+
 ## Shared semantics and lowering
 
 Evaluate the predicate once and only the selected branch. Check both branch types, scopes and ownership statically. Transfer the selected result before reverse-order cleanup of remaining branch locals; do not duplicate an owned result or allow loans to escape. Lower to branch CFG and typed join/PHI or destination-passing storage, with no mandatory heap allocation, runtime code generation or tracing GC. AOT and actor/suspension cleanup need separate proof.
