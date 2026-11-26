@@ -359,6 +359,714 @@
       "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
       "no_artifact": true,
       "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "class.obsolete-matrix.ping.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub method ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.obsolete-matrix.ping.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as method\tping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.obsolete-matrix.ping.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as method\nping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.obsolete-matrix.ping.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as method /* declaration marker */ ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.obsolete-matrix.mtd.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub method mtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.obsolete-matrix.mtd.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as method\tmtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.obsolete-matrix.mtd.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as method\nmtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.obsolete-matrix.mtd.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as method /* declaration marker */ mtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.obsolete-matrix.method.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub method method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.obsolete-matrix.method.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as method\tmethod(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.obsolete-matrix.method.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as method\nmethod(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.obsolete-matrix.method.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as method /* declaration marker */ method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.ping.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as pub method ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.ping.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as method\tping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.ping.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as method\nping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.ping.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as method /* declaration marker */ ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.mtd.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as pub method mtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.mtd.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as method\tmtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.mtd.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as method\nmtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.mtd.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as method /* declaration marker */ mtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.method.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as pub method method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.method.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as method\tmethod(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.method.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as method\nmethod(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "actor.obsolete-matrix.method.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define actor C as method /* declaration marker */ method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.ping.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as pub method ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.ping.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as method\tping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.ping.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as method\nping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.ping.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as method /* declaration marker */ ping(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.mtd.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as pub method mtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.mtd.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as method\tmtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.mtd.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as method\nmtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.mtd.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as method /* declaration marker */ mtd(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.method.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as pub method method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.method.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as method\tmethod(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.method.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as method\nmethod(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "struct.obsolete-matrix.method.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define struct C as method /* declaration marker */ method(): int { return 42; } end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.ping.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as pub method ping(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.ping.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as method\tping(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.ping.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as method\nping(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.ping.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as method /* declaration marker */ ping(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.mtd.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as pub method mtd(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.mtd.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as method\tmtd(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.mtd.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as method\nmtd(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.mtd.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as method /* declaration marker */ mtd(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.method.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as pub method method(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.method.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as method\tmethod(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.method.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as method\nmethod(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "interface.obsolete-matrix.method.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define interface C as method /* declaration marker */ method(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.ping.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as pub method ping(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.ping.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as method\tping(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.ping.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as method\nping(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.ping.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as method /* declaration marker */ ping(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.mtd.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as pub method mtd(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.mtd.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as method\tmtd(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.mtd.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as method\nmtd(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.mtd.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as method /* declaration marker */ mtd(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.method.public",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as pub method method(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.method.tab",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as method\tmethod(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.method.newline",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as method\nmethod(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "trait.obsolete-matrix.method.block-comment",
+      "expect": "syntax_reject",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define trait C as method /* declaration marker */ method(): int; end\npub fnc main(): int { return 0; }\n",
+      "diagnostic_family": "OBSOLETE_METHOD_INTRODUCER",
+      "no_artifact": true
+    },
+    {
+      "id": "class.accept-matrix.bare.trivia",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub /* declaration */ ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.bare.multiline",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub ping(\n): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.bare.self",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub ping(self): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.bare.value",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub ping(int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.bare.self-value",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub ping(self, int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.bare.split-self",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub ping(self)(int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.bare.formal-comment",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub ping(/* formal */ int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.fnc.trivia",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub fnc /* declaration */ ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.fnc.multiline",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub fnc ping(\n): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.fnc.self",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub fnc ping(self): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.fnc.value",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub fnc ping(int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.fnc.self-value",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub fnc ping(self, int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.fnc.split-self",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub fnc ping(self)(int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.fnc.formal-comment",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub fnc ping(/* formal */ int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.mtd.trivia",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub mtd /* declaration */ ping(): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.mtd.multiline",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub mtd ping(\n): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.mtd.self",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub mtd ping(self): int { return 42; } end\npub fnc main(): int { return new C().ping(); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.mtd.value",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub mtd ping(int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.mtd.self-value",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub mtd ping(self, int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.mtd.split-self",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub mtd ping(self)(int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
+    },
+    {
+      "id": "class.accept-matrix.mtd.formal-comment",
+      "expect": "compile_and_run",
+      "entry": "main.atto",
+      "status": "NOT_EXECUTED",
+      "source": "define class C as pub mtd ping(/* formal */ int n): int { return n + 2; } end\npub fnc main(): int { return new C().ping(40); }\n",
+      "expected_return_int": 42
     }
   ]
 }
