@@ -119,6 +119,51 @@ types. The formatter should prefer `defer { ... };` and
 captures are present. A bare `recover { ... }` is intentionally not admitted
 because error/cursor handling must be explicit.
 
+### Owner-approved callback factory pipelines (implementation target)
+
+The registration keyword precedes the entire functional pipeline. The
+following forms are equivalent to their explicitly invoked factory
+counterparts, using the existing statically typed registration mechanism:
+
+```atto
+defer 5 |> (|int captured| -> || -> {
+  stdio.println(captured);
+});
+recover 9 |> (|int fallback| -> |ErrorView err, RecoveryCursor cursor| -> {
+  stdio.println(err.message);
+  return fallback;
+});
+defer (5, "hello") |> (|int captured, string msg| -> || -> {
+  stdio.println(captured);
+  stdio.println(msg);
+});
+```
+
+A direct pipeline into an inline factory evaluates its input(s) once in
+source order at registration, binds the factory parameters, and installs
+the resulting callback only after successful evaluation and capture.
+The inner callback is not invoked by the pipeline. Parenthesized positional
+inputs use the same arity, type and ownership checks as the equivalent
+factory call. Both `_ ->` and `|| ->` denote the inner nullary cleanup.
+
+For general callable-producing pipelines, the target grouping is
+`defer (a |> b |> c);` / `recover (a |> b |> c);`, with the full
+pipeline evaluated at registration, and the final callback's latent
+effects checked separately. `a |> defer factory` and `a |> recover factory`
+are not registration syntax. This does not change ordinary functional or
+actor pipeline semantics or introduce implicit suspension. A suspendable
+callback requires existing effect/lifetime admission; no borrowed value
+may outlive its valid scope and no recovery handle may escape.
+
+The direct static factory subset is proposed for implementation in
+[atto-source.rs #693](https://github.com/atto-lang/atto-source.rs/pull/693).
+General multi-stage and named callable-valued pipelines, suspendable
+callbacks, formatter support, and other backends remain separately gated.
+Require positive/negative compiled guest traces for once-only capture,
+LIFO cleanup, normal return versus failure, arity/type mismatch,
+failed registration, and cursor non-escape. This amendment is a language
+target, not evidence that any new syntax has passed guest execution.
+
 `ErrorView` is a **non-escapable, read-only, scope-bound view** over the
 original failure. The initial verified browser profile exposes only
 `err.message: string` and `err.is_raise: bool` (true for an escalated
