@@ -428,6 +428,27 @@
       "expectation": "differential",
       "obligation": "deterministic rejection; no optimistic proof",
       "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.non_final_owner_drop",
+      "category": "arc",
+      "expectation": "runtime",
+      "obligation": "ordinary Arc payload remains live until final strong release",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.revoked_region_drain",
+      "category": "arc",
+      "expectation": "runtime",
+      "obligation": "revocable region denies new access while admitted lease drains; not ordinary Arc semantics",
+      "evidence": "NOT_EXECUTED"
+    },
+    {
+      "id": "arc.weak_upgrade_live_strong",
+      "category": "arc",
+      "expectation": "runtime",
+      "obligation": "ordinary Weak upgrade with live strong owner must not fail merely on read lease contention",
+      "evidence": "NOT_EXECUTED"
     }
   ]
 }
