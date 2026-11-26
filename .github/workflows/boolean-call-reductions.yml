@@ -1,0 +1,29 @@
+name: Named Boolean reduction reference (not guest evidence)
+on:
+  push:
+    paths:
+      - 'tests/boolean-operator-reference.mjs'
+      - 'contracts/boolean-call-reductions-v1/**'
+      - 'docs/CANONICAL_BOOLEAN_OPERATORS_V1.md'
+      - '.github/workflows/boolean-call-reductions.yml'
+  pull_request:
+    paths:
+      - 'tests/boolean-operator-reference.mjs'
+      - 'contracts/boolean-call-reductions-v1/**'
+      - 'docs/CANONICAL_BOOLEAN_OPERATORS_V1.md'
+      - '.github/workflows/boolean-call-reductions.yml'
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Run reference vectors
+        run: |
+          git rev-parse HEAD HEAD^{tree}
+          node tests/boolean-operator-reference.mjs
