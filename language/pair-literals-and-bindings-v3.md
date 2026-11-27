@@ -112,6 +112,28 @@ Key proof for a Tuple of Pairs uses authenticated Pair identity, compile-time na
 
 First implement a shared call-planning contract, typed operand classification and diagnostic negatives; then actual parser + typed IR, ordered lowering and compiled guests for each backend. Cover nonliteral argument effects in reverse parameter order, prebuilt tuples and Records, empty and mixed tuples, explicit/default/duplicate slots, dynamic keys, unknown names, generic instantiations, .apply preservation, and no-artifact ownership failures. Host/reference checks are not evidence of guest execution.
 
+## Intrinsic read-only key and value projections (accepted)
+
+The canonical property names are `key` and `value` for both nominal association types. For a resolved Pair<V>, .key has type string and .value has type V; for a resolved Entry<K,V>, .key has type K and .value has type V. The compiler must resolve the authenticated nominal receiver before lowering the projection; unrelated user-defined members follow ordinary member rules. This supersedes the old Pair first/second terminology in the contextual arrow contract. Neither get_key() nor get_value() is a required intrinsic; legacy APIs, if any, are separate compatibility work. The formatter must not rewrite properties into method calls.
+
+```atto
+const x := 5;
+const int n = x.value;
+const string label = x.key;
+const e = 5 => "hello";
+const int k = e.key;
+const string s = e.value;
+const foo = |int x| -> stdio.println(x);
+foo(x.value); // valid
+// foo(x);    // E_TYPE: Pair<int> is not int
+```
+
+The projection evaluates the receiver exactly once, preserves checked effects, and denotes a read-only component place with normal static ownership and lifetime information. Copy-safe payload reads may produce a copy; non-Copy payload reads do not implicitly clone, move, extend loans or acquire mutable access. Explicit transfer/borrowing is subject to existing component-place rules; if unsupported, reject before guest emission. No direct assignment, compound assignment or mutable loan replacing either slot, even through a mut binding. Rebinding an eligible let to a new Pair remains distinct. Read-only slots do not imply deep freezing of nested referents; applicable ownership and referent permissions govern nested access. An erased existential Pair has an existential payload, not an implicitly inferred concrete V; require checked narrowing under the existing type system.
+
+No implicit extraction of .key or .value during assignment, return, arithmetic, comparison with a scalar, normal argument passing, generic inference, overload resolution, or positional .apply(). A function accepting Pair<int> receives the Pair intact. A Record field of Pair type likewise stores the whole Pair; a scalar field requires the explicit compatible projection. Named calls such as foo(x = p) do not extract a payload. Explicit named aggregate spread is the specified separate operation that projects Pair payloads by proved names. Record.of and Map.of consume association components only through their own checked explicit constructor contracts. No extra allocation or runtime reflection is required for ordinary projections.
+
+Test literal, factory, name-derived binding and already-materialized receiver equivalence; concrete static key/value types, both nominal kinds, receiver effects once, immutable slot negatives, explicit scalar argument versus direct Pair mismatch, preservation of Pair arguments, .apply versus named spread, shadowed nominal types, moved and borrowed receivers, and constexpr projections. No backend may claim support without actual typed checking and executed guest cases.
+
 ## Verification
 
 Each backend and formatter must implement the distinct PairExpr, EntryExpr, named-argument and Record nodes; name-derived declaration lowers to ordinary typed binding and Pair construction, preserving source spans. Test exact-key equivalence, lexical shadowing, once-only RHS evaluation, const rejection of non-constexpr values, type mismatch, immutable binding rejection, let rebind and key dataflow, nested groups, constructor shape, mixed syntax, wrong arity, formatter round trips and compiled guest execution. Preserve existing allocation, ownership, cleanup, actor isolation and no-artifact-on-rejection rules. Heterogeneous Pair representation and runtime support are independently gated; no parser or host model is executable parity evidence.
