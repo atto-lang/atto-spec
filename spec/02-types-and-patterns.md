@@ -181,12 +181,12 @@ const Pattern p2 = is int;
 const Pattern p3 = in [5, 6, 7];
 const Pattern[] z = [on true, on "x", is Foo, in [1, 2, 4, 5]];
 type X = int | bool;
-const Pattern[] types = [is int, is bool];
+const Pattern[] type_patterns = [is int, is bool];
 
 match value over
     on p1 -> 1,
     in z -> 2,
-    is in types -> 3,
+    is in type_patterns -> 3,
     on _ -> 0
 end
 ```
