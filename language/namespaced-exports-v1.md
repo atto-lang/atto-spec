@@ -63,7 +63,7 @@ export_decl       = "export", "pub", [ "[", "pkg", "]" ],
                     [ export_kind ], identifier, ";" ;
 export_kind       = "fnc" | "class" | "actor" | "enum" | "module" ;
 namespace_header  = "use", "namespace", qualified_name, ";"
-                  | "use", "default", "namespace", ";"
+                  | "use", "default", "namespace", [ "(", positive_integer, ")" ], ";"
                   | "use", "file", "namespace", ";"
                   | "use", "folder", "namespace", ";" ;
 ```
