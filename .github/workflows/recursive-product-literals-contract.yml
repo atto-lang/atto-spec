@@ -1,0 +1,27 @@
+name: Recursive product literals contract (host only)
+on:
+  pull_request:
+    paths:
+      - 'language/recursive-product-literals-v1.md'
+      - 'language/pair-literals-and-bindings-v3.md'
+      - 'conformance/recursive-product-literals-v1.json'
+      - 'tests/recursive-product-literals-contract.test.mjs'
+      - '.github/workflows/recursive-product-literals-contract.yml'
+  push:
+    paths:
+      - 'language/recursive-product-literals-v1.md'
+      - 'language/pair-literals-and-bindings-v3.md'
+      - 'conformance/recursive-product-literals-v1.json'
+      - 'tests/recursive-product-literals-contract.test.mjs'
+      - '.github/workflows/recursive-product-literals-contract.yml'
+permissions:
+  contents: read
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node --test tests/recursive-product-literals-contract.test.mjs
