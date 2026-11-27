@@ -198,6 +198,102 @@
       "source": "type X = <type=int,size=2>; const X x = 1;",
       "expected": "argument_kind",
       "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "infer-replacement",
+      "outcome": "accept",
+      "source": "type Base = <type=int,size=5>; const Array<infer X from Base> x = [1,2,3] with {size=infer};",
+      "expected": "X.size=3; Base.size=5",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "infer-zero",
+      "outcome": "accept",
+      "source": "type Base = <type=int,size=5>; const Array<infer X from Base> x = [] with {size=infer};",
+      "expected": "X.size=0; Base.size=5",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "infer-retains-type",
+      "outcome": "reject",
+      "source": "type Base = <type=int,size=5>; const Array<infer X from Base> x = [\"a\"] with {size=infer};",
+      "expected": "element_type_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "infer-without-seed",
+      "outcome": "reject",
+      "source": "const Array x = [1,2] with {size=infer};",
+      "expected": "invalid_inference_context",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "infer-conflict",
+      "outcome": "reject",
+      "source": "type Base = <type=int,size=5>; const Array<infer X from Base,size=6> x = [1,2] with {size=infer};",
+      "expected": "conflicting_argument",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "compose-disjoint",
+      "outcome": "accept",
+      "source": "type E = <type=int>; type S = <size=3>; const Array<E,S> x = [1,2,3];",
+      "expected": "Array<type=int,size=3>",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "compose-overlap",
+      "outcome": "reject",
+      "source": "type E = <type=int,size=3>; type S = <size=3>; const Array<E,S> x = [1,2,3];",
+      "expected": "duplicate_argument",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "projection",
+      "outcome": "accept",
+      "source": "const Array<type=int,size=3> a = [1,2,3]; type P = params_of(a); const Array<P> b = [4,5,6];",
+      "expected": "P.type=int; P.size=3",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "projection-type",
+      "outcome": "accept",
+      "source": "type P = params_of(Array<type=int,size=3>); const Array<P> b = [4,5,6];",
+      "expected": "P.size=3",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "projection-unspecialized",
+      "outcome": "reject",
+      "source": "type P = params_of(Array);",
+      "expected": "unresolved_inference",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "projection-scalar",
+      "outcome": "reject",
+      "source": "type P = params_of(int);",
+      "expected": "not_parametric_specialization",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "derived-guest-result",
+      "outcome": "accept",
+      "source": "type Base = <type=int,size=5>; fnc main(): int { const Array<infer X from Base> x = [1,2,3] with {size=infer}; type Y = X with {size=2}; const Array<Y> y = [10,20]; return X.size + Y.size + Base.size; }",
+      "expected": "exit 10",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
     }
   ]
 }
