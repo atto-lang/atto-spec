@@ -74,7 +74,7 @@ qualified_name = identifier, { ".", identifier } ;
 builtin_name = ("core" | "alloc" | "std"), ".", identifier ;
 ```
 
-Disambiguation: a comma-separated namespace list requires the explicit `namespace` keyword; untyped comma lists are legacy selective imports. A bare single namespace selector can be dotted. Compatibility star-as always binds a source's public export view. Strings are static literals, no interpolation or computed imports. Semicolons follow existing source grammar. Built-in units remain flat in this amendment; nested exported namespaces inside a unit are not new library units. The [namespace modes v2 amendment](namespace-modes-v2.md) governs the five source-header spellings: named, default/file/omitted (file-local), and folder; `using` is a resource scope, not import.
+Disambiguation: a comma-separated namespace list requires the explicit `namespace` keyword; untyped comma lists are legacy selective imports. A bare single namespace selector can be dotted. Compatibility star-as always binds a source's public export view. Strings are static literals, no interpolation or computed imports. Semicolons follow existing source grammar. Built-in units remain flat in this amendment; nested exported namespaces inside a unit are not new library units. The [namespace modes v2 amendment](namespace-modes-v2.md) governs the five source-header spellings: named (including explicit numeric default(N)), default/file/omitted (file-local), and folder; `using` is a resource scope, not import.
 
 ### 2.1 Mixed-kind selectors with explicit delimited groups
 
@@ -163,12 +163,13 @@ use namespace network.http;
 
 import pkg.network.http;    // current package's logical export hierarchy
 import pkg.config;
-import super.config;        // parent namespace
-import super.super.config;  // grandparent
+import parent.config;       // parent namespace
+import super.config;        // equivalent spelling
+import parent.parent.config; // grandparent
 import self.utils;          // current namespace
 ```
 
-The contextual roots pkg, self and super are namespace paths only in this import grammar; pkg followed by a string remains the external dependency selector. Root paths use the pinned current package's declared namespace graph, not a physical directory walk. They do not modify the separate pkg:: / imports:: callable lookup semantics. self/super require an admitted named or folder namespace graph; file-local modes (omitted/default/file) have no named namespace parent, and do not admit these namespace-path roots. No filesystem walk or implicit aggregation. Reject traversal above package root. Apply existing same-package and private visibility rules; no access to another package via super. Do not treat a group self leaf as a lexical self root.
+The contextual roots pkg, self, parent and super are namespace paths only in this import grammar; pkg followed by a string remains the external dependency selector. [Namespace modes v2](namespace-modes-v2.md#relative-namespace-references-proposed-parent-spelling) defines tagged named/derived, folder and file-local parent anchors. Parent and super are equivalent, repeatable leading ancestor components. Resolve only through the pinned logical graph, not a filesystem walk or implicit aggregation; a file-local source may navigate through its verified containing-folder anchor but never gains membership. Pathless virtual units cannot ascend. Reject traversal above package root, absent targets and unauthorized visibility. Do not modify pkg:: / imports:: callable lookup or treat a group self leaf as a lexical self root.
 
 ```atto
 import pkg '@atto-lang/network/http';
@@ -183,14 +184,14 @@ direct_import = [ mixed_kind ], direct_tree ;
 direct_tree = direct_path, [ "as", qualified_name ]
             | direct_path, ".", import_group ;
 direct_path = import_root, { ".", identifier } ;
-import_root = identifier | "pkg" | "self" | "super" ;
+import_root = identifier | "pkg" | "self" | "parent" | "super" ;
 import_group = "{", group_leaf, { ",", group_leaf }, [ "," ], "}" ;
 group_leaf = [ mixed_kind ], ( direct_tree | "self", [ "as", identifier ] ) ;
 ```
 
-This is a target grammar sketch: parser must distinguish a terminal dot followed by a group from a dotted identifier; repeated super components are contextual only at the root, and self as a group leaf is special. Typed group prefixes are not required: specify kinds on individual leaves. Reject use as the import verb and :: as an import-path separator. Validate all new names before publishing bindings; duplicate explicit declarations and ambiguous automatic candidates follow sections 5–6.
+This is a target grammar sketch: parser must distinguish a terminal dot followed by a group from a dotted identifier; repeated parent/super components are contextual only at the root, and self as a group leaf is special. Typed group prefixes are not required: specify kinds on individual leaves. Reject use as the import verb and :: as an import-path separator. Validate all new names before publishing bindings; duplicate explicit declarations and ambiguous automatic candidates follow sections 5–6.
 
-Additional NOT_EXECUTED acceptance cases: mixed lists (equivalent outer parentheses, brackets and explicit undelimited lists, kind-first and kind-inside groups using either delimiter independently, mixed delimiters, singleton groups, parenthesized x/y/z module group, explicit repeated kinds, no cross-item inheritance, aliases, wrong-kind, mismatched delimiters, malformed and excessive-nesting negatives), all source domains, duplicate names and no partial binding; direct leaf inferred/typed kind, nested group expansion, self leaf aliases, current/parent/grandparent lookup, root escape and headerless negative, external suffix ambiguity and no discovery, cyclic alias graph, private exports, invalid/empty groups, trailing comma behavior, and flattened-star denial. Compare equivalent from/direct/group/mixed guests and formatter round-trips at exact compiler heads.
+Additional NOT_EXECUTED acceptance cases: mixed lists (equivalent outer parentheses, brackets and explicit undelimited lists, kind-first and kind-inside groups using either delimiter independently, mixed delimiters, singleton groups, parenthesized x/y/z module group, explicit repeated kinds, no cross-item inheritance, aliases, wrong-kind, mismatched delimiters, malformed and excessive-nesting negatives), all source domains, duplicate names and no partial binding; direct leaf inferred/typed kind, nested group expansion, self leaf aliases, current/parent/grandparent lookup, root escape, pathless file negative, file-local folder-anchor lookup, parent/super equivalence, external suffix ambiguity and no discovery, cyclic alias graph, private exports, invalid/empty groups, trailing comma behavior, and flattened-star denial. Compare equivalent from/direct/group/mixed guests and formatter round-trips at exact compiler heads.
 
 ### 2.3 Equivalent built-in namespace spellings and exact binding sets
 
