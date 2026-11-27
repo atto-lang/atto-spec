@@ -58,12 +58,6 @@
       "oracle": "one positional Record argument; fragment assumes process exists"
     },
     {
-      "id": "anonymous-paren-colon",
-      "source": "process((name : \"Alice\", age : 30));",
-      "expect": "accept",
-      "oracle": "one positional Record argument"
-    },
-    {
       "id": "anonymous-brace-pair",
       "source": "process({name := \"Alice\", age := 30});",
       "expect": "accept",
@@ -260,6 +254,44 @@
       "source": "let mut x = 9; const r = {x = 1};",
       "expect": "accept",
       "oracle": "outer x unchanged (fragment assumes ordinary mutable declaration grammar)"
+    },
+    {
+      "id": "call-two-named-equals",
+      "source": "foo(x = 4, y = 8);",
+      "expect": "accept",
+      "oracle": "two named slots, no local writes"
+    },
+    {
+      "id": "call-one-brace-record-equals",
+      "source": "foo({x = 4, y = 8});",
+      "expect": "accept",
+      "oracle": "one positional Record, no flattening or local writes"
+    },
+    {
+      "id": "call-named-brace-record",
+      "source": "foo(data = {x = 4, y = 8});",
+      "expect": "accept",
+      "oracle": "one named slot with Record value"
+    },
+    {
+      "id": "call-brace-record-duplicate",
+      "source": "foo({x = 4, x = 8});",
+      "expect": "reject",
+      "oracle": "duplicate Record label; not duplicate call slot"
+    }
+  ],
+  "pending_call_syntax": [
+    {
+      "id": "anonymous-paren-colon",
+      "source": "process((name : \"Alice\", age : 30));",
+      "expect": "UNRESOLVED_CANDIDATE",
+      "oracle": "Not a portable positive or negative test pending owner ratification."
+    },
+    {
+      "id": "anonymous-paren-equals",
+      "source": "process((x = 4, y = 8));",
+      "expect": "UNRESOLVED",
+      "oracle": "Do not classify as positional Record or named-call flattening until resolved."
     }
   ]
 }
