@@ -175,3 +175,10 @@ The structured logger API should admit one or more explicit Record field bundles
 ## Verification
 
 Each backend and formatter must implement the distinct PairExpr, EntryExpr, named-argument and Record nodes; name-derived declaration lowers to ordinary typed binding and Pair construction, preserving source spans. Test exact-key equivalence, lexical shadowing, once-only RHS evaluation, const rejection of non-constexpr values, type mismatch, immutable binding rejection, let rebind and key dataflow, nested groups, constructor shape, mixed syntax, wrong arity, formatter round trips and compiled guest execution. Preserve existing allocation, ownership, cleanup, actor isolation and no-artifact-on-rejection rules. Heterogeneous Pair representation and runtime support are independently gated; no parser or host model is executable parity evidence.
+
+### Implementation checkpoint (2026-11-27)
+
+- Rust call planner and equals named argument parser: [atto-source.rs #754](https://github.com/atto-lang/atto-source.rs/pull/754), exact head 62a2d76648564bd29ccd2a80069c110f1a79425e. Source spread remains explicitly gated.
+- Rust lexical Record capture: [atto-source.rs #755](https://github.com/atto-lang/atto-source.rs/pull/755), exact head feda28ba34c1f8f6d49eb45afcc9590c1a48626a. Parser emits ordinary scoped Var fields; typed closed Record lowering inherited from #287. Tests target val aggregates, not constexpr Record allocation, which is still rejected by the parent. Guest tests queued, NOT_EXECUTED.
+- Formatter [atto-format #101](https://github.com/atto-lang/atto-format/pull/101), exact head 224445db1099de0a0dbe2b34594c196034ea37d3. Adds := continuation recognition and syntax-preservation/idempotence tests; queued, NOT_EXECUTED.
+- Outstanding: constexpr Record and Pair aggregate representation, anonymous/declared Struct capture lowering, canonical Pair projections and no implicit scalar conversion, typed spread and ordered IR temporaries, structured logger overload with real event sink, independent backend execution. No compiler parity claim. All PRs remain draft.
