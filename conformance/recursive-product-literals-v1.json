@@ -1,7 +1,7 @@
 {
   "schema": "atto.recursive-product-literals-v1",
   "status": "TARGET_NOT_EXECUTED",
-  "notes": "Independent source fragments; compile in appropriate local scope. Expected shapes and diagnostics are targets, not executed evidence.",
+  "notes": "Independent source fragments; compile in appropriate local scope. Expected shapes and diagnostics are targets, not executed evidence. Quoted equals cases are a candidate extension to #299; not ratified or executed.",
   "vectors": [
     {
       "id": "pair-tuple",
@@ -269,9 +269,9 @@
     },
     {
       "id": "quoted-record-label",
-      "kind": "reject",
+      "kind": "accept",
       "source": "const r = (\"x\"=42);",
-      "expect": "quoted equals is not Record field"
+      "expect": "one-field Record with identifier x under candidate quoted-label rule"
     },
     {
       "id": "wrong-expected-tuple",
@@ -302,6 +302,126 @@
       "kind": "reject",
       "source": "const r = (first=x:=42); const int n=r.first;",
       "expect": "Pair field cannot implicitly become int"
+    },
+    {
+      "id": "quoted-nested-record",
+      "kind": "accept",
+      "source": "const r = (\"outer\"=(\"inner\"=42));",
+      "expect": "same closed Record shape as bare labels"
+    },
+    {
+      "id": "quoted-record-mixed",
+      "kind": "accept",
+      "source": "const r = (\"x\"=1,y=2);",
+      "expect": "two fields x,y"
+    },
+    {
+      "id": "quoted-record-duplicate",
+      "kind": "reject",
+      "source": "const r = (\"x\"=1,x=2);",
+      "expect": "duplicate field after decoded label validation"
+    },
+    {
+      "id": "quoted-record-hyphen",
+      "kind": "reject",
+      "source": "const r = (\"outer-key\"=1);",
+      "expect": "invalid identifier label"
+    },
+    {
+      "id": "quoted-record-space",
+      "kind": "reject",
+      "source": "const r = (\"outer key\"=1);",
+      "expect": "invalid identifier label"
+    },
+    {
+      "id": "quoted-record-punctuation",
+      "kind": "reject",
+      "source": "const r = (\"x.y\"=1);",
+      "expect": "invalid identifier label"
+    },
+    {
+      "id": "quoted-record-digit",
+      "kind": "reject",
+      "source": "const r = (\"2x\"=1);",
+      "expect": "invalid identifier label"
+    },
+    {
+      "id": "quoted-record-empty",
+      "kind": "reject",
+      "source": "const r = (\"\"=1);",
+      "expect": "empty identifier label"
+    },
+    {
+      "id": "quoted-record-keyword",
+      "kind": "reject",
+      "source": "const r = (\"return\"=1);",
+      "expect": "reserved identifier label"
+    },
+    {
+      "id": "quoted-record-decoded-space",
+      "kind": "reject",
+      "source": "const r = (\"x\\n\"=1);",
+      "expect": "decoded newline invalid in identifier"
+    },
+    {
+      "id": "quoted-call-single",
+      "kind": "accept",
+      "source": "fnc foo(Record r) {} foo(\"outer\"=(\"inner\"=42));",
+      "expect": "one positional nested Record, not named argument"
+    },
+    {
+      "id": "quoted-call-two",
+      "kind": "accept",
+      "source": "fnc foo(Record a,Record b) {} foo(\"x\"=1,\"y\"=2);",
+      "expect": "two positional one-field Records, never coalesced"
+    },
+    {
+      "id": "quoted-call-grouped",
+      "kind": "accept",
+      "source": "fnc foo(Record r) {} foo((\"x\"=1,\"y\"=2));",
+      "expect": "one positional two-field Record"
+    },
+    {
+      "id": "quoted-call-no-coalesce",
+      "kind": "reject",
+      "source": "fnc foo(Record r) {} foo(\"x\"=1,\"y\"=2);",
+      "expect": "too many arguments, no coalescing"
+    },
+    {
+      "id": "quoted-call-after-named",
+      "kind": "reject",
+      "source": "fnc foo(int a,Record r) {} foo(a=1,\"x\"=2);",
+      "expect": "positional after named"
+    },
+    {
+      "id": "quoted-call-invalid-label",
+      "kind": "reject",
+      "source": "fnc foo(Record r) {} foo(\"x-y\"=1);",
+      "expect": "invalid identifier label"
+    },
+    {
+      "id": "quoted-brace-map-control",
+      "kind": "accept",
+      "source": "const m = {\"x-y\":1};",
+      "expect": "Map, not Record; arbitrary string key allowed"
+    },
+    {
+      "id": "quoted-pair-control",
+      "kind": "accept",
+      "source": "const p = \"x-y\" := 1;",
+      "expect": "Pair with unrestricted string key"
+    },
+    {
+      "id": "bare-call-named-control",
+      "kind": "accept",
+      "source": "fnc foo(Record outer) {} foo(outer=(inner=42));",
+      "expect": "named argument outer, value Record inner"
+    },
+    {
+      "id": "quoted-call-not-named",
+      "kind": "reject",
+      "source": "fnc foo(int x) {} foo(\"x\"=42);",
+      "expect": "positional Record not scalar named argument"
     }
   ]
 }
