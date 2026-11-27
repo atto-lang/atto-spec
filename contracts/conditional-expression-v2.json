@@ -7,8 +7,13 @@
       "braced": "if bool { statements } [else { statements }]",
       "terminator": "braced if is self-delimiting; never consumes fi; stray fi rejected",
       "produces_value": false,
-      "keyword_legacy": "migration only: do if bool then statements or if bool then statements",
-      "keyword_canonical": "if bool do statements [else statements] fi"
+      "keyword_legacy": "migration only: bare if bool then statements",
+      "keyword_canonical": "if bool do statements [else statements] fi",
+      "keyword_prefix_canonical": "do if bool then statements [else statements] fi",
+      "keyword_canonical_forms": [
+        "do if bool then statements [else statements] fi",
+        "if bool do statements [else statements] fi"
+      ]
     },
     "expression_if": {
       "syntax": "if bool then value_sequence [elif bool then value_sequence]* else value_sequence fi",
@@ -299,6 +304,108 @@
       "kind": "reject_compile",
       "source": "pub fnc main(): int { val v = true ? {\"status\" => 42} : Record.of(status: 7); return 0; }",
       "expected_diagnostic": "E_VALUE_ARM"
+    },
+    {
+      "id": "canonical_six_keyword_true",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { return if true then 5 else 6 fi; }",
+      "expected_result": 5
+    },
+    {
+      "id": "canonical_six_keyword_false",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { return if false then 5 else 6 fi; }",
+      "expected_result": 6
+    },
+    {
+      "id": "canonical_six_ternary_true",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { return true ? 5 : 6; }",
+      "expected_result": 5
+    },
+    {
+      "id": "canonical_six_ternary_false",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { return false ? 5 : 6; }",
+      "expected_result": 6
+    },
+    {
+      "id": "canonical_six_ternary_block_true",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { return true ? { return 5; } : { return 6; }; }",
+      "expected_result": 5
+    },
+    {
+      "id": "canonical_six_ternary_block_false",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { return false ? { return 5; } : { return 6; }; }",
+      "expected_result": 6
+    },
+    {
+      "id": "canonical_six_prefix_true",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { do if true then return 5; else return 6; fi }",
+      "expected_result": 5
+    },
+    {
+      "id": "canonical_six_prefix_false",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { do if false then return 5; else return 6; fi }",
+      "expected_result": 6
+    },
+    {
+      "id": "canonical_six_suffix_true",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { if true do return 5; else return 6; fi }",
+      "expected_result": 5
+    },
+    {
+      "id": "canonical_six_suffix_false",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { if false do return 5; else return 6; fi }",
+      "expected_result": 6
+    },
+    {
+      "id": "canonical_six_braced_true",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { if true { return 5; } else { return 6; } }",
+      "expected_result": 5
+    },
+    {
+      "id": "canonical_six_braced_false",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { if false { return 5; } else { return 6; } }",
+      "expected_result": 6
+    },
+    {
+      "id": "canonical_prefix_nested_fi",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { do if true then if false { return 99; } fi return 42; }",
+      "expected_result": 42
+    },
+    {
+      "id": "canonical_prefix_elif",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { do if false then return 5; elif true then return 6; else return 7; fi }",
+      "expected_result": 6
+    },
+    {
+      "id": "canonical_prefix_no_else",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { do if false then return 5; fi return 6; }",
+      "expected_result": 6
+    },
+    {
+      "id": "canonical_prefix_nonbool",
+      "kind": "reject_compile",
+      "source": "pub fnc main(): int { do if 1 then return 5; else return 6; fi }",
+      "expected_diagnostic": "E_TYPE"
+    },
+    {
+      "id": "canonical_ternary_arm_return_local",
+      "kind": "accept_execute",
+      "source": "pub fnc main(): int { const int v = true ? { return 5; } : { return 6; }; return v * 2; }",
+      "expected_result": 10
     }
   ]
 }
