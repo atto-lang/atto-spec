@@ -2,7 +2,7 @@
 
 **Status:** user-approved syntax; portable target, NOT_EXECUTED. This correction supersedes the contextual Pair arrow interpretation in contextual-collection-and-entry-literals-v1.md and the ordinary named-call restriction in the v2 aggregate constructor contract. Other v2 constructor and ownership requirements remain unchanged.
 
-> **Version boundary:** the [recursive-product-v1 candidate](recursive-product-literals-v1.md) overrides this historical profile's quoted-equals rejection only in its explicit target profile. It retains the distinct quoted brace Map and quoted Pair rules. Do not run historical quoted-equals negative cases as recursive-product-v1 expectations.
+> **Version boundary:** the [recursive-product-v1 candidate](recursive-product-literals-v1.md) overrides this historical profile's quoted-equals rejection only in its explicit target profile. Within that target, quoted equals at call level is a named argument; positional parenthesized Records require their own delimiters. It retains the distinct quoted brace Map and quoted Pair rules. Do not run historical quoted-equals negative cases as recursive-product-v1 expectations.
 
 ## Nominal types and syntax
 
