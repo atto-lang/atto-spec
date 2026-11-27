@@ -131,15 +131,7 @@ Target model (implements [typed linked IR v1](typed-linked-ir-v1.md)):
 * **Package** = a manifest root (`.atto.pkg.toml`). It is the unit of
   distribution and of `pub[pkg]` visibility. Other packages see it only
   through its pinned public interface.
-* **Namespace** = a folder inside a package. All files directly in one folder
-  share one namespace and may see each other's non-exported declarations.
-  - Without a `use namespace` header, the namespace defaults to the folder's
-    path relative to the package root (`src/net/http/` → `net.http`). Files at
-    the package root take the package name.
-  - Relative paths cannot collide; bare folder names can (`net/util` and
-    `db/util`), so the default is the path, not the leaf name.
-  - An explicit header must match the default or be declared in the manifest,
-    so moving a file never silently changes identity.
+* **Namespace** = a tagged compile-time scope within a pinned package, as specified by [namespace modes v2](namespace-modes-v2.md). Omission, default and file headers select a file-local scope; named headers join the exact named scope across directories, and folder headers explicitly join participating files in the same direct logical folder. Full paths and kind tags prevent collisions. No implicit folder enrollment or cross-package attachment.
 * **File** = the parse and cache unit, inside a namespace.
 * Each namespace produces a typed **interface** and an **interface hash**:
   exported declarations, overload signatures with generics, nominal types,
