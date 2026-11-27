@@ -290,6 +290,200 @@
       "feature": "actor_methods",
       "source": "define serial actor Worker as helper<U>(U value): U { return value; } end fnc try_send<U>(ActorRef<Worker> worker,U payload) { return worker.send(payload); }",
       "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "named_generic_and_runtime",
+      "expectation": "accept",
+      "feature": "generic_delimiters_v2",
+      "source": "fnc identity<T>(T value): T { return value; } pub fnc main(): int { return identity<T=int>(value: 42); }",
+      "status": "NOT_EXECUTED",
+      "expected_exit": 42
+    },
+    {
+      "id": "square_callable_specialization",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "fnc identity<T>(T value): T { return value; } pub fnc main(): int { return identity[T=int](42); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "square_callable_declaration",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "fnc identity[T](T value): T { return value; } pub fnc main(): int { return identity<int>(42); }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "square_class_declaration",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "define class Box[T] as T value; end pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "square_custom_type_reference",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "define class Box<T> as T value; end fnc consume(Box[int] value): void {} pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "collection_array_alias",
+      "expectation": "accept",
+      "feature": "generic_delimiters_v2",
+      "source": "fnc pass(Array[int] value): Array<int> { return value; } pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "collection_list_alias",
+      "expectation": "accept",
+      "feature": "generic_delimiters_v2",
+      "source": "fnc pass(List[string] value): List<string> { return value; } pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "collection_map_alias",
+      "expectation": "accept",
+      "feature": "generic_delimiters_v2",
+      "source": "fnc pass(Map[string, int] value): Map<string, int> { return rt take value; } pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "collection_nested_delimiters",
+      "expectation": "accept",
+      "feature": "generic_delimiters_v2",
+      "source": "fnc pass(Map<string, Array[int]> value): Map<string, Array<int>> { return rt take value; } pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "map_angle_square_mismatch",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "fnc consume(Map<string, int] value): void {} pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "map_square_angle_mismatch",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "fnc consume(Map[string, int> value): void {} pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "square_named_collection",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "fnc consume(Array[T=int] value): void {} pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "tuple_three_ints",
+      "expectation": "accept",
+      "feature": "generic_delimiters_v2",
+      "source": "pub fnc main(): int { val Tuple[int, int, int] t = (10, 12, 20); return t[0] + t[1] + t[2]; }",
+      "status": "NOT_EXECUTED",
+      "expected_exit": 42
+    },
+    {
+      "id": "tuple_heterogeneous_four",
+      "expectation": "accept",
+      "feature": "generic_delimiters_v2",
+      "source": "pub fnc main(): int { val Tuple[string, int, bool, bool] t = (\"ok\", 42, true, false); return t[1]; }",
+      "status": "NOT_EXECUTED",
+      "expected_exit": 42
+    },
+    {
+      "id": "tuple_wrong_arity",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "pub fnc main(): int { val Tuple[int, int] t = (1, 2, 3); return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "tuple_wrong_type",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "pub fnc main(): int { val Tuple[int, bool] t = (1, 2); return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "tuple_value_parameter",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "fnc consume(Tuple[int, 3] value): void {} pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "tuple_constant_index_oob",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "pub fnc main(): int { val Tuple[int, int] t = (1, 2); return t[2]; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "const_generic_named_reordered",
+      "expectation": "gate",
+      "feature": "generic_delimiters_v2",
+      "source": "define struct Fixed<T, const usize N> as data: Array<T,N>; end fnc pass(Fixed<T=int,N=3> value): Fixed<N=3,T=int> { return value; } pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "const_generic_square_named",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "define struct Fixed<T, const usize N> as data: Array<T,N>; end fnc consume(Fixed[T=int,N=3] value): void {} pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "const_generic_type_in_value_slot",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "define struct Fixed<T, const usize N> as data: Array<T,N>; end fnc consume(Fixed<int,bool> value): void {} pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "const_generic_value_in_type_slot",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "define struct Fixed<T, const usize N> as data: Array<T,N>; end fnc consume(Fixed<3,3> value): void {} pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "const_generic_wrong_shape",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "define struct Fixed<T, const usize N> as data: Array<T,N>; end fnc pass(Fixed<int,3> value): Fixed<int,4> { return value; } pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "const_generic_duplicate_named",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "define struct Fixed<T, const usize N> as data: Array<T,N>; end fnc consume(Fixed<int,N=3,N=4> value): void {} pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "const_generic_negative_dimension",
+      "expectation": "reject",
+      "feature": "generic_delimiters_v2",
+      "source": "define struct Fixed<T, const usize N> as data: Array<T,N>; end fnc consume(Fixed<int,-1> value): void {} pub fnc main(): int { return 42; }",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "indexing_not_generic",
+      "expectation": "accept",
+      "feature": "generic_delimiters_v2",
+      "source": "pub fnc main(): int { val Array[int] a = [42]; return a[0]; }",
+      "status": "NOT_EXECUTED",
+      "expected_exit": 42
+    },
+    {
+      "id": "comparison_not_generic",
+      "expectation": "accept",
+      "feature": "generic_delimiters_v2",
+      "source": "pub fnc main(): int { if 1 < 2 do return 42; fi return 0; }",
+      "status": "NOT_EXECUTED",
+      "expected_exit": 42
     }
   ]
 }
