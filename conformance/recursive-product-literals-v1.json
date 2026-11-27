@@ -1,0 +1,307 @@
+{
+  "schema": "atto.recursive-product-literals-v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "notes": "Independent source fragments; compile in appropriate local scope. Expected shapes and diagnostics are targets, not executed evidence.",
+  "vectors": [
+    {
+      "id": "pair-tuple",
+      "kind": "accept",
+      "source": "const p = coordinates := (10,20);",
+      "expect": "Pair key coordinates; tuple arity 2 values 10,20"
+    },
+    {
+      "id": "tuple-pair",
+      "kind": "accept",
+      "source": "const t = (x:=10,y:=20);",
+      "expect": "Tuple arity 2; distinct Pair keys x,y and values 10,20"
+    },
+    {
+      "id": "record-tuple",
+      "kind": "accept",
+      "source": "const r = (position=(10,20),velocity=(30,40));",
+      "expect": "Record fields position,velocity; each value tuple arity 2"
+    },
+    {
+      "id": "tuple-record",
+      "kind": "accept",
+      "source": "const t = ((x=10,y=20),(x=30,y=40));",
+      "expect": "Tuple arity 2; both values closed Records with x,y"
+    },
+    {
+      "id": "record-pair",
+      "kind": "accept",
+      "source": "const r = (first=(x:=10),second=(y:=20));",
+      "expect": "Record fields first,second hold whole Pair values x,y"
+    },
+    {
+      "id": "pair-record",
+      "kind": "accept",
+      "source": "const p = position := (x=10,y=20);",
+      "expect": "Pair key position; payload closed Record x,y"
+    },
+    {
+      "id": "pair-pair",
+      "kind": "accept",
+      "source": "const p = outer := (inner := 42);",
+      "expect": "Pair<Pair<int>>; outer and inner keys preserved"
+    },
+    {
+      "id": "tuple-tuple",
+      "kind": "accept",
+      "source": "const t = ((1,2),(3,4));",
+      "expect": "Tuple arity 2; each element tuple arity 2"
+    },
+    {
+      "id": "record-record",
+      "kind": "accept",
+      "source": "const r = (outer=(inner=42));",
+      "expect": "Nested Record; outer.inner is 42"
+    },
+    {
+      "id": "record-pair-bare",
+      "kind": "accept",
+      "source": "const r = (first=x:=10,second=y:=20);",
+      "expect": "Same Record of Pairs as grouped form"
+    },
+    {
+      "id": "brace-record-pair",
+      "kind": "accept",
+      "source": "const r = {first:x:=10,second:(y:=20)};",
+      "expect": "Brace Record of Pairs, not Map"
+    },
+    {
+      "id": "brace-record-tuple",
+      "kind": "accept",
+      "source": "const r = {position:(10,20)};",
+      "expect": "Brace Record of Tuple"
+    },
+    {
+      "id": "pair-brace-record",
+      "kind": "accept",
+      "source": "const p = position := {x:10,y:20};",
+      "expect": "Pair of brace Record"
+    },
+    {
+      "id": "tuple-brace-record",
+      "kind": "accept",
+      "source": "const t = ({x:10},{x:20});",
+      "expect": "Tuple of brace Records"
+    },
+    {
+      "id": "grouped-pair",
+      "kind": "accept",
+      "source": "const p = (x:=1);",
+      "expect": "Pair<int>, not Tuple"
+    },
+    {
+      "id": "singleton-pair-tuple",
+      "kind": "accept",
+      "source": "const t = (x:=1,);",
+      "expect": "Tuple arity 1 containing Pair"
+    },
+    {
+      "id": "singleton-record",
+      "kind": "accept",
+      "source": "const r = (x=1,);",
+      "expect": "Record of one field, not Tuple"
+    },
+    {
+      "id": "singleton-record-tuple",
+      "kind": "accept",
+      "source": "const t = ((x=1),);",
+      "expect": "Tuple arity 1 containing Record"
+    },
+    {
+      "id": "singleton-tuple-tuple",
+      "kind": "accept",
+      "source": "const t = ((1,2),);",
+      "expect": "Tuple arity 1 containing Tuple"
+    },
+    {
+      "id": "singleton-tuple-pair",
+      "kind": "accept",
+      "source": "const p = x := (1,);",
+      "expect": "Pair of singleton Tuple"
+    },
+    {
+      "id": "empty-tuple-pair",
+      "kind": "accept",
+      "source": "const p = x := ();",
+      "expect": "Pair of empty Tuple"
+    },
+    {
+      "id": "mixed-positional",
+      "kind": "accept",
+      "source": "const t = (x:=1,(y=2),(3,4),true);",
+      "expect": "Tuple arity 4; Pair,Record,Tuple,bool"
+    },
+    {
+      "id": "deep",
+      "kind": "accept",
+      "source": "const p = root := (items=((id:=42),),info=(ok=true));",
+      "expect": "Pair of Record; items singleton Tuple of Pair; info Record"
+    },
+    {
+      "id": "same-label-different-levels",
+      "kind": "accept",
+      "source": "const r = (x=(x=42));",
+      "expect": "Both levels have x; no duplicate"
+    },
+    {
+      "id": "duplicate-pair-keys-positional",
+      "kind": "accept",
+      "source": "const t = (x:=1,x:=2);",
+      "expect": "Tuple arity 2 retaining both pairs"
+    },
+    {
+      "id": "quoted-key-delimiters",
+      "kind": "accept",
+      "source": "const p = \"x,=(y)\" := (z=42);",
+      "expect": "Pair key x,=(y), Record payload z"
+    },
+    {
+      "id": "quoted-string-field-marker",
+      "kind": "accept",
+      "source": "const t = (\"x=1\",(y=2));",
+      "expect": "Tuple, first string not field marker"
+    },
+    {
+      "id": "comment-delimiter",
+      "kind": "accept",
+      "source": "const t = ((x=1), /* = := , ) */ (y=2));",
+      "expect": "Tuple of two Records"
+    },
+    {
+      "id": "capture-tuple-record",
+      "kind": "accept",
+      "source": "const x=42; const t = ((:x),(y=1));",
+      "expect": "Tuple of Records with x and y"
+    },
+    {
+      "id": "name-derived-pair-tuple",
+      "kind": "accept",
+      "source": "const coords := (10,20);",
+      "expect": "Binding coords is Pair with tuple payload"
+    },
+    {
+      "id": "pair-record-projection",
+      "kind": "accept",
+      "source": "const p = position := (x=42,y=20); const int n=p.value.x;",
+      "expect": "n=42, explicit payload projection"
+    },
+    {
+      "id": "record-pair-projection",
+      "kind": "accept",
+      "source": "const r = (first=x:=42); const int n=r.first.value;",
+      "expect": "n=42, Pair retained"
+    },
+    {
+      "id": "named-vs-positional-record",
+      "kind": "accept",
+      "source": "fnc f(Record r) {} f((x=42));",
+      "expect": "One positional Record, no implicit spread"
+    },
+    {
+      "id": "positional-pair-tuple",
+      "kind": "accept",
+      "source": "fnc f(Tuple t) {} f((x:=1,y:=2));",
+      "expect": "One positional Tuple of Pairs"
+    },
+    {
+      "id": "nested-type-annotation",
+      "kind": "accept",
+      "source": "const Pair<Tuple[int,int]> p = x := (1,2);",
+      "expect": "Exact recursive payload type, not contextual reclassification"
+    },
+    {
+      "id": "mixed-field-first",
+      "kind": "reject",
+      "source": "const r = (x=1,y:=2);",
+      "expect": "mixed Record field and positional Pair"
+    },
+    {
+      "id": "mixed-positional-first",
+      "kind": "reject",
+      "source": "const r = (x:=1,y=2);",
+      "expect": "mixed positional Pair and Record field"
+    },
+    {
+      "id": "mixed-record-tuple",
+      "kind": "reject",
+      "source": "const r = (x=1,(2,3));",
+      "expect": "mixed field and positional Tuple"
+    },
+    {
+      "id": "mixed-nested-level",
+      "kind": "reject",
+      "source": "const p = x := (y=1,z:=2);",
+      "expect": "mixed items in inner Record/Tuple"
+    },
+    {
+      "id": "duplicate-inner-fields",
+      "kind": "reject",
+      "source": "const p = x := (y=1,y=2);",
+      "expect": "duplicate inner Record field"
+    },
+    {
+      "id": "duplicate-outer-fields",
+      "kind": "reject",
+      "source": "const r = (x=(a=1),x=(b=2));",
+      "expect": "duplicate outer Record field"
+    },
+    {
+      "id": "pair-chain",
+      "kind": "reject",
+      "source": "const p = x:=y:=42;",
+      "expect": "nonassociative ungrouped Pair chain"
+    },
+    {
+      "id": "pair-entry-chain",
+      "kind": "reject",
+      "source": "const p = x:=1=>42;",
+      "expect": "nonassociative mixed association chain"
+    },
+    {
+      "id": "entry-pair-chain",
+      "kind": "reject",
+      "source": "const p = 1=>x:=42;",
+      "expect": "nonassociative mixed association chain"
+    },
+    {
+      "id": "quoted-record-label",
+      "kind": "reject",
+      "source": "const r = (\"x\"=42);",
+      "expect": "quoted equals is not Record field"
+    },
+    {
+      "id": "wrong-expected-tuple",
+      "kind": "reject",
+      "source": "const Tuple t = (x=42,y=10);",
+      "expect": "Record cannot become Tuple"
+    },
+    {
+      "id": "wrong-expected-record",
+      "kind": "reject",
+      "source": "const Record r = (x:=42,y:=10);",
+      "expect": "Tuple cannot become Record"
+    },
+    {
+      "id": "wrong-nested-pair-type",
+      "kind": "reject",
+      "source": "const Pair<Tuple[int,bool]> p = x := (1,2);",
+      "expect": "wrong nested payload type"
+    },
+    {
+      "id": "pair-implicit-unwrap",
+      "kind": "reject",
+      "source": "const p = position := (x=42); const Record r=p;",
+      "expect": "Pair cannot implicitly become its Record payload"
+    },
+    {
+      "id": "record-pair-no-unwrap",
+      "kind": "reject",
+      "source": "const r = (first=x:=42); const int n=r.first;",
+      "expect": "Pair field cannot implicitly become int"
+    }
+  ]
+}
