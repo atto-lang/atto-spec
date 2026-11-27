@@ -5,7 +5,7 @@ Status: TARGET_NOT_EXECUTED. Companion to recursive-product-literals-v1 (#303), 
 ## Delimiter-local syntax
 In an expression brace, an unquoted identifier followed by single colon, single equals, or adjacent colon-equals selects the Record entry grammar. A spread operand may select a Record only if statically a Record; preserve the existing Map syntax for quoted colon keys and explicit Map forms. No expected type is needed for the listed brace forms or parenthesized colon/equal fields. Do not reinterpret a block in a syntactically required block position. Empty braces in expression position are a candidate empty Record; preserve existing explicit empty Map constructors. Quoted identifier equals follows #303. Quoted colon remains Map in braces; do not silently convert a Map or Entry into a Record.
 
-A parenthesized level containing explicit identifier-colon or identifier-equals entries selects Record, including a mixture with inline Pair entries. A parenthesized list consisting entirely of Pair expressions remains a Tuple (single item without comma is grouping). Classification scans only the current delimiter level, using lexer tokens, not text or expected type; no retry on failure. A standalone Pair still has a literal string key. Call delimiters remain separate: f(x = 1) and f(x : 1) are named arguments, f(x := 1) is a positional Pair, f((x : 1)) and f({x := 1}) are positional Records. A Record field holding a Pair does not flatten the Pair.
+A parenthesized level containing explicit identifier-colon or identifier-equals entries selects Record, including a mixture with inline Pair entries. A parenthesized list consisting entirely of Pair expressions remains a Tuple (single item without comma is grouping). Classification scans only the current delimiter level, using lexer tokens, not text or expected type; no retry on failure. A standalone Pair still has a literal string key. Call delimiters remain separate: f(x = 1) and f(x : 1) are named arguments, f(x := 1) is a positional Pair, and f({x = 1}) / f({x := 1}) are positional Records. The latest owner clarification distinguishes f(x = 4, y = 8) (two named arguments) from f({x = 4, y = 8}) (one positional Record). f((x = 4, y = 8)) is unresolved; f((x : 4, y : 8)) is a clearer candidate, not a ratified portable call form. These grouped call spellings must not be guessed from overloads or rewritten to braces; standalone parenthesized literals remain a distinct proposal. See #299 and #307. A Record field holding a Pair does not flatten the Pair.
 
 ```atto
 const x := 5;
@@ -18,7 +18,7 @@ const c = {name : "Alice", age : 30};
 const d = {name := "Alice"
 age = 30, active : true};
 process({name : "Alice", age : 30});
-process((name : "Alice", age : 30));
+process((name : "Alice", age : 30)); // candidate only, not portable
 process({name := "Alice", age := 30});
 ```
 
