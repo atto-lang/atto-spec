@@ -60,8 +60,8 @@ portable string-output profile, the same payload produces the same raw
 UTF-8 bytes without an implied newline, with the same ordering and
 failure behavior under the selected endpoint profile. Ordinary namespace
 resolution applies: a shadowed name must not be treated as a privileged
-host intrinsic. Preserve the existing permission, suspension, cancellation,
-generation and ownership checks. These spellings do not add implicit
+host intrinsic. Preserve existing permission, cancellation, generation and ownership
+checks and apply the implicit runtime parking rules below. These spellings do not add implicit
 overloads, grant unrestricted host I/O, or establish the precise
 return type of every existing implementation's write method.
 
@@ -76,6 +76,62 @@ adds independent raw-output, mixed-alias deferred cleanup, and trapped
 task fixtures. These are target examples, not claims of compiled guest
 parity. Unsupported profiles must fail closed and must not silently
 substitute an unrelated output adapter.
+
+## Default buffered output and implicit runtime parking
+
+**Accepted language direction (2026-11-27).** The canonical stdout methods
+and corresponding stderr methods use bounded runtime-owned buffered
+channels by default. When space is available, admit the encoded payload
+and return; when capacity is temporarily exhausted, park the logical
+producer cooperatively until admission is possible, or report terminal
+failure/cancellation. Fullness alone must not drop output, reject the
+write, spin, sleep a carrier, or create an unbounded overflow queue.
+
+Ordinary authorized `stdio.out.write(...)` and `process.stdout.write(...)`
+(and stderr equivalents) are callable from ordinary functions, methods,
+and routines without `suspends`, `susp`, `∂`, or `⧖`, directly and
+transitively. No explicit `await` is required. Implicit runtime parking
+is a compiler-known safepoint, not a language-level suspension effect.
+This is not permission to call arbitrary explicit-suspending functions
+without their declared effect. Explicit checked `readch` / `writech`
+and other explicit suspension operations retain their existing rules.
+Do not change method result types or error ABI as part of this decision.
+
+Implementation requirements:
+- One ordered admission/consumer path per descriptor, shared across aliases
+  and all adapters. stdout and stderr have separate order; use finite
+  item, byte, in-flight and waiter budgets, including retained payloads.
+  A producer may retain a bounded owned payload while waiting; charge
+  all retained memory. Oversize records and permanent quota failures
+  are explicit errors, not waits that can never complete.
+- A consumer must be able to drain independently of parked guest producers.
+  Fair wakeups, cancellation and generation fencing must prevent duplicate
+  admission, stale resume, lost wakeups and permit leaks. Do not park
+  while holding a scheduler lock or a shared/critical borrow that makes
+  suspension unsafe; statically reject potentially parking calls in such
+  regions unless nonparking admission is proven. A runtime guard must
+  fail before committing output if parking would violate an invariant.
+- Compiler lowering must propagate internal resumability through ordinary
+  callers, preserve locals and cleanup across parking, and avoid actor
+  mailbox reentrancy. This is required even for AOT/NativeAOT and
+  stackless Wasm; a synchronous host import is not sufficient proof.
+  No mandatory GC, JIT or OS-thread-per-actor. Preserve per-actor stack
+  and heap ownership, isolation, existing host grants and error ABI.
+- Successful admission means acceptance, not durable delivery. A stalled
+  sink must not prevent unrelated authorized actors/tasks from progressing.
+  Broken/closed sinks, revocation, cancellation, flush and shutdown must
+  have bounded resource retention and observable failure; never silently
+  discard successfully admitted records during normal successful drain.
+
+Backend acceptance: run an ordinary unannotated direct and transitive
+caller with a deterministic tiny queue and gated consumer. Fill the
+queue; show the next write parks, unrelated guest work progresses,
+release the sink, and show exactly-once wake/admission and exact mixed-alias
+output. Repeat for stderr, cancellation, sink failure, unsafe critical
+regions and process shutdown. Measure item/byte/waiter high-water marks.
+Reject explicit suspension in unannotated callers as before. Include
+real compiled guests and actual scheduler traces on each supported
+backend, not merely a host queue model or parser acceptance.
 
 ## Text and frame portability
 
@@ -214,7 +270,8 @@ typed, suspending, checked semantics above.
    unterminated line, CRLF, Unicode, and NUL, and assert status and
    exact stdout/stderr bytes. No implicit prompt newline.
 3. Reject writing the unread `Result<Option<string>,IoError>`,
-   wrong-direction endpoints, non-suspending callable, missing `io`
+   wrong-direction endpoints, explicit suspending channel operations in a
+   non-suspending callable, missing `io`
    permission, parallel stdin consumers, and wrong-tenant grants.
 4. Instrument blocked read/write registration to prove no parked
    carrier, no busy polling, bounded queue memory, exactly-once
