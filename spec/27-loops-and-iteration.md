@@ -155,6 +155,14 @@ Rules:
 7. Every immutable state-loop is lowered to a machine loop with phi/equivalent register/stack locals, **not a recursive call stack**. The loop infrastructure does not allocate on each iteration. The code *inside* the loop may still allocate, for example via string concatenation.
 8. Every backedge must preserve actor cancellation, cooperative scheduling and hard fuel/real-time limits appropriate to the backend. The Rust/Wasm first executable profile limits carried values to copyable `int`, `bool`, `float`, and `string`; nested ordinary loops and generator frame lowering await a later, separately audited slice.
 
+### Value-loop hardening and current-main admission
+
+- The initial scalar state-loop profile does not admit a bare value-producing `loop { break value; }`; that remains a separate target, as do value-producing `while` and `for` with natural exhaustion. No implicit zero, null, or default result is permitted.
+- If a `recur` operand fails or transfers control, later operands are not evaluated and no next-state binding is committed. Already-performed external effects are not rolled back. The existing ownership and cleanup rules govern staged values on failure, and owned or borrowed carried state must fail closed until its lifetime rules are implemented.
+- The compiler must distinguish a loop's result join from the enclosing callable return and inner ordinary loop exits. Nested loop transfers must use lexical targets, not a shared result slot. Reject unsupported combinations before executable lowering.
+- Current-main admission requires the original positive and negative guest corpus, a side-effect order witness, a parallel swap, a failure-before-commit witness, cleanup on every admitted exit, and bounded-stack execution over at least 100,000 iterations. For actor contexts, prove cooperation and cancellation independently; a browser Worker timeout is not a scheduling proof.
+- November 26 audit: the historical Rust/Wasm #106 merge targets the feature branch of still-open #96, not main. Current main's `src/ast.rs`, `src/parser.rs`, and `src/check.rs` lack the prior recur AST/checker implementation, and the historical sum fixture is absent. Do not carry forward historical PASS as current-main evidence; forward-port against current architecture and run exact-head guest tests. Track [conformance issue #230](https://github.com/atto-lang/atto-platform-conformance/issues/230).
+
 **Adversarial acceptance** includes tail-only `recur`, arity and type mismatches, repeated-evaluation prevention, parallel swaps, invalid fallthrough, mixed `break` result types, escaped `break value`, ownership across iterations, AOT debug/release equivalence, and actor cancellation under an unbounded `recur`. `fold`/`reduce` remain collection APIs, not aliases for this control-flow construct.
 
 ## Required semantics
