@@ -15,7 +15,7 @@ value |> switch |int x| over
     default -> x * x
 end;
 
-55 |> if |x| x > 54 then "greater" else "lesser";
+55 |> if |x| x > 54 then "greater" else "lesser" fi;
 
 55 |> |x| -> x > 54 ? "greater" : "lesser";
 ```
@@ -42,18 +42,41 @@ The bars contain a single root parameter pattern, using the shared callable-patt
 - Parse bars contextually after the control-flow keyword in a forward value pipeline; reject malformed bindings and absence of a pipeline input. Preserve existing bitwise, logical, actor-stream and callable syntax. Explicit control-flow binding suppresses automatic argument insertion for the stage. For a completed conditional or ternary stage, the next unparenthesized outer pipe continues the entire result; explicitly group nested branch pipelines. Do not globally change precedence or existing multi-formal pipelines.
 - Formatter preserves canonical case/default vs on syntax, typed patterns, delimiters and comments. Require parse/format/parse and idempotence.
 
+## Audit hardening: parser, dispatch and ownership invariants
+
+The following is a proposed refinement of the approved syntax; existing switch/match arm contracts and ordinary conditional terminator rules remain authoritative.
+
+- Parse a native stage only after a forward value pipe, with one complete root pattern between the bars. For match/switch, the optional existing result type header precedes the binding (for example `switch<int> |int x| over`); `over` follows the closing bar. For if, parse the ordinary Boolean condition and existing then/else/fi grammar after the closing bar. Use explicit `fi` in portable fixtures. Do not reinterpret ordinary `if` conditions, lambda bars, bitwise OR, logical OR, or an actor pipe. Reject `|x, y|` in a native unary header; `|(x, y)|` is a single tuple pattern. No new bare or prefix binder syntax is implied.
+- Keep the stage subject binding separate from arm-local pattern binders and from result annotations. A header name is in scope in guards and bodies, but never in the source expression to its left or the following stage. Arm-local names follow existing shadowing rules and cannot leak to sibling arms. Nested native stages have independent typed subject slots; closing a nested stage restores the outer lexical environment.
+- Match/switch must preserve the complete original subject for dispatch. Evaluate the input before any guard, including default-only and discard-only patterns. A checked binding plan may establish read-only projections or loans before dispatch; it must not consume a field that subsequent dispatch or guards require. A backend without sound deferred move/loan lowering must reject such patterns. Do not silently upgrade a borrow into ownership or materialize an implicit copy. Release loans and destroy owned temporaries exactly once on normal exit, nonlocal return, error and cancellation; enforce existing suspension checks.
+- Lower the construct to a typed subject temporary plus control-flow regions, not to a synthetic callable. Guard failure proceeds to the next arm; an unconditional fallback terminates coverage. Keep canonical switch `case/default` and canonical match `on/on _`, while retaining only compatibility forms already specified in the existing arm contract. Reject duplicate unconditional cases, extra arms after unconditional fallback, incompatible header/arm annotations and non-Boolean guards. Do not reinterpret a guarded catch-all as exhaustive.
+- A statement switch may continue after the selected case completes, under existing statement rules. A value switch must produce a checked value on every normally completing path; a block that merely falls through is not a value. Explicit `return` or `^` exits the nearest enclosing callable, not a synthetic pipeline lambda. A return inside an actual nested lambda or task keeps its own boundary. A subsequent pipeline stage executes only on a normal value-producing path. Preserve existing rules for break and continue; this contract introduces no new targets.
+- Parse and format using complete syntax trees, including typed headers and nested bars. For a native if stage, an outer pipe after the completed conditional consumes its result; a pipe inside a branch belongs to that branch under existing delimiter/grouping rules. Do not change precedence globally, including existing ordinary callable/ternary pipelines. Test both legacy and new spellings independently.
+
+### Additional executable acceptance oracles (pending)
+
+Use separate source fixtures, not a single aggregate smoke test that can hide an unevaluated branch. Each positive needs a precise exit/stdout or effect-count oracle; each negative needs a relevant positioned diagnostic and no emitted guest artifact. Infrastructure failures, unsupported syntax, and unexecuted tests are separate evidence states.
+
+- Switch nonlocal exit: cases return 42 and a later enclosing return 99 is not reached. Separate statement switch normal continuation must reach the next statement without fallthrough.
+- Switch value with mixed yielding and diverging arms: the selected value reaches a following stage; selecting the return arm bypasses it. A nested real lambda return must not escape the enclosing callable.
+- Once-only: an effectful subject increments an observable counter; assert counter == 1 even with default-only, multiple failed guards, repeated reads and a discarded root. A trapping subject must not reach the fallback.
+- Dispatch: tuple subject (10, 32), case (0, 0) versus default, and a distinct matching non-default case. Test guard order with a false first guard and true second guard, and prove unselected bodies execute zero times.
+- Ownership: reject non-Copy destructive projections used again by dispatch, escaping stage-local loans, conflicting mutable loans and illegal live loans across suspension. Verify destructor/cleanup counts in supported owned cases.
+- Grammar/formatter: round trip typed switch, typed arm result, nested patterns, comments, logical OR in conditions, nested stages, canonical case/default and legacy aliases; reject missing pipe source, empty/malformed bars, extra root formals, extra explicit subject, duplicate pattern names and incompatible types. Confirm unrelated callable and actor pipeline behavior is unchanged.
+- Recursive named lambda: input 10 gives 55, using an explicit return type; test both ordinary match and native pipeline match. Avoid naive Fibonacci(55) as a CI fixture (overflow for int and excessive recursion).
+
 ## Conformance targets (not executed)
 
 | ID | Stage / scenario | Expected |
 | --- | --- | --- |
-| match-name | `7 |> match |x| over on 0 -> 1, on _ -> x * 6 end` | 42 |
-| switch-name | `7 |> switch |x| over case 0 -> 1, default -> x * 6 end` | 42 |
+| match-name | `7 \|> match \|x\| over on 0 -> 1, on _ -> x * 6 end` | 42 |
+| switch-name | `7 \|> switch \|x\| over case 0 -> 1, default -> x * 6 end` | 42 |
 | switch-statement | main above | return 42 from enclosing callable |
-| switch-default | `0 |> switch |int x| over case 0 -> 42, default -> x end` | 42 |
-| if-name | `7 |> if |x| x > 5 then x * 6 else 0` | 42 |
-| ternary-lambda | `7 |> |x| -> x > 5 ? x * 6 : 0` | 42 |
-| tuple-if | `(10, 32) |> if |(x, y)| x > 0 then x + y else 0` | 42 |
-| tuple-match | `(10, 32) |> match |(x, y)| over on (0, 0) -> 0, on _ -> x + y end` | 42 |
+| switch-default | `0 \|> switch \|int x\| over case 0 -> 42, default -> x end` | 42 |
+| if-name | `7 \|> if \|x\| x > 5 then x * 6 else 0 fi` | 42 |
+| ternary-lambda | `7 \|> \|x\| -> x > 5 ? x * 6 : 0` | 42 |
+| tuple-if | `(10, 32) \|> if \|(x, y)\| x > 0 then x + y else 0 fi` | 42 |
+| tuple-match | `(10, 32) \|> match \|(x, y)\| over on (0, 0) -> 0, on _ -> x + y end` | 42 |
 | recursive | named fib lambda with native match, input 10 | 55 |
 | once-only | effectful input, repeated name/default-only stage | exactly one evaluation |
 | lazy | unselected branch has observable effect | zero unselected effects |
