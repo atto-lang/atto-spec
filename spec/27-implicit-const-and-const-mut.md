@@ -44,10 +44,13 @@ let x = x + 1; // new lexical identity, previous x visible in initializer
 set x = 7;
 set! x = 8;
 // x = 9; // rejected
-let Record r = (x = 4);
-foo(x = 4);   // named argument
-foo((x = 4)); // positional record, not assignment
+let Record r = {x = 4};
+foo(x = 4, y = 8);   // two named arguments
+foo({x = 4, y = 8}); // one positional Record
+foo(data = {x = 4, y = 8}); // one named Record argument
 ```
+
+**Call-boundary clarification (2026-11-27):** `foo((x = 4, y = 8))` is not yet well-defined for the new profile; do not silently interpret it as a Record, flattened named arguments, or assignment. `foo((x : 4, y : 8))` is a clearer candidate, not a ratified portable call spelling. Use `foo({x = 4, y = 8})` for an unambiguous positional anonymous Record. Pending resolution, new-profile implementations may reject/defer ambiguous grouped-call syntax with a targeted diagnostic; existing legacy-profile behavior and standalone parenthesized Record proposals remain separately tracked. No expected-type or overload-based guessing, no implicit expansion, and no local writes from field labels. Preserve source-order once-only evaluation.
 
 The assignment grammar must distinguish bare-name writes from named labels and record fields by syntactic position, without consulting the existence of a local with that name. Preserve the separate Pair `:=` and record `:` / `:=` proposals (#299 and its parent #246); ordinary field and indexed writes retain independent ownership/access rules. Do not change the existing parameter `rebind` eligibility contract (#223); coordinate any migration of its legacy assignment spelling separately.
 
