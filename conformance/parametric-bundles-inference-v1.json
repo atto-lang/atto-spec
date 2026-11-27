@@ -1,0 +1,203 @@
+{
+  "contract": "parametric-bundles-inference-v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "prerequisite": "Array declaration admits type and size formals; diagnostic names are semantic categories, not prescribed backend strings",
+  "cases": [
+    {
+      "id": "seed-refinement",
+      "outcome": "accept",
+      "source": "type T = <type=int, size=5>; type X = T with {size=6}; const Array<X> x = [1,2,3,4,5,6];",
+      "expected": "X.type=int; X.size=6; T.size=5",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "seed-infer",
+      "outcome": "accept",
+      "source": "type T = <type=int, size=5>; const Array<infer X from T> x = [1,2,3,4,5,6] with {size=6};",
+      "expected": "X.size=6; T.size=5",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "initializer-infer",
+      "outcome": "accept",
+      "source": "type T = <type=int, size=5>; const Array<X extends T> x = infer [1,2,3,4,5,6] with {size=6};",
+      "expected": "X.size=6; T.size=5",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "capture",
+      "outcome": "accept",
+      "source": "const Array<infer X> x = [1,2,3]; const Array<X> y = [4,5,6];",
+      "expected": "X.type=int; X.size=3",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "individual",
+      "outcome": "accept",
+      "source": "const Array<type=infer E,size=infer N> x = [1,2,3];",
+      "expected": "E=int; N=3",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "with-inline",
+      "outcome": "accept",
+      "source": "const Array x = [1,2] with {type=int,size=2};",
+      "expected": "Array<type=int,size=2>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "as-inline",
+      "outcome": "accept",
+      "source": "const Array<type=int,size=2> x = [1,2] as <type=int,size=2>;",
+      "expected": "Array<type=int,size=2>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "as-bundle",
+      "outcome": "accept",
+      "source": "type X = <type=int,size=2>; const Array<X> x = [1,2] as X;",
+      "expected": "Array<X>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "with-bundle",
+      "outcome": "accept",
+      "source": "type X = <type=int,size=2>; const Array<X> x = [1,2] with X;",
+      "expected": "Array<X>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "prefix",
+      "outcome": "accept",
+      "source": "type X = <type=int,size=2>; const Array<X> x = X[1,2];",
+      "expected": "Array<X>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "full-prefix",
+      "outcome": "accept",
+      "source": "type X = <type=int,size=2>; const x = Array<X>[1,2];",
+      "expected": "Array<X>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "order",
+      "outcome": "accept",
+      "source": "type X = <size=2,type=int>; const Array<X> x = [1,2] as <type=int,size=2>;",
+      "expected": "same canonical specialization",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "zero-size",
+      "outcome": "accept",
+      "source": "const Array<type=int,size=0> x = [];",
+      "expected": "length 0",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "missing-init",
+      "outcome": "reject",
+      "source": "const Array<type=int,size=6> x = [];",
+      "expected": "incomplete_initialization",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "no-implicit-replacement",
+      "outcome": "reject",
+      "source": "type T = <type=int,size=5>; const Array<infer X from T> x = [1,2,3,4,5,6];",
+      "expected": "size_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "duplicate-override",
+      "outcome": "reject",
+      "source": "type T = <type=int,size=5>; type X = T with {size=6,size=6};",
+      "expected": "duplicate_argument",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "unknown",
+      "outcome": "reject",
+      "source": "type X = <type=int,sz=2>; const Array<X> x = [1,2];",
+      "expected": "unknown_formal",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "wrong-kind",
+      "outcome": "reject",
+      "source": "const Array<type=int,size=string> x = [1];",
+      "expected": "argument_kind",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "negative-size",
+      "outcome": "reject",
+      "source": "const Array<type=int,size=-1> x = [];",
+      "expected": "argument_bound",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "dynamic-size",
+      "outcome": "reject",
+      "source": "fnc f(int n) -> int { const Array<type=int,size=n> x = [1]; return 1; }",
+      "expected": "nonconstant_argument",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "mismatch",
+      "outcome": "reject",
+      "source": "const Array<type=int,size=2> x = [1,2] as <type=int,size=3>;",
+      "expected": "conflicting_argument",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "ordinary-collision",
+      "outcome": "reject",
+      "source": "type T = <type=int,size=2>; const Array<T,size=2> x = [1,2];",
+      "expected": "duplicate_argument",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "mixed-with",
+      "outcome": "reject",
+      "source": "const Array x = [1,2] with {type=int,size:2};",
+      "expected": "mixed_clause",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "alias-cycle",
+      "outcome": "reject",
+      "source": "type X = Y with {size=2}; type Y = X with {size=3};",
+      "expected": "alias_cycle",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "unbound-element",
+      "outcome": "reject",
+      "source": "const Array<infer X> x = [];",
+      "expected": "unresolved_inference",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "duplicate-binding",
+      "outcome": "reject",
+      "source": "type X = <type=int,size=2>; const Array<infer X> x = [1,2];",
+      "expected": "duplicate_binding",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "runtime-retype",
+      "outcome": "reject",
+      "source": "type T = <type=int,size=2>; const Array<T> x = [1,2]; const y = x with {size=3};",
+      "expected": "not_literal",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "bundle-value-type",
+      "outcome": "reject",
+      "source": "type X = <type=int,size=2>; const X x = 1;",
+      "expected": "argument_kind",
+      "status": "AUTHORED_NOT_EXECUTED"
+    }
+  ]
+}
