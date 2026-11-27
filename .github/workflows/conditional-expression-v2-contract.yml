@@ -1,0 +1,45 @@
+name: Conditional expression v2 source contract
+on:
+  pull_request:
+    paths:
+      - 'contracts/conditional-expression-v2.json'
+      - 'spec/27-conditional-expression-modes.md'
+      - 'spec/27-value-conditionals-and-do-if.md'
+      - 'tests/conditional-expression-v2-contract.test.mjs'
+      - '.github/workflows/conditional-expression-v2-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  conditional-source-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact source head, root tree and contract blobs
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git diff --quiet HEAD --
+          test -z "$(git ls-files --others --exclude-standard)"
+          test -z "$(git ls-files --others --ignored --exclude-standard)"
+          for path in contracts/conditional-expression-v2.json tests/conditional-expression-v2-contract.test.mjs spec/27-conditional-expression-modes.md spec/27-value-conditionals-and-do-if.md; do
+            test "$(git ls-files -s -- "$path" | cut -d' ' -f1)" = 100644
+            test "$(git hash-object --no-filters "$path")" = "$(git rev-parse "HEAD:$path")"
+          done
+          printf 'HEAD=%s TREE=%s\n' "$EXPECTED_HEAD" "$(git rev-parse 'HEAD^{tree}')"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Execute source contract assertions
+        run: |
+          node --check tests/conditional-expression-v2-contract.test.mjs
+          node --test tests/conditional-expression-v2-contract.test.mjs
+          echo 'SOURCE_CONTRACT_ONLY; no compiler or guest parity implied'

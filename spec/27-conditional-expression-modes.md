@@ -13,9 +13,22 @@ fi
 
 val int v = if ready then 200 else 500 fi;
 val int w = ready ? 200 : 500;
+val int z = ready ? { return 200; } : { return 500; };
+
+do if ready then
+    process();
+else
+    recover();
+fi
+
+if ready {
+    process();
+} else {
+    recover();
+}
 ```
 
-`if/ifnot/unless condition do ... [elif condition do ...] [else ...] fi` is imperative: no implicit value, ordinary function return and loop transfers. Existing braced statement if remains self-delimiting and does not consume a following fi. Historical prefix `do if ... then` and statement-position `if ... then` are migration spellings, not canonical output. Do not reinterpret expression-position then as imperative. Preserve legacy parser behavior where necessary for migration.
+`if/ifnot/unless condition do ... [elif condition do ...] [else ...] fi` is imperative: no implicit value, ordinary function return and loop transfers. All three imperative forms have identical statement semantics. Existing braced statement if remains self-delimiting and does not consume a following fi. Prefix `do if condition then ... [elif condition then ...] [else ...] fi` is an equally canonical imperative form. Only bare statement-position `if ... then` is migration-only. Do not reinterpret expression-position then as imperative. Preserve legacy parser behavior where necessary for migration.
 
 ## Value if
 
@@ -62,7 +75,7 @@ The formatter must preserve these syntactic categories and never emit a bare agg
 
 Evaluate the predicate once and only the selected branch. Check both branch types, scopes and ownership statically. Transfer the selected result before reverse-order cleanup of remaining branch locals; do not duplicate an owned result or allow loans to escape. Lower to branch CFG and typed join/PHI or destination-passing storage, with no mandatory heap allocation, runtime code generation or tracing GC. AOT and actor/suspension cleanup need separate proof.
 
-Formatter canonicalizes legacy imperative delimiters to if ... do ... fi, preserves value then, and retains explicit ternary arm return/caret. Do not change value/statement category or reorder expressions.
+Formatter preserves canonical prefix do-if, suffix if-do, and brace forms; only legacy bare imperative then/fi migrates to if ... do ... fi. Preserve value then and explicit ternary arm return/caret. Do not change value/statement category or reorder expressions.
 
 ## Verification
 

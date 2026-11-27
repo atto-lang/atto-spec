@@ -24,9 +24,11 @@ test('conditional-expression v2 stays target-only and has three distinct forms',
   }
 });
 
-test('canonical suffix do and enclosing fi', () => {
+test('canonical prefix and suffix do and enclosing fi', () => {
   assert.match(c.forms.statement_if.keyword_canonical, /^if bool do /);
-  assert.match(c.forms.statement_if.keyword_legacy, /^migration only:/);
+  assert.match(c.forms.statement_if.keyword_legacy, /^migration only: bare if/);
+  assert.equal(c.forms.statement_if.keyword_prefix_canonical, 'do if bool then statements [else statements] fi');
+  assert.equal(c.forms.statement_if.keyword_canonical_forms.length, 2);
   assert.match(c.cases.find(x => x.id === 'nested_brace_preserves_parent_fi').source, /if true do if true/);
   assert.equal(c.cases.find(x => x.id === 'reject_strict_bare_statement_if').kind, 'reject_compile');
 });
@@ -53,4 +55,20 @@ test('direct ternary arms distinguish aggregate constructors from executable blo
   }
   for (const id of ['ternary_empty_bare_block','ternary_bare_record_no_fallback','ternary_bare_map_no_fallback']) assert.equal(byId.get(id).kind,'reject_compile');
   for (const id of ['ternary_empty_bare_block','ternary_bare_record_no_fallback','ternary_bare_map_no_fallback']) assert.equal(byId.get(id).expected_diagnostic,'E_VALUE_ARM');
+});
+
+test('all six canonical forms select both true and false arms', () => {
+  const byId = new Map(c.cases.map(x => [x.id, x]));
+  for (const form of ['keyword','ternary','ternary_block','prefix','suffix','braced']) {
+    for (const predicate of [true,false]) {
+      const item = byId.get('canonical_six_' + form + '_' + predicate);
+      assert.equal(item.kind, 'accept_execute');
+      assert.equal(item.expected_result, predicate ? 5 : 6);
+    }
+  }
+  assert.equal(byId.get('canonical_ternary_arm_return_local').expected_result,10);
+  assert.equal(byId.get('canonical_prefix_nested_fi').expected_result,42);
+  assert.equal(byId.get('canonical_prefix_elif').expected_result,6);
+  assert.equal(byId.get('canonical_prefix_no_else').expected_result,6);
+  assert.equal(byId.get('canonical_prefix_nonbool').expected_diagnostic,'E_TYPE');
 });
