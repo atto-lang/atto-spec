@@ -33,11 +33,11 @@ A backend MUST NOT promise recovery from arbitrary host/OS native stack overflow
 
 ## Unwinding: throw, raise, panic and stack exhaustion
 
-Every terminal effect unwinds **the logical stack it was raised on**, and only that stack. `defer` cleanups and compiler-owned guards run exactly once, in reverse registration order, on the owning invocation or Task's execution context, for **every** effect below. That includes `raise` and `panic`. Only VM-corrupting abort and OS kill may skip them (see `atto-spec` `language/defer-recover-unwind-v1.md`, which this table restates for stacks).
+Every terminal effect unwinds **the logical stack it was raised on**, and only that stack. `defer` cleanups and compiler-owned guards run exactly once, in reverse registration order, on the owning invocation or Task's execution context, for **every** effect below. That includes `raise` and `panic`. Forced termination, unsafe host failure or exhaustion of the bounded unwind reserve may prevent individual guest cleanups; runtime-owned retirement remains independently required (see `atto-spec` `language/defer-recover-unwind-v1.md`, which this table restates for stacks).
 
 | Effect | `catch` | `trap` | `recover` | `defer` | Ends at |
 | --- | --- | --- | --- | --- | --- |
-| `throw` | nearest match in the caller chain | may become `None` | only if still unhandled at a recovery boundary | runs | invocation/Task boundary, then supervisor |
+| `throw` | nearest match in the caller chain | ordinary escaping throw becomes `Err(Error)`; see chapter 07 | only if still unhandled at a recovery boundary | runs | invocation/Task boundary, then supervisor |
 | `raise` | bypassed | bypassed | nearest eligible | runs | parent Task or supervisor CONTROL |
 | `panic` | bypassed | bypassed | never | runs | supervisor CONTROL |
 | logical stack exhaustion | bypassed | bypassed | never | runs, within a bounded unwind reserve | supervisor CONTROL; default actor restart |
@@ -45,7 +45,7 @@ Every terminal effect unwinds **the logical stack it was raised on**, and only t
 | host fatal (VM OOM, host native overflow, FFI corruption) | bypassed | bypassed | never | not promised | host policy |
 
 - **Stack exhaustion is panic-class.** No guest construct consumes it. The poisoned invocation unwinds and then fails under the actor's supervision policy. It never resumes, and it never processes the next DATA message.
-- **Unwind reserve.** When a logical stack overflows, its cleanups need frames to run. The runtime MUST grant a small, fixed reserve of extra frames or bytes to a poisoned stack while it unwinds. A cleanup that exhausts the reserve fails too. That failure is recorded as suppressed on the original overflow, and the remaining cleanups still run. The reserve MUST be bounded and counted against the actor's aggregate budget. It cannot grow into another invocation's stack.
+- **Unwind reserve.** When a logical stack overflows, its cleanups need frames to run. The runtime MUST grant a small, fixed reserve of extra frames or bytes to a poisoned stack while it unwinds. A cleanup that exhausts the reserve fails too. That failure is recorded as bounded suppressed metadata on the original overflow. Further guest cleanups may run only if their remaining reserve and safety are established; otherwise skip them, report incomplete cleanup and proceed to runtime-owned retirement or quarantine. Never replenish the reserve without a bound. The reserve MUST be bounded and counted against the actor's aggregate budget. It cannot grow into another invocation's stack.
 - **Recover callbacks** run on the failing invocation's own stack, after that scope's defers, and are charged to its quota. They never run on a foreign mailman, I/O or control thread. A recover callback that overflows is itself panic-class.
 - **Precedence** is fatal/cancel > panic (including stack exhaustion) > raise > throw > success. A cleanup failure never hides a stronger pending cause.
 - An unwinding invocation affects no other stack. Sibling invocations of the same actor keep their frames. Whether they continue depends on the actor's failure policy, which by default stops the incarnation after the failing invocation unwinds.
