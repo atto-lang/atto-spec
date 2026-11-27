@@ -1,0 +1,175 @@
+{
+  "schema": "atto.pair-literals-bindings-v3",
+  "status": "TARGET_NOT_EXECUTED",
+  "notes": "Independent source fragments; compile in the appropriate local scope. Not executable evidence.",
+  "vectors": [
+    {
+      "id": "binding-const",
+      "kind": "accept",
+      "source": "const y := 5;",
+      "expect": "Pair<int>, key y, value 5"
+    },
+    {
+      "id": "binding-equivalence",
+      "kind": "accept",
+      "source": "const y := 5; const Pair<int> z = Pair.of(\"y\",5);",
+      "expect": "equal key and value"
+    },
+    {
+      "id": "literal-not-lookup",
+      "kind": "accept",
+      "source": "const string x = \"other\"; const p = x := 5;",
+      "expect": "key x, not other"
+    },
+    {
+      "id": "entry-lookup",
+      "kind": "accept",
+      "source": "const string x = \"other\"; const e = x => 5;",
+      "expect": "Entry<string,int>, key other"
+    },
+    {
+      "id": "tuple",
+      "kind": "accept",
+      "source": "const Tuple t = (x := 5, y := true);",
+      "expect": "Tuple<Pair<int>,Pair<bool>>"
+    },
+    {
+      "id": "group",
+      "kind": "accept",
+      "source": "const p = (x := 5);",
+      "expect": "Pair<int>"
+    },
+    {
+      "id": "one-tuple",
+      "kind": "accept",
+      "source": "const Tuple t = (x := 5,);",
+      "expect": "one-element Tuple"
+    },
+    {
+      "id": "record",
+      "kind": "accept",
+      "source": "const Record r = (x = 5, y = true);",
+      "expect": "closed Record"
+    },
+    {
+      "id": "record-from-binding",
+      "kind": "accept",
+      "source": "const x := 5; const Record r = Record.of(x);",
+      "expect": "field x:int"
+    },
+    {
+      "id": "heterogeneous",
+      "kind": "accept",
+      "source": "const Array<Pair> a = [age:=42,bop:=\"zzz\",genr:=true];",
+      "expect": "checked existential Pair elements"
+    },
+    {
+      "id": "named-pair",
+      "kind": "accept",
+      "source": "fnc foo(Pair<int> x,int m) {} foo(x=\"x\":=5,m=3);",
+      "expect": "two named arguments"
+    },
+    {
+      "id": "positional-pair",
+      "kind": "accept",
+      "source": "fnc foo(Pair<int> x,int m) {} foo(x:=5,3);",
+      "expect": "two positional arguments"
+    },
+    {
+      "id": "named-binding",
+      "kind": "accept",
+      "source": "fnc foo(Pair<int> x,int m) {} const y:=5; foo(x=y,m=3);",
+      "expect": "x receives Pair keyed y"
+    },
+    {
+      "id": "named-colon",
+      "kind": "accept",
+      "source": "fnc foo(Pair<int> x,int m) {} foo(x: y:=5,m:3);",
+      "expect": "compatibility alias"
+    },
+    {
+      "id": "let-rebind",
+      "kind": "accept",
+      "source": "let y:=5; y = z:=6;",
+      "expect": "Pair<int> now keyed z"
+    },
+    {
+      "id": "invalid-key-type",
+      "kind": "reject",
+      "source": "const p = 5 := 42;",
+      "expect": "Pair literal key syntax"
+    },
+    {
+      "id": "invalid-quoted-equals",
+      "kind": "reject",
+      "source": "const Tuple t = (\"x\"=5,\"y\"=true);",
+      "expect": "quoted equals not a Pair"
+    },
+    {
+      "id": "record-tuple-mismatch",
+      "kind": "reject",
+      "source": "const Record r = (x:=5,y:=true);",
+      "expect": "no expected type reinterpretation"
+    },
+    {
+      "id": "record-nonidentifier",
+      "kind": "reject",
+      "source": "const Record r = Record.of(\"5\":=42);",
+      "expect": "invalid field name"
+    },
+    {
+      "id": "record-duplicate",
+      "kind": "reject",
+      "source": "const Record r = Record.of(x:=1,\"x\":=2);",
+      "expect": "duplicate field"
+    },
+    {
+      "id": "pair-arrow-mismatch",
+      "kind": "reject",
+      "source": "const Pair<int> p = \"x\" => 5;",
+      "expect": "Entry not Pair"
+    },
+    {
+      "id": "pair-arity",
+      "kind": "reject",
+      "source": "const Pair<int,bool> p = x:=true;",
+      "expect": "non-string key type"
+    },
+    {
+      "id": "scalar-rebind",
+      "kind": "reject",
+      "source": "let y:=5; y=6;",
+      "expect": "Pair not scalar"
+    },
+    {
+      "id": "const-rebind",
+      "kind": "reject",
+      "source": "const y:=5; y = z:=6;",
+      "expect": "const immutable binding"
+    },
+    {
+      "id": "const-runtime",
+      "kind": "reject",
+      "source": "fnc f(int x) { const y:=x; }",
+      "expect": "not constexpr"
+    },
+    {
+      "id": "chain",
+      "kind": "reject",
+      "source": "const p = x:=y:=5;",
+      "expect": "nonassociative"
+    },
+    {
+      "id": "named-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(Pair<int> x,int m) {} foo(x=x:=5,x=y:=5,m=3);",
+      "expect": "duplicate parameter"
+    },
+    {
+      "id": "mixed-record-tuple",
+      "kind": "reject",
+      "source": "const r = (x=5,y:=true);",
+      "expect": "mixed field and positional item"
+    }
+  ]
+}
