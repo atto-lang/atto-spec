@@ -34,6 +34,27 @@ Alternative declarations of y above are independent examples, not a single scope
 - Evaluate the initializer exactly once before installing the new binding. Resolve a shadowing initializer against the preceding environment. Do not silently default-initialize, leak mutation authority through aliases, bypass sealed actor state, or introduce runtime storage/dispatch merely because of syntax.
 - Type-first shorthand applies to local declaration positions only; no change to fields, parameters, module declarations, destructuring, or contextual match/if bindings. Ambiguous type/expression prefixes must be resolved with the real parser, not regular-expression source rewriting.
 
+### Explicit local replacement and expression boundaries
+
+Owner-confirmed syntax: a repeated same-scope `let` is fresh lexical shadowing, not a write to the previous binding; duplicate same-scope `const` is rejected. Ordinary `x = e;` is invalid as a local assignment, while `set x = e;` and `set! x = e;` explicitly replace the existing reassignable binding. Resolve the nearest lexical identity first; do not skip a fixed binding to find an outer writable name. An unknown target or incompatible replacement type is rejected; neither form widens referent write permission.
+
+```atto
+let x = 5;
+let x = x + 1; // new lexical identity, previous x visible in initializer
+set x = 7;
+set! x = 8;
+// x = 9; // rejected
+let Record r = (x = 4);
+foo(x = 4);   // named argument
+foo((x = 4)); // positional record, not assignment
+```
+
+The assignment grammar must distinguish bare-name writes from named labels and record fields by syntactic position, without consulting the existence of a local with that name. Preserve the separate Pair `:=` and record `:` / `:=` proposals (#299 and its parent #246); ordinary field and indexed writes retain independent ownership/access rules. Do not change the existing parameter `rebind` eligibility contract (#223); coordinate any migration of its legacy assignment spelling separately.
+
+**Provisional implementation profile, pending explicit semantic review:** `set` is statement-only; `set!` also admits expression position, initially only if its consumed result is statically Copy. The two complete forms `set! x = e` and `set! (x = e)` are equivalent; `(set! x) = e` is invalid. Reject `foo(let x = e)` and `foo(set x = e)`; `foo(set! x = e)` is a positional argument. Discarded-result set! does not require Copy. Reject mixed fixed/let same-scope collisions provisionally; keep nested lexical shadowing legal. Do not infer permanent restrictions on non-Copy expression results or compound assignments from this slice.
+
+**Lifetime and lowering:** evaluate replacement once and before publishing; failed RHS retains old binding, valid replacement releases the previous owned value exactly once, and live invalidated loans reject. Never copy an exclusive owner to return a result. Capture by lexical identity rather than spelling; existing capture rules govern aliasing. SSA versions/phi nodes for non-addressable scalars need no heap box; preserve cleanup on control-flow joins, exceptions and suspension. No actor isolation, AOT or zero-GC guarantees may be inferred from syntax acceptance alone.
+
 ### Backend and tooling gates
 
 Normalize aliases in typed AST/HIR while retaining spans and any real cast. Require equivalent diagnostics, typed IR and observable outputs; preserve formatter round-trip/idempotence and no semantic rewrite of casts. Test all eight compiler lanes (Java/GraalVM, LLVM, .NET NativeAOT, Rust, independent Wasm, JS, Forge, Cranelift), including actual guest execution, explicit rejection diagnostics, no illegal artifact, ownership/borrow and actor isolation, and AOT where applicable. No source-only test or zero-step Actions run constitutes compiler execution. Keep the older v1 descriptions below as historical implementation context until each dependent contract and compiler is reconciled.
