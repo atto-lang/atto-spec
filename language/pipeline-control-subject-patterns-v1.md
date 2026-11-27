@@ -151,8 +151,8 @@ The four subject forms `match n over`, `match |n| over`, `n |> match over` and `
 
 - `on x when condition -> body` retains ordinary pattern binding before guard evaluation; `on _ as x when condition -> body` is explicit whole-subject binding before the guard.
 - `when condition -> body` is a wildcard guarded arm without new names. `when condition as x -> body` and `when condition: val x -> body` bind the original match subject only **after** the bool condition succeeds. The guard result is never the value being aliased. No post-guard binder is visible in its own guard, sibling arms or the next pipeline stage.
-- Support `as` with default immutable runtime binding, explicit `as val`, `as let`, `as const`, and colon followed by an explicit binding introducer `val`, `let` or `const`, optionally with a type. Both aliases support a single irrefutable tuple/record pattern, discards and nested destructuring under the existing shared pattern contract. The explicit const qualifier requires compile-time constant provenance; val works for runtime values. Let does not manufacture a mutable loan or mutate the original subject. No implicit copy or lifetime extension.
-- Distinguish top-level arm `: Type` (result annotation, unchanged) from `: val/let/const binding` (subject alias), using the explicit binding introducer. Nested colons and as operators retain their expression/pattern grammar; parse the completed guard before its suffix. A parenthesized guard expression keeps any inner as/colon syntax inside that expression. Do not reinterpret an invalid result annotation as a binding. When both are present, the alias precedes the optional result annotation, e.g. `when true as x : int -> x`. Reject duplicate aliases, duplicate result annotations and malformed suffixes.
+- Support `as` with default fixed read-only runtime binding, and canonical modifiers `mut`, `rebind`, and `rebind mut`, optionally followed by a type. Keep previously admitted contextual `val`, `let`, and `const` compatibility forms as described below; colon guard aliases require an explicit binding introducer. Both aliases support a single irrefutable tuple/record pattern, discards and nested destructuring under the existing shared pattern contract. Contextual const and val denote the fixed read-only incoming binding, not a constexpr initializer; the contextual legacy let denotes rebind only. None manufactures a mutable loan or changes the original subject. No implicit copy or lifetime extension.
+- Distinguish top-level arm `: Type` (result annotation, unchanged) from `: val/let/const/rebind/mut binding` (subject alias), using the explicit binding introducer. Nested colons and as operators retain their expression/pattern grammar; parse the completed guard before its suffix. A parenthesized guard expression keeps any inner as/colon syntax inside that expression. Do not reinterpret an invalid result annotation as a binding. When both are present, the alias precedes the optional result annotation, e.g. `when true as x : int -> x`. Reject duplicate aliases, duplicate result annotations and malformed suffixes.
 - Guards must have bool type, with no truthiness conversion. Evaluate once only after the pattern succeeds; a false guard does not bind a post-guard alias or execute the body. Pre-guard binding must not irreversibly consume the subject on a failing guard: use checked projections/loans or deferred moves, or reject unsupported ownership cases. Commit a consuming binding only on successful selection if legal under ordinary ownership rules. Preserve cleanup and nonlocal exits, with no synthetic closure.
 - Treat guards conservatively in coverage; a guard proven true by compile-time constant evaluation contributes its pattern coverage. An unknown guard cannot prove coverage unless a sound decision procedure proves it. For the exact classify example, require sound integer trichotomy (zero, positive, negative) with the lexical n proven to be the unchanged subject; do not generalize this proof to transformed pipeline subjects, mutated values or arbitrary overloaded comparisons. For opaque or overlapping predicates, use match first and an unconditional fallback where needed; ordinary match retains its existing disjointness and specialization checks. Constant-false guards contribute no coverage and never execute bodies. Preserve the existing unreachable-arm policy.
 - The formatter must preserve pre- versus post-guard alias placement, nested patterns, the explicit binding introducer, result annotation, pipeline header mode and arm separators. It must never synthesize an outer subject alias or change the value referenced by a guard.
@@ -178,10 +178,47 @@ The four subject forms `match n over`, `match |n| over`, `n |> match over` and `
 | missing-subject | standalone match over / empty bars | positioned rejection |
 | scope | when x > 0 as x, no outer x; sibling or later-stage alias use | positioned rejection |
 | alias-shape | refutable, duplicate, mismatched destructuring or incompatible type | positioned rejection |
-| const-runtime | runtime-dependent subject with explicit const alias | positioned rejection |
+| const-runtime | runtime-dependent subject with contextual const alias | original value, fixed read-only binding |
 | non-bool | when 42 as x | positioned rejection |
 | coverage | only unknown guard, or transformed subject with unjustified coverage proof | positioned rejection |
 | ownership | failed guard consumes a non-Copy field, escapes loan or creates conflicting loans | positioned rejection |
 | malformed | duplicate alias, malformed colon binder, incompatible arm result type | positioned rejection |
 
 Table rows describe test targets, not executed test receipts; expand each into independent source files, with concrete fallback arms where needed and ordinary source syntax. Require actual compiler executions and positioned semantic rejections without an artifact, plus formatter round trips, on every atto-source backend. Unsupported and unexecuted cases must remain distinguishable from semantic rejection and pass. First-class Pattern<T> collection representation and general predicate combinators remain a separate feature; this amendment does not claim their implementation.
+
+## Unified incoming binding capabilities (2026-11-27)
+
+TARGET, not guest-certified. Extends merged parameter-rebind #223 and coordinates with callable aggregate patterns #260 and local binding revision #307. Incoming bindings in match/switch arms and subject aliases, select/readch aliases, conditional presence bindings, callable/lambda formals and incoming destructuring use independent local reassignment and referent-write capabilities. Local declarations with initializers retain their own grammar; no global keyword rewrite.
+
+| Incoming binding | Local reassignment | Referent write request |
+| --- | --- | --- |
+| `z` / `int z` | no | no |
+| `mut z` / `mut Foo z` | no | yes |
+| `rebind z` / `rebind int z` | yes | no |
+| `rebind mut z` / `rebind mut Foo z` | yes | yes |
+
+Canonical single-name type-first alias grammar: `[rebind] [mut] [Type] IDENT`. Existing name-first formal and pattern type annotation productions keep their delimiters; no new apostrophe or bang shorthand. Contextual marker parsing must preserve an existing identifier named rebind where unambiguous; duplicate/conflicting modifiers reject. In contexts already admitting explicit const/val as immutable incoming markers, preserve them as compatibility spellings of the fixed read-only mode; legacy let maps to rebind only where already admitted with that meaning. Never rewrite a constexpr local, local destructuring declaration, ownership marker, or existing modifier with different semantics. Formatter canonicalizes verified equivalent incoming spellings, including rebind before mut; it preserves a required explicit colon guard introducer (use as for a bare alias). A select read delimiter is already a binder position, unlike a match guard colon which can annotate the arm result. Type annotations check the already matched or received value; no implicit cast, new pattern test, or result-type annotation.
+
+Examples (target syntax):
+
+```atto
+match (x + 5) over
+    on foo(x) as int z -> {}
+    on bar(x) as rebind int z -> { z = z + 1; }
+    on baz(x) as mut z -> {}
+    on qux(x) as rebind mut z -> {}
+end
+
+select {
+    when readch foo: z -> {}
+    when readch bar: rebind int z -> { z = z + 1; }
+    when readch baz: mut Foo z -> {}
+    when readch qux: rebind mut Foo z -> {}
+}
+```
+
+An incoming rebind changes only its local slot; it never writes back to a caller, scrutinee, channel or aggregate field. Mut requests checked writable access to the current referent and cannot grant ownership, turn a shared loan exclusive, change a fixed field, or bypass actor state confinement. Scalar mut without writable interior is rejected, not treated as rebind. Retain the declared type after replacement and track current origin, loan, ownership and drop obligations across branches, suspension and exits as in implicit-argument-borrow-v1. A receive obtains ownership only if its channel contract says so; an alias never creates an additional owner or implicit clone.
+
+Dispatch uses the original evaluated subject. Pre-guard names are tentative read-only views during the guard; no rebind, mutable borrow, write or consuming action through those names until successful selection. Post-guard aliases do not exist in the guard. On a false guard release tentative loans; a winning arm may establish the requested capability only after proof. Header bindings visible during dispatch likewise cannot change the original subject used for matching; defer conflicting writes or reject. The winning select operation commits its payload once before creating its lexical binding; losing arms have no payload alias, transfer, drop or binding effect. Never extend a borrowed lifetime because a name is rebindable. Keep whole-subject/field alias conflicts, partial moves, closure escape, cancellation and sealed actor-state gates. Lower scalar rebind as ordinary SSA/frame-local slots; no heap box or tracing caused by the modifier.
+
+Required conformance: independent read/write and rebind matrix in each incoming context; runtime contextual const/val equivalence; typed inferred equivalence and incompatible type rejection; no caller/scrutinee/field writeback; mutable referent visible only with authorized exclusive access; fixed assignment and readonly field write rejection; duplicate modifiers and binder collisions; failed guard leaves original unchanged; alias not visible in its own post-guard predicate or sibling arm; select winning read exactly once, losing arm zero acquisitions; replacement with live reborrow rejects; cleanup exactly once on failure/return/cancellation; immutable and mutable loan escape checks; format/parse equivalence including existing local declarations and lifetime apostrophes. Positive guests require actual outputs/effect counts, negatives relevant diagnostics and no artifact. All new cases NOT_EXECUTED pending compiler-specific evidence.
