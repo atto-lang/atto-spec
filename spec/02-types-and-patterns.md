@@ -172,6 +172,32 @@ end;
 - Formatter preserves the distinction between value arrays and type lists and the bracket/comma boundaries, including nested generic type arguments. Require explicit separators between expression arms. Canonicalize legacy syntax only with verified equivalent parsing. No change to select.
 - Verify exact-head real guest compilation/execution, negative no-artifact diagnostics, once-only evaluation, guard fallback, overlap, and formatter round trips independently on every backend. This is a language target, not an implementation receipt.
 
+
+### Compile-time Pattern constants and collections (v1 target)
+
+```atto
+const Pattern p1 = on 5;
+const Pattern p2 = is int;
+const Pattern p3 = in [5, 6, 7];
+const Pattern[] z = [on true, on "x", is Foo, in [1, 2, 4, 5]];
+type X = int | bool;
+const Pattern[] types = [is int, is bool];
+
+match value over
+    on p1 -> 1,
+    in z -> 2,
+    is in types -> 3,
+    on _ -> 0
+end
+```
+
+- `Pattern` is a compiler-intrinsic compile-time category, not a runtime object, class descriptor, callable or erased Any value. `Pattern[]` is a finite immutable compile-time sequence. The type of a pattern expression is distinct from the type of the values it matches. Neither category has a runtime representation, ABI, heap allocation, reflection, serialization, actor message or runtime function parameter/result. Ordinary arrays of values keep their existing meaning.
+- Pattern constructors reuse arm heads `on P`, `is T`, `is in [T, U]`, and `in C`. In pattern constants all captured operands, collection contents and type references must resolve at compile time. Binding-free structural and constructor patterns are targets; binding patterns, guards on stored patterns, effectful expressions and runtime captures are deferred, not silently discarded. An arm using a stored pattern may have an ordinary guard evaluated only after the pattern succeeds.
+- `on p` applies a resolved Pattern constant; `in z` applies the ordered disjunction of a Pattern collection; `in [on 1, is Foo, in [2, 3]]` is an inline pattern set. `is in z` requires a statically known collection containing only type-test patterns; mixed value/type collections are rejected in this context. `is X` uses a transparent type alias through the ordinary type resolver. Types themselves are not runtime values or ordinary array elements. Mixed Pattern/value arrays are rejected rather than coerced.
+- Resolve names lexically and check all alternatives against the subject domain, using canonical type identity and the existing value-equality relation; never interpret source strings as patterns. A Pattern name must not be confused with a new binding pattern. Unknown names, cyclic dependencies, ambiguous shadowing, mutable declarations, escaping uses and runtime construction fail closed. Initial compiler slices may reject unsupported scopes or alternatives explicitly. Finite implementation budgets must diagnose expansion overflow rather than truncate or duplicate effects.
+- Flatten statically known pattern sets into typed pattern IR before exhaustiveness/reachability analysis and optimization. Evaluate the subject once, retain source order across arms and short-circuit alternatives; execute one arm body. Diagnose duplicate or completely shadowed alternatives where provable; guards do not add unconditional coverage. AOT code may use direct comparisons, tagged-union discriminants, closed-world nominal type tests or eliminate statically proven checks. No runtime type collection or pattern interpreter is required.
+- Named sets, inline sets, aliases and single pattern constants share the same checking and lowering rules as equivalent direct patterns. Formatter must preserve constructors, delimiters, comments and names. Conditional/switch integration is a target; no change to select. Require exact-source positive guest executions and negative no-artifact tests independently for each backend.
+
 ## Wire portability
 
 Serializable network values and same-domain `Sendable` actor messages are not identical capabilities. Wire encoding must be versioned; native pointers, mutable actor state, host exception objects, code pointers and execution capabilities never cross the wire as raw values. `Result`/`Option` encode/decode round-trips require exact shared test vectors.
