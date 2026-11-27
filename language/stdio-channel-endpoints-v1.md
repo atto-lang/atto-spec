@@ -92,6 +92,16 @@ Ordinary authorized `stdio.out.write(...)` and `process.stdout.write(...)`
 and routines without `suspends`, `susp`, `∂`, or `⧖`, directly and
 transitively. No explicit `await` is required. Implicit runtime parking
 is a compiler-known safepoint, not a language-level suspension effect.
+The four effect spellings grant permission for explicit suspension, not a
+requirement to suspend and not a return-type constructor. A suspendable
+callable preserves its declared result type `T` (including `void` or an
+explicitly declared `Future<T>`); an explicitly awaited direct call
+produces that declared result. No implicit Future wrapping, flattening,
+new task or mandatory Future allocation is implied. Runtime parking
+requires resumability of ordinary transitive callers, including indirect
+calls where a nonparking target cannot be proven. A missing suspension
+modifier is not a guarantee of non-yielding execution.
+
 This is not permission to call arbitrary explicit-suspending functions
 without their declared effect. Explicit checked `readch` / `writech`
 and other explicit suspension operations retain their existing rules.
