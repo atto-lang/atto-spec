@@ -76,3 +76,78 @@ Record field identifiers are fixed by the syntax and checked against the canonic
 Positive once implemented: `foo => 5` with `foo:string` infers `Entry<string,int>`; `(foo) => 5` identical; `#foo => 5` infers `Entry<Symbol,int>`; `["foo"] => 5` infers `Entry<List<string>,int>` without Map insertion; `[true] => 5` infers `Entry<List<bool>,int>`; contextual `Array<string>` changes the key collection type, not the arrow semantics; `["foo" => 5, "bar" => 6]` infers a List of Entries. `({foo:1})` and `(foo=1)` remain Records, not collection entries.
 
 Negative cases: `bar :: 5` standalone, duplicate Record field names, `{"foo":1,bar:2}` mixed Map/Record, computed Record `{[foo]:5}`, unsafe mutable List/Array Map key insertion, wrong `Entry<K,V>` generic ascription, Map value type mismatches, unhashable nested key contents, moved/borrowed alias escape, source-order side effects duplicated or reordered, and any unproven Symbol/key identity crossing a TenantVM boundary. Track results per compiler with an exact source SHA and distinguish `PARSED`, `TYPE_CHECKED`, `COMPILED_GUEST_EXECUTED`, and `REJECTED_NO_ARTIFACT`.
+
+
+## Parentheses and Record constructor interoperability (v2 proposed)
+
+Status: TARGET / NOT_EXECUTED. This section proposes a narrowly scoped extension to v1; ordinary Entry expressions and named calls retain their existing semantics. Do not silently enable this in older profiles.
+
+In expression-primary position, classify at the current delimiter depth using tokens, not whitespace, regex, or expected type: `()` is an empty Tuple, `(expr)` is grouping, `(expr,)` and `(expr, expr, ...)` are Tuples, and `(identifier=expr, ...)` is a Record. Each record item must have an identifier and a single assignment token; `==`, nested delimiters, strings and comments do not trigger this classification. One trailing comma is legal; leading/double commas, unbalanced delimiters and mixed positional/field items reject. Parentheses preserve nested shape, type, ownership, effects and source-order evaluation; they neither flatten tuples nor introduce assignment, argument expansion or extra evaluation. `(5,6.true)` is not the spelling of a three-item tuple; use `(5,6,true)`. Ordinary valid member access remains unchanged.
+
+The authenticated compiler-owned constructors distinguish positional products, named structural products and key-value associations. `Pair<V>` is a nominal string/value product. The first component MUST be string at the Pair type and factory boundary, independent of use context. The canonical type spelling is `Pair<V>`. `Pair<string,V>` remains a compatibility spelling of the same nominal type. Other two-argument Pair types are invalid. `Pair.of(42,5)`, `Pair.of(true,5)` and `Pair.of` with a non-string key expression reject even when no Record or Map consumes the result. No implicit stringification. A Pair string may be dynamic or contain arbitrary string contents; identifier validity and compile-time provenance are Record-only requirements. Use Tuple for unrestricted positional products. `Entry<K,V>` is a nominal key-value association, with no Hash/Eq restriction at construction; inserting an Entry into a Map independently requires a stable, admitted key Hash/Eq contract. Pair, Entry and Tuple remain distinct types, with no implicit conversion.
+
+```atto
+let Record r1 = (a=5, b=true);
+let Record r2 = {a:5, b:true};
+let Record r3 = Record.of(a=5, b=true);
+let Record r4 = Record.of(Pair.of("a", 5), Pair.of("b", true));
+
+let Map m1 = {"a" => 5, "b" => 6};
+let Map m2 = Map.of("a" => 5, "b" => 6);
+let Map m3 = Map.of(Entry.of("a", 5), Entry.of("b", 6));
+let Map m4 = Map.of(Pair.of("a", 5), Pair.of("b", 6));
+let Map m5 = Map.of(Pair.of("a", 5), "b" => 6);
+
+let Tuple t = (5, 6, true);
+let Tuple t2 = Tuple.of(5, 6, true);
+```
+
+For Record.of, admit identifier-equals fields or Pair values whose first component is a compile-time-proven string that satisfies the same lexical identifier and reserved-name rules as fnc/mtd parameter names. The second component is the field value, with ordinary checked typing, ownership and lifetime rules. A constant alias or folded constant string may supply the name if the compiler can prove its exact value without executing guest code. Pair values with a dynamic first component, invalid identifiers, non-string names, duplicate decoded names or an unproved shape reject before artifact emission. Do not normalize case, sanitize names or stringify other key types. For the initial profile, permit one of the two constructor item styles per invocation; mixed styles remain unadmitted pending a separate decision. The identifier and compile-time provenance restrictions are on Record.of; the string type restriction already applies at Pair construction and type formation. No runtime reflection or dynamic shape construction.
+
+`=>` always retains ordinary Entry semantics, including in constructor arguments. Bare identifiers are evaluated bindings, not literal labels. No Record-specific reinterpretation: `Record.of(a => 5)` and `Record.of(Entry.of("a",5))` reject, even for statically known string keys. Map.of admits both nominal Pair<V> and Entry<K,V> items, including arrow sugar; mixed Pair/Entry items are legal if all keys and values satisfy the same resolved K,V and ownership obligations. For Pair inputs, the first component supplies the ordinary evaluated key and the second supplies the value; the key is necessarily string, but need not be an identifier or compile-time constant. Pair inputs therefore require K=string; mixed Entry items must also satisfy that key type. Non-string Map keys use Entry or arrow syntax. Map.of performs explicit constructor ingestion, not a general Pair-to-Entry conversion. Map.of_entries remains an explicit Entry-only spelling; the historical flat alternating Map.of(k,v,k,v) overload is legacy-profile-only and rejects in v2; `Map.of(a=5)` rejects. Pair.of and Entry.of each require exactly two arguments; zero-argument calls do not create empty pairs or entries. An Entry may contain arbitrary well-typed key values even if the Map would reject them for unstable or unsupported hashing/equality. Map construction preserves the existing Map type inference, duplicate-key and ownership rules; it does not invent a second insertion policy.
+
+Only authenticated compiler-owned symbols receive intrinsic lowering. Shadowed/user-defined Record, Pair, Entry, Map and Tuple symbols follow ordinary call rules. In the historical v2 profile ordinary named arguments use label: expression; `f(a=5)` does not become a named call, and `f((a=5))` is a grouped Record. The later owner clarification (2026-11-27, new profile in #299/#307) supersedes that call boundary: `foo(x = 4, y = 8)` is two named arguments; `foo({x = 4, y = 8})` is one positional anonymous Record; `foo((x = 4, y = 8))` is unresolved, and `foo((x : 4, y : 8))` is a candidate only. Do not infer new-profile semantics from this historical grouped Record rule. In the historical v2 profile, `f((5,6))` is one Tuple argument, whereas `f(5,6)` supplies two arguments. Normalize equivalent forms to the same checked typed aggregate operations, preserve source spans and exactly-once left-to-right evaluation independently of canonical Record field ordering. Temporary Pair/Entry allocations may be elided only after ownership, effects and lifetime equivalence is proved. Tuple.of must preserve tuple arity and positional types, including the zero- and one-element cases.
+
+Grouping overrides the existing operator precedence without changing its tiers (see [bitwise and stream operators](bitwise-and-stream-operators-v1.md)). Preserve short-circuiting, checked arithmetic, ownership unary operators, postfix call/index/member/cast binding and nonassociative Entry arrows. Grouped import selectors are a separate static declaration grammar under [static imports v2](static-imports-v2.md), including its distinct delimiter/trailing-comma rules, atomic binding, and visibility checks. No expression evaluation or aggregate allocation in import clauses.
+
+### Adversarial admission and evaluation boundaries
+
+- The decoded Pair name must be proven at the use site by the ordinary constant evaluator. An immutable runtime binding is not a compile-time constant. A mutable alias, effectful function, dynamic read, unresolved generic or branch-dependent string without a single proven value cannot supply a field name. An already-created Pair may be admitted only if its exact name and ownership provenance survive dataflow; do not re-evaluate its initializer.
+- Compare field names by the same identity as fnc/mtd parameter identifiers, after string escape decoding. Empty strings, whitespace, delimiters, NUL, reserved names and invalid identifier characters reject; do not trim, case-fold, normalize or invent a separate ASCII-only Record-name rule. Duplicate escaped spellings of the same identifier reject; distinct names accepted by the canonical identifier grammar stay distinct.
+- Validate complete shape, duplicate fields, constructor identity, argument types and ownership before emitting any executable artifact. On static failure do not emit a partial constructor, invoke a user callback, publish a type or allocate a guest value. Compile-time checks never evaluate guest effects.
+- Evaluate accepted input expressions once in lexical order, not canonical field order. A Pair or Entry already materialized before the call is not reconstructed. A trap or cancellation during argument evaluation must suppress later effects and release already-owned temporaries according to normal cleanup rules. Allocation elision cannot bypass move, borrow, destruction, identity or effect constraints.
+- Distinguish zero-argument calls from empty Tuple expressions, one-element tuples from groups, and nested tuple/record arguments from a variadic argument list. Empty Map construction requires uniquely known K,V. An empty Record may use the existing typed empty brace form; zero-argument Record.of is reserved pending a separate empty-constructor decision. A single trailing comma follows the existing constructor call grammar, not an import group's rule.
+- Do not reconstruct user expressions by printing and re-lexing tokens: preserve literal decoding, adjacency-sensitive operators, original spans and nesting limits. Test contiguous shifts, separated angle tokens, comments and delimiter-looking strings. Reject crossed delimiters and excess nesting without crashing or producing an artifact.
+
+### Required independent conformance
+
+| Source fragment | Expected |
+| --- | --- |
+| `2 + 3 * 4` / `(2 + 3) * 4` | 14 / 20 |
+| `20 - 5 - 3` / `20 - (5 - 3)` | 12 / 18 |
+| `(5)` / `(5,)` / `()` | scalar / tuple arity 1 / tuple arity 0 |
+| `(5,6,true)` | ordered heterogeneous tuple |
+| `((a=5),6)` / `(a=(5,6))` | nested tuple/record, no flattening |
+| `(a==5)` | grouped comparison |
+| `(a=5,6)`, `(5,,6)`, `(a=5,a=6)` | reject, no artifact |
+| All four Record constructions above | same shape, field values and source-order effects |
+| All five Map constructions above | same key/value association and source-order effects |
+| `Tuple.of()`, `Tuple.of(5)`, `Tuple.of(5,6,true)` | same respective typed tuples as `()`, `(5,)`, `(5,6,true)` |
+| `Record.of(Pair.of(dynamic_key,5))` | reject if name not statically proved |
+| `Record.of(Pair.of("first-name",5))`, `Record.of(Pair.of(123,5))` | reject invalid name / non-string |
+| `Record.of(Pair.of("a",5), Pair.of("a",6))`, `Record.of(a=5,a=6)` | duplicate rejection |
+| `Record.of(a => 5)`, `Record.of(Entry.of("a",5))` | reject Entry inputs; no contextual arrow exception |
+| `Map.of(Pair.of("a",5))`, `Map.of(Pair.of("a",5), "b" => 6)` | accept compatible key/value items |
+| `Map.of(a=5)`, `Map.of_entries(Pair.of("a",5))` | reject inappropriate input forms |
+| `Pair.of(42,5)`, `Pair.of(true,5)`, `Pair<int,int>` | reject at Pair boundary, independent of consumer |
+| `Entry.of(42,5)`, `Map.of(42 => 5)` | accept non-string Entry keys when Hash/Eq permits |
+| `Pair.of()`, `Entry.of()`, `Map.of(Pair.of())` | reject wrong factory arity |
+| `Map.of(Pair.of("a",5), Entry.of("a",6))` | reject duplicate constant keys across item kinds |
+| `Entry.of(non_hashable_key,5)` | valid if ordinary type/ownership rules allow; Map insertion separately rejects |
+| `false && (trap_expression)`, `true || (trap_expression)` | right operand not evaluated (with bool-typed trap expression) |
+| `(key) => 5` | ordinary evaluated Entry key |
+| `import (class C, fnc f) from pkg 'x';` | static mixed selector, no tuple |
+| `import class (C, D) from pkg 'x';` | static same-kind group |
+| `import class (C,) from pkg 'x';` | reject under import v2, unlike tuple trailing comma |
+
+Add actual compiler/guest tests for left-to-right side effects, exactly-once construction, static and dynamic key rejection, shadowed constructors, nested groups, strings/comments, malformed delimiters, resource-bounded nesting and parse-format-parse equivalence. Test JVM/Graal Native Image, .NET NativeAOT, LLVM native, Rust/Wasm, standalone Wasm, JS, Forge, Cranelift and the Atto bootstrap independently; distinguish parser-only, host-only and compiled guest evidence. No unsupported feature may silently emit an artifact. Pin exact head/tree, steps and toolchain. This proposal has no execution receipts yet.
