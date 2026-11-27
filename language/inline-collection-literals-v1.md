@@ -1,5 +1,7 @@
 # Inline records, maps, sequences and tuples — v1 candidate
 
+> **v3 syntax correction (2026-11-27):** [Pair literals and name-derived bindings](pair-literals-and-bindings-v3.md) governs the new profile: `Pair<V>` is string-keyed, `:=` always constructs Pair, `=>` constructs Entry in key/value expressions, and `const y := 5;` declares a Pair. Named calls accept `=` and `:`. Conflicting older examples below are historical-profile only.
+
 **Status:** candidate language contract. This document defines intended portable semantics; no backend is considered conformant without successful guest execution and negative cases at an exact commit. It does not reinstate removed \`~map(...)\`, \`~array(...)\`, \`~record(...)\`, or other tilde-prefixed constructors.
 
 > **Normative quoted-key correction (2026-11-20):** Identifier-colon and parenthesized identifier-equals fields construct Records. Quoted string keys with `:` or `=>` and expression arrows construct Maps; mixed Map/Record items fail closed. See [quoted Map keys versus Record fields (atto-spec #133)](quoted-map-vs-record-literals-v1.md) and [Record layout #72](https://github.com/atto-lang/atto-spec/pull/72) for downstream implementation constraints.
