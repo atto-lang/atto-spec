@@ -229,6 +229,45 @@ fnc load(string id): int {
   Physical child/actor quiescence and ownership/lock retirement are
   prerequisites for releasing an actor arena.
 
+## Immutable pending-return invariant (owner-confirmed)
+
+On a normal return (including caret return, early return, task-local return
+and successful propagation), evaluate the return expression exactly once
+and initialize a compiler-owned, source-inaccessible pending result slot
+before running any cleanup for that exit. Neither a defer nor a recover
+handler may read or assign this slot, replace its payload, or perform a
+nonlocal return that targets the exiting callable. A defer may mutate
+otherwise permitted state; rebinding a source local used to compute the
+result does not change the already selected result.
+
+Recovery is a distinct failure-only path. A typed recovery result may be
+produced only for an eligible unhandled throw or raise when no successful
+return is pending. Returning from the recovery callback yields a new typed
+fallback outcome, not assignment to an existing successful result. Recovery
+never runs on ordinary successful return and cannot turn panic, cancellation
+or host fatal failure into success. A cleanup failure may change terminal
+control according to the existing failure precedence, but must not silently
+replace the pending payload with another successful value. If a cleanup
+failure occurs while a successful result is pending, recovery must not
+rewrite that successful result into a different successful fallback.
+
+For references and owned aggregates, this is not an implicit deep copy or
+a promise of referent immutability. Preserve the selected value/identity
+and obey its ownership and aliasing contract. Cleanup must not move, drop,
+invalidate, or illegally mutate a returned owned resource or invalidate
+the lifetime of a returned reference. Reject an unproved conflict before
+code generation. Compiler-generated return storage is not a guest-visible
+named return variable, even across suspension and inlined cleanup.
+
+Required regression controls: mutation of the source local after return
+evaluation; once-only evaluation and LIFO order; attempted nonlocal return
+or result-slot assignment from cleanup; recovery registration skipped on
+success; eligible failure returning a typed fallback; attempted recovery
+of panic/cancellation; ownership/lifetime conflict with pending result;
+and preservation through optimized lowering and serialized IR replay
+where applicable. A backend with unimplemented semantics must reject the
+unsupported profile, not silently omit cleanup or recovery.
+
 ## Mandatory conformance traces
 
 Each row is an **expected future guest trace**, not a passed test.
