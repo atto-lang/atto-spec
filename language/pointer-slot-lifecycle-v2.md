@@ -62,3 +62,37 @@ Storage<T> owns sized/aligned reserved bytes; it is not a non-owning pointer slo
 | RPS-018 | Placement constructor self/field writes target supplied storage | no second object allocation |
 
 Each backend must compile actual positive Atto guests and execute their oracles, reject invalid programs without emitting an executable artifact, prove dynamic generation and cleanup paths where admitted, and preserve prior v1 and ownership suites. Unsupported-profile rejection is not semantic parity. Host-only models are not compiler evidence. Exact PR head/tree, nonzero executed jobs, independent review and source export authorization remain required. No private source mirroring without a private approved destination and exact-tree verification.
+
+
+## Trusted single-level pointer normalization (2026-11-27 direction)
+
+This is a proposed normative successor for the **trusted local-place** pointer lane, not an admission grant and not a claim of current backend support. It supersedes the v1 unary operator denial only for that independently verified lane. Retain v1 denial everywhere else, including untrusted actors. The preexisting OwnedRegion, CheckedRef and reusable RawPointer slot authority states are not interchangeable; their lifetime and cleanup rules remain distinct.
+
+### Static types and expressions
+
+Let P(T) denote the compiler-intrinsic local pointer type. For a non-pointer referent T, `T*` and `Pointer<T>` are equivalent surface types. P(P(T)) = P(T), including generic substitution and transparent aliases; canonicalize before overload identity, ABI layout and code generation. Explicit repeated star suffixes (`int**`, etc.) are errors, not an alternate nesting notation. A user-defined type cannot impersonate the builtin. Normalization is shallow at the outer constructor: `Pointer<Record>` does not recursively remove pointer-valued fields; such fields must independently pass ownership and escape checks. Preserve nominal referent identity, authority kind, read/write rights, provenance, domain, generation and lifetime; never flatten across distinct authority families or discard qualifiers. Reject ambiguous or unsupported authority cases.
+
+| Form | Typed meaning in trusted local-place profile |
+| --- | --- |
+| `&x`, `ref! x` | Acquire checked pointer to addressable initialized T place |
+| `&p`, `ref! p` | For a live local pointer, preserve its target and authority; never address the pointer slot |
+| `*p`, `deref! p` | Checked access to T; Copy result or bounded loan for non-Copy |
+| `*x`, `*(*p)` | Reject if operand is not a pointer |
+| `&(*p)` | Preserve target identity when validity, lifetime and rights are proven; retain required dereference checks |
+| `unref! p` | End the named handle or detach the reusable slot according to its own authority contract, never free the referent |
+| `Pointer<Pointer<T>>` | Normalize only the same local-place constructor |
+| `T**`, address of pointer storage | Reject in ordinary source |
+
+Unary syntax must be resolved by grammar and typing, not a text rewrite. Binary multiplication, bitwise AND, logical AND, generator delegation and return-signature separators retain their meanings. An operand is evaluated exactly once; normalization cannot discard side effects, trapping checks or required loan events. Nonaddressable values and temporaries lacking a stable lifetime reject.
+
+### Identity versus authority
+
+Idempotency concerns the pointer's referent and canonical type, not permission to duplicate a capability. Repeated acquisition of a live pointer in an expression is identity (no new lease). A separately retained read-only binding can point to the same place only if the compiler establishes its own bounded read lease, or proves a scoped alias of the original lease that cannot outlive it. For the initial independently detachable read-only binding profile, each retained binding has its own release obligation; release of one does not revoke other independently established leases. Reject duplication of exclusive, owning or noncopyable authority; do not silently reinterpret an empty or detached slot as a valid address. This explicit distinction is a proposed integration decision, not a change to the linear v1 handle rules without a new admitted profile.
+
+Trusted admission must be derived from authenticated compiler/runtime policy, not a source annotation or caller-supplied flag. Reject raw/local pointer syntax, types and capability escape in untrusted actor contexts, including through generic instantiation, imported calls, aggregate fields, closures, serialization and FFI. Safe borrow operations remain separate. No cross-actor/tenant pointers. Recheck lifetime, generation, rights, and revocation at dereference unless independently proven redundant. Do not add implicit null assignment or free-via-pointer behavior. FFI out-parameters requiring native T** remain a separate restricted ABI proposal, not ordinary source support.
+
+### Required evidence
+
+New versioned positive cases: symbolic/keyword equivalence; repeated acquisition; alias and generic normalization; exact target identity; independent read lease release and referent survival; exactly-once evaluation; preserved binary operator meanings. Negatives: explicit **, strict dereference of nonpointer, address of pointer storage, detached acquisition, forged capability, qualifier escalation, exclusive duplication, shorter lifetime escape, untrusted indirect acquisition, cross-domain export, stale generation, and pointer-to-pointer ABI artifacts. Run positive compiled guests and negative no-artifact tests on each backend; host-only models are not parity.
+
+Inspect typed HIR/MIR and optimized IR/native or Wasm output: no pointer-slot address or added indirection; no mandatory allocation or copy merely due to redundant acquisition; retain mandatory ABI moves, guards and lease effects. Report exact source head/tree, toolchain, executed steps, artifact and guest receipts separately for each backend. Until those gates pass, unsupported profiles must reject before artifact creation.
