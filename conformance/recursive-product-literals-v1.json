@@ -1,7 +1,7 @@
 {
   "schema": "atto.recursive-product-literals-v1",
   "status": "TARGET_NOT_EXECUTED",
-  "notes": "Independent source fragments; compile in appropriate local scope. Expected shapes and diagnostics are targets, not executed evidence. Quoted equals cases are a candidate extension to #299; not ratified or executed. Hardened initial profile admits only ordinary double-quoted literal labels. Effect harness fragments require supplied tick; no runtime result is implied.",
+  "notes": "Independent source fragments; compile in appropriate local scope. Expected shapes and diagnostics are targets, not executed evidence. Quoted equals cases are a candidate extension to #299; not ratified or executed. Hardened initial profile admits only ordinary double-quoted literal labels. Effect harness fragments require supplied tick; no runtime result is implied. User revision: direct quoted equals at call level is named, never positional Record; explicit inner parentheses required.",
   "vectors": [
     {
       "id": "pair-tuple",
@@ -366,14 +366,14 @@
     {
       "id": "quoted-call-single",
       "kind": "accept",
-      "source": "fnc foo(Record r) {} foo(\"outer\"=(\"inner\"=42));",
-      "expect": "one positional nested Record, not named argument"
+      "source": "fnc foo(Record outer) {} foo(\"outer\"=(\"inner\"=42));",
+      "expect": "named outer with nested Record RHS"
     },
     {
       "id": "quoted-call-two",
       "kind": "accept",
-      "source": "fnc foo(Record a,Record b) {} foo(\"x\"=1,\"y\"=2);",
-      "expect": "two positional one-field Records, never coalesced"
+      "source": "fnc foo(int x,int y) {} foo(\"x\"=1,\"y\"=2);",
+      "expect": "two named scalar arguments"
     },
     {
       "id": "quoted-call-grouped",
@@ -385,13 +385,13 @@
       "id": "quoted-call-no-coalesce",
       "kind": "reject",
       "source": "fnc foo(Record r) {} foo(\"x\"=1,\"y\"=2);",
-      "expect": "too many arguments, no coalescing"
+      "expect": "unknown named labels; never coalesce"
     },
     {
       "id": "quoted-call-after-named",
       "kind": "reject",
-      "source": "fnc foo(int a,Record r) {} foo(a=1,\"x\"=2);",
-      "expect": "positional after named"
+      "source": "fnc foo(int a,Record r) {} foo(a=1,(\"x\"=2));",
+      "expect": "positional Record after named"
     },
     {
       "id": "quoted-call-invalid-label",
@@ -420,38 +420,38 @@
     {
       "id": "quoted-call-not-named",
       "kind": "reject",
-      "source": "fnc foo(int x) {} foo(\"x\"=42);",
-      "expect": "positional Record not scalar named argument"
+      "source": "fnc foo(Record r) {} foo(\"x\"=42);",
+      "expect": "unknown named argument x; no positional Record fallback"
     },
     {
       "id": "quoted-call-mixed-order",
       "kind": "accept",
-      "source": "fnc f(Record r,int n) {} f(\"x\"=42,n=2);",
-      "expect": "positional Record then named scalar"
+      "source": "fnc f(Record r,int n) {} f((\"x\"=42),\"n\"=2);",
+      "expect": "positional Record then quoted named scalar"
     },
     {
       "id": "quoted-call-slot-duplicate",
       "kind": "reject",
-      "source": "fnc f(Record r) {} f(\"x\"=42,r=(x=1));",
-      "expect": "duplicate slot, not label duplicate"
+      "source": "fnc f(Record r) {} f((\"x\"=42),\"r\"=(x=1));",
+      "expect": "duplicate parameter slot"
     },
     {
       "id": "quoted-call-same-key-two-records",
       "kind": "accept",
-      "source": "fnc f(Record a,Record b) {} f(\"x\"=1,\"x\"=2);",
-      "expect": "two independent Records, no duplicate field"
+      "source": "fnc f(Record a,Record b) {} f((\"x\"=1),(\"x\"=2));",
+      "expect": "two independent positional Records"
     },
     {
       "id": "quoted-call-nested-comma",
       "kind": "accept",
-      "source": "fnc f(Record r,int n) {} f(\"x\"=(1,2),3);",
-      "expect": "two arguments; first Record contains tuple arity 2"
+      "source": "fnc f(Record r,int n) {} f((\"x\"=(1,2)),3);",
+      "expect": "two positional args; first contains tuple"
     },
     {
       "id": "quoted-call-mixed-tuple",
       "kind": "accept",
-      "source": "fnc f(Record r) {} f(\"x\"=(a:=1,(b=2),3));",
-      "expect": "one Record argument, heterogeneous tuple payload"
+      "source": "fnc f(Record r) {} f((\"x\"=(a:=1,(b=2),3)));",
+      "expect": "positional Record containing heterogeneous tuple"
     },
     {
       "id": "quoted-call-named-nested",
@@ -462,8 +462,8 @@
     {
       "id": "quoted-call-bare-variable",
       "kind": "accept",
-      "source": "let x=7; fnc f(Record r) {} f(\"x\"=42); const int n=x;",
-      "expect": "x unchanged at 7; Record field x is 42"
+      "source": "let x=7; fnc f(int x) {} f(\"x\"=42); val int n=x;",
+      "expect": "caller x remains 7; named argument not assignment"
     },
     {
       "id": "quoted-call-value-no-lookup",
@@ -474,7 +474,7 @@
     {
       "id": "quoted-call-method",
       "kind": "accept",
-      "source": "fnc f(Record r) {} f.call(\"x\"=42);",
+      "source": "fnc f(Record r) {} f.call((\"x\"=42));",
       "expect": "one positional Record via callable call"
     },
     {
@@ -486,8 +486,8 @@
     {
       "id": "quoted-call-apply-not-tuple",
       "kind": "reject",
-      "source": "fnc f(Record r) {} f.apply(\"x\"=42);",
-      "expect": "Record argument is not typed tuple operand"
+      "source": "fnc f(Record r) {} f.apply((\"x\"=42));",
+      "expect": "Record is not typed tuple operand"
     },
     {
       "id": "quoted-call-spread",
@@ -498,14 +498,14 @@
     {
       "id": "quoted-call-no-intrinsic-field",
       "kind": "reject",
-      "source": "const r=Record.of(\"x\"=42);",
-      "expect": "positional Record not admissible named field or Pair"
+      "source": "const r=Record.of((\"x\"=42));",
+      "expect": "positional Record not admitted as named field or Pair"
     },
     {
       "id": "quoted-call-no-map-coercion",
       "kind": "reject",
       "source": "const m=Map.of(\"x\"=42);",
-      "expect": "positional Record is not Pair or Entry"
+      "expect": "named fields not Map inputs"
     },
     {
       "id": "quoted-equality-control",
@@ -654,14 +654,86 @@
     {
       "id": "quoted-label-effect-order",
       "kind": "accept",
-      "source": "fnc f(Record r,int n) {} f(\"x\"=tick(1),n=tick(2));",
-      "expect": "with effect harness: tick(1), tick(2), once each then f"
+      "source": "fnc f(Record r,int n) {} f((\"x\"=tick(1)),\"n\"=tick(2));",
+      "expect": "tick 1 then tick 2 once each; positional then named"
     },
     {
       "id": "quoted-label-nested-effect-order",
       "kind": "accept",
       "source": "val r=(\"z\"=tick(1),\"a\"=(\"k\"=tick(2)));",
       "expect": "with effect harness: tick(1), tick(2), once each despite canonical shape"
+    },
+    {
+      "id": "quoted-call-named-scalar",
+      "kind": "accept",
+      "source": "fnc f(int x) {} f(\"x\"=42);",
+      "expect": "same named argument as f(x=42)"
+    },
+    {
+      "id": "quoted-call-mixed-named",
+      "kind": "accept",
+      "source": "fnc f(int x,int y) {} f(x=1,\"y\"=2);",
+      "expect": "two named arguments"
+    },
+    {
+      "id": "quoted-call-duplicate-bare",
+      "kind": "reject",
+      "source": "fnc f(int x) {} f(x=1,\"x\"=2);",
+      "expect": "duplicate decoded parameter label"
+    },
+    {
+      "id": "quoted-call-duplicate-escaped",
+      "kind": "reject",
+      "source": "fnc f(int x) {} f(\"x\"=1,\"\\u{78}\"=2);",
+      "expect": "duplicate decoded parameter label"
+    },
+    {
+      "id": "quoted-call-positional-after-quoted",
+      "kind": "reject",
+      "source": "fnc f(int x,int y) {} f(\"x\"=1,2);",
+      "expect": "positional after named"
+    },
+    {
+      "id": "quoted-call-record-after-quoted",
+      "kind": "reject",
+      "source": "fnc f(int x,Record r) {} f(\"x\"=1,(y=2));",
+      "expect": "positional Record after named"
+    },
+    {
+      "id": "quoted-call-explicit-record",
+      "kind": "accept",
+      "source": "fnc f(Record r) {} f((\"x\"=42));",
+      "expect": "one positional Record, same as f((x=42))"
+    },
+    {
+      "id": "quoted-call-no-record-to-scalar",
+      "kind": "reject",
+      "source": "fnc f(int x) {} f((\"x\"=42));",
+      "expect": "Record not scalar named argument"
+    },
+    {
+      "id": "quoted-record-of-named",
+      "kind": "accept",
+      "source": "const r=Record.of(\"x\"=42);",
+      "expect": "same named field as Record.of(x=42)"
+    },
+    {
+      "id": "quoted-apply-named-reject",
+      "kind": "reject",
+      "source": "fnc f(int x) {} f.apply(\"x\"=(42,));",
+      "expect": "apply takes positional typed tuple, not named label"
+    },
+    {
+      "id": "quoted-call-named-after-quoted",
+      "kind": "accept",
+      "source": "fnc f(int x,int y) {} f(\"x\"=1,y=2);",
+      "expect": "both named"
+    },
+    {
+      "id": "quoted-call-named-record-rhs",
+      "kind": "accept",
+      "source": "fnc f(Record x) {} f(\"x\"=(y=42));",
+      "expect": "named x has Record RHS, not outer Record"
     }
   ]
 }
