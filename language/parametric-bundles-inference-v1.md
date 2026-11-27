@@ -77,6 +77,27 @@ A bare bundle prefix needs a uniquely known contextual collection family. A reso
 
 Fixed size is logical element count, not reserved capacity. Under the explicit-initialization contract, `[]` may construct a fixed-size zero-element array only; the user's nonzero empty-literal example is a syntax target but fails initialization. Use a full literal or a separately specified explicit fill initializer. No implicit zero/default values, padding, hidden mutation, aliasing, layout conversion or cast. Existing ownership, effects, once-only lexical evaluation, checked size arithmetic and AOT rules remain mandatory.
 
+
+## Contextual nominal construction (owner-approved direction)
+
+```atto
+type Base = <type=Particle, size=5, layout=soa>;
+let particles: Array<infer X from Base> = [
+    make {x:10, y:20, velocity:1},
+    make {x:30, y:40, velocity:2}
+] with {size=infer};
+```
+
+The expected element type supplies a unique, resolved nominal constructor owner; the explicit size hole obtains its evidence from the element count. The element type and physical layout are retained. `make {...}` constructs a value; `new {...}` constructs a reference under the existing nominal reference and allocation rules. In a reference-element collection the latter obtains its owner from the referent type. The existing struct boxing restriction remains in force unless separately ratified: a struct value is not implicitly reference-allocatable. An inline SoA value slot must reject reference construction even when the field shapes agree. No automatic boxing, copying, dereference or identity discard. The reference spelling in examples is illustrative until the canonical type schema is resolved.
+
+The braced operands use field initializers with colon separators, not a Record value or a generic argument map. Require a unique expected nominal owner (including resolved constructor category), accessible constructor/fields, exactly one initializer for each required field and checked field types. Never choose an owner by field-name matching. Nested field construction receives its own field's expected type. Function arguments, returns, assignments, channel messages and match arms use the same contextual resolution rules. Resolve overloads by ordinary type constraints, without evaluating expressions or guessing when several owners remain. Reject circular expected-type inference and unresolved owners before lowering.
+
+Primitive typed construction (`make Particle {...}`, `new Widget {...}`) shares the checks of the corresponding contextual form. Declared factories (`Particle.make(...)`, `Widget.new(...)`) remain ordinary resolved calls with their declared effects, result types and context; no name-based rewrite. Contextual positional `make(...)` / `new(...)` and collection-prefix `make [...]` / `new [...]` are separate candidate extensions, not admitted here.
+
+For primitive reference construction, an inner `with allocator` selects the typed allocation context; the outer literal's `with {size=infer}` is a compile-time clause. Preserve the allocation and first-class bound-factory rules in the contextual specialization proposal (atto-spec#294). No fallback allocator or implicit factory binding. Evaluate field expressions exactly once in written order; canonical storage order must not reorder effects. Direct destination value construction is permitted only if equivalent under initialization, effects, ownership, borrow and cleanup rules. On failure, clean up initialized resources in reverse order, release reservations exactly once and do not publish partial values. Do not erase observable identity or quota effects of `new`.
+
+A backend may initially implement only the fully typed local scalar struct-array value subset. It must reject contextual reference construction and all unresolved or unsupported cases before emitting guest artifacts. Full reference construction requires a real identity-bearing representation and lifetime/allocator tests.
+
 ## Verification
 
 Source vectors are design targets, not executed fixtures. Compiler stages: grammar/AST (distinguish bundle vs ordinary type and runtime `with`), shared semantic binder, alias scope, type/ownership/layout checking, canonical IR and guest lowering, formatter round-trip. Unsupported forms fail closed. Report exact backend head/tree/toolchain and executed positive/negative guest evidence separately.
