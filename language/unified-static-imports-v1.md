@@ -301,12 +301,12 @@ must not declare multiple namespaces, even if the names are identical.
 ```ebnf
 source_unit     = [ namespace_decl ], { import_decl }, { top_level_decl } ;
 namespace_decl  = "use", "namespace", identifier, { ".", identifier }, ";"
-                | "use", "default", "namespace", ";"
+                | "use", "default", "namespace", [ "(", positive_integer, ")" ], ";"
                 | "use", "file", "namespace", ";"
                 | "use", "folder", "namespace", ";" ;
 ```
 
-The [namespace modes v2 amendment](namespace-modes-v2.md) governs this grammar in the new profile. Omission, explicit default and file mode identify the current source file; named and folder modes are distinct opt-in shared scopes. Folder mode derives the complete logical parent path, not the leaf/suffix name. The previous default-folder and default-depth grammar is legacy-profile only.
+The [namespace modes v2 amendment](namespace-modes-v2.md) governs this grammar in the new profile. Omission, explicit default and file mode identify the current source file; named and folder modes are distinct opt-in shared scopes. Folder mode derives the complete logical parent path, not the leaf/suffix name. Explicit numeric default(N) keeps the existing bounded suffix-derived named identity; only the previous bare-default folder-derived meaning is legacy-profile only.
 
 Valid:
 
@@ -385,7 +385,7 @@ any of these forms.
   `use namespace http;` and with no explicit namespace header.
 
 
-- Parse all five namespace spellings; reject duplicates, misplaced headers and invalid logical identities. Test legacy depth syntax only in the explicitly selected legacy profile.
+- Parse all five namespace spellings; reject duplicates, misplaced headers and invalid logical identities. Test numeric depth and equivalent named identities in the new profile, and legacy bare-default meaning only in its explicitly selected legacy profile.
 - Parse namespace and named imports with and without `pkg`.
 - Admit `import pkg 'z';` and `import pkg 'z' as alias;` as canonical forms;
   enforce deterministic implicit basenames, reserved-name/invalid-name
