@@ -294,6 +294,134 @@
       "expected": "exit 10",
       "status": "AUTHORED_NOT_EXECUTED",
       "edition": "candidate_extension"
+    },
+    {
+      "id": "contextual-make-seeded",
+      "outcome": "accept",
+      "source": "define struct Particle { x:int; y:int; velocity:int; } type Base = <type=Particle,size=5,layout=soa>; let a: Array<infer X from Base> = [make {x:10,y:20,velocity:1},make {x:30,y:40,velocity:2}] with {size=infer};",
+      "expected": "X.size=2; Base.size=5; X.type=Particle; X.layout=soa",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-array",
+      "outcome": "accept",
+      "source": "define struct P { x:int; } let a: Array<P,layout=soa> = [make {x:1},make {x:2}] with {size=2};",
+      "expected": "two inline values",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-return",
+      "outcome": "accept",
+      "source": "define struct P { x:int; } fnc f() -> P { return make {x:42}; }",
+      "expected": "value result",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-typed",
+      "outcome": "accept",
+      "source": "define struct P { x:int; } let p: P = make P {x:42};",
+      "expected": "same nominal value",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-nested",
+      "outcome": "accept",
+      "source": "define struct P { x:int; } define struct Scene { origin:P; } let s: Scene = make {origin:make {x:42}};",
+      "expected": "nested expected nominal type",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-unknown",
+      "outcome": "reject",
+      "source": "let p = make {x:42};",
+      "expected": "missing_expected_nominal",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-duplicate",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let p: P = make {x:1,x:2};",
+      "expected": "duplicate_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-missing",
+      "outcome": "reject",
+      "source": "define struct P { x:int; y:int; } let p: P = make {x:1};",
+      "expected": "missing_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-extra",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let p: P = make {x:1,y:2};",
+      "expected": "unknown_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-kind",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let p: P = make {x:\"a\"};",
+      "expected": "field_type_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-new-value-slot",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let a: Array<P,layout=soa> = [new {x:1}] with {size=1};",
+      "expected": "reference_value_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-mixed-array",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let a: Array<P,layout=soa> = [make {x:1},new {x:2}] with {size=2};",
+      "expected": "reference_value_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-size-mismatch",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let a: Array<P,layout=soa> = [make {x:1}] with {size=2};",
+      "expected": "incomplete_initialization",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-separators",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let p: P = make {x=1};",
+      "expected": "invalid_field_initializer",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-unresolved-seed",
+      "outcome": "reject",
+      "source": "let a: Array<infer X> = [make {x:1}];",
+      "expected": "missing_expected_nominal",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-wrong-nominal",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } define struct Q { x:int; } let p: P = make Q {x:1};",
+      "expected": "nominal_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
     }
   ]
 }
