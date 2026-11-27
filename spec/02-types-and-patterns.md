@@ -198,6 +198,24 @@ end
 - Flatten statically known pattern sets into typed pattern IR before exhaustiveness/reachability analysis and optimization. Evaluate the subject once, retain source order across arms and short-circuit alternatives; execute one arm body. Diagnose duplicate or completely shadowed alternatives where provable; guards do not add unconditional coverage. AOT code may use direct comparisons, tagged-union discriminants, closed-world nominal type tests or eliminate statically proven checks. No runtime type collection or pattern interpreter is required.
 - Named sets, inline sets, aliases and single pattern constants share the same checking and lowering rules as equivalent direct patterns. Formatter must preserve constructors, delimiters, comments and names. Conditional/switch integration is a target; no change to select. Require exact-source positive guest executions and negative no-artifact tests independently for each backend.
 
+
+#### Shared typed pattern representation (compiler contract)
+
+All frontends resolve reusable pattern declarations to the same semantic nodes as direct arm syntax. Backend-specific AST spelling is unrestricted; the following tagged representation defines the information that must survive resolution, not a new public runtime ABI:
+
+| Node | Required checked information |
+| --- | --- |
+| Literal | Canonical value type and value identity (including portable Symbol identity) |
+| TypeTest | Canonical resolved type identity, including generic arguments and nominal/structural distinction |
+| ValueMembership | Compile-time literal members, or a typed collection expression with evaluation/effect and borrowing facts for an ordinary runtime arm |
+| AnyOf | Nonempty ordered alternatives, with no implicit variable capture |
+| Constructor / Structural | Resolved constructor or shape identity, field paths, child patterns, and checked binding information |
+| Wildcard | Whole subject domain; explicit bindings require hygienic lexical scope |
+
+During compile-time resolution, Pattern references and Pattern[] references are distinct categories; aliases resolve to canonical type identity, and named patterns are expanded with bounded cycle detection. Stored pattern nodes contain only compile-time-known operands. Mixed scalar pattern sets remain valid declarations even when some alternatives cannot match a particular subject; the checker must validate the entire set, diagnose proven redundant alternatives as appropriate, and never coerce one scalar type into another. An entirely impossible arm is rejected. Integer and boolean literal equality remain distinct.
+
+Every checked arm has a single body, optional guard, subject domain, and source provenance sufficient for diagnostics. Lower to a once-evaluated subject temporary, checked decision branches, then a shared guard and body. Coverage derives only from unguarded arms. Direct and named equivalent patterns must produce observationally equivalent guest behavior; canonical IR equality is a useful stronger backend-local regression, not a substitute for execution. No Pattern/Pattern[] value survives into guest ABI or storage. Reject unknown node kinds, unresolved references, malformed/cyclic imported data, incompatible captures, and exceeded expansion limits before artifact emission. The initial 64-alternative/32-nesting/128-declaration budgets in restricted compiler candidates are profile restrictions, not language-wide maxima. Future structural/binding nodes require their own execution evidence.
+
 ## Wire portability
 
 Serializable network values and same-domain `Sendable` actor messages are not identical capabilities. Wire encoding must be versioned; native pointers, mutable actor state, host exception objects, code pointers and execution capabilities never cross the wire as raw values. `Result`/`Option` encode/decode round-trips require exact shared test vectors.
