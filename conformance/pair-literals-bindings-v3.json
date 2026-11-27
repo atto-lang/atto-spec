@@ -398,6 +398,126 @@
       "kind": "reject",
       "source": "fnc consume(take! Payload a,take! Payload b) {} val p=make_payload(); consume(...(a=p,b=p));",
       "expect": "reject double consumption under ordinary ownership rules"
+    },
+    {
+      "id": "projection-pair-value",
+      "kind": "accept",
+      "source": "const x:=5; const int n=x.value;",
+      "expect": "n=5"
+    },
+    {
+      "id": "projection-pair-key",
+      "kind": "accept",
+      "source": "const x:=5; const string k=x.key;",
+      "expect": "k=\"x\""
+    },
+    {
+      "id": "projection-entry-types",
+      "kind": "accept",
+      "source": "const e=5=>\"hello\"; const int k=e.key; const string v=e.value;",
+      "expect": "k=5, v=hello"
+    },
+    {
+      "id": "projection-factory",
+      "kind": "accept",
+      "source": "const p=Pair.of(\"x\",5); const int n=p.value;",
+      "expect": "n=5"
+    },
+    {
+      "id": "projection-call-explicit",
+      "kind": "accept",
+      "source": "const x:=5; const foo=|int x| -> x+37; foo(x.value);",
+      "expect": "42"
+    },
+    {
+      "id": "projection-call-pair",
+      "kind": "accept",
+      "source": "const x:=5; const foo=|Pair<int> p| -> p.value+37; foo(x);",
+      "expect": "42"
+    },
+    {
+      "id": "projection-call-direct",
+      "kind": "reject",
+      "source": "const x:=5; const foo=|int x| -> x+37; foo(x);",
+      "expect": "E_TYPE: no implicit extraction"
+    },
+    {
+      "id": "projection-named-direct",
+      "kind": "reject",
+      "source": "const x:=5; const foo=|int x| -> x+37; foo(x=x);",
+      "expect": "E_TYPE: no implicit extraction"
+    },
+    {
+      "id": "projection-scalar-init",
+      "kind": "reject",
+      "source": "const x:=5; const int n=x;",
+      "expect": "Pair is not int"
+    },
+    {
+      "id": "projection-arithmetic",
+      "kind": "reject",
+      "source": "const x:=5; const n=x+37;",
+      "expect": "Pair is not numeric"
+    },
+    {
+      "id": "projection-return",
+      "kind": "reject",
+      "source": "fnc f(): int { const x:=5; return x; }",
+      "expect": "Pair is not int"
+    },
+    {
+      "id": "projection-key-write",
+      "kind": "reject",
+      "source": "let mut x = x:=5; x.key=\"other\";",
+      "expect": "read-only key"
+    },
+    {
+      "id": "projection-value-write",
+      "kind": "reject",
+      "source": "let mut x = x:=5; x.value=6;",
+      "expect": "read-only value"
+    },
+    {
+      "id": "projection-entry-write",
+      "kind": "reject",
+      "source": "let mut e=5=>\"hello\"; e.value=\"other\";",
+      "expect": "read-only value"
+    },
+    {
+      "id": "projection-pair-record",
+      "kind": "accept",
+      "source": "const x:=5; const r=(p=x); const int n=r.p.value;",
+      "expect": "Pair retained in Record"
+    },
+    {
+      "id": "projection-spread-explicit",
+      "kind": "accept",
+      "source": "const x:=5; const y:=37; const foo=|int x,int y| -> x+y; foo(...(x,y));",
+      "expect": "42"
+    },
+    {
+      "id": "projection-apply-no-unwrapping",
+      "kind": "reject",
+      "source": "const x:=5; const foo=|int x| -> x; foo.apply((x,));",
+      "expect": "Pair is not int"
+    },
+    {
+      "id": "projection-apply-preserve",
+      "kind": "accept",
+      "source": "const x:=5; const foo=|Pair<int> p| -> p.value; foo.apply((x,));",
+      "expect": "5"
+    },
+    {
+      "id": "projection-existential",
+      "kind": "reject",
+      "source": "fnc f(Pair p): int { return p.value; }",
+      "expect": "existential payload requires checked narrowing"
+    },
+    {
+      "id": "projection-unknown",
+      "kind": "reject",
+      "source": "const x:=5; const n=x.payload;",
+      "expect": "unknown property"
     }
   ]
 }
