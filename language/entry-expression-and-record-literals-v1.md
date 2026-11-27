@@ -1,5 +1,7 @@
 # Expression keys, sequence keys and Record syntax — normative candidate
 
+> **v3 syntax correction (2026-11-27):** [Pair literals and name-derived bindings](pair-literals-and-bindings-v3.md) governs the new profile: `Pair<V>` is string-keyed, `:=` always constructs Pair, `=>` constructs Entry in key/value expressions, and `const y := 5;` declares a Pair. Named calls accept `=` and `:`. Conflicting older examples below are historical-profile only.
+
 **Authority:** This addendum refines `symbol-keyed-entries-v1.md`, `quoted-map-vs-record-literals-v1.md`, and `inline-collection-literals-v1.md`. It resolves the potential `[foo] => 5` computed-key ambiguity without changing the existing `[...]` Array/List expression grammar. It is a language design contract, **not** an assertion of current compiler or guest runtime support.
 
 ## Entry keys are ordinary expressions
