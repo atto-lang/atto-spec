@@ -422,6 +422,70 @@
       "expected": "nominal_mismatch",
       "status": "AUTHORED_NOT_EXECUTED",
       "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-new-typed-local",
+      "outcome": "accept",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {x:40,y:2}; return p.sum(); }",
+      "expected": "exit 42; ordinary reference construction",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-type-first",
+      "outcome": "accept",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let Point p = new {x:40,y:2}; return p.sum(); }",
+      "expected": "exit 42; same nominal constructor",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-missing-owner",
+      "outcome": "reject",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p = new {x:40,y:2}; return 0; }",
+      "expected": "missing_expected_nominal",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-missing-field",
+      "outcome": "reject",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {x:40}; return 0; }",
+      "expected": "missing_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-duplicate-field",
+      "outcome": "reject",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {x:40,x:2}; return 0; }",
+      "expected": "duplicate_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-field-kind",
+      "outcome": "reject",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {x:true,y:2}; return 0; }",
+      "expected": "field_type_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-private-field",
+      "outcome": "reject",
+      "source": "define class Point as private final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {x:40,y:2}; return 0; }",
+      "expected": "inaccessible_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-reordered-fields",
+      "outcome": "accept",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {y:2,x:40}; return p.sum(); }",
+      "expected": "exit 42; source evaluation order must be preserved",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
     }
   ]
 }
