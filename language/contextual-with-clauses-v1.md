@@ -5,7 +5,8 @@
 ## Separate grammatical contexts
 
 - Callable header: `with state.read, state.write` is a closed static may-effect upper bound. Absent clause means infer, not empty or unrestricted authority. The compiler must distinguish absence from a present list. An empty list, repeated clause, duplicate entry, trailing separator, unknown or incomplete qualified name rejects in the proposed initial profile. A backend must reject unsupported effect names rather than silently discard them. Preserve independently established checked throws/raises/panics, susp/suspends and spawns markers and existing result/body delimiters. Canonical placement for return-first headers is after parameters, before begin, :: or braces. Name-first admission must preserve the existing effect-before-result and result/body grammar; no heuristic rewrite.
-- Spawn expression: `spawn Worker() with schedule(...)` is a typed policy request, not a callable effect row or record update. Only the existing scheduling proposal's closed schema and host admission apply. Do not add arbitrary actor-header or spawn keys by inference. Reject unknown, repeated, malformed or conflicting keys before spawning; do not silently fall back. Neither scheduling nor effect clauses change the declared actor execution class or grant authority.
+- Spawn expression: `spawn Worker() with schedule(...)` is a typed policy request, not a callable effect row or record update. The owner-approved grouped form in [PR #288](https://github.com/atto-lang/atto-spec/pull/288), `spawn Worker() with { schedule { ... } resources { ... } init { ... } }`, is the canonical new target; preserve bare spawn and legacy `with schedule(...)` separately. Section keys and assignment entries are closed and typed per that proposal. Unknown or unsupported sections fail closed. Do not add arbitrary actor-header or spawn keys by inference. Reject unknown, repeated, malformed or conflicting keys before spawning; do not silently fall back. Neither scheduling nor effect clauses change the declared actor execution class or grant authority.
+- Nominal struct declaration attachments: preserve grouped `define struct Point { ... } with { constructor(...) { ... } mtd ... }` and chained `with constructor(...) ... with mtd ...` per [PR #280](https://github.com/atto-lang/atto-spec/pull/280). Attachment members resolve to a nominal owner, not to the value-expression update AST. Do not confuse receiver/constructor rules with actor spawn initialization.
 - Value expression: `original with {age: 31}` remains the distinct immutable Record/Struct update operation. Preserve its evaluation order, typing, ownership and reconstruction rules. An actor reference, actor instance or state loan is not an ordinary record to update.
 - Scoped `using` and critical state loans remain separate executable constructs. Do not reinterpret a scoped using as a signature annotation. Older signature using syntax needs explicit versioned migration, not automatic replacement.
 
@@ -19,7 +20,7 @@ State is still a sealed `state {}` container. Declaring state.read or state.writ
 
 ## Scheduling policy admission
 
-Scheduling options are validated against the existing scheduling contract, declared domain, serial cap, quota and authenticated host policy before actor publication. A failed policy/admission must not publish a live actor or leak a reservation. Do not override existing concurrency or affinity decisions, accept unverified policy keys, or increase authority through metadata. Preserve the exact typed policy in AOT metadata and verify it at load and runtime admission. No implicit JIT or interpreter fallback.
+Grouped schedule, resources and typed init options are validated against the existing scheduling and grouped-spawn contracts, declared domain, serial cap, quota and authenticated host policy before actor publication. A failed policy/admission must not publish a live actor or leak a reservation. Evaluate supplied expressions exactly once in lexical order, validate typed startup payloads and quota requests, and preserve the separate readiness/failure boundary in PR #288. Actor-side startup schema and failure ABI are still proposed, not ratified by this reconciliation. Do not override existing concurrency or affinity decisions, accept unverified policy keys, or increase authority through metadata. Preserve the exact typed policy in AOT metadata and verify it at load and runtime admission. No implicit JIT or interpreter fallback.
 
 ## Required conformance matrix (all NOT_EXECUTED)
 
@@ -51,6 +52,12 @@ Scheduling options are validated against the existing scheduling contract, decla
 | W24 | listing I/O effect without an actual runtime permission | denied at resource admission |
 | W25 | formatter round-trip for all admitted forms | identical checked semantics |
 | W26 | malformed/oversized clauses, nested syntax and comments | bounded deterministic rejection |
+| W27 | grouped spawn schedule/resources/init in source order | distinct typed sections; evaluate once, preserve readiness |
+| W28 | duplicate or unknown grouped section, key or mixed init channels | reject before allocation/publication |
+| W29 | grouped and chained struct attachment alongside value update | distinct nominal-member and expression ASTs |
+| W30 | typed init payload invalid or nontransferable | reject; no public state setter |
+| W31 | startup failure after reservation | typed failure, exactly-once cleanup and quota release |
+| W32 | unsupported grouped spawn on a scalar-only backend | deterministic unsupported diagnostic; no artifact |
 
 Use existing diagnostic families (E_EFFECT_BOUND, E_EFFECT_UNKNOWN, E_EFFECT_CRITICAL_SUSPEND, E_SPAWN_IN_CRITICAL, E_CAPABILITY_DENIED) where appropriate; exact additional diagnostic codes require compiler/contract agreement. Each negative must prove the intended diagnostic and no executable artifact, not merely a generic parse failure. W19/W24 are runtime-denial cases and need a compiled executable, expected typed failure, and no forbidden resource/actor side effect.
 
