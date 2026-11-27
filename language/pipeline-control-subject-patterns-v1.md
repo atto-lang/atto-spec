@@ -197,7 +197,7 @@ TARGET, not guest-certified. Extends merged parameter-rebind #223 and coordinate
 | `rebind z` / `rebind int z` | yes | no |
 | `rebind mut z` / `rebind mut Foo z` | yes | yes |
 
-Canonical single-name type-first alias grammar: `[rebind] [mut] [Type] IDENT`. Existing name-first formal and pattern type annotation productions keep their delimiters; no new apostrophe or bang shorthand. Contextual marker parsing must preserve an existing identifier named rebind where unambiguous; duplicate/conflicting modifiers reject. In contexts already admitting explicit const/val as immutable incoming markers, preserve them as compatibility spellings of the fixed read-only mode; legacy let maps to rebind only where already admitted with that meaning. Never rewrite a constexpr local, local destructuring declaration, ownership marker, or existing modifier with different semantics. Formatter canonicalizes verified equivalent incoming spellings, including rebind before mut; it preserves a required explicit colon guard introducer (use as for a bare alias). A select read delimiter is already a binder position, unlike a match guard colon which can annotate the arm result. Type annotations check the already matched or received value; no implicit cast, new pattern test, or result-type annotation.
+Canonical single-name type-first alias grammar: `[rebind] [mut] [Type] IDENT`. Existing name-first formal and pattern type annotation productions keep their delimiters; no new apostrophe or bang shorthand. Contextual marker parsing must preserve an existing identifier named rebind where unambiguous; duplicate/conflicting modifiers reject. In contexts already admitting explicit const/val as immutable incoming markers, preserve them as compatibility spellings of the fixed read-only mode; legacy let maps to rebind only where already admitted with that meaning. Never rewrite a constexpr local, local destructuring declaration, ownership marker, or existing modifier with different semantics. Formatter canonicalizes verified equivalent incoming spellings, including rebind before mut; it preserves a required explicit colon guard introducer (use as for a bare alias). A select read delimiter is already a binder position, unlike a match guard colon which can annotate the arm result. Preserve chapter 06 procedural `do select` with block arms, value `select` returning Future, and awaited/try select distinctions; this binding amendment changes none of their wait or result semantics. Type annotations check the already matched or received value; no implicit cast, new pattern test, or result-type annotation.
 
 Examples (target syntax):
 
@@ -209,7 +209,7 @@ match (x + 5) over
     on qux(x) as rebind mut z -> {}
 end
 
-select {
+do select {
     when readch foo: z -> {}
     when readch bar: rebind int z -> { z = z + 1; }
     when readch baz: mut Foo z -> {}
