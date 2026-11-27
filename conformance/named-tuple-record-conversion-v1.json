@@ -1,0 +1,411 @@
+{
+  "version": 1,
+  "status": "TARGET_NOT_EXECUTED",
+  "note": "Source fragments are target vectors, not executable complete guests. Host selector vectors cover ASCII test keys only; they do not specify Unicode or reserved identifier policy, compiler behavior, ownership, or record layout.",
+  "modelCases": [
+    [
+      "unique",
+      [
+        [
+          "five",
+          5,
+          "int"
+        ],
+        [
+          "three",
+          "box",
+          "string"
+        ]
+      ],
+      "reject",
+      [
+        [
+          "five",
+          5,
+          "int"
+        ],
+        [
+          "three",
+          "box",
+          "string"
+        ]
+      ]
+    ],
+    [
+      "duplicate",
+      [
+        [
+          "five",
+          5,
+          "int"
+        ],
+        [
+          "three",
+          "box",
+          "string"
+        ],
+        [
+          "five",
+          55,
+          "int"
+        ]
+      ],
+      "reject",
+      "duplicate"
+    ],
+    [
+      "first",
+      [
+        [
+          "five",
+          5,
+          "int"
+        ],
+        [
+          "three",
+          "box",
+          "string"
+        ],
+        [
+          "five",
+          55,
+          "int"
+        ]
+      ],
+      "first",
+      [
+        [
+          "five",
+          5,
+          "int"
+        ],
+        [
+          "three",
+          "box",
+          "string"
+        ]
+      ]
+    ],
+    [
+      "last",
+      [
+        [
+          "five",
+          5,
+          "int"
+        ],
+        [
+          "three",
+          "box",
+          "string"
+        ],
+        [
+          "five",
+          55,
+          "int"
+        ]
+      ],
+      "last",
+      [
+        [
+          "five",
+          55,
+          "int"
+        ],
+        [
+          "three",
+          "box",
+          "string"
+        ]
+      ]
+    ],
+    [
+      "heterogeneous-first",
+      [
+        [
+          "x",
+          5,
+          "int"
+        ],
+        [
+          "x",
+          "five",
+          "string"
+        ]
+      ],
+      "first",
+      [
+        [
+          "x",
+          5,
+          "int"
+        ]
+      ]
+    ],
+    [
+      "heterogeneous-last",
+      [
+        [
+          "x",
+          5,
+          "int"
+        ],
+        [
+          "x",
+          "five",
+          "string"
+        ]
+      ],
+      "last",
+      [
+        [
+          "x",
+          "five",
+          "string"
+        ]
+      ]
+    ],
+    [
+      "invalid-key",
+      [
+        [
+          "bad-name",
+          5,
+          "int"
+        ]
+      ],
+      "first",
+      "key"
+    ],
+    [
+      "unknown-key",
+      [
+        [
+          null,
+          5,
+          "int"
+        ]
+      ],
+      "last",
+      "key"
+    ],
+    [
+      "unnamed",
+      [
+        5
+      ],
+      "reject",
+      "key"
+    ],
+    [
+      "empty",
+      [],
+      "reject",
+      []
+    ],
+    [
+      "invalid-policy",
+      [
+        [
+          "x",
+          5,
+          "int"
+        ]
+      ],
+      "random",
+      "policy"
+    ],
+    [
+      "case-distinct",
+      [
+        [
+          "x",
+          5,
+          "int"
+        ],
+        [
+          "X",
+          6,
+          "int"
+        ]
+      ],
+      "reject",
+      [
+        [
+          "x",
+          5,
+          "int"
+        ],
+        [
+          "X",
+          6,
+          "int"
+        ]
+      ]
+    ],
+    [
+      "non-adjacent",
+      [
+        [
+          "a",
+          1,
+          "int"
+        ],
+        [
+          "b",
+          2,
+          "int"
+        ],
+        [
+          "c",
+          3,
+          "int"
+        ],
+        [
+          "b",
+          4,
+          "int"
+        ],
+        [
+          "a",
+          5,
+          "int"
+        ]
+      ],
+      "last",
+      [
+        [
+          "a",
+          5,
+          "int"
+        ],
+        [
+          "b",
+          4,
+          "int"
+        ],
+        [
+          "c",
+          3,
+          "int"
+        ]
+      ]
+    ]
+  ],
+  "sourceCases": [
+    {
+      "id": "tuple-named",
+      "source": "let Tuple t = Tuple.of(five := 5, three := \"box\");",
+      "expect": "accept"
+    },
+    {
+      "id": "record-named",
+      "source": "let Record r = Record.of(five := 5, three := \"box\");",
+      "expect": "accept"
+    },
+    {
+      "id": "tuple-repeat",
+      "source": "let Tuple t = Tuple.of(x := 1, x := \"two\");",
+      "expect": "accept"
+    },
+    {
+      "id": "record-repeat",
+      "source": "let Record r = Record.of(x := 1, x := \"two\");",
+      "expect": "reject-duplicate-field"
+    },
+    {
+      "id": "strict",
+      "source": "let Tuple t = Tuple.of(five := 5, three := \"box\"); let Record r = t.to_record();",
+      "expect": "accept"
+    },
+    {
+      "id": "strict-repeat",
+      "source": "let Tuple t = Tuple.of(x := 1, x := 2); let Record r = t.to_record();",
+      "expect": "reject-duplicate-field"
+    },
+    {
+      "id": "first-colon",
+      "source": "let Tuple t = Tuple.of(x := 1, x := \"two\"); let Record r = t.to_record(duplicates: #first);",
+      "expect": "accept",
+      "field": {
+        "x": {
+          "type": "int",
+          "value": 1
+        }
+      }
+    },
+    {
+      "id": "first-equals",
+      "source": "let Tuple t = Tuple.of(x := 1, x := \"two\"); let Record r = t.to_record(duplicates=#first);",
+      "expect": "accept",
+      "field": {
+        "x": {
+          "type": "int",
+          "value": 1
+        }
+      }
+    },
+    {
+      "id": "last-colon",
+      "source": "let Tuple t = Tuple.of(x := 1, x := \"two\"); let Record r = t.to_record(duplicates: #last);",
+      "expect": "accept",
+      "field": {
+        "x": {
+          "type": "string",
+          "value": "two"
+        }
+      }
+    },
+    {
+      "id": "last-equals",
+      "source": "let Tuple t = Tuple.of(x := 1, x := \"two\"); let Record r = t.to_record(duplicates=#last);",
+      "expect": "accept",
+      "field": {
+        "x": {
+          "type": "string",
+          "value": "two"
+        }
+      }
+    },
+    {
+      "id": "pair-not-policy",
+      "source": "let Tuple t = Tuple.of(x := 1); let Record r = t.to_record(duplicates := #first);",
+      "expect": "reject-invalid-argument"
+    },
+    {
+      "id": "duplicate-policy",
+      "source": "let Tuple t = Tuple.of(x := 1); let Record r = t.to_record(duplicates: #first, duplicates=#last);",
+      "expect": "reject-duplicate-parameter"
+    },
+    {
+      "id": "unknown-policy",
+      "source": "let Tuple t = Tuple.of(x := 1); let Record r = t.to_record(duplicate: #first);",
+      "expect": "reject-unknown-parameter"
+    },
+    {
+      "id": "unnamed-slot",
+      "source": "let Tuple t = Tuple.of(x := 1, 2); let Record r = t.to_record();",
+      "expect": "reject-unnamed-slot"
+    },
+    {
+      "id": "reverse",
+      "source": "let Record r = Record.of(five := 5, three := \"box\"); let Tuple t = r.to_tuple();",
+      "expect": "accept"
+    },
+    {
+      "id": "mixed-named-args",
+      "source": "fnc f(int x, int y): int { return x + y; } f(x: 1, y=2);",
+      "expect": "accept"
+    },
+    {
+      "id": "mixed-duplicate-args",
+      "source": "fnc f(int x, int y): int { return x + y; } f(x: 1, x=2);",
+      "expect": "reject-duplicate-parameter"
+    },
+    {
+      "id": "invalid-field-name",
+      "source": "let Tuple t = Tuple.of(\"bad-name\" := 1); let Record r = t.to_record();",
+      "expect": "reject-invalid-field"
+    }
+  ]
+}
