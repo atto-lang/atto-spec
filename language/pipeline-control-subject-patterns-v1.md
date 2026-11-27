@@ -62,6 +62,17 @@ fnc combine(int a, int b): int {
 
 Acceptance cases: standalone single subject; multiple subjects and nested tuple components (no flattening); computed subjects with observable left-to-right once-only evaluation; explicit subject inside a named recursive pipeline lambda; grouped bitwise OR; standalone switch case/default; unresolved explicit subject; root arity mismatch in pipeline mode; and ownership violations across components. All require backend execution or relevant positioned rejection, not just parser acceptance.
 
+### Delimited-header edge-case audit
+
+- Mode is fixed during parsing from the enclosing production: direct native pipeline stage versus ordinary match/switch expression. No fallback from one mode to another after a lookup/type error. An ordinary match inside a named lambda, guard, arm, or nested call is not made a native stage by an outer pipe.
+- Preserve list cardinality and nested product shape in the AST. In explicit mode `|a|` has the type of a; `|a,b|` has a two-component product type; `|(a,b),c|` has shape ((A,B),C). The latter cannot match a flat three-component pattern. Repeated explicit expressions such as `|a,a|` are permitted when normal ownership rules allow; repeated declarations such as `|(x,x)|` in binder mode reject. Do not confuse these two checks.
+- A standalone `|missing|` must resolve and type-check even if every arm is a constant fallback. A pipeline root pattern must also be checked even if every binding is unused. Empty headers reject in both modes; v1 does not introduce empty unit-subject or zero-argument call semantics.
+- Delimited explicit expressions are evaluated in source order into distinct typed slots. Use ordinary evaluation of each expression, not deduplication by spelling or AST equality. The same effectful expression written twice must run twice; a single expression matched against many arms runs once. Preserve nonlocal exits, cleanup and ownership, including early failure of a later component.
+- No implicit conversion of `|x,y|` to `|(x,y)|` by the formatter or parser in native mode. Do not normalize standalone `|v|` into a pipeline or rewrite a nested tuple to multiple arguments. Record header mode, root arity and spans; reject unsupported constructs rather than silently changing shape.
+- Trailing comma, empty entries, and ungrouped top-level bitwise OR in explicit headers are intentionally not admitted by this v1 proposal; nested tuple/call punctuation follows its existing grammar. Group the OR expression explicitly. Keep canonical switch case/default and ordinary match on/on _ rules.
+
+Conformance PR atto-lang/atto-platform-conformance#633 contains ten additional source fixtures covering explicit scalar/product/computed/nested subjects, recursive named lambda with standalone match, native tuple destructuring, and unresolved/duplicate/arity/empty rejection. These fixtures are not execution evidence. Still require effect counters, early error cleanup, repeated explicit expressions, nested shape mismatch diagnostics, formatter round-trip and non-Copy ownership tests.
+
 ## Static and dynamic rules
 
 - Evaluate the immediate pipeline input exactly once, even for a default-only match or unused binder. Retain the evaluated subject in a typed place or SSA value. Match and switch dispatch on the entire subject, not an arbitrary projection.
