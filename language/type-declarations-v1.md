@@ -4,6 +4,8 @@ Status: **normative syntax proposal; backend emission is NOT yet certified**. Th
 
 ## Distinction
 
+`declare` introduces types only, never free functions, mutable or immutable value bindings, methods or constructors. A resolved complete type-only declaration is usable as a type; a header-only nominal class can be completed by the checked namespace attachments described in the [namespace completion amendment](out-of-line-receivers-constructors-and-state-v1.md#namespace-completion-amendment-2026-11-27). A second `define class` block is not required in that profile. Neither form makes a runtime type value. The older matching declaration/definition rules below remain applicable to explicit pairs in their compatibility profile.
+
 - `declare type NAME = TYPE_EXPR;` introduces a *signature / contract* for a type. The right-hand side is a constraint on the eventual definition, **not** a value assignment or runtime object creation. A declaration may refer to a type resolved later in the same module or from an explicit import. Standalone unresolved declarations do not prove successful linking.
 - `define type NAME as TYPE_EXPR;` introduces a *definition*. The `as` token is required. The type is available to the type checker after successful name resolution and semantic validation.
 - `=` MUST NOT replace `as` in a definition; `as` MUST NOT replace `=` in a declaration. No implicit mixing or normalization between the two declaration kinds.
