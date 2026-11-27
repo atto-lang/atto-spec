@@ -1,5 +1,7 @@
 # Contextual collection literals and Pair/Entry arrows v1
 
+> **v3 syntax correction (2026-11-27):** [Pair literals and name-derived bindings](pair-literals-and-bindings-v3.md) governs the new profile: `Pair<V>` is string-keyed, `:=` always constructs Pair, `=>` constructs Entry in key/value expressions, and `const y := 5;` declares a Pair. Named calls accept `=` and `:`. Conflicting older examples below are historical-profile only.
+
 **Status:** proposed normative AttoLang language contract (2026-11-19).
 This describes portable TARGET semantics, not proof of compiler parity.
 
