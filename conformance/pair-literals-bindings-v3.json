@@ -518,6 +518,102 @@
       "kind": "reject",
       "source": "const x:=5; const n=x.payload;",
       "expect": "unknown property"
+    },
+    {
+      "id": "capture-name-age",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z={:name,:age};",
+      "expect": "closed Record; name:string Alice, age:int 42"
+    },
+    {
+      "id": "capture-record-dot",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z={:name,:age}; const int n=z.age;",
+      "expect": "42"
+    },
+    {
+      "id": "capture-record-index",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z={:name,:age}; const int n=z[\"age\"];",
+      "expect": "42"
+    },
+    {
+      "id": "capture-struct",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=struct{:name,:age}; const int n=z.age;",
+      "expect": "anonymous fixed-layout Struct, 42"
+    },
+    {
+      "id": "capture-struct-mixed",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=struct{:name,age:age};",
+      "expect": "anonymous Struct, both fields"
+    },
+    {
+      "id": "capture-nominal-struct",
+      "kind": "accept",
+      "source": "define struct Person as string name; int age; end const name=\"Alice\"; const age=42; const Person z=Person{:name,:age};",
+      "expect": "declared Person identity, correct fields"
+    },
+    {
+      "id": "capture-struct-duplicate",
+      "kind": "reject",
+      "source": "const age=42; const z=struct{:age,age:5};",
+      "expect": "duplicate field"
+    },
+    {
+      "id": "capture-struct-unbound",
+      "kind": "reject",
+      "source": "const z=struct{:age};",
+      "expect": "unresolved binding"
+    },
+    {
+      "id": "capture-struct-map",
+      "kind": "reject",
+      "source": "const age=42; const z=struct{:age,\"name\"=>\"Alice\"};",
+      "expect": "Map item not Struct field"
+    },
+    {
+      "id": "capture-struct-index",
+      "kind": "reject",
+      "source": "const age=42; const z=struct{:age}; const n=z[\"age\"];",
+      "expect": "Struct uses dot access"
+    },
+    {
+      "id": "capture-nominal-type",
+      "kind": "reject",
+      "source": "define struct Person as string name; int age; end const name=\"Alice\"; const age=\"42\"; const z=Person{:name,:age};",
+      "expect": "wrong nominal field type"
+    },
+    {
+      "id": "capture-nominal-missing",
+      "kind": "reject",
+      "source": "define struct Person as string name; int age; end const name=\"Alice\"; const z=Person{:name};",
+      "expect": "missing required age"
+    },
+    {
+      "id": "capture-anonymous-not-nominal",
+      "kind": "reject",
+      "source": "define struct Person as string name; int age; end const name=\"Alice\"; const age=42; const Person z=struct{:name,:age};",
+      "expect": "no implicit conversion"
+    },
+    {
+      "id": "capture-logging-separate",
+      "kind": "accept",
+      "source": "val request_id=generate_uuid(); const status=200; const elapsed_ms=45; logger.info(\"Request completed\",{:request_id},{:status},{:elapsed_ms});",
+      "expect": "with structured logger and capturing sink: one event, exact typed fields, UUID once"
+    },
+    {
+      "id": "capture-logging-combined",
+      "kind": "accept",
+      "source": "val request_id=generate_uuid(); const status=200; const elapsed_ms=45; logger.info(\"Request completed\",{:request_id,:status,:elapsed_ms});",
+      "expect": "same structured event as separate bundles"
+    },
+    {
+      "id": "capture-logging-duplicate",
+      "kind": "reject",
+      "source": "const status=200; logger.info(\"Request completed\",{:status},{status:201});",
+      "expect": "duplicate field in structured logging profile; static rejection when proved"
     }
   ]
 }
