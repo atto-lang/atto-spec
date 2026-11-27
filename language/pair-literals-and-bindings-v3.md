@@ -37,7 +37,7 @@ record_field = IDENT, "=", expression ;
 
 The lexer emits a single adjacent := token, distinct from : and =. Pair construction is nonassociative, below ordinary arithmetic, comparison and postfix expressions; ungrouped repeated := or mixed :=/=> chains reject. Parentheses can explicitly group nested products. Lambda and match arrows retain existing grammar. Assignment statements use =; no assignment expression or declaration of a variable is introduced by a standalone Pair expression. Inferred binding sugar is recognized only in the declaration grammar; no quoted, member, index or destructuring binder is admitted by this production.
 
-In standalone parentheses, a top-level IDENT followed by = denotes a Record field, never a Pair. A top-level := denotes an ordinary expression, so (x := 5) groups a Pair, (x := 5,) is a one-element Tuple, and (x := 5, y := true) is a Tuple of Pairs. (x = 5) is a one-field Record. Mixed Record fields and positional items reject. Quoted "=" keys reject; quoted ":=" keys are valid Pair expressions. Brace Record and Map classification stays unchanged. No expected-type reclassification or implicit Tuple-to-Record conversion.
+In standalone expression parentheses, a top-level IDENT followed by = or an initial :IDENT capture selects Record grammar, never a Pair. Subsequent items must be identifier-equals fields or :IDENT captures. A top-level := denotes an ordinary expression, so (x := 5) groups a Pair, (x := 5,) is a one-element Tuple, and (x := 5, y := true) is a Tuple of Pairs. (x = 5) is a one-field Record. Mixed Record fields and positional items reject. Quoted "=" keys reject; quoted ":=" keys are valid Pair expressions. Brace Record and Map classification stays unchanged. No expected-type reclassification or implicit Tuple-to-Record conversion.
 
 In call parentheses, IDENT followed by = or : is a named argument, whereas IDENT followed by := is a positional Pair expression. Both named-argument spellings normalize to the same AST; formatter preserves or canonicalizes to = in the new profile, with : accepted for compatibility. Evaluate arguments once in written order, then associate by resolved parameter name; reject unknown or duplicate names and positional arguments after named ones. Existing intrinsic Record.of and Map.of input-kind rules remain in force.
 
@@ -65,7 +65,7 @@ A Record field assignment is checked against the field's actual declared/inferre
 record_capture = ":", IDENT ;
 ```
 
-In expression-position brace Record items, {:request_id} is exactly {request_id: request_id}, a closed one-field Record, not a Pair, Map or nominal Struct. The field label uses the lexical identifier spelling; its value is obtained by ordinary scoped identifier resolution, evaluated once, with standard ownership and effect checking. No runtime reflection, name lookup by string, or implicit move. The capture must resolve an accessible value binding; unresolved names, member paths, arbitrary expressions and reserved labels reject. A capture may coexist with identifier-colon fields and other captures, e.g. {:request_id, :status, duration: elapsed_ms}; the same duplicate-field and delimiter rules apply. A capture makes the brace literal a Record; mixing with quoted or arrow Map items rejects regardless of expected type. Formatting preserves the capture form or expands it to an equivalent explicit field.
+In expression-position brace or parenthesized Record items, {:request_id} and (:request_id) are exactly {request_id: request_id}, a closed one-field Record, not a Pair, Map or nominal Struct. The field label uses the lexical identifier spelling; its value is obtained by ordinary scoped identifier resolution, evaluated once, with standard ownership and effect checking. No runtime reflection, name lookup by string, or implicit move. The capture must resolve an accessible value binding; unresolved names, member paths, arbitrary expressions and reserved labels reject. A capture may coexist with identifier-colon fields and other captures, e.g. {:request_id, :status, duration: elapsed_ms}; the same duplicate-field and delimiter rules apply. A capture makes the brace literal a Record; mixing with quoted or arrow Map items rejects regardless of expected type. Formatting preserves the capture form or expands it to an equivalent explicit field.
 
 ```atto
 val request_id = generate_uuid();
@@ -159,6 +159,21 @@ const s = struct{:name, age: age};
 An explicit nominal constructor T{...} may use capture items subject to its declared required fields, visibility, defaults, types and ownership checks. Capture syntax expands to the corresponding ordinary named initializer before type checking; it does not relax nominal initialization. Existing infer struct{...} retains its separate contextual nominal-constructor semantics; it may also use capture items where that constructor is supported. Do not silently select a visible nominal type for bare struct{...}. Dot access is permitted for admitted fields; existing Struct prohibition on string bracket indexing remains. A closed Record retains its existing static literal indexing rule.
 
 Capture items use only a lexical identifier after colon, preserve the original span, read the accessible binding exactly once in source order, and preserve type and normal Copy/borrow/move rules. No implicit deep copy or move. Mix explicit identifier-colon fields and captures; duplicate labels, unresolved names, inaccessible or reserved names, member paths and computed keys reject. Map entries are invalid in Struct initializers. Const still requires compile-time evaluability; use val for runtime reads. Unsupported anonymous fixed-layout representation must reject without guest artifacts, not fall back to Record or class.
+
+### Parenthesized capture and direct aggregate arguments (v3)
+
+```atto
+const name = "Alice";
+const age = 42;
+const z = {foo: 5, :name, :age};
+const r = (:name, :age);
+const q = (foo = 5, :name, :age);
+logger.info("request info:", {:name, :age});
+logger.info("request info:", (:name, :age));
+logger.info("request info:", struct{:name, :age});
+```
+
+A capture item selects a Record in expression parentheses, not Tuple. Parenthesized Record items may mix identifier-equals fields and :IDENT captures in either order. Brace Record items may mix identifier-colon fields and :IDENT captures in either order. Both use identical structural shape, duplicate-label checks, source-order evaluation, ownership, and type inference. (:name) and (:name,) both construct one-field Records; () remains empty Tuple. (name) groups the binding; (name,) is a positional Tuple; (name := name, age := age) is a Tuple of Pairs. Mixed Record/positional items reject. The outer parentheses of a call are argument delimiters, not Record construction; f(:name,:age) is not a shorthand for f((:name,:age)) or named arguments. Explicit inner parentheses select a single positional Record value, equivalent to f({:name,:age}); no expected type or implicit spreading is required. This applies to all callable expressions and methods accepting the respective aggregate. Anonymous aggregate arguments must preserve lifetime, evaluation order, and ordinary type/ownership checks. Struct prefix selects an anonymous Struct, never a Record; its logger overload must explicitly admit Structs. Both Record logging spellings must produce the same typed event with a compatible logger implementation. No automatic Struct-to-Record coercion. Formatter preserves inner parentheses and capture tokens. Direct aggregate argument lowering remains a separate guest execution gate from local-binding lowering.
 
 ### Structured logging acceptance target
 
