@@ -1,0 +1,17 @@
+name: Destructure path plan reference
+on:
+  push:
+    branches: ['test/destructure-path-plan-reference-v1-20261127']
+  pull_request:
+    paths: ['reference/destructure-path-plan-v1.mjs','tests/destructure-path-plan-v1.test.mjs','.github/workflows/destructure-path-plan-v1.yml']
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - run: node --test tests/destructure-path-plan-v1.test.mjs
