@@ -614,6 +614,96 @@
       "kind": "reject",
       "source": "const status=200; logger.info(\"Request completed\",{:status},{status:201});",
       "expect": "duplicate field in structured logging profile; static rejection when proved"
+    },
+    {
+      "id": "capture-mixed-leading",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z={foo:5,:name,:age};",
+      "expect": "closed Record foo:int,name:string,age:int"
+    },
+    {
+      "id": "capture-parens",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=(:name,:age);",
+      "expect": "closed Record identical to braces"
+    },
+    {
+      "id": "capture-parens-mixed",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=(foo=5,:name,:age);",
+      "expect": "closed Record all three fields"
+    },
+    {
+      "id": "capture-parens-mixed-reverse",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=(:name,foo=5,:age);",
+      "expect": "same shape; source-order evaluation"
+    },
+    {
+      "id": "capture-parens-single",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=(:age);",
+      "expect": "one-field Record"
+    },
+    {
+      "id": "capture-parens-trailing",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=(:age,);",
+      "expect": "one-field Record, not Tuple"
+    },
+    {
+      "id": "capture-parens-duplicate",
+      "kind": "reject",
+      "source": "const name=\"Alice\"; const age=42; const z=(:age,age=5);",
+      "expect": "duplicate field"
+    },
+    {
+      "id": "capture-parens-positional",
+      "kind": "reject",
+      "source": "const name=\"Alice\"; const age=42; const z=(:age,5);",
+      "expect": "mixed Record and Tuple"
+    },
+    {
+      "id": "capture-parens-unknown",
+      "kind": "reject",
+      "source": "const name=\"Alice\"; const age=42; const z=(:missing);",
+      "expect": "unbound capture"
+    },
+    {
+      "id": "capture-parens-path",
+      "kind": "reject",
+      "source": "const name=\"Alice\"; const age=42; const z=(:name.value);",
+      "expect": "capture requires identifier"
+    },
+    {
+      "id": "capture-anonymous-brace-call",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; fnc f(Record r) { } f({:name,:age});",
+      "expect": "one positional Record argument, fields retained; no implicit spread"
+    },
+    {
+      "id": "capture-anonymous-paren-call",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; fnc f(Record r) { } f((:name,:age));",
+      "expect": "one positional Record argument, fields retained; no implicit spread"
+    },
+    {
+      "id": "capture-call-no-inner",
+      "kind": "reject",
+      "source": "const name=\"Alice\"; const age=42; fnc f(Record r) {} f(:name,:age);",
+      "expect": "call delimiters do not construct Record"
+    },
+    {
+      "id": "capture-logging-parens",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; logger.info(\"request info:\",(:name,:age));",
+      "expect": "one event with same typed fields as brace Record under compatible logger"
+    },
+    {
+      "id": "capture-logging-struct",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; logger.info(\"request info:\",struct{:name,:age});",
+      "expect": "one event under explicit Struct logger overload"
     }
   ]
 }
