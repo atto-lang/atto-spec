@@ -73,3 +73,81 @@ define type B as interface Z { fnc f() { return 3; } } // illegal interface impl
 ## Conformance and rollout
 
 All backends and formatters must consume shared positive/negative fixtures. Report separate statuses: lex/parse, semantic check, link, guest/native codegen, runtime execution, and formatter round trip. A parse-only Rust/browser preflight is useful but **does not satisfy** a request that a snippet compile and execute. Rollout sequence: grammar + tests, symbol table/alias graph, union layout and conversions, interface/trait member typing, runtime and cross-backend parity.
+
+## Named type expressions: `denote` (owner-directed target, 2026-11-27)
+
+`denote` is the canonical introducer for naming an already complete type expression.
+It is neither a forward declaration nor a runtime value definition. Keep the
+existing `declare` and `define` grammar and signature-matching semantics above
+unchanged; do not rewrite a declaration/definition pair as a denotation.
+
+```atto
+denote type Dice = 1 | 2 | 3 | 4 | 5 | 6;
+denote type Numeric = int | long | double;
+denote type Pair<T> = (T, T);
+denote pub[pkg] type Status = #ready | #busy | #done;
+declare actor Worker;
+define actor Worker as
+end
+```
+
+Proposed grammar extension (visibility and generic formal syntax reuse the
+existing grammar; no new generic or type-expression capabilities are implied):
+
+```ebnf
+type_denotation = "denote", [ visibility ], "type", IDENT,
+                  [ generic_formals ], "=", type_expr, ";" ;
+```
+
+- Parse the exact declaration introducer in a permitted type-declaration
+  scope. Require `type`, a name, `=`, a complete RHS and a semicolon.
+  No `denote actor`, `denote const`, `denote fnc`, `denote type A as T`,
+  or arbitrary value-expression evaluation. Preserve identifier/comment/string
+  occurrences; no global text replacement. Reservation of bare identifier
+  `denote` outside this position is not implied until the lexer migration is ratified.
+- A denotation is a complete transparent type binding after resolution:
+  `denote type Age = int;` is equivalent to `int`, not a nominal newtype.
+  Alias expansion retains nominal identity of referenced types, singleton
+  constraints, generic argument kinds, lifetimes, ownership, effects,
+  visibility and layout obligations. No runtime allocation, initialization,
+  implicit conversion, widening or representation change is authorized.
+- Use the existing type grammar, including unions, callable types, tuples,
+  generic applications and other supported type expressions. Literal
+  singleton types are types, not runtime expressions; unsupported RHS
+  categories require an explicit unsupported diagnostic. Inline nominal
+  definitions remain on their existing definition path; do not introduce
+  extra nominal owners through denotation.
+- Allocate a type namespace slot and resolve RHS symbols at the authenticated
+  scope closure, not by spelling alone. Apply the namespace modes v2
+  amendment, imports, visibility and public-interface leakage checks.
+  Reject duplicate or builtin-colliding names and any collision with an
+  existing declaration/definition pair; denotation never completes a
+  nominal forward declaration. Generic parameters bind in RHS scope only.
+- Detect unresolved references and transparent alias cycles before lowering.
+  A recursive graph through a separately admitted nominal/layout boundary
+  needs the existing independent alias, layout and inhabitation proofs
+  (see recursive-layout-graph-wire-v1); no arbitrary recursive alias
+  acceptance in this first slice. Bound expansion and instantiation work.
+- Formatter preserves introducer, visibility, formal arguments and RHS
+  semantics; emits the mandatory semicolon. Existing `declare type` and
+  `define type` remain distinct. Preserve historical syntax without silent
+  migration; a warning policy for standalone historical aliases is deferred.
+
+### Acceptance gates (all NOT_EXECUTED)
+
+Positive: literal union value 5 admitted, 8 rejected; transparent scalar
+assignment in both directions; generic tuple specialization; union
+normalization; nominal identity preservation; callable effect preservation;
+same-scope forward reference; public and package-visible imported aliases
+with valid underlying types; unchanged declare/define pair and actor forms.
+Negative: missing RHS, missing semicolon, wrong introducer separator, wrong
+entity kind, duplicate denotation, builtin shadowing, duplicate with nominal
+declaration, unresolved RHS, A=B/B=A and A=A cycles, generic arity/kind
+mismatch, private type leakage, cross-file default namespace leakage, and
+ownership/effect laundering. Formatter must round-trip both new and existing
+forms, and leave occurrences in strings/comments untouched.
+
+All compiler and formatter lanes start NOT_EXECUTED. Require actual source
+compilation, negative semantic diagnostics with no emitted executable,
+positive guest execution and ABI equivalence where applicable, with exact
+head and source provenance. Parsing/host-only models are not backend parity.
