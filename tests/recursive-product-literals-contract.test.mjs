@@ -43,3 +43,29 @@ test('reference delimiter/context matrix',()=>{
  ['brace',['COLON','ARROW'],false,'REJECT'],['brace',['ARROW','COLON'],false,'REJECT']
  ])assert.equal(classify(ctx,items,comma),want);
 });
+
+test('call boundaries: Pair vs named vs Record, with arity controls',()=>{
+ const accept=['call-direct-pair','call-grouped-pair','call-two-direct-pairs','positional-pair-tuple','call-singleton-pair-tuple','call-brace-colonequals','call-pair-then-named','call-pair-with-spaces','call-quoted-pair-vs-named','call-pair-effect-order','typed-record-newline','typed-record-empty-passed'];
+ const reject=['call-pair-after-named','call-pair-to-scalar','call-grouped-pair-to-scalar','call-direct-pair-to-record','call-two-pairs-not-tuple','call-one-tuple-not-two-pairs','call-spaced-pair-token','call-comment-separated-pair-token','typed-record-prefix-reject','typed-record-duplicate-mixed-separators','record-of-invalid-quoted-colon','record-of-invalid-quoted-equals','inferred-record-mixed-equals','brace-separator-comment-gap'];
+ for(const id of accept)assert.equal(ids.get(id)?.kind,'accept',id);
+ for(const id of reject)assert.equal(ids.get(id)?.kind,'reject',id);
+ assert.ok(doc.includes('detect the complete adjacent := token before testing'));
+ assert.ok(doc.includes('NOT a semantic pass'));
+});
+// Enumerate all item-kind sequences through arity 3. Reference only.
+test('bounded recursive-product delimiter matrix',()=>{
+ const kinds=['COLON','EQ','COLONEQ','CAPTURE','ARROW','VALUE'];
+ const contexts=['ordinary','inferred','typed-record','brace'];
+ const seqs=[[]];
+ for(let n=1;n<=3;n++)for(const seq of seqs.filter(s=>s.length===n-1))for(const k of kinds)seqs.push([...seq,k]);
+ const fields=new Set(['COLON','EQ','COLONEQ','CAPTURE']);
+ for(const items of seqs)for(const ctx of contexts)for(const comma of [false,true]){
+   let want;
+   if(ctx==='brace')want=items.length===0?'AMBIGUOUS':items.every(x=>fields.has(x))?'RECORD':items.every(x=>x==='ARROW')?'MAP':'REJECT';
+   else if(ctx==='typed-record')want=items.every(x=>fields.has(x))?'RECORD':'REJECT';
+   else if(ctx==='inferred'&&['COLON','CAPTURE'].includes(items[0]))want=items.every(x=>['COLON','CAPTURE'].includes(x))?'RECORD':'REJECT';
+   else if(items.some(x=>['COLON','EQ','CAPTURE'].includes(x)))want='REJECT';
+   else want=items.length===1&&!comma?'GROUP':'TUPLE';
+   assert.equal(classify(ctx,items,comma),want,JSON.stringify({ctx,items,comma}));
+ }
+});
