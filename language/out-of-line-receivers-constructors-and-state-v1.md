@@ -154,6 +154,37 @@ define struct Point {
 
 No case is backend-certified by this text. Exact-head positive guest runs, semantic negative diagnostics, formatter round trips and layout/ownership evidence are required independently for each compiler.
 
+### Nested nominal values and construction
+
+```atto
+define struct Rectangle {
+    Point top_left;
+    Point bottom_right;
+} with {
+    constructor(Point a, Point b) {
+        self.top_left = a;
+        self.bottom_right = b;
+    }
+
+    mtd area() -> int {
+        return (self.bottom_right.x - self.top_left.x)
+             * (self.bottom_right.y - self.top_left.y);
+    }
+
+    mut mtd shift(int n): void {
+        self.top_left.x = self.top_left.x + n;
+    }
+}
+```
+
+Resolve all complete by-value nominal definitions before computing a layout. Declaration order does not determine type identity. Reject an unresolved owner, a direct or indirect by-value cycle, and a layout or expansion that exceeds the backend's documented resource limits. Do not substitute a pointer, class identity, implicit allocation or zero-filled storage to break a cycle. Explicit indirection follows separate pointer/ownership rules.
+
+Constructor overload selection uses the original nominal argument types, not the flattened leaf signature. Assigning a complete nested value to an under-construction field establishes initialization only after its entire value is available. Copyable nested values have independent logical mutable state; copying an enclosing value must not alias its original or the source constructor arguments. Repeated or missing initialization and reads before initialization remain errors. A readonly receiver cannot mutate any nested field; a mutable receiver requires exclusive authority over its projected storage.
+
+Scalar replacement and flattening are allowed when they preserve this behavior and observable evaluation order. Compiler-private leaf slots are not a source-level ABI, a promised object size, or evidence of allocation-free execution for resource-bearing values. A bounded initial executable profile can support scalar leaves (int/bool), local complete owners, whole-field constructor snapshots and checked leaf writes; it must reject unsupported generic, resource, cross-module, actor-transfer and lifetime cases without an artifact. General ABI alignment, destructor ordering, partial-resource cleanup, visibility and cross-suspension ownership require separate proof. No implementation cap from a bounded backend is a language-wide type limit.
+
+Required differential fixtures include distinct nested nominal identities with equal shape, two- and three-level nested copies, forward owner resolution, mutation of original constructor inputs and copied receivers, direct and mutual cycles, incomplete initialization, wrong nested types, immutable nested writes and adversarial expansion limits. See the portable registry `contracts/struct-with-members-conformance-v1.json` in atto-platform-conformance. Diagnostic codes must be verified separately from simple no-artifact rejection.
+
 ## Protected class state and containership
 
 `define state on class C as { ... }` is an exactly-once **per-instance** attached state schema with its own private, exclusive storage identity and independent lifetime under the containing instance. State fields use ordinary typed field declarations and initializers and are private regardless of receiver method visibility; the state attachment is not a public field or a static singleton. An initializer is evaluated per instance with checked effects, and every state field is initialized before constructor code receives a usable state guard. Missing initializer or field validity may be admitted only when the compiler can prove definite initialization.
