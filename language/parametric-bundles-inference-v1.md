@@ -29,6 +29,30 @@ Candidate equivalent spelling: `Array<infer X extends T>` (only in this explicit
 
 A seed supplies inherited defaults; explicitly written replacement keys in the refinement clause replace those seed keys only. Other explicit constraints are never overwritten. A fixed seed field is not implicitly changed by a literal length or type mismatch. Unseeded `Array<infer X>` captures the fully resolved canonical argument bundle including defaults. Individual `Array<type=infer E, size=infer N>` bindings capture the named type and constant respectively. Inference variables bind in the enclosing lexical scope only after successful declaration checking, are not visible in their own initializer, may not redeclare existing names in that scope, and never escape it. Bare `infer` is not a new anonymous generic argument; existing call-specific underscore rules are unchanged.
 
+
+### Explicit replacement by inference (candidate extension)
+
+```atto
+type Base = <type=int, size=5>;
+const Array<infer X from Base> x = [1,2,3] with {size=infer};
+type Y = X with {size=2};
+const Array<Y> y = [10,20];
+```
+
+Only in a seeded literal refinement clause, a whole RHS `infer` marks that particular inherited formal as a required inference hole. It removes the seed's binding before inference, retains all other seed values, and cannot overwrite an independent explicit constraint. Evidence must be unique, statically available and kind-correct; no default may fill this hole. The resulting X.size is 3, Y.size is 2 and Base.size remains 5. This contextual hole is not a bare generic argument or a runtime expression. Outside a seeded literal refinement, `size=infer` is not admitted in v1. An empty literal can supply length zero but cannot infer an absent element type. Replacing a type or layout still needs a complete checked initialization and no implicit conversion. A backend may reject the candidate extension as unsupported before guest artifact emission.
+
+### Composition and projection (candidate extensions)
+
+```atto
+type Element = <type=int>;
+type Shape = <size=3>;
+const Array<Element, Shape> a = [1,2,3];
+type P = params_of(a);
+type Q = P with {size=2};
+```
+
+Composition is disjoint union of resolved formal identities, not last-writer-wins: duplicates fail even when values agree. A bundle cannot be confused with an ordinary positional type argument. Resolve the kind of each argument before expansion, retain the existing positional-before-named rule, and reject ambiguous names. `params_of` is a proposed compile-time intrinsic of an already resolved concrete nominal specialization or statically typed binding; it does not evaluate the binding, invoke getters or inspect runtime state. Its result retains canonical typed formal identities and the nominal schema provenance; reapplication to another schema requires an explicit, separately checked mapping, not name-only compatibility. No reflection or arbitrary expression execution is implied. The spelling and cross-schema rules remain candidate, not an implementation claim.
+
 ## Contextual literal forms
 
 ```atto
