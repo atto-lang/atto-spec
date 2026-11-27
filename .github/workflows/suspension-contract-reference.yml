@@ -1,0 +1,26 @@
+name: Suspension contract host oracle (not compiler parity)
+on:
+  pull_request:
+    paths:
+      - 'spec/06-async-and-scheduling.md'
+      - 'tests/suspension-contract-reference.mjs'
+      - '.github/workflows/suspension-contract-reference.yml'
+permissions:
+  contents: read
+jobs:
+  host-oracle:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify exact head and execute host reference
+        env:
+          EXPECTED: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+          git rev-parse HEAD^{tree}
+          git hash-object tests/suspension-contract-reference.mjs
+          node tests/suspension-contract-reference.mjs

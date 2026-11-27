@@ -109,78 +109,96 @@ AOT or multi-backend conformance. Channel `<<`/`>>` remains
 **TARGET / NOT IMPLEMENTED**, tracked by
 [issue #3171](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/3171).
 
-### Static select: expression versus procedural statement (TARGET)
+### Static select: Future by default (TARGET, 2026-11-26)
 
-The static form arbitrates one set of channel/Future operations. The following
-target reconciles the Java static-select contract with the language-level
-statement/expression distinction. It is not a certification of any backend.
+This supersedes the blocking-by-default expression contract. Constructing a
+selection must not suspend the caller; awaiting its Future may suspend.
 
-| Form | Result and control boundary |
+| Form | Result and effect |
 | --- | --- |
-| `select { ... }` / `select over ... end` | Value expression of a common arm type T; arm return supplies the result, not a callable return |
-| `do select { ... }` / `do select over ... end` | Procedural statement; return exits the enclosing callable, break/continue target its lexical loop |
-| `nb select { ... }` / `nb select over ... end` | Tracked Future<T> settled only after the selected arm and its cleanup finish |
-| `try select` | Immediate probe; no pending registration on a miss; static result/return shape needs a separate decision |
-| `do nb select` | Legacy detached Java statement only; target migration is an observed Future<void>, not silent result discard |
-| `do try select` | Not admitted in the current Java grammar |
-
-The canonical target uses the space-separated `nb select` spelling. Any
-hyphenated legacy spelling requires explicit migration evidence. The previous
-`do select<T>` example contradicted procedural return semantics: a typed result
-belongs to the expression form. Explicit `select<T>` is a separately gated
-syntax proposal; do not infer support. The following examples use the current
-Java arm spelling, with result assignment shown as target syntax:
+| `select { ... }` / `select over ... end` | Future<T>, where T is the common arm result |
+| `await select ...` | T, ordinary Future await in a checked suspends context |
+| `nb select ...` | Deprecated tracked-expression alias, equivalent to select |
+| `do select ...` | Existing procedural control form; migration unresolved, not silently reinterpreted |
+| `try select ...` | Immediate probe; result shape separately gated |
 
 ```atto
-do select over
-  when readch updates: int value -> {
-    if value < 0 then
-      return -1;
-    fi
-    process(value);
-  }
-  default: -> {}
-end
-
-val int result = select over
-  when readch updates: int value -> { return value; }
-  default: -> { return 0; }
-end;
+const Future selection = select {
+    when readch incoming: int value -> { return value; }
+};
+const int result = await selection;
 ```
 
-Only the enclosing select specifies its wait mode and policy; do not perform
-independent eager read/write operations to form an arm. Both delimiters preserve
-identical control and arbitration semantics. A static selection has at least
-one arm and at most one default, last; executable arm arrows are slim
-`->`, never `=>` or repeated arrows. `among` is not part of the current
-Java delimiter contract. Legacy arrowless arms and `case` are compatibility
-syntax, not new semantics.
+Typed Future<T> uses angle brackets. Explicit select<T> and counted select
+are tracked separately in #254; this correction does not certify those
+extensions. Reject implicit unwrapping into T. A selected arm's return
+settles its Future, not the enclosing callable. No silent discard of an
+unsettled operation. Legacy detached nb statements and procedural/dynamic
+select require explicit migration, not blind token replacement.
 
-Dynamic `select from cases` returns a selected outcome (or a corresponding
-Future/probe outcome). Reject `do select from cases` and `do nb select from
-cases`: silently discarding the outcome could discard an admitted message.
+Evaluate operands once in source order; exactly one case commits.
+Losing reads/writes must not consume or publish; observing an independent
+Future does not undo its producer effects. Cancellation before commit
+detaches waiters; after commit it cannot roll back transferred ownership.
+Default must not leave registrations. Guest arms and cleanup execute only
+on their authorized scheduler lane, with generation fencing and bounded
+admission. No carrier parking, no implicit task/thread creation merely
+to implement awaiting. Future result settles after the selected arm and
+eligible cleanup. Eager versus lazy registration and repeat-await for
+affine results remain open; do not silently choose incompatible policies.
 
-Select operands evaluate once in source order; only one arm commits, losing
-read/write arms have no channel effect, and only the winning arm runs.
-Observation of an already-started Future does not undo its producer's effects.
-Cancellation before commit detaches all waiters; cancellation after commit
-must not roll back transferred ownership. Deferred guest code must run on its
-own authorized scheduler lane, not inline on an I/O completion thread.
-Actor stop/restart fences late continuations by generation and must settle
-tracked results exactly once. Cleanup and non-escaping ownership remain
-mandatory through suspension, return, failure and cancellation. Default
-dispatch must not register a waiter; explicit priority/random and default fair
-selection require backend-specific conformance tests.
+### Callable await, channels and actor boundaries (TARGET)
 
-Current Java main preserves bare statement and detached nonblocking forms for
-compatibility. The value-expression and tracked completion integrations
-([Java #696](https://github.com/atto-lang/atto-source.java/pull/696),
-[Java #973](https://github.com/atto-lang/atto-source.java/pull/973)) remain
-separately gated; do not merge historical parser/runtime files wholesale.
-Require exact-head guest execution, negative parser/type/ownership fixtures,
-return/defer and actor STOP races, native AOT and formatter round-trip proof.
-Backends without checked lowering must reject unsupported forms before code
-emission. Host runtime tests alone do not establish source parity.
+```atto
+const int v = await || -> 33;
+const fnc work = await ch.receive();
+const fnc other = << ch;
+const fnc third << ch;
+```
+
+Awaiting a zero-argument callable invokes it once and yields its result;
+receiving a callable does not invoke it. These three receive spellings
+denote the same operation (independent reads if all are executed).
+Require equivalent types, checked outcomes, suspension effects,
+cancellation and ownership. A plain integer is not made awaitable by
+this rule; callable argument binding and returned-Future flattening need
+explicit type rules.
+
+Ordinary channels may carry transfer-safe callable values; discourage
+with a suppressible lint, not a blanket prohibition. Reject unsafe
+captures. Actor mailbox channels and any cross-actor channel transport
+must reject callable payloads transitively, including erased, boxed,
+nested and bound method values. Ownership transfer cannot waive this
+restriction. Runtime boundary checks must fail closed when static
+information is unavailable.
+
+### Spawn and suspension effects (TARGET)
+
+Bare spawn may suspend during allocation/admission. Awaited spawn must
+provide complete actor readiness information; the proposed readiness
+fence includes successful init, identity, mailbox, generation and
+supervisor association, without exposing private state. Failure,
+cancellation and restart races need explicit terminal semantics.
+
+Track suspension transitively through calls, channel operations and
+cleanup, rather than scanning for await tokens. Preserve checked
+suspends contexts, loan fences, actor scheduling policy and AOT lowering.
+Critical acquisition, generator yield, rt cooperate and scope-exit
+cleanup have distinct effects; unresolved policy must not be treated as
+confirmed syntax changes. Existing readch/writech are not deprecated by
+this correction.
+
+### Required evidence
+
+Compile and execute the same positive/negative source fixtures across
+Java, LLVM, .NET, Wasm, JS, Rust, Forge, Cranelift and applicable
+self-hosted/realtime/HDL profiles. Unsupported features must reject before
+artifact publication. Include ready/pending select, one winner and losing
+data, cancel/commit races, actor restart, callable invocation once,
+receive-only callable, nested/erased mailbox rejection, unsafe capture,
+spawn init failure, suspend-across-loan negatives and AOT. Record exact
+head/root tree, executed build/test steps and guest output. Host-only
+oracles are supplementary. Zero-step CI is not evidence.
 
 `process.stdout` / `stderr` / `stdin` and `stdio.out` / `err` / `in` are channel-style standard streams by design; `stdio.in.stream()` and `Observable.from_ch(stdio.in)` are target adapters. Network stream framing and backpressure are part of the contract, not consequences of merely using a Channel type.
 
