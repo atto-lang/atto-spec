@@ -788,6 +788,78 @@
       "kind": "reject",
       "source": "let mut x := 5; x.key = \"other\";",
       "expect": "read-only key"
+    },
+    {
+      "id": "call-brace-v4-named",
+      "kind": "accept",
+      "source": "fnc foo(int x,int y): int { return x*10+y; } let x=100; foo(x=4,y=8);",
+      "expect": "two named scalar arguments; return 48; outer x remains 100"
+    },
+    {
+      "id": "call-brace-v4-positional",
+      "kind": "accept",
+      "source": "fnc foo(Record data): int { return data.x*10+data.y; } let x=100; foo({x=4,y=8});",
+      "expect": "one positional Record, closed inferred shape; return 48; outer x remains 100"
+    },
+    {
+      "id": "call-brace-v4-named-record",
+      "kind": "accept",
+      "source": "fnc foo(Record data): int { return data.x*10+data.y; } foo(data={x=4,y=8});",
+      "expect": "one named Record argument; return 48"
+    },
+    {
+      "id": "call-brace-v4-no-flatten",
+      "kind": "reject",
+      "source": "fnc foo(int x,int y): int { return x+y; } foo({x=4,y=8});",
+      "expect": "arity/type rejection; never implicitly expands Record"
+    },
+    {
+      "id": "call-brace-v4-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(Record data): int { return data.x; } foo({x=4,x=8});",
+      "expect": "duplicate static Record field; no artifact"
+    },
+    {
+      "id": "call-brace-v4-named-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(Record data): int { return data.x; } foo(data={x=4},data={x=8});",
+      "expect": "duplicate named parameter; no artifact"
+    },
+    {
+      "id": "call-brace-v4-eval-order",
+      "kind": "accept",
+      "source": "fnc foo(Record data): int { return data.x*10+data.y; } foo({y=tick(8),x=tick(4)});",
+      "expect": "tick(8), then tick(4), once each; return 48"
+    },
+    {
+      "id": "call-brace-v4-pair-field",
+      "kind": "accept",
+      "source": "fnc foo(Record data): int { return data.x.value; } foo({x=(k:=42)});",
+      "expect": "one Record containing Pair intact; return 42"
+    },
+    {
+      "id": "call-brace-v4-no-type-context",
+      "kind": "accept",
+      "source": "let r={x=4,y=8};",
+      "expect": "closed Record inferred independently of expected type"
+    },
+    {
+      "id": "call-brace-v4-local-write",
+      "kind": "reject",
+      "source": "let x=5; x=4;",
+      "expect": "bare local reassignment rejected under strict binding profile; no artifact"
+    }
+  ],
+  "pending_call_syntax": [
+    {
+      "source": "foo((x = 4, y = 8));",
+      "status": "UNRESOLVED",
+      "note": "Not a portable positive or negative oracle."
+    },
+    {
+      "source": "foo((x : 4, y : 8));",
+      "status": "CANDIDATE_NOT_RATIFIED",
+      "note": "Not a portable positive or negative oracle."
     }
   ]
 }
