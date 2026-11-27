@@ -185,6 +185,59 @@ Scalar replacement and flattening are allowed when they preserve this behavior a
 
 Required differential fixtures include distinct nested nominal identities with equal shape, two- and three-level nested copies, forward owner resolution, mutation of original constructor inputs and copied receivers, direct and mutual cycles, incomplete initialization, wrong nested types, immutable nested writes and adversarial expansion limits. See the portable registry `contracts/struct-with-members-conformance-v1.json` in atto-platform-conformance. Diagnostic codes must be verified separately from simple no-artifact rejection.
 
+### Physical layout and lifetime proof boundary (candidate)
+
+This refines [record versus struct layout](record-struct-layout-v1.md),
+[recursive layout graphs](recursive-layout-graph-wire-v1.md) and
+[explicit C layout](compile-time-reflection-ffi-layout-v1.md); it is not a
+new C ABI, placement syntax approval or language-wide resource cap.
+
+- Resolve each fully instantiated nominal owner and construct its inline
+  storage dependency graph before assigning offsets. A by-value cycle is
+  invalid regardless of finite constructor inhabitation. A separately
+  approved reference or handle may cut an inline edge; never insert one
+  implicitly. Preserve distinct module-qualified nominal identity even for
+  equal physical layouts.
+- A target layout descriptor must include the target ABI identity, scalar
+  size/alignment facts, ordered field identities, offsets, total size,
+  alignment, tail padding and ownership/drop metadata. Logical scalar
+  replacement need not materialize a physical object. When a materialized
+  value is required, use checked alignment rounding, checked addition and
+  bounded graph traversal. For ordinary declaration-order storage, align
+  each field offset to its field alignment, then round the final size up
+  to the aggregate alignment. Reject missing target facts, invalid
+  alignments, overflow and exceeded target/actor quotas before allocating.
+  Zero-sized and over-aligned types require separately admitted policies.
+- Do not infer a universal bool representation, pointer width, padding
+  value, cross-target ABI or wire format from a single scalar backend.
+  Explicit C interoperability requires the separate target header witness
+  and calling-convention proof. Padding is not a source field; never read
+  it as initialized payload or serialize it.
+- A stack/heap placement plan must bind the storage capability to the
+  exact owner, tenant/actor, generation, size, alignment and lifetime.
+  Construction publishes no initialized value until the required fields
+  are initialized; failure destroys only initialized resource subobjects
+  in reverse completion order, exactly once. Mutable authority is
+  exclusive over overlapping projected storage. Disjoint-field loans are
+  admissible only with a field-sensitive proof. A live loan prohibits
+  destruction, relocation or reuse of overlapping storage. Detachment of
+  a pointer is not destruction or deallocation. Retire a generation before
+  reusing its storage; stale capabilities must not regain access.
+- The bounded Cranelift Point placement lane provides an implementation
+  example of a 16-byte, 8-aligned explicit slot containing two i64 fields
+  at offsets 0 and 8. It is not general heap placement, runtime pointer
+  escape, arbitrary resource destruction or actor-owned allocation proof.
+
+Required independent evidence: mixed alignment and tail padding; nested
+inline field offsets; array stride where admitted; forward declarations;
+mutual/self inline cycles; overflow/invalid alignment/budget denial;
+distinct nominal owners with equal layouts; projection-specific loan
+overlap and move/destruction denial; constructor failure at each field;
+drop order and exactly-once cleanup; stale-generation denial after reuse;
+allocation-failure rollback and actor/tenant quota isolation. Compare
+materialized native memory observations against the declared target
+descriptor, not only a host reference model or scalar guest result.
+
 ## Protected class state and containership
 
 `define state on class C as { ... }` is an exactly-once **per-instance** attached state schema with its own private, exclusive storage identity and independent lifetime under the containing instance. State fields use ordinary typed field declarations and initializers and are private regardless of receiver method visibility; the state attachment is not a public field or a static singleton. An initializer is evaluated per instance with checked effects, and every state field is initialized before constructor code receives a usable state guard. Missing initializer or field validity may be admitted only when the compiler can prove definite initialization.
