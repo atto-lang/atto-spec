@@ -59,7 +59,7 @@ No explicit Record type annotation is needed. Standalone (name = "Alice", age = 
 
 A Record field assignment is checked against the field's actual declared/inferred type. Given const name2 := "Alice Wong"; and let mut Record r = (name = "Alice", age = 42);, r.name = name2.value; and r["name"] = name2.value; are equivalent checked writes. Assigning name2 itself to the string field rejects; a Pair-typed field may accept a compatible Pair without unwrapping. A const or otherwise read-only Record cannot be mutated. Static bracket fields, shape preservation, ownership and effects follow the existing Record rules. No key matching, implicit payload extraction or field insertion is introduced by assignment.
 
-### Proposed explicit Record field-capture spelling
+### Explicit Record field-capture spelling (accepted)
 
 ```ebnf
 record_capture = ":", IDENT ;
@@ -75,7 +75,7 @@ logger.info("Request completed", {:request_id}, {:status}, {:elapsed_ms});
 logger.info("Request completed", {:request_id, :status, :elapsed_ms});
 ```
 
-These logging calls require a logger API that explicitly accepts structured Records; no implicit call argument expansion or logging API change is claimed here. Runtime UUID generation uses val rather than const unless constexpr is established. Pair-based logging likewise requires a compatible Pair overload. The capture syntax is a proposed extension for review; it does not imply new runtime reflection or general Struct construction.
+These logging calls require a logger API that explicitly accepts structured Records; no implicit call argument expansion or logging API change is claimed here. Runtime UUID generation uses val rather than const unless constexpr is established. Pair-based logging likewise requires a compatible Pair overload. The capture syntax is accepted; it does not imply runtime reflection. Explicit Struct capture construction is specified below.
 
 ## Static call spread and positional apply (approved extension)
 
@@ -133,6 +133,44 @@ The projection evaluates the receiver exactly once, preserves checked effects, a
 No implicit extraction of .key or .value during assignment, return, arithmetic, comparison with a scalar, normal argument passing, generic inference, overload resolution, or positional .apply(). A function accepting Pair<int> receives the Pair intact. A Record field of Pair type likewise stores the whole Pair; a scalar field requires the explicit compatible projection. Named calls such as foo(x = p) do not extract a payload. Explicit named aggregate spread is the specified separate operation that projects Pair payloads by proved names. Record.of and Map.of consume association components only through their own checked explicit constructor contracts. No extra allocation or runtime reflection is required for ordinary projections.
 
 Test literal, factory, name-derived binding and already-materialized receiver equivalence; concrete static key/value types, both nominal kinds, receiver effects once, immutable slot negatives, explicit scalar argument versus direct Pair mismatch, preservation of Pair arguments, .apply versus named spread, shadowed nominal types, moved and borrowed receivers, and constexpr projections. No backend may claim support without actual typed checking and executed guest cases.
+
+## Record and Struct lexical capture constructors (accepted extension)
+
+```atto
+const name = "Alice";
+const age = 42;
+const z = {:name, :age};
+const s = struct{:name, :age};
+```
+
+z is a closed structural Record with fields name:string and age:int, equivalent to {name:name, age:age} and (name=name, age=age). s is an explicitly requested anonymous Struct value with the same fields and fixed declaration-order layout, not a Record or Map. The explicit struct prefix selects anonymous Struct construction even without an expected type. For the initial profile, each anonymous Struct construction site has a stable compiler-generated nominal identity within its enclosing module/generic instantiation, reused on repeated execution, never selected by shape or expected nominal type. This identity choice is a proposed implementation detail, not a claim of an existing ABI. Named Structs retain their declared nominal identity. No implicit Record/Struct conversion, name lookup by runtime string, or dynamic type creation.
+
+```atto
+define struct Person as
+    string name;
+    int age;
+end
+const name = "Alice";
+const age = 42;
+const Person p = Person{:name, :age};
+const s = struct{:name, age: age};
+```
+
+An explicit nominal constructor T{...} may use capture items subject to its declared required fields, visibility, defaults, types and ownership checks. Capture syntax expands to the corresponding ordinary named initializer before type checking; it does not relax nominal initialization. Existing infer struct{...} retains its separate contextual nominal-constructor semantics; it may also use capture items where that constructor is supported. Do not silently select a visible nominal type for bare struct{...}. Dot access is permitted for admitted fields; existing Struct prohibition on string bracket indexing remains. A closed Record retains its existing static literal indexing rule.
+
+Capture items use only a lexical identifier after colon, preserve the original span, read the accessible binding exactly once in source order, and preserve type and normal Copy/borrow/move rules. No implicit deep copy or move. Mix explicit identifier-colon fields and captures; duplicate labels, unresolved names, inaccessible or reserved names, member paths and computed keys reject. Map entries are invalid in Struct initializers. Const still requires compile-time evaluability; use val for runtime reads. Unsupported anonymous fixed-layout representation must reject without guest artifacts, not fall back to Record or class.
+
+### Structured logging acceptance target
+
+```atto
+val request_id = generate_uuid();
+const status = 200;
+const elapsed_ms = 45;
+logger.info("Request completed", {:request_id}, {:status}, {:elapsed_ms});
+logger.info("Request completed", {:request_id, :status, :elapsed_ms});
+```
+
+The structured logger API should admit one or more explicit Record field bundles, preserving their typed field names and values, and retain existing Pair-based overloads. Passing a bundle is not named-call spread; the logger receives actual Record values. For a deterministic logging profile, reject duplicate field names across bundles rather than silently overwriting; test the decoded event, not just successful compilation or formatted text. Do not implicitly stringify structured values or invoke arbitrary getters to derive field names. Runtime UUID must be evaluated only once. Tests may use a deterministic UUID provider and capturing sink to prove names, values, types and event count; actual backend logging support must be independently verified. Struct logging, if supported, requires explicit API admission and is not an implicit Struct-to-Record conversion.
 
 ## Verification
 
