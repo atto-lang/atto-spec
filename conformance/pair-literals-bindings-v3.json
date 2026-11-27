@@ -170,6 +170,90 @@
       "kind": "reject",
       "source": "const r = (x=5,y:=true);",
       "expect": "mixed field and positional item"
+    },
+    {
+      "id": "record-inferred",
+      "kind": "accept",
+      "source": "const r = (name=\"Alice\",age=42,active=true);",
+      "expect": "closed Record, no expected type"
+    },
+    {
+      "id": "record-standalone",
+      "kind": "accept",
+      "source": "(name=\"Alice\",age=42,active=true)",
+      "expect": "standalone Record expression"
+    },
+    {
+      "id": "tuple-quoted-pairs",
+      "kind": "accept",
+      "source": "const t = (\"name\":=\"Alice\",\"age\":=42);",
+      "expect": "Tuple of Pairs, not Record"
+    },
+    {
+      "id": "record-payload-dot",
+      "kind": "accept",
+      "source": "const name2:=\"Alice Wong\"; let mut Record r=(name=\"Alice\"); r.name=name2.value;",
+      "expect": "string field updated"
+    },
+    {
+      "id": "record-payload-index",
+      "kind": "accept",
+      "source": "const name2:=\"Alice Wong\"; let mut Record r=(name=\"Alice\"); r[\"name\"]=name2.value;",
+      "expect": "same checked write"
+    },
+    {
+      "id": "record-pair-assignment",
+      "kind": "reject",
+      "source": "const name2:=\"Alice Wong\"; let mut Record r=(name=\"Alice\"); r.name=name2;",
+      "expect": "Pair not string"
+    },
+    {
+      "id": "record-const-write",
+      "kind": "reject",
+      "source": "const name2:=\"Alice Wong\"; const r=(name=\"Alice\"); r.name=name2.value;",
+      "expect": "read-only Record"
+    },
+    {
+      "id": "capture-one",
+      "kind": "accept",
+      "source": "const status=200; const r={:status};",
+      "expect": "closed Record status:int"
+    },
+    {
+      "id": "capture-multiple",
+      "kind": "accept",
+      "source": "const status=200; const elapsed=45; const r={:status,:elapsed};",
+      "expect": "closed Record with both fields"
+    },
+    {
+      "id": "capture-mixed-field",
+      "kind": "accept",
+      "source": "const status=200; const r={:status,success:true};",
+      "expect": "closed Record"
+    },
+    {
+      "id": "capture-duplicate",
+      "kind": "reject",
+      "source": "const status=200; const r={:status,status:201};",
+      "expect": "duplicate field"
+    },
+    {
+      "id": "capture-unresolved",
+      "kind": "reject",
+      "source": "const r={:missing};",
+      "expect": "unresolved binding"
+    },
+    {
+      "id": "capture-map-mixed",
+      "kind": "reject",
+      "source": "const status=200; const r={:status,\"foo\"=>1};",
+      "expect": "mixed Record and Map"
+    },
+    {
+      "id": "capture-path",
+      "kind": "reject",
+      "source": "const a=(status=200); const r={:a.status};",
+      "expect": "capture requires identifier"
     }
   ]
 }
