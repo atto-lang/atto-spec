@@ -254,6 +254,150 @@
       "kind": "reject",
       "source": "const a=(status=200); const r={:a.status};",
       "expect": "capture requires identifier"
+    },
+    {
+      "id": "spread-record",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } const r=(name=\"Alice\",age=42,active=true); foo(...r);",
+      "expect": "named payloads, exit 42"
+    },
+    {
+      "id": "spread-pairs",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } const t=(active:=true,name:=\"Alice\",age:=42); foo(...t);",
+      "expect": "named payloads in reordered parameter slots, exit 42"
+    },
+    {
+      "id": "spread-tuple",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(\"Alice\",42,true));",
+      "expect": "positional, exit 42"
+    },
+    {
+      "id": "spread-capture",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } const name=\"Alice\"; const age=42; foo(...{:name,:age},active=true);",
+      "expect": "named spread plus explicit named, exit 42"
+    },
+    {
+      "id": "spread-two",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name=\"Alice\"),...(age:=42,active:=true));",
+      "expect": "two named spreads, exit 42"
+    },
+    {
+      "id": "spread-empty",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(),\"Alice\",42,true);",
+      "expect": "zero slots, exit 42"
+    },
+    {
+      "id": "spread-pos-before-named",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(\"Alice\",...(age:=42,active:=true));",
+      "expect": "positional then named, exit 42"
+    },
+    {
+      "id": "spread-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name=\"Alice\",age=42),age=5,active=true);",
+      "expect": "duplicate parameter"
+    },
+    {
+      "id": "spread-pos-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(\"Alice\",...(name=\"Bob\",age=42,active=true));",
+      "expect": "duplicate slot"
+    },
+    {
+      "id": "spread-unknown",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(wrong:=\"Alice\",age:=42,active:=true));",
+      "expect": "unknown parameter"
+    },
+    {
+      "id": "spread-missing",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name=\"Alice\",age=42));",
+      "expect": "missing active"
+    },
+    {
+      "id": "spread-type",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name=\"Alice\",age=\"42\",active=true));",
+      "expect": "wrong payload type"
+    },
+    {
+      "id": "spread-after-named",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(name=\"Alice\",...(42,true));",
+      "expect": "positional after named"
+    },
+    {
+      "id": "spread-array",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...[name:=\"Alice\",age:=42,active:=true]);",
+      "expect": "dynamic array/list unsupported"
+    },
+    {
+      "id": "spread-map",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...{\"name\"=>\"Alice\"});",
+      "expect": "Map not spreadable"
+    },
+    {
+      "id": "spread-dynamic-key",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } val key=read_name(); foo(...(Pair.of(key,\"Alice\"),age:=42,active:=true));",
+      "expect": "unproved key, no fallback"
+    },
+    {
+      "id": "spread-invalid-key",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(\"5\":=\"Alice\",age:=42,active:=true));",
+      "expect": "invalid parameter name"
+    },
+    {
+      "id": "spread-pair-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name:=\"Alice\",\"name\":=\"Bob\",age:=42,active:=true));",
+      "expect": "duplicate Pair keys"
+    },
+    {
+      "id": "spread-scalar",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...42);",
+      "expect": "not aggregate"
+    },
+    {
+      "id": "apply-pair-positional",
+      "kind": "accept",
+      "source": "fnc bar(Pair<string> x,Pair<int> y): int { return y.value; } const t=(name:=\"Alice\",age:=42); bar.apply(t);",
+      "expect": "actual Pair objects, exit 42"
+    },
+    {
+      "id": "spread-mixed-tuple",
+      "kind": "accept",
+      "source": "fnc bar(Pair<int> x,bool y): int { return x.value; } bar(...(age:=42,true));",
+      "expect": "positional mixed tuple, exit 42"
+    },
+    {
+      "id": "spread-effect-order",
+      "kind": "accept",
+      "source": "fnc join(int a,int b): int { return a*10+b; } join(...(b:=tick(2),a:=tick(4)));",
+      "expect": "tick(2), then tick(4), exactly once, result 42"
+    },
+    {
+      "id": "spread-default",
+      "kind": "accept",
+      "source": "fnc f(int a,int b=2): int { return a*10+b; } f(...(a=4));",
+      "expect": "default slot, exit 42"
+    },
+    {
+      "id": "spread-reuse",
+      "kind": "reject",
+      "source": "fnc consume(take! Payload a,take! Payload b) {} val p=make_payload(); consume(...(a=p,b=p));",
+      "expect": "reject double consumption under ordinary ownership rules"
     }
   ]
 }
