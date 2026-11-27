@@ -149,6 +149,29 @@ A literal arm followed by a type-test arm is an ordered specialization: the lite
 
 Overlap, priority (`match first`), exhaustiveness, numeric equality (`1` versus `1.0`), wildcard arms and Symbol identity must be specified and tested consistently; their unsettled edges are catalogued in [open questions](12-open-questions.md).
 
+
+### Value and type membership arms (v1 target)
+
+The canonical arm heads are `on pattern`, `in collection_expression`, `is type_ref`, and `is in [type_ref, ...]`. Keep legacy `on is T` as input compatibility; no new `ons` keyword. For switch, preserve existing case/on/default spellings and admit the same membership and type heads in the typed over form. Existing result annotations, guards, and arm body delimiters remain independent.
+
+```atto
+return match value over
+    on 42 -> 100,
+    in [0, 1, 2] -> 10,
+    in allowed_values -> 20,
+    is in [int, long] -> 30,
+    is String -> 40,
+    on _ -> 0
+end;
+```
+
+- Evaluate the subject once. Attempt arms in source order, evaluate a collection expression once only when reached, and evaluate its guard only after membership succeeds. Execute exactly one selected body; no fallthrough. Membership is the existing checked value-equality relation, not conversion, pointer identity, or pattern destructuring. `on [1, 2]` tests the whole array where supported; `in [1, 2]` tests its elements. Empty value collections match nothing. Finite arrays, sets, lists and ranges are targets; runtime iteration must preserve effects, borrowing, bounds and termination constraints. No implicit copying or allocation for constant lists.
+- `is in [T, U]` is a disjunction of ordinary type tests, not an array of runtime values. Resolve every member as a type, require a reifiable or statically provable test, preserve nominal/generic identity, and reject unknown or duplicate canonical types and empty type lists. No automatic conversion or dynamic reflection. Type-list bindings narrow to the union of admitted alternatives, with the same capture qualifiers, scope, ownership and guard rules as single-type tests. Runtime type descriptor collections and comma-only type shorthand are deferred pending separate contracts.
+- An earlier unguarded literal or membership arm may specialize a later broad type arm. Diagnose statically provable fully unreachable arms, duplicate constant alternatives and partial redundancy; guarded arms do not establish unconditional coverage. Dynamic collections do not establish exhaustiveness without a proof. Type-check even unreachable bodies before optimization; reject unsupported representations rather than emit misleading artifacts. No blanket exemption for unrelated overlapping structural patterns.
+- In ordinary expressions the equivalent predicates are `x in values` and `x is in [T, U]`; preserve existing negation and identity syntax. This proposal does not introduce a new spelling for negation.
+- Formatter preserves the distinction between value arrays and type lists and the bracket/comma boundaries, including nested generic type arguments. Require explicit separators between expression arms. Canonicalize legacy syntax only with verified equivalent parsing. No change to select.
+- Verify exact-head real guest compilation/execution, negative no-artifact diagnostics, once-only evaluation, guard fallback, overlap, and formatter round trips independently on every backend. This is a language target, not an implementation receipt.
+
 ## Wire portability
 
 Serializable network values and same-domain `Sendable` actor messages are not identical capabilities. Wire encoding must be versioned; native pointers, mutable actor state, host exception objects, code pointers and execution capabilities never cross the wire as raw values. `Result`/`Option` encode/decode round-trips require exact shared test vectors.
