@@ -58,6 +58,26 @@ The assignment grammar must distinguish bare-name writes from named labels and r
 
 **Lifetime and lowering:** evaluate replacement once and before publishing; failed RHS retains old binding, valid replacement releases the previous owned value exactly once, and live invalidated loans reject. Never copy an exclusive owner to return a result. Capture by lexical identity rather than spelling; existing capture rules govern aliasing. SSA versions/phi nodes for non-addressable scalars need no heap box; preserve cleanup on control-flow joins, exceptions and suspension. No actor isolation, AOT or zero-GC guarantees may be inferred from syntax acceptance alone.
 
+### Explicit counter and compound updates (implementation extension, 2026-11-27)
+
+The next migration profile uses `set` for updates of an existing binding, including the update clause of a regular loop. Both parenthesized and unparenthesized headers are equivalent.
+
+```atto
+for let i = 0; i < 10; set i++ { }
+for (let i = 10; i > 0; set --i) { }
+for let i = 0; i < 10; set i += 2 { }
+let x = 5;
+set x++;
+set --x;
+set x += 2;
+set x -= 2;
+set x *= 3;
+```
+
+Prefix and postfix increments are equivalent when the result is discarded. Each operation resolves one existing local, reads its old value once, evaluates any RHS once, applies existing typed checked arithmetic, and publishes only on success. Fixed, missing, incompatible or invalidated bindings reject. No implicit allocation, wraparound, field/index expansion, or additional referent-write permission. In the strict profile bare `i++`, `i--`, `i += e`, and `i = e` reject, including in loop clauses; `let i++` rejects in every profile. Continue targets the update clause; break does not execute it. Loop initialization declares a fresh scoped binding; loop updates do not shadow it.
+
+The first implementation slice covers scalar integer ++/-- and supported arithmetic compound operators. Division, bitwise and shifts require the backend's existing checked operation and grammar; unsupported operations remain fail closed. Do not resurrect removed `%` merely to support `%=`. The expression result of `set!` (old value for postfix, new for prefix/compound) and multiple counters remain proposals, not portable positive test oracles. Legacy migration mode is temporary and does not certify strict default behavior. Actor-loop cooperation, full ownership, and all alternate frontends remain separately gated.
+
 ### Backend and tooling gates
 
 Normalize aliases in typed AST/HIR while retaining spans and any real cast. Require equivalent diagnostics, typed IR and observable outputs; preserve formatter round-trip/idempotence and no semantic rewrite of casts. Test all eight compiler lanes (Java/GraalVM, LLVM, .NET NativeAOT, Rust, independent Wasm, JS, Forge, Cranelift), including actual guest execution, explicit rejection diagnostics, no illegal artifact, ownership/borrow and actor isolation, and AOT where applicable. No source-only test or zero-step Actions run constitutes compiler execution. Keep the older v1 descriptions below as historical implementation context until each dependent contract and compiler is reconciled.
