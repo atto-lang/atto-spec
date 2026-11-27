@@ -29,3 +29,5 @@ Each source profile admits at most 128 quantity declarations, 32 distinct dimens
 ## Evidence
 
 The executable reference semantics live in `atto-common-source/reference/verified-core`. The source corpus and its expected observations live in `atto-platform-conformance/fixtures/verified-core-quantities-v1`. Verify accepted quantities through each compiler's ordinary source entry point and a real generated guest. For static failures compare the diagnostic category and assert that no executable artifact was published. Compare execution failures separately, including zero and signed-minimum division. This profile has no ABI for exporting units, runtime conversions, or dynamically supplied quantity/refinement values. Those continue in later slices of the RFC.
+
+See [the staged standard measurement and mathematical refinement contract](standard-measure-refinements-v1.md) for the planned catalog, generic predicates, and additional evidence gates; this does not expand the admitted v1 source profile.
