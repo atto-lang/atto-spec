@@ -107,6 +107,21 @@ without their declared effect. Explicit checked `readch` / `writech`
 and other explicit suspension operations retain their existing rules.
 Do not change method result types or error ABI as part of this decision.
 
+Compiler implementation must preserve two independent facts: explicit
+source suspension and implicit runtime parking. Propagate both through
+resolved call edges, recursive components and specialized callback
+targets; ordinary error handlers must not erase either fact. Dynamic
+or unresolved calls cannot prove nonparking. Pure/effect-free admission
+must still reject output; an absent suspension annotation grants no
+I/O authority.
+
+Cancellation of a FIFO head must release its reservation and advance a
+fitting successor without waiting for an unrelated sink completion.
+Terminal shutdown failure must settle outstanding delivery/flush
+receipts without later reporting success for those failed receipts.
+Host bytes already written cannot be undone. Tests distinguish
+admission, physical delivery and continuation dispatch.
+
 Implementation requirements:
 - One ordered admission/consumer path per descriptor, shared across aliases
   and all adapters. stdout and stderr have separate order; use finite
