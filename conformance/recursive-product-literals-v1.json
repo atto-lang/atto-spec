@@ -228,7 +228,7 @@
     {
       "id": "quoted-call-duplicate-escaped",
       "kind": "reject",
-      "source": "fnc f(int x) {} f(\"x\"=1,\"\\u{78}\"=2);",
+      "source": "fnc f(int x) {} f(\"x\"=1,\"\\u0078\"=2);",
       "expect": "duplicate decoded parameter label"
     },
     {
@@ -732,7 +732,7 @@
     {
       "id": "quoted-label-escaped-duplicate",
       "kind": "reject",
-      "source": "const r={\"x\":1,\"\\u{78}\"=2};",
+      "source": "const r={\"x\":1,\"\\u0078\"=2};",
       "expect": "duplicate decoded label"
     },
     {
@@ -798,7 +798,7 @@
     {
       "id": "quoted-label-nul",
       "kind": "reject",
-      "source": "const r={\"x\\u{0}\":1};",
+      "source": "const r={\"x\\u0000\":1};",
       "expect": "decoded NUL"
     },
     {
@@ -860,6 +860,138 @@
       "kind": "reject",
       "source": "const p=x:={y:42}; const Record r=p;",
       "expect": "no implicit Pair extraction"
+    },
+    {
+      "id": "call-direct-pair",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p) {} f(a:=5);",
+      "expect": "one positional Pair key a value 5, same AST/value as grouped control"
+    },
+    {
+      "id": "call-two-direct-pairs",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p,Pair<int> q) {} f(a:=5,b:=8);",
+      "expect": "two positional Pair arguments in lexical order"
+    },
+    {
+      "id": "call-pair-then-named",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p,int n) {} f(a:=5,n=8);",
+      "expect": "one positional Pair then named scalar"
+    },
+    {
+      "id": "call-pair-after-named",
+      "kind": "reject",
+      "source": "fnc f(int n,Pair<int> p) {} f(n=8,a:=5);",
+      "expect": "positional Pair after named"
+    },
+    {
+      "id": "call-pair-to-scalar",
+      "kind": "reject",
+      "source": "fnc f(int a) {} f(a:=5);",
+      "expect": "Pair cannot become named scalar"
+    },
+    {
+      "id": "call-grouped-pair-to-scalar",
+      "kind": "reject",
+      "source": "fnc f(int a) {} f((a:=5));",
+      "expect": "grouped Pair cannot become scalar"
+    },
+    {
+      "id": "call-direct-pair-to-record",
+      "kind": "reject",
+      "source": "fnc f(Record r) {} f(a:=5);",
+      "expect": "no implicit Pair-to-Record"
+    },
+    {
+      "id": "call-two-pairs-not-tuple",
+      "kind": "reject",
+      "source": "fnc f(Tuple t) {} f(a:=5,b:=8);",
+      "expect": "two arguments, never coalesce"
+    },
+    {
+      "id": "call-one-tuple-not-two-pairs",
+      "kind": "reject",
+      "source": "fnc f(Pair<int> p,Pair<int> q) {} f((a:=5,b:=8));",
+      "expect": "one Tuple, never spread"
+    },
+    {
+      "id": "call-spaced-pair-token",
+      "kind": "reject",
+      "source": "fnc f(Pair<int> p) {} f(a: =5);",
+      "expect": "not adjacent :=; malformed named arg"
+    },
+    {
+      "id": "call-comment-separated-pair-token",
+      "kind": "reject",
+      "source": "fnc f(Pair<int> p) {} f(a:/* gap */=5);",
+      "expect": "not adjacent :=; malformed named arg"
+    },
+    {
+      "id": "call-quoted-pair-vs-named",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p) {} f(\"a\":=5);",
+      "expect": "lexical Pair key a, not named"
+    },
+    {
+      "id": "call-pair-with-spaces",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p) {} f(a := 5);",
+      "expect": "adjacent separator despite surrounding whitespace"
+    },
+    {
+      "id": "call-pair-effect-order",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p,Pair<int> q) {} f(a:=tick(1),(b:=tick(2)));",
+      "expect": "tick 1 then 2 exactly once, two distinct slots"
+    },
+    {
+      "id": "typed-record-prefix-reject",
+      "kind": "reject",
+      "source": "const Record r=(a:5).a;",
+      "expect": "declaration-only parenthesized Record cannot be postfix prefix"
+    },
+    {
+      "id": "typed-record-newline",
+      "kind": "accept",
+      "source": "const Record r = ()\nconst x = ()\n",
+      "expect": "typed empty Record and separate empty Tuple, existing newline terminator"
+    },
+    {
+      "id": "typed-record-duplicate-mixed-separators",
+      "kind": "reject",
+      "source": "const Record r=(a:1,a:=2);",
+      "expect": "duplicate static field despite separator difference"
+    },
+    {
+      "id": "record-of-invalid-quoted-colon",
+      "kind": "reject",
+      "source": "const r=Record.of(\"a-b\":5);",
+      "expect": "invalid static identifier"
+    },
+    {
+      "id": "record-of-invalid-quoted-equals",
+      "kind": "reject",
+      "source": "const r=Record.of(\"a-b\"=5);",
+      "expect": "invalid static identifier"
+    },
+    {
+      "id": "typed-record-empty-passed",
+      "kind": "accept",
+      "source": "const Record r=(); fnc f(Record x) {} f(r);",
+      "expect": "ordinary Record value; no anonymous empty inference"
+    },
+    {
+      "id": "inferred-record-mixed-equals",
+      "kind": "reject",
+      "source": "const r=(a:1,b=2);",
+      "expect": "inferred parens only colon/capture"
+    },
+    {
+      "id": "brace-separator-comment-gap",
+      "kind": "reject",
+      "source": "const r={a:/* gap */=5};",
+      "expect": "not adjacent :="
     }
   ]
 }
