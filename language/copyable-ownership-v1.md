@@ -4,11 +4,11 @@
 
 ## Decision
 
-- **copy! expression** means *shallow copy*. Evaluate its operand exactly once. For an identity-bearing class, construct a **fresh concrete root object** and copy every immediate field without recursively copying referenced objects. Embedded value fields are copied by value. Immutable references may be reused; mutable references may be reused **only** when a statically verified sharing/ownership capability makes that alias legal.
+- **copy! expression** means *shallow copy*. Evaluate its operand exactly once. For an identity-bearing class, construct a **fresh concrete root object** and copy every immediate field without recursively copying referenced objects. Embedded value fields are copied by value. Immutable references may be reused; mutable references may be reused **only** with a verified transitive read-only sharing capability applying to source, result and every alias.
 - **copy!! expression** means *deep copy*. Evaluate its operand exactly once. Construct a **fresh mutable graph**, recursively duplicating owned mutable reachable objects, while preserving internal repeated references and cycles where the backend admits a verified graph copier. Proven immutable interned data may be shared.
 - **obj.copy()** corresponds to copy! obj and **obj.copy_deep()** corresponds to copy!! obj, subject to the same static witness and dynamic subtype obligations.
 - The two public methods accept **zero arguments**. Implementation-specific allocation/graph context is an **invisible compiler/runtime parameter**, not a user-visible argument. Application-specific variants may have named methods like copy_with(options), but operators NEVER forward arguments.
-- copy! and copy!! require separate capabilities. DeepCopyable does not imply Copyable: a type with uniquely owned mutable descendants may support a deep copy but not a shallow copy. Do not automatically change copy! into copy!! when shallow copying is unsafe.
+- copy! and copy!! require separate capabilities. DeepCopyable does not imply Copyable: a type with descendants that cannot safely enter read-only sharing may support deep but not shallow copy. Unique ownership alone does not preclude a safe transition to read-only sharing. Do not automatically change copy! into copy!! when shallow copying is unsafe.
 - take! transfers ownership of the original. share! shares the original identity with separately verified permissions. Neither is an alias or fallback for either copy operator.
 
 These are copying operations, **not** ordinary passing/binding: passing a class as a parameter never silently copies it.
@@ -97,7 +97,7 @@ effects/identity observability and cleanup proof.
 the callee observes a different root identity; `inspect(borrow! x)` sees
 the original; shallow legal shared children retain identity while deep
 mutable children do not; `consume(take! copied)` consumes once; bare copy
-temporaries to consuming formals reject; `copy!` of a unique nested mutable
+temporaries to consuming formals reject; `copy!` of an unprotectable nested mutable
 child rejects with E_COPY_SHALLOW_ALIAS; failures, exceptions and cancellation
 run correct loan cleanup/drop; copied temporaries cannot escape as borrowed
 results; repeated arguments obey left-to-right evaluation and live-loan
@@ -154,13 +154,28 @@ For identity-bearing classes, the verified method returns **new Self** (a new lo
 | Array<Array<int>> | New outer storage; inner array *references* are shared only if legally shareable; otherwise E_COPY_SHALLOW_ALIAS | New outer storage plus new inner arrays |
 | List<T>, Set<T>, Map<K,V> | New container metadata/buckets; shallow element/key/value copy with alias proofs, including hash/equality invariant checks | New containers; recursively copy element/key/value with cycle/repeated-reference preservation |
 | Borrowed view/slice, unique handle, actor, mutex, channel, socket | Reject without a type-specific verified capability; never copy raw ownership | Reject unless a separately proved deep reconstruction operation exists |
-| Shared<T>, immutable reference | Retain same child with authorized sharing and correct refcount/lifetime | Recursively duplicate if contract calls for it; immutable backing may be reused |
+| Shared<T>, immutable reference | Retain same child with verified read-only sharing and correct lifetime (no required reference counting) | Recursively duplicate if contract calls for it; immutable backing may be reused |
 
-A shallow copy must **not** copy a raw pointer/unique owner handle in a way that creates two independently droppable owners. For a mutable child reference that can legally be shared, preserve the reference identity and introduce exactly the checked sharing/lifetime obligations of the field type. If the child is exclusive/unshareable, fail with E_COPY_SHALLOW_ALIAS and suggest copy!! (if available), a deliberately shareable wrapper, or a resource-specific API. This is deliberate: copy! cannot promise a legal shallow copy of literally *every* object.
+A shallow copy must **not** copy a raw pointer/unique owner handle in a way that creates two independently droppable owners. For a mutable child reference that can legally be shared, preserve the reference identity and introduce exactly the checked sharing/lifetime obligations of the field type. If the child cannot safely transition to read-only sharing, fail with E_COPY_SHALLOW_ALIAS and suggest copy!! (if available) or a resource-specific API. This is deliberate: copy! cannot promise a legal shallow copy of literally *every* object.
 
-For arrays, copy! duplicates the **outer buffer and immediate element slots** (if element representation is inline; copy by value). Reference-typed element slots retain their referents only under share permission. A shallow array copy is not just copying the array descriptor/address, because then the outer container itself would still alias. Empty typed collections must still have an admitted element/key/value plan; no unproved generic specialization may pass only because runtime length is zero.
+For arrays, copy! duplicates the **outer buffer and immediate element slots** (if element representation is inline; copy by value). Reference-typed element slots retain their referents only under a verified transitive read-only sharing permission applying to every alias. A shallow array copy is not just copying the array descriptor/address, because then the outer container itself would still alias. Empty typed collections must still have an admitted element/key/value plan; no unproved generic specialization may pass only because runtime length is zero.
 
-Shallow sharing is not actor transfer: actor-private references must not become accessible to another actor through a copy. Borrowed aliases may not be extended past their valid lifetime or out of critical regions. Shared children remain subject to read/write synchronization and borrower exclusion. A shallow copy is not a shortcut around ownership or mutation isolation.
+Shallow sharing is not actor transfer: actor-private references must not become accessible to another actor through a copy. Borrowed aliases may not be extended past their valid lifetime or out of critical regions. Shared children are read-only under all aliases while protected by shallow sharing; synchronization alone cannot authorize a shared-child mutation. A shallow copy is not a shortcut around ownership or mutation isolation.
+
+## Symmetric read-only shallow sharing (owner-confirmed 2026-11-27)
+
+A single bang copies immediate slots, not their referenced mutable values. Each root retains independent whole-slot replacement rights, subject to its binding, declared field mutability and existing loans; neither root may mutate a shared referent.
+
+- Protection applies transitively through the source, result and every alias, including third copies, private/inherited fields, nested collections, method calls, index writes, mutable borrows, closure captures, interior mutability and host/FFI access. A readonly view of the result alone is unsound.
+- Replacing a whole slot on either root does not change the other root or mutate the old referent. Root arrays/maps have independent outer element/entry storage. Replacing an inner writable slot is permitted only if the containing object itself has independent write authority; replacing an inner slot through a shared containing object is a mutation of that object and is forbidden. Nested shared collections cannot be mutated. Fixed-slot and normal mutability rules still apply.
+- Evaluate the operand once; establish all protection and lifetime obligations before publishing the copy. Reject conflicting mutable loans, unknown writable aliases, opaque FFI and unproved ownership. Failure is atomic; no leaked protection or partial copy.
+- Copies of copies, repeated paths, escaped read loans, generations, exceptions and cancellation must retain protection until no live obligation remains. Replacing a field or dropping one copy cannot release another's protection.
+- Conservative initial policy: recovery of nested write authority requires proof of exclusive ownership and no outstanding loans/protection. Exact recovery timing is not part of the owner decision; documented lexical retention is permitted initially. An implementation may recover authority earlier only after proving all aliases and read loans have retired, including across branches, calls and exceptional exits. Independently owned replacement values follow ordinary ownership rules.
+- Cycles that make the source root a protected descendant must fail closed until a sound policy can also preserve independent root-slot replacement.
+- No new cross-actor authority; actor heaps remain isolated. No mandatory GC, JIT, reflection, serialization or implicit copy-on-write.
+- Copy!! duplicates mutable reachable values even if currently protected by shallow sharing, with a stable read and DeepCopyable proof. It must not thaw or mutate the source; permanently immutable backing may still be shared.
+
+Acceptance requires compiled positive guests for independent source/result root writes, reads, symmetric replacement, third copies, outer collection changes and deep-copy independence; negative guests for nested mutation through any alias, mutable borrow, mutating method, shared collection insertion, incompatible existing aliases, fixed slots and actor/lifetime escape. A negative must identify the forbidden operation, not merely reject the copy expression. Require exact compiler and fixture heads/trees, executed steps and independent review. See [portable fixture PR #603](https://github.com/atto-lang/atto-platform-conformance/pull/603), [Java runtime substrate #1890](https://github.com/atto-lang/atto-source.java/pull/1890) and [Rust flat-class witness #609](https://github.com/atto-lang/atto-source.rs/pull/609). No backend completion claimed.
 
 ## Deep-copy graph protocol
 
@@ -267,6 +282,8 @@ Copying data into another actor's arena requires a **destination-aware allocatio
 - E_COPY_UNPROVEN: missing appropriate mode-specific witness, unresolved generic/dispatch, wrong Object virtual target.
 - E_COPY_FORBIDDEN: @NoCopy, unique resource, actor-private disallowed type, or forbidden payload.
 - E_COPY_SHALLOW_ALIAS: mutable nested alias is not shareable or would create two unique/droppable owners.
+- E_COPY_READONLY: an operation attempts mutation or a mutable borrow of a descendant protected by a live shallow-sharing obligation. Report the forbidden operation, not the earlier copy expression.
+- E_COPY_READONLY_SLOT: attempted replacement of a fixed outer slot in the shallow-sharing profile; ordinary declared mutability rules still apply.
 - E_COPY_TRANSITIVE: nested type/field/index cannot satisfy the chosen copy mode; report provenance.
 - E_COPY_GRAPH_UNPROVEN: unsupported deep-copy graph topology, depth, cycles, or dynamic subtype.
 - E_COPY_ALIAS: copy or deep copy returns same root identity; deep copy retains unauthorized source mutable nodes.
@@ -278,9 +295,9 @@ Copying data into another actor's arena requires a **destination-aware allocatio
 
 ## Execution and audit acceptance
 
-1. Parser + formatter round-trip both bang spellings and reject copy! !x as an accidental deep copy, missing operand, and invalid user arguments to the operators.
+1. Parser + formatter round-trip both bang spellings and preserve copy! !x as shallow copying of a logical negation, never as a deep copy, missing operand, and invalid user arguments to the operators.
 2. Actual compiled guest tests: copy! Array<int> allocates a new outer buffer; copy! Array<Shared<Array<int>>> creates a new outer buffer but retains child references; copy!! Array<Array<int>> duplicates children; nested repeated child pointers remain repeated within the deep result, not shared with source; deep cycles succeed only with verified memoized support.
-3. Actual negative guest tests: copying nested exclusive owners shallowly, unshareable actor/private handles, @NoCopy, unproved erased types, source-identity copy return, shallow alias in deep result, wrong subtype, unverified custom override, wrong effect, dangling borrowed view, and resource double-drop.
+3. Actual negative guest tests: shallow copying nested owners that cannot safely transition to transitive read-only sharing, unshareable actor/private handles, @NoCopy, unproved erased types, source-identity copy return, shallow alias in deep result, wrong subtype, unverified custom override, wrong effect, dangling borrowed view, and resource double-drop.
 4. Test custom copy() versus copy_deep() overrides, their independent baselines, zero argument arity, once-only source evaluation, ancestor hook composition, and failure rollback.
 5. Require exact-source compiler-backed parser/type/lowering/guest and native-AOT/sanitizer evidence independently from Java/GraalVM, LLVM, .NET, Wasm, Forge and Rust/JS where supported. Host-only graph tests are **not** compiler support. A zero-step Actions run is **NOT_EXECUTED**.
 
