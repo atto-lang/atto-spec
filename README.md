@@ -92,6 +92,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [Inline collections and nominal Entry/Map mutation (candidate)](language/inline-collection-literals-v1.md): `key => value` Entry literal, `{key => value}` Map literal, checked mutable upserts, `get(): Option<V>`; target only, not guest-certified ([conformance #99](https://github.com/atto-lang/atto-platform-conformance/pull/99)).
 
+- [Named parametric bundles and explicit inference v1](language/parametric-bundles-inference-v1.md): target bundle application, seeded refinement and literal specialization; not guest-verified.
+
 - [Named-generic collection layouts](spec/27-collection-layout-named-generics.md): target layout and nominal struct field initialization; host reference only.
 
 - [Telemetry source identity and tracing](spec/27-telemetry-source-identity-and-tracing.md): target contract; host reference checks do not establish guest execution.
