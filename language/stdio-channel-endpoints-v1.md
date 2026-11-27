@@ -45,6 +45,38 @@ flush. A typed write result may not be discarded when the checker requires
 inspection. The existing channel `try` and `nb` variants retain their
 separate ownership/ready/Future contracts and must not be substituted.
 
+## Canonical stdout method spellings
+
+The canonical source-level stdout method calls are both:
+
+```atto
+stdio.out.write("Hello");
+process.stdout.write("Hello");
+```
+
+Both names resolve to the same authorized context-owned stdout endpoint.
+Neither is a shorthand for stderr or a new host capability. For the
+portable string-output profile, the same payload produces the same raw
+UTF-8 bytes without an implied newline, with the same ordering and
+failure behavior under the selected endpoint profile. Ordinary namespace
+resolution applies: a shadowed name must not be treated as a privileged
+host intrinsic. Preserve the existing permission, suspension, cancellation,
+generation and ownership checks. These spellings do not add implicit
+overloads, grant unrestricted host I/O, or establish the precise
+return type of every existing implementation's write method.
+
+New source examples and fixtures use one of these spellings, not
+`stdio.stdout.write(...)`. Any compatibility acceptance of that older
+spelling must remain explicit, not advertised as canonical. Historical
+hash-pinned fixtures and receipts must retain their original bytes.
+Formatter and LSP support must preserve either canonical spelling.
+
+[Canonical stdout conformance candidate #703](https://github.com/atto-lang/atto-platform-conformance/pull/703)
+adds independent raw-output, mixed-alias deferred cleanup, and trapped
+task fixtures. These are target examples, not claims of compiled guest
+parity. Unsupported profiles must fail closed and must not silently
+substitute an unrelated output adapter.
+
 ## Text and frame portability
 
 The portable CLI text profile uses UTF-8 and LF-delimited stdin records;
