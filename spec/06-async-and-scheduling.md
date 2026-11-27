@@ -105,9 +105,9 @@ blob SHAs and three relevant test files (319 pinned paths including `pom.xml`).
 passed 14 JVM guest/channel tests (6 new, 8 existing) with zero
 failures, errors or skips. The production compiler change is **in review,
 not merged**; the run was focused rather than full-repository, Native Image
-AOT or multi-backend conformance. Channel `<<`/`>>` remains
-**TARGET / NOT IMPLEMENTED**, tracked by
-[issue #3171](https://github.com/ores-truffle-oreslang/oreslang-source.java/issues/3171).
+AOT or multi-backend conformance. Channel `<<`/`>>` I/O statements (`sink << value;`, `source >> val name;`,
+`val name << source;`) are implemented on Java (atto-source.java 12ded133d8, desugared
+to exactly `writech`/`readch`); LLVM and .NET reject them before code emission.
 
 ### Static select: expression versus procedural statement (TARGET)
 
@@ -115,21 +115,31 @@ The static form arbitrates one set of channel/Future operations. The following
 target reconciles the Java static-select contract with the language-level
 statement/expression distinction. It is not a certification of any backend.
 
+A value select is a Future: `select` registers its arms and returns
+immediately, and `await` waits for the result. There is no separate
+nonblocking spelling for the value form (decided 2026-11-27).
+
 | Form | Result and control boundary |
 | --- | --- |
-| `select { ... }` / `select over ... end` | Value expression of a common arm type T; arm return supplies the result, not a callable return |
-| `do select { ... }` / `do select over ... end` | Procedural statement; return exits the enclosing callable, break/continue target its lexical loop |
-| `nb select { ... }` / `nb select over ... end` | Tracked Future<T> settled only after the selected arm and its cleanup finish |
-| `try select` | Immediate probe; no pending registration on a miss; static result/return shape needs a separate decision |
+| `select { ... }` / `select over ... end` | `Future<T>`, returned immediately. The arms are registered atomically at evaluation; the Future settles with the winning arm's value of the common arm type `T` |
+| `await select { ... }` / `await select over ... end` | `T`: suspends the logical task (never the carrier) until one arm commits, then evaluates that arm's value in place, so the arm's value expression may itself suspend |
+| `try select { ... }` | `Option<T>`: one immediate probe; `None` on a miss, with no pending registration |
+| `do select { ... }` / `do select over ... end` | Procedural statement, no value. Block arms; `return` exits the enclosing callable, `break`/`continue` target its lexical loop |
+| `nb select { ... }` (value position) | Rejected: `select` already returns a Future. Migrate to `select` (Future) or `await select` (value) |
 | `do nb select` | Legacy detached Java statement only; target migration is an observed Future<void>, not silent result discard |
 | `do try select` | Not admitted in the current Java grammar |
 
-The canonical target uses the space-separated `nb select` spelling. Any
-hyphenated legacy spelling requires explicit migration evidence. The previous
-`do select<T>` example contradicted procedural return semantics: a typed result
-belongs to the expression form. Explicit `select<T>` is a separately gated
-syntax proposal; do not infer support. The following examples use the current
-Java arm spelling, with result assignment shown as target syntax:
+Value arms are expressions after the slim arrow: `when readch ch: int v -> v + 1`,
+`when await f: v -> v`, `when writech ch, x: -> 1`, `default: -> 0`, optionally
+separated by `,` or `;`. Every arm must produce a value, and all arms must have
+one common type `T`. The arm values of a `select` Future are evaluated after the
+winning arm commits, so they must not suspend; use `await select` to suspend
+inside the winning arm.
+
+A select Future must not be discarded: an unawaited registration could still
+consume a message or publish a send. A statement `select { ... };` whose value
+is dropped is rejected; bind it, `await` it, or use `do select` with block
+arms. Explicit `select<T>` remains a separately gated syntax proposal.
 
 ```atto
 do select over
@@ -142,10 +152,13 @@ do select over
   default: -> {}
 end
 
-val int result = select over
-  when readch updates: int value -> { return value; }
-  default: -> { return 0; }
+val int result = await select over
+  when readch updates: int value -> value,
+  default: -> 0
 end;
+
+val Future<int> pending = select { when readch updates: int value -> value * 2 };
+val int doubled = await pending;
 ```
 
 Only the enclosing select specifies its wait mode and policy; do not perform
@@ -173,10 +186,14 @@ dispatch must not register a waiter; explicit priority/random and default fair
 selection require backend-specific conformance tests.
 
 Current Java main preserves bare statement and detached nonblocking forms for
-compatibility. The value-expression and tracked completion integrations
-([Java #696](https://github.com/atto-lang/atto-source.java/pull/696),
-[Java #973](https://github.com/atto-lang/atto-source.java/pull/973)) remain
-separately gated; do not merge historical parser/runtime files wholesale.
+compatibility. Java implements the value forms above (`select` Future,
+`await select`, `try select`, with the `nb select` value form rejected).
+Tracked `Future<void>` completion for detached statements
+([Java #973](https://github.com/atto-lang/atto-source.java/pull/973)) remains
+separately gated. The older value-select integration
+([Java #696](https://github.com/atto-lang/atto-source.java/pull/696)) uses the
+superseded `select -> T` / `nb select -> Future<T>` split. Do not merge
+historical parser/runtime files wholesale.
 Require exact-head guest execution, negative parser/type/ownership fixtures,
 return/defer and actor STOP races, native AOT and formatter round-trip proof.
 Backends without checked lowering must reject unsupported forms before code
