@@ -22,6 +22,10 @@ Explicit `infer` is already part of the target return annotation contract. The s
 
 See [canonical lambdas and AOT closure semantics](../language/canonical-lambdas-and-closures-v1.md) for capture provenance, effect checks and full-AOT code-plus-environment lowering. Existing typed inline annotations, braced bodies and separately gated comma-body profiles remain intact.
 
+## Callable invocation intrinsics (v1 target)
+
+Statically typed callable values expose `.call(args...)` and `.apply(tuple)` through compiler intrinsic lowering, not runtime methods. No intrinsic `bind`, receiver substitution or automatic partial application. Existing pipeline-lambda tuple destructuring remains intact. See the [callable invocation and runtime footprint contract](../language/callable-invocation-intrinsics-v1.md); backend execution and allocation evidence are separately gated.
+
 ## Signatures and visibility
 
 ```atto
