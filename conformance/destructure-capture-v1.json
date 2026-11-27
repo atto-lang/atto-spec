@@ -1,0 +1,199 @@
+{
+  "schema": "atto.destructure-capture.v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "notes": "Contextual fragments; harness must provide typed RHS and observable effects. Ownership syntax candidate; unsupported is not semantic pass.",
+  "vectors": [
+    {
+      "id": "tuple_capture",
+      "kind": "accept",
+      "source": "const (a,b,c) as r = foo();",
+      "expect": "Tuple capture, exact arity"
+    },
+    {
+      "id": "record_capture",
+      "kind": "accept",
+      "source": "const {a,b,c} as r = foo();",
+      "expect": "original Record, retain unselected fields"
+    },
+    {
+      "id": "array_capture",
+      "kind": "accept",
+      "source": "const [a,b,c] as r = foo();",
+      "expect": "Array capture, checked length"
+    },
+    {
+      "id": "leaf_mut",
+      "kind": "accept",
+      "source": "const [a,mut b,c] as r = foo();",
+      "expect": "b mutable referent only, c inherits const"
+    },
+    {
+      "id": "leaf_let",
+      "kind": "accept",
+      "source": "const [a,let b,c] as r = foo();",
+      "expect": "b rebindable, c const"
+    },
+    {
+      "id": "leaf_reset",
+      "kind": "accept",
+      "source": "let mut [const a,b,val c] as r = foo();",
+      "expect": "a readonly fixed, b rebindable mutable, c fixed mutable"
+    },
+    {
+      "id": "explicit_leaves",
+      "kind": "accept",
+      "source": "[const a,let mut b,val c] as r = foo();",
+      "expect": "capture const"
+    },
+    {
+      "id": "explicit_capture",
+      "kind": "accept",
+      "source": "[const a,let mut b,val c] as let r = foo();",
+      "expect": "capture rebindable readonly"
+    },
+    {
+      "id": "tuple_record",
+      "kind": "accept",
+      "source": "const (a,b,c) as Record r = foo();",
+      "expect": "explicit named record conversion"
+    },
+    {
+      "id": "tuple_array",
+      "kind": "accept",
+      "source": "const (a,b,c) as Array r = foo();",
+      "expect": "homogeneous tuple conversion"
+    },
+    {
+      "id": "nested",
+      "kind": "accept",
+      "source": "const ({name,age} as person,[x,let mut y,z] as coordinates) as result = foo();",
+      "expect": "nested captures, evaluate once"
+    },
+    {
+      "id": "empty_record",
+      "kind": "accept",
+      "source": "const {} as r = foo();",
+      "expect": "matching empty record"
+    },
+    {
+      "id": "empty_tuple",
+      "kind": "accept",
+      "source": "const () as r = foo();",
+      "expect": "matching empty tuple"
+    },
+    {
+      "id": "scalar_rebind",
+      "kind": "accept",
+      "source": "const [a,let b,c] as r = foo(); b = 9;",
+      "expect": "independent scalar, r unchanged"
+    },
+    {
+      "id": "disjoint_loan",
+      "kind": "accept",
+      "source": "const [borrow! mut a,borrow! b] as r = foo();",
+      "expect": "disjoint paths when proven"
+    },
+    {
+      "id": "no_default",
+      "kind": "reject",
+      "source": "[const a,b,val c] as r = foo();",
+      "expect": "b lacks inherited policy"
+    },
+    {
+      "id": "bare_mut",
+      "kind": "reject",
+      "source": "[mut a,const b] as r = foo();",
+      "expect": "mut lacks inherited policy"
+    },
+    {
+      "id": "duplicate_mut",
+      "kind": "reject",
+      "source": "const [a,val mut b,c] as r = foo();",
+      "expect": "duplicate mut"
+    },
+    {
+      "id": "duplicate_binding",
+      "kind": "reject",
+      "source": "const [a,a] as r = foo();",
+      "expect": "duplicate leaf"
+    },
+    {
+      "id": "capture_collision",
+      "kind": "reject",
+      "source": "const [a,b] as a = foo();",
+      "expect": "duplicate capture"
+    },
+    {
+      "id": "nested_collision",
+      "kind": "reject",
+      "source": "const ({a} as r,[b] as r) as whole = foo();",
+      "expect": "duplicate nested capture"
+    },
+    {
+      "id": "tuple_arity",
+      "kind": "reject",
+      "source": "const (a,b) as r = tuple3();",
+      "expect": "shape mismatch"
+    },
+    {
+      "id": "kind_mismatch",
+      "kind": "reject",
+      "source": "const [a,b] as r = tuple2();",
+      "expect": "Array pattern not Tuple"
+    },
+    {
+      "id": "unknown_field",
+      "kind": "reject",
+      "source": "const {missing} as r = foo();",
+      "expect": "unknown field"
+    },
+    {
+      "id": "array_heterogeneous",
+      "kind": "reject",
+      "source": "const (a,b) as Array r = int_and_string();",
+      "expect": "incompatible elements"
+    },
+    {
+      "id": "conversion_discard",
+      "kind": "reject",
+      "source": "const (a,_) as Record r = foo();",
+      "expect": "missing field label"
+    },
+    {
+      "id": "partial_move_read",
+      "kind": "reject",
+      "source": "const [take! a,b] as r = foo(); consume(r[0]);",
+      "expect": "moved path inaccessible"
+    },
+    {
+      "id": "partial_move_whole",
+      "kind": "reject",
+      "source": "const [take! a,b] as r = foo(); consume(r);",
+      "expect": "whole-value move invalid"
+    },
+    {
+      "id": "overlap_loan",
+      "kind": "reject",
+      "source": "const [borrow! mut a,b] as r = foo(); mutate(r[0]); use(a);",
+      "expect": "overlapping exclusive access"
+    },
+    {
+      "id": "readonly_upgrade",
+      "kind": "reject",
+      "source": "const [mut a,b] as r = readonly_source(); mutate(a);",
+      "expect": "no authority escalation"
+    },
+    {
+      "id": "escaping_loan",
+      "kind": "reject",
+      "source": "const [borrow! a,b] as r = foo(); return a;",
+      "expect": "borrow escapes temporary"
+    },
+    {
+      "id": "empty_no_capture",
+      "kind": "reject",
+      "source": "const [] = foo();",
+      "expect": "empty pattern needs capture"
+    }
+  ]
+}
