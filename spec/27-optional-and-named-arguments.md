@@ -12,13 +12,13 @@
 | `int? x` | `x: int?` | Required Option<int> |
 | `int? x?` | `x?: int?` | Omittable Option<int>, implicit omitted value None |
 | `int x? ??= 10` | `x?: int ??= 10` | Omittable scalar |
-| `int? x ?? 3` | `x: int? ?? 3` | Required Option with None fallback |
-| `int? x? ?? 3 ??= 4` | `x?: int? ?? 3 ??= 4` | Independent None and omission defaults |
+| `int? x ?= 3` | `x: int? ?= 3` | Required Option with None fallback (`??` alias) |
+| `int? x? ?= 3 ??= 4` | `x?: int? ?= 3 ??= 4` | Independent None and omission defaults |
 
-`T?` is exactly `Option<T>`; formal-name `?` marks omittability. Both declaration orders are canonical and mixed order is legal. `??` handles an explicitly supplied outer None; `??=` handles an absent/omitted input. In V2 formal declarations, require explicit name-level omission marker for `??=` (proposed integration rule); reject bare `=` as a default delimiter, duplicate clauses, reverse clause order, non-Option None fallback and scalar omittable declarations without an omission default. Legacy `Option[T]` is a compiler warning with a suggested `Option<T>` fix, not a distinct type. Contextual payload-to-Some lifting in a default clause is proposed only when the expected Option type is unambiguous; no implicit lifting at call boundaries, no recursive/nested coercion. Explicit Some/None defaults remain legal. Parenthesize nested top-level fallback expressions to avoid delimiter ambiguity.
+`T?` is exactly `Option<T>`; formal-name `?` marks omittability. Both declaration orders are canonical and mixed order is legal. `?=` is the preferred formal-default spelling for explicitly supplied outer None; `??` remains a semantically identical alias in formal clauses. `??=` handles absent/omitted input. These are not assignments. Match contiguous operators; never split `?=`, `??` or `??=` across whitespace/comments. A mixed `?=` and `??` clause is a duplicate None fallback, not two distinct defaults. Preserve type-position `T?`, formal-name `x?`, postfix expression propagation `value?`, optional member access `?.`, optional checked cast `as?` and ternary `? :`. Standalone `?=` is a proposed nonmutating expression alias and requires its own grammar/effect qualification; this formal-clause change does not enable it. In V2 formal declarations, require explicit name-level omission marker for `??=` (proposed integration rule); reject bare `=` as a default delimiter, duplicate clauses, reverse clause order, non-Option None fallback and scalar omittable declarations without an omission default. Legacy `Option[T]` is a compiler warning with a suggested `Option<T>` fix, not a distinct type. Contextual payload-to-Some lifting in a default clause is proposed only when the expected Option type is unambiguous; no implicit lifting at call boundaries, no recursive/nested coercion. Explicit Some/None defaults remain legal. Parenthesize nested top-level fallback expressions to avoid delimiter ambiguity.
 
 ```atto
-define fnc Option<int> • foo(x?: int? ?? 3 ??= 4) {
+define fnc Option<int> • foo(x?: int? ?= 3 ??= 4) {
     if x is omitted do
         stdio.out.write("omitted");
     fi
