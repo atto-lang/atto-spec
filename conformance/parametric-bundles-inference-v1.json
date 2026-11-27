@@ -486,6 +486,14 @@
       "expected": "exit 42; source evaluation order must be preserved",
       "status": "AUTHORED_NOT_EXECUTED",
       "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-source-order-effects",
+      "outcome": "accept",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc mark(int n):int { stdio.println(n); return n; } fnc main():int { let p: Point = new {y:mark(2),x:mark(40)}; return p.sum(); }",
+      "expected": "stdout lines 2 then 40 exactly once; exit 42; constructor argument order x,y",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
     }
   ]
 }
