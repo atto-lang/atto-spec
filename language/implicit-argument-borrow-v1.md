@@ -46,7 +46,7 @@ The compiler must analyze the callee body and the **transitive**, statically res
 
 ## Explicit parameter rebinding v1
 
-**Status: TARGET, opt-in borrow-default profile; guest execution unverified.** Parameter bindings are fixed by default in the borrow-default profile. A function or method implementation can opt an individual parameter into local assignment with `rebind`. `mut` governs writes through the binding. `take!` independently governs ownership transfer at entry.
+**Status: TARGET, opt-in borrow-default profile; guest execution unverified.** Parameter bindings are fixed by default in the borrow-default profile. A function or method implementation can opt an individual parameter into local assignment with the declaration modifier `rebind`. The operation is `set f = expression;`, never `rebind f = expression;` or bare `f = expression;`. `mut` governs writes through the binding. `take!` independently governs ownership transfer at entry.
 
 ```atto
 define class Foo as
@@ -59,7 +59,7 @@ fnc handle_foo(rebind mut Foo f): void {
     z.foo = 8;
   }
   f.foo = 6;
-  f = new Foo();
+  set f = new Foo();
   f.foo = 9;
 }
 
@@ -72,8 +72,26 @@ pub fnc main(): int {
 
 - **Syntax.** `rebind` is contextual in a named formal with a body. The canonical type-first form is `rebind mut Foo f`. The equivalent name-first form is `rebind f: mut Foo` where name-first formals are supported. A copied scalar can use `rebind int n`. Parse a single marker before the existing formal and preserve it through formatting. Existing identifiers spelled `rebind` remain valid. An implicit receiver and bodyless signature have no local parameter binding eligible for this modifier.
 - **Call contract.** The call ABI, argument evaluation, parameter label, and entry ownership and access mode follow the ordinary formal rules. `rebind` belongs to the implementation and does not participate in overload selection, interface matching, or override compatibility. An effect inferred from the body must still reflect actual access to the incoming argument. A write proven to target only a locally owned replacement does not imply a write to that argument.
-- **Assignment.** The binding keeps its declared type and access permissions. A scalar assignment replaces the local copy. A reference-backed binding may receive a compatible, lifetime-checked loan or an owned value under the usual ownership rules. In particular, `new Foo()` produces a locally owned replacement. Assigning a loan cannot promote the borrowed object to ownership. A formal explicitly typed `Borrow<T>` still accepts only values assignable to `Borrow<T>`. Reassigning any fixed parameter is a compile error, independent of field-write permission.
+- **Assignment.** `set` resolves an existing binding and requires its rebinding permission; `let` creates a fresh shadowing binding under the ordinary lexical rules. `rebind` is not a statement and never grants writable referent or owning authority. `set!` remains subject to its separate language contract; this section does not define a second rebind operation. The binding keeps its declared type and access permissions. A scalar assignment replaces the local copy. A reference-backed binding may receive a compatible, lifetime-checked loan or an owned value under the usual ownership rules. In particular, `new Foo()` produces a locally owned replacement. Assigning a loan cannot promote the borrowed object to ownership. A formal explicitly typed `Borrow<T>` still accepts only values assignable to `Borrow<T>`. Reassigning any fixed parameter is a compile error, independent of field-write permission.
 - **Loan checking.** Track the current value's origin, access and ownership across assignments and control-flow joins. A reassignment that invalidates a live loan or reborrow is illegal. A replacement loan must outlive its uses. A consuming use requires ownership on every reaching path. Borrowed results and captures use the actual current origin, so an owned replacement cannot escape as a borrow tied to the original argument. Existing cross-actor, suspension and cancellation checks apply to both the incoming value and the replacement.
+
+### Borrowed-reference reuse and copy-on-rebind
+
+For ordinary nonprimitive parameters the language default is borrowing; opt-in backend flags are migration mechanisms only. A call evaluates arguments once, establishes the same scoped loan as explicit borrowing, and may pass the existing reference/access path directly. Do not require a copied reference cell, additional pointer indirection, heap box, retain/release pair, or object copy merely to enter a callable. Primitive value-copy types retain value semantics.
+
+`rebind` authorizes a callee-local independent binding, not caller write-back. A compiler may copy the reference word into independent local storage at entry if ABI or observability demands it, but should otherwise preserve the incoming SSA value and create a new SSA definition only at an executed `set`. A conditional set uses an SSA join or equivalent verified control flow. Rebind declared but never used must be eligible for the same lowering as a fixed parameter. Mandatory ABI register moves, spills, GC roots and lifetime guards are not forbidden. Never pass a mutable address of the caller's reference slot in place of the borrowed reference, or infer noalias/ownership merely from fixedness. No pointer-to-pointer source type is created. A stable incoming value and its provenance must survive until last use even if other code changes the caller's binding.
+
+```atto
+fnc void • example(rebind Person p, bool change) {
+    stdio.out.write(p.name);
+    if change {
+        set p = bob;
+    }
+    stdio.out.write(p.name);
+}
+```
+
+Here `bob` denotes an in-scope lifetime-compatible Person. Both branches preserve the caller's binding. The target for every callable/backend is unchanged-input reuse, independently proven replacement authority, exactly-once RHS and cleanup, and no unnecessary reference copies. Compare fixed vs unused-rebind vs conditional-rebind optimized IR and allocation/retain evidence; do not claim a speedup against Java without matched measurement.
 
 ### Zero-GC lowering and cleanup
 
