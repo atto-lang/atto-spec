@@ -2,6 +2,42 @@
 
 **Status: PROPOSED / NOT EXECUTED.** This is a prospective semantic decision for review, not evidence that the syntax runs on any compiler backend. See the versioned [implicit-const-v1 contract](../contracts/implicit-const-v1/contract.json).
 
+## 2026-11-27 language-owner amendment — local bindings v2
+
+**Approved design direction; implementation and guest parity NOT VERIFIED.** This amendment supersedes conflicting local-binding rules in the historical v1 sections below and in the v1 compile-time/binding documents (merged #13, #170). Preserve v1 fixtures as historical evidence, not as the v2 acceptance oracle. Reconcile with the earlier runtime-const rule in legacy common-source #203 and conformance #319 before backend integration.
+
+### Canonical local declaration forms
+
+```atto
+int x = 5;
+string name = "Alice";
+const int y = 10;
+const y : int = 10;
+const y = 10 as int;
+const y as int = 10;
+val List[int] numbers = [1, 2, 3];
+const mut List[int] other = [4, 5, 6];
+let int z = 10;
+let int z = 20;
+let z :int = 10;
+let z : int = 20;
+```
+
+Alternative declarations of y above are independent examples, not a single scope containing four y declarations. All four z declarations in order are fresh lexical shadow bindings.
+
+- In a local declaration statement, resolved type-first `T name = expr` is implicit `const T name = expr`. Inferred, prefix-typed, colon-typed and name-first `as`-typed const declarations share one immutable fixed-binding representation.
+- `const mut` and `val` are exact aliases: a fixed binding with the ordinary ownership-checked mutable-value access policy. No distinct mandatory compile-time template, implicit clone or additional allocation. Scalars have no mutable interior and can still be declared with either spelling, but neither permits replacement of the fixed root slot.
+- All local const spellings admit once-only runtime initialization under ordinary type/effect/ownership rules; compile-time folding is an optimization when proven safe, not a requirement imposed by type placement. Preserve independent explicit compile-time requirements (e.g. final const where applicable) and file/module rules; do not silently reinterpret failed typing as val.
+- `let` creates a fresh lexical binding on same-scope redeclaration, with existing explicit rebinding and ownership rules; same-scope const/implicit-const redeclaration fails. val/const mut fixed-binding same-scope redeclaration also fails. Mixed qualifier collision and nested scope policy beyond the existing contract need explicit reconciliation rather than silently changing scope behavior.
+- Bare variable assignment `x = e` is not a declaration or legal reassignment. Explicit `set` / `set!` retain their separate contract; neither may replace fixed bindings. Do not change named arguments, record fields, constructor initialization or pair-forming `:=`.
+- Support prefix/colon/name-first-as type annotations on explicit const, const mut, val and let. Generic, nominal, tuple and other valid resolved types use the existing type grammar. Colon whitespace is insignificant. A postfix initializer `expr as T` is the ordinary expression-level cast, not a token rewrite into an annotation: infer its result type, preserve conversion checks, evaluation order and failures. For an already-T literal the result is equivalent to the explicit T annotation. Distinct casts and incompatible annotations must not be erased.
+- Evaluate the initializer exactly once before installing the new binding. Resolve a shadowing initializer against the preceding environment. Do not silently default-initialize, leak mutation authority through aliases, bypass sealed actor state, or introduce runtime storage/dispatch merely because of syntax.
+- Type-first shorthand applies to local declaration positions only; no change to fields, parameters, module declarations, destructuring, or contextual match/if bindings. Ambiguous type/expression prefixes must be resolved with the real parser, not regular-expression source rewriting.
+
+### Backend and tooling gates
+
+Normalize aliases in typed AST/HIR while retaining spans and any real cast. Require equivalent diagnostics, typed IR and observable outputs; preserve formatter round-trip/idempotence and no semantic rewrite of casts. Test all eight compiler lanes (Java/GraalVM, LLVM, .NET NativeAOT, Rust, independent Wasm, JS, Forge, Cranelift), including actual guest execution, explicit rejection diagnostics, no illegal artifact, ownership/borrow and actor isolation, and AOT where applicable. No source-only test or zero-step Actions run constitutes compiler execution. Keep the older v1 descriptions below as historical implementation context until each dependent contract and compiler is reconciled.
+
 ## Decision and terminology
 
 A **local** declaration whose first syntax constituent is a resolved type and whose binding qualifier is omitted has exactly the meaning of an explicit `const` declaration. Omission changes spelling only, never evaluation time, ownership, storage, or mutability. In particular, the compiler **MUST NOT** recover from a non-constant initializer by silently choosing `val`.
