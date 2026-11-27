@@ -31,6 +31,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 ## Language contracts
 
+- [Pipeline-native control-flow subject patterns v1](language/pipeline-control-subject-patterns-v1.md): pipe-delimited unary subject binders, canonical switch case/default and match on, shared destructuring and once-only evaluation; guest execution not verified.
+
 - [Temporary Java behavioral reference and AOT/zero-GC acceptance baseline](language/java-reference-baseline-v1.md): explicit profiles and evidence boundaries; language-owner decisions remain authoritative.
 
 - [Alternative equality edition proposal](proposals/equality-value-vs-identity.md): exploration only; current eq/neq, legacy aliases and is identity remain authoritative.
