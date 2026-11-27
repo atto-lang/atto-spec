@@ -74,7 +74,7 @@ qualified_name = identifier, { ".", identifier } ;
 builtin_name = ("core" | "alloc" | "std"), ".", identifier ;
 ```
 
-Disambiguation: a comma-separated namespace list requires the explicit `namespace` keyword; untyped comma lists are legacy selective imports. A bare single namespace selector can be dotted. Compatibility star-as always binds a source's public export view. Strings are static literals, no interpolation or computed imports. Semicolons follow existing source grammar. Built-in units remain flat in this amendment; nested exported namespaces inside a unit are not new library units. `use namespace` and `use default namespace` remain distinct optional first source headers; `using` is a resource scope, not import.
+Disambiguation: a comma-separated namespace list requires the explicit `namespace` keyword; untyped comma lists are legacy selective imports. A bare single namespace selector can be dotted. Compatibility star-as always binds a source's public export view. Strings are static literals, no interpolation or computed imports. Semicolons follow existing source grammar. Built-in units remain flat in this amendment; nested exported namespaces inside a unit are not new library units. The [namespace modes v2 amendment](namespace-modes-v2.md) governs the five source-header spellings: named, default/file/omitted (file-local), and folder; `using` is a resource scope, not import.
 
 ### 2.1 Mixed-kind selectors with explicit delimited groups
 
@@ -168,7 +168,7 @@ import super.super.config;  // grandparent
 import self.utils;          // current namespace
 ```
 
-The contextual roots pkg, self and super are namespace paths only in this import grammar; pkg followed by a string remains the external dependency selector. Root paths use the pinned current package's declared namespace graph, not a physical directory walk. They do not modify the separate pkg:: / imports:: callable lookup semantics. self/super require an explicit or derived source namespace; no invented implicit namespace for headerless units. Reject traversal above package root. Apply existing same-package and private visibility rules; no access to another package via super. Do not treat a group self leaf as a lexical self root.
+The contextual roots pkg, self and super are namespace paths only in this import grammar; pkg followed by a string remains the external dependency selector. Root paths use the pinned current package's declared namespace graph, not a physical directory walk. They do not modify the separate pkg:: / imports:: callable lookup semantics. self/super require an admitted named or folder namespace graph; file-local modes (omitted/default/file) have no named namespace parent, and do not admit these namespace-path roots. No filesystem walk or implicit aggregation. Reject traversal above package root. Apply existing same-package and private visibility rules; no access to another package via super. Do not treat a group self leaf as a lexical self root.
 
 ```atto
 import pkg '@atto-lang/network/http';
