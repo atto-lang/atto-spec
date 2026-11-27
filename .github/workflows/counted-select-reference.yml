@@ -1,0 +1,25 @@
+name: Counted select host oracle (not compiler execution)
+on:
+  pull_request:
+    paths:
+      - 'language/counted-select-v1.md'
+      - 'src/counted-select-reference.mjs'
+      - 'tests/counted-select-reference.test.mjs'
+      - '.github/workflows/counted-select-reference.yml'
+permissions:
+  contents: read
+jobs:
+  host-oracle:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Exact checkout and host oracle
+        env:
+          EXPECTED: ${{ github.event.pull_request.head.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED"
+          git rev-parse HEAD^{tree}
+          node --test tests/counted-select-reference.test.mjs
