@@ -47,6 +47,21 @@ In standalone expression parentheses, a top-level IDENT followed by = or an init
 
 In call parentheses, IDENT followed by = or : is a named argument, whereas IDENT followed by := is a positional Pair expression. Both named-argument spellings normalize to the same AST; formatter preserves or canonicalizes to = in the new profile, with : accepted for compatibility. Evaluate arguments once in written order, then associate by resolved parameter name; reject unknown or duplicate names and positional arguments after named ones. Existing intrinsic Record.of and Map.of input-kind rules remain in force.
 
+### Latest call-boundary clarification (2026-11-27)
+
+The language owner distinguishes these forms:
+
+```atto
+foo(x = 4, y = 8);   // two named arguments
+foo((x = 4, y = 8)); // unresolved; do not certify portable semantics
+foo((x : 4, y : 8)); // clearer candidate, not yet ratified
+foo({x = 4, y = 8}); // one positional anonymous Record
+foo(data = {x = 4, y = 8}); // one named Record argument
+```
+
+At the immediate call delimiter, identifier-equals selects a named argument. Inside a brace Record, identifier-equals selects a static field, not a Pair, assignment, or named argument at the enclosing call. It does not require an expected type or a binding with that name. The two grouped call forms above remain pending; do not flatten, guess from an overload, or normalize them to braces. A strict new-profile implementation may defer/reject unresolved syntax with a targeted diagnostic pending ratification. This does not revoke separately specified standalone parenthesized Records, explicit capture-only forms, or explicit spread operands. Any earlier general statement that all inner-parenthesized Record spellings are portable call arguments is superseded for the unresolved forms. Evaluate each field once in written order, preserve nested value shape and enforce ordinary ownership. Only explicit spread expands fields. Formatter preserves delimiter boundaries. Cross-reference local binding amendment #307. Guest execution remains independently gated.
+
+
 ```atto
 fnc foo(Pair<int> x, int m) { }
 foo(x = "x" := 5, m = 3);
