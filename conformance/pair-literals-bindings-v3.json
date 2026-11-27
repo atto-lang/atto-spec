@@ -704,6 +704,90 @@
       "kind": "accept",
       "source": "const name=\"Alice\"; const age=42; logger.info(\"request info:\",struct{:name,:age});",
       "expect": "one event under explicit Struct logger overload"
+    },
+    {
+      "id": "same-name-short",
+      "kind": "accept",
+      "source": "const x := 5; const Pair<int> p = x; const string k = p.key; const int v = p.value;",
+      "expect": "Pair<int>; k=x, v=5"
+    },
+    {
+      "id": "same-name-expanded",
+      "kind": "accept",
+      "source": "const x = x := 5; const Pair<int> p = x; const string k = p.key; const int v = p.value;",
+      "expect": "same as same-name-short: Pair<int>; k=x, v=5"
+    },
+    {
+      "id": "same-name-factory",
+      "kind": "accept",
+      "source": "const x = Pair.of(\"x\", 5); const Pair<int> p = x; const string k = p.key; const int v = p.value;",
+      "expect": "same as same-name-short"
+    },
+    {
+      "id": "different-binder-key",
+      "kind": "accept",
+      "source": "const x = y := 5; const string k = x.key; const int v = x.value;",
+      "expect": "k=y, v=5; no lookup of y"
+    },
+    {
+      "id": "same-name-payload-unbound",
+      "kind": "reject",
+      "source": "const x = x := x;",
+      "expect": "unresolved payload x; key x is not a read"
+    },
+    {
+      "id": "same-name-short-unbound",
+      "kind": "reject",
+      "source": "const x := x;",
+      "expect": "unresolved payload x; same as expanded"
+    },
+    {
+      "id": "same-name-expanded-scalar",
+      "kind": "reject",
+      "source": "const x = x := 5; const int n = x;",
+      "expect": "Pair is not int"
+    },
+    {
+      "id": "same-name-duplicate",
+      "kind": "reject",
+      "source": "const x := 5; const x = x := 5;",
+      "expect": "duplicate local declaration"
+    },
+    {
+      "id": "same-name-runtime-short",
+      "kind": "accept",
+      "source": "fnc f(int n): int { val x := n; return x.value; }",
+      "expect": "f(42) returns 42; stored Pair"
+    },
+    {
+      "id": "same-name-runtime-expanded",
+      "kind": "accept",
+      "source": "fnc f(int n): int { val x = x := n; return x.value; }",
+      "expect": "same as same-name-runtime-short"
+    },
+    {
+      "id": "same-name-constexpr-short",
+      "kind": "reject",
+      "source": "fnc f(int n) { const x := n; }",
+      "expect": "runtime operand not constexpr"
+    },
+    {
+      "id": "same-name-constexpr-expanded",
+      "kind": "reject",
+      "source": "fnc f(int n) { const x = x := n; }",
+      "expect": "same constexpr rejection"
+    },
+    {
+      "id": "same-name-expanded-key-write",
+      "kind": "reject",
+      "source": "let mut x = x := 5; x.key = \"other\";",
+      "expect": "read-only key"
+    },
+    {
+      "id": "same-name-short-key-write",
+      "kind": "reject",
+      "source": "let mut x := 5; x.key = \"other\";",
+      "expect": "read-only key"
     }
   ]
 }
