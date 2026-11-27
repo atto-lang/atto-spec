@@ -53,6 +53,30 @@ foo(x: y, m: 3);
 
 Record.of may consume Pairs with statically proven unique valid identifier keys, including name-derived bindings. Pair keys themselves need not be identifiers (e.g. "5" := 42 is valid); Record.of rejects invalid or unknown keys. Map.of may consume compatible string-keyed Pairs under v2. No implicit named-argument spread or Record conversion.
 
+## Inferred Record literals and field capture (v3 extension)
+
+No explicit Record type annotation is needed. Standalone (name = "Alice", age = 42) and an inferred binding const r = (name = "Alice", age = 42); produce the same closed structural Record as a typed declaration. Both quoted and bare identifier := forms inside a comma-separated tuple remain positional Pair values; quoted equals forms reject. A Record expected type cannot change a Tuple into a Record.
+
+A Record field assignment is checked against the field's actual declared/inferred type. Given const name2 := "Alice Wong"; and let mut Record r = (name = "Alice", age = 42);, r.name = name2.value; and r["name"] = name2.value; are equivalent checked writes. Assigning name2 itself to the string field rejects; a Pair-typed field may accept a compatible Pair without unwrapping. A const or otherwise read-only Record cannot be mutated. Static bracket fields, shape preservation, ownership and effects follow the existing Record rules. No key matching, implicit payload extraction or field insertion is introduced by assignment.
+
+### Proposed explicit Record field-capture spelling
+
+```ebnf
+record_capture = ":", IDENT ;
+```
+
+In expression-position brace Record items, {:request_id} is exactly {request_id: request_id}, a closed one-field Record, not a Pair, Map or nominal Struct. The field label uses the lexical identifier spelling; its value is obtained by ordinary scoped identifier resolution, evaluated once, with standard ownership and effect checking. No runtime reflection, name lookup by string, or implicit move. The capture must resolve an accessible value binding; unresolved names, member paths, arbitrary expressions and reserved labels reject. A capture may coexist with identifier-colon fields and other captures, e.g. {:request_id, :status, duration: elapsed_ms}; the same duplicate-field and delimiter rules apply. A capture makes the brace literal a Record; mixing with quoted or arrow Map items rejects regardless of expected type. Formatting preserves the capture form or expands it to an equivalent explicit field.
+
+```atto
+val request_id = generate_uuid();
+const status = 200;
+const elapsed_ms = 45;
+logger.info("Request completed", {:request_id}, {:status}, {:elapsed_ms});
+logger.info("Request completed", {:request_id, :status, :elapsed_ms});
+```
+
+These logging calls require a logger API that explicitly accepts structured Records; no implicit call argument expansion or logging API change is claimed here. Runtime UUID generation uses val rather than const unless constexpr is established. Pair-based logging likewise requires a compatible Pair overload. The capture syntax is a proposed extension for review; it does not imply new runtime reflection or general Struct construction.
+
 ## Verification
 
 Each backend and formatter must implement the distinct PairExpr, EntryExpr, named-argument and Record nodes; name-derived declaration lowers to ordinary typed binding and Pair construction, preserving source spans. Test exact-key equivalence, lexical shadowing, once-only RHS evaluation, const rejection of non-constexpr values, type mismatch, immutable binding rejection, let rebind and key dataflow, nested groups, constructor shape, mixed syntax, wrong arity, formatter round trips and compiled guest execution. Preserve existing allocation, ownership, cleanup, actor isolation and no-artifact-on-rejection rules. Heterogeneous Pair representation and runtime support are independently gated; no parser or host model is executable parity evidence.
