@@ -145,3 +145,10 @@ Reuse existing expression, type, block and callable effect grammar. Earlier exam
 | SM28 | Volatile profile has no persistence guarantee; unsupported durable/migration/resource profile fails closed |
 
 All new cases initially NOT_EXECUTED for compiler/guest targets. Host reference tests are not parser, ownership, resource-retirement, native-effect or crash-recovery evidence. First admit the flat volatile machine; durability, saga and migration have independent capability gates.
+
+
+## Shared retry/undo and backend admission handoff
+
+[Retry/undo PR #285](https://github.com/atto-lang/atto-spec/pull/285) owns the typed retry policy, reversible history, tail undo/redo, operation IDs, deduplication and durable effect-ledger rules; this machine proposal owns the contextual grammar, behavior/activation metadata, lifecycle and migration integration. A machine's undo must obey the same history/expected-version and published-effect restrictions, not bypass them via a second inverse API. An inverse of an ordinary transition can advance a new logical version only if the retained history and ownership evidence permit it. Keep the same retry/compensation receipt authority across standalone saga and actor machine implementations.
+
+[Conformance PR #689](https://github.com/atto-lang/atto-platform-conformance/pull/689) holds the companion `contracts/actor-state-machine-v1.json` registry. The 41 retry/undo requirements and 28 machine requirements describe overlapping behavior, not 69 independent executed tests. Shared cases must reuse identical candidate source bytes and expected outcomes. Parse/format, typed MIR, actual guest execution, runtime resource proof and crash recovery are separately gated. No backend currently certified by this proposal.
