@@ -76,6 +76,168 @@ Structs are **nominal value types**, not implicitly boxed identity-bearing class
 
 Without an authored constructor, a fully defined nominal struct retains compiler-proven field initialization `T{foo: "hello", bar: 42}`. The optional shorthand `T(foo="hello",bar=42)` is **only** the already-separately-proposed generated field-initializer form, guarded by exact nominal resolution; it is not ordinary named arguments. Once a custom constructor exists, `T(...)` routes to that constructor using positional/`name:` arguments, and the equals-field shorthand must not ambiguously override it. External direct `T{...}` bypass of user-defined constructor invariants is forbidden; a checked constructor body may initialize its own fields. `new T(...)` is invalid for value structs. A class constructs via `new C(...)`; `C{...}` is not a class factory.
 
+## Struct declaration attachments (owner-approved syntax target, 2026-11-26)
+
+A named declaration `define struct Point { ... } with { ... }` (and existing `type Point = struct { ... }` spelling where admitted) attaches behavior to the exact nominal struct owner at compile time. It is not a transparent structural alias with methods that leak to other aliases of the same shape. The owner is inferred from the declaration; no explicit receiver or `: self` constructor result marker is required in an attached header.
+
+```atto
+define struct Point {
+    int x;
+    int y;
+} with {
+    constructor(int x, int y) {
+        self.x = x;
+        self.y = y;
+    }
+
+    mtd int • sum() {
+        return self.x + self.y;
+    }
+
+    mtd int <- product() {
+        return self.x * self.y;
+    }
+
+    mtd is_origin() -> bool {
+        return self.x == 0 && self.y == 0;
+    }
+}
+```
+
+Within the permitted visibility scope, `let p = Point(10, 20);` constructs a value; `p.sum()`, `p.product()`, and `p.is_origin()` return 30, 200, and false respectively. Existing visibility rules remain in force; use `pub` on a constructor or method intended for external callers.
+
+The chained spelling is equivalent:
+
+```atto
+define struct Point {
+    int x;
+    int y;
+} with constructor(int x, int y) {
+    self.x = x;
+    self.y = y;
+} with mtd int • sum() {
+    return self.x + self.y;
+} with mtd int <- product() {
+    return self.x * self.y;
+} with mtd is_origin() -> bool {
+    return self.x == 0 && self.y == 0;
+}
+```
+
+- In type-declaration context, an attachment is either `with` followed by one member declaration or `with { ... }` containing member declarations. Chained and grouped attachments normalize to the same owner/member AST. Ordinary statement bodies, field-update expressions and arbitrary expressions are not attachment members. The existing expression-level `value with {field: expr}` remains a distinct grammar; no change to trait composition or copy-and-update semantics.
+- In method headers `mtd R • name(...)`, `mtd R <- name(...)`, `mtd name(...) -> R`, and existing `mtd name(...): R` are equivalent return-type declaration spellings. The first two are prefix forms; arrow and colon are postfix. The canonical example uses the postfix arrow. The bounded compiler profile currently rejects `mtd R * name(...)`; this example correction does not resolve broader asterisk admission. Preserve other independently admitted callable signature forms and formatter spelling; these four forms normalize to the same signature. Constructor headers use `constructor(args)` with no return separator and implicit under-construction self.
+- Existing callable modifiers and effects apply according to the ordinary method grammar; readonly receiver is the default, checked exclusive receiver authority is required for mutation, and static members have no instance self. Overload selection ignores separator spelling; duplicate normalized signatures (including out-of-line definitions) reject. Do not manufacture visibility or receiver capabilities by using an attachment.
+- Constructors select overloads statically, evaluate call arguments once in source order, and initialize each required field before read/escape. On failure destroy only initialized subobjects once; no implicit zero/default synthesis. Once a custom constructor exists, direct external aggregate syntax must not bypass it, including field-equals shorthand and unverified copy-and-update reconstruction. Ordinary checked copying of already valid values remains governed by the ownership contract.
+- The attached declaration lowers to the same static member and constructor representation as out-of-line declarations, without per-instance method storage, required vtables, boxing, JIT, reflection or mandatory heap allocation. A value constructor may initialize its final destination directly if effects and lifetime semantics are preserved.
+- Explicit owned heap placement of value structs and destructor attachment require reconciliation with the existing prohibition on `new T(...)` and separate lifecycle/capability rules. This syntax amendment does not silently change those rules or admit unsafe destruction.
+
+### Required conformance (all TARGET_NOT_EXECUTED)
+
+| Case | Expected |
+| --- | --- |
+| Exact grouped Point source above | Accept; guest outputs 30, 200, false |
+| Equivalent chained Point source | Same typed result and observable behavior |
+| Each of the four return-type forms (`•`, `<-`, postfix `->`, postfix `:`) | Same return type, name and dispatch |
+| `mtd bool * is_origin()` | Reject in the existing bounded profile; broader spelling decision unresolved |
+| Two methods differing only in separator | Reject duplicate signature |
+| Attached and out-of-line duplicate member | Reject duplicate signature |
+| Constructor overload by distinct arity/type | Accept with static resolution |
+| Missing constructor field on a successful path | Reject incomplete initialization |
+| Reading uninitialized field or escaping self | Reject before code generation |
+| Direct field literal or equals shorthand bypassing authored constructor | Reject |
+| Mutation through readonly receiver | Reject |
+| Private member used outside its visibility scope | Reject |
+| Expression-level copy-update and existing trait with syntax | Unchanged |
+| Formatter round-trip for grouped/chained and all separator spellings | Preserve normalized AST and comments |
+| Failure during partial construction | No published value; initialized fields dropped once |
+| AOT value construction and method call | No mandatory per-instance allocation or dispatch table; measure separately |
+
+No case is backend-certified by this text. Exact-head positive guest runs, semantic negative diagnostics, formatter round trips and layout/ownership evidence are required independently for each compiler.
+
+### Nested nominal values and construction
+
+```atto
+define struct Rectangle {
+    Point top_left;
+    Point bottom_right;
+} with {
+    constructor(Point a, Point b) {
+        self.top_left = a;
+        self.bottom_right = b;
+    }
+
+    mtd area() -> int {
+        return (self.bottom_right.x - self.top_left.x)
+             * (self.bottom_right.y - self.top_left.y);
+    }
+
+    mut mtd shift(int n): void {
+        self.top_left.x = self.top_left.x + n;
+    }
+}
+```
+
+Resolve all complete by-value nominal definitions before computing a layout. Declaration order does not determine type identity. Reject an unresolved owner, a direct or indirect by-value cycle, and a layout or expansion that exceeds the backend's documented resource limits. Do not substitute a pointer, class identity, implicit allocation or zero-filled storage to break a cycle. Explicit indirection follows separate pointer/ownership rules.
+
+Constructor overload selection uses the original nominal argument types, not the flattened leaf signature. Assigning a complete nested value to an under-construction field establishes initialization only after its entire value is available. Copyable nested values have independent logical mutable state; copying an enclosing value must not alias its original or the source constructor arguments. Repeated or missing initialization and reads before initialization remain errors. A readonly receiver cannot mutate any nested field; a mutable receiver requires exclusive authority over its projected storage.
+
+Scalar replacement and flattening are allowed when they preserve this behavior and observable evaluation order. Compiler-private leaf slots are not a source-level ABI, a promised object size, or evidence of allocation-free execution for resource-bearing values. A bounded initial executable profile can support scalar leaves (int/bool), local complete owners, whole-field constructor snapshots and checked leaf writes; it must reject unsupported generic, resource, cross-module, actor-transfer and lifetime cases without an artifact. General ABI alignment, destructor ordering, partial-resource cleanup, visibility and cross-suspension ownership require separate proof. No implementation cap from a bounded backend is a language-wide type limit.
+
+Required differential fixtures include distinct nested nominal identities with equal shape, two- and three-level nested copies, forward owner resolution, mutation of original constructor inputs and copied receivers, direct and mutual cycles, incomplete initialization, wrong nested types, immutable nested writes and adversarial expansion limits. See the portable registry `contracts/struct-with-members-conformance-v1.json` in atto-platform-conformance. Diagnostic codes must be verified separately from simple no-artifact rejection.
+
+### Physical layout and lifetime proof boundary (candidate)
+
+This refines [record versus struct layout](record-struct-layout-v1.md),
+[recursive layout graphs](recursive-layout-graph-wire-v1.md) and
+[explicit C layout](compile-time-reflection-ffi-layout-v1.md); it is not a
+new C ABI, placement syntax approval or language-wide resource cap.
+
+- Resolve each fully instantiated nominal owner and construct its inline
+  storage dependency graph before assigning offsets. A by-value cycle is
+  invalid regardless of finite constructor inhabitation. A separately
+  approved reference or handle may cut an inline edge; never insert one
+  implicitly. Preserve distinct module-qualified nominal identity even for
+  equal physical layouts.
+- A target layout descriptor must include the target ABI identity, scalar
+  size/alignment facts, ordered field identities, offsets, total size,
+  alignment, tail padding and ownership/drop metadata. Logical scalar
+  replacement need not materialize a physical object. When a materialized
+  value is required, use checked alignment rounding, checked addition and
+  bounded graph traversal. For ordinary declaration-order storage, align
+  each field offset to its field alignment, then round the final size up
+  to the aggregate alignment. Reject missing target facts, invalid
+  alignments, overflow and exceeded target/actor quotas before allocating.
+  Zero-sized and over-aligned types require separately admitted policies.
+- Do not infer a universal bool representation, pointer width, padding
+  value, cross-target ABI or wire format from a single scalar backend.
+  Explicit C interoperability requires the separate target header witness
+  and calling-convention proof. Padding is not a source field; never read
+  it as initialized payload or serialize it.
+- A stack/heap placement plan must bind the storage capability to the
+  exact owner, tenant/actor, generation, size, alignment and lifetime.
+  Construction publishes no initialized value until the required fields
+  are initialized; failure destroys only initialized resource subobjects
+  in reverse completion order, exactly once. Mutable authority is
+  exclusive over overlapping projected storage. Disjoint-field loans are
+  admissible only with a field-sensitive proof. A live loan prohibits
+  destruction, relocation or reuse of overlapping storage. Detachment of
+  a pointer is not destruction or deallocation. Retire a generation before
+  reusing its storage; stale capabilities must not regain access.
+- The bounded Cranelift Point placement lane provides an implementation
+  example of a 16-byte, 8-aligned explicit slot containing two i64 fields
+  at offsets 0 and 8. It is not general heap placement, runtime pointer
+  escape, arbitrary resource destruction or actor-owned allocation proof.
+
+Required independent evidence: mixed alignment and tail padding; nested
+inline field offsets; array stride where admitted; forward declarations;
+mutual/self inline cycles; overflow/invalid alignment/budget denial;
+distinct nominal owners with equal layouts; projection-specific loan
+overlap and move/destruction denial; constructor failure at each field;
+drop order and exactly-once cleanup; stale-generation denial after reuse;
+allocation-failure rollback and actor/tenant quota isolation. Compare
+materialized native memory observations against the declared target
+descriptor, not only a host reference model or scalar guest result.
+
 ## Protected class state and containership
 
 `define state on class C as { ... }` is an exactly-once **per-instance** attached state schema with its own private, exclusive storage identity and independent lifetime under the containing instance. State fields use ordinary typed field declarations and initializers and are private regardless of receiver method visibility; the state attachment is not a public field or a static singleton. An initializer is evaluated per instance with checked effects, and every state field is initialized before constructor code receives a usable state guard. Missing initializer or field validity may be admitted only when the compiler can prove definite initialization.
