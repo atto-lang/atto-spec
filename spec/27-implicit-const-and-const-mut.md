@@ -2,6 +2,86 @@
 
 **Status: PROPOSED / NOT EXECUTED.** This is a prospective semantic decision for review, not evidence that the syntax runs on any compiler backend. See the versioned [implicit-const-v1 contract](../contracts/implicit-const-v1/contract.json).
 
+## 2026-11-27 language-owner amendment — local bindings v2
+
+**Approved design direction; implementation and guest parity NOT VERIFIED.** This amendment supersedes conflicting local-binding rules in the historical v1 sections below and in the v1 compile-time/binding documents (merged #13, #170). Preserve v1 fixtures as historical evidence, not as the v2 acceptance oracle. Reconcile with the earlier runtime-const rule in legacy common-source #203 and conformance #319 before backend integration.
+
+### Canonical local declaration forms
+
+```atto
+int x = 5;
+string name = "Alice";
+const int y = 10;
+const y : int = 10;
+const y = 10 as int;
+const y as int = 10;
+val List[int] numbers = [1, 2, 3];
+const mut List[int] other = [4, 5, 6];
+let int z = 10;
+let int z = 20;
+let z :int = 10;
+let z : int = 20;
+```
+
+Alternative declarations of y above are independent examples, not a single scope containing four y declarations. All four z declarations in order are fresh lexical shadow bindings.
+
+- In a local declaration statement, resolved type-first `T name = expr` is implicit `const T name = expr`. Inferred, prefix-typed, colon-typed and name-first `as`-typed const declarations share one immutable fixed-binding representation.
+- `const mut` and `val` are exact aliases: a fixed binding with the ordinary ownership-checked mutable-value access policy. No distinct mandatory compile-time template, implicit clone or additional allocation. Scalars have no mutable interior and can still be declared with either spelling, but neither permits replacement of the fixed root slot.
+- All local const spellings admit once-only runtime initialization under ordinary type/effect/ownership rules; compile-time folding is an optimization when proven safe, not a requirement imposed by type placement. Preserve independent explicit compile-time requirements (e.g. final const where applicable) and file/module rules; do not silently reinterpret failed typing as val.
+- `let` creates a fresh lexical binding on same-scope redeclaration, with existing explicit rebinding and ownership rules; same-scope const/implicit-const redeclaration fails. val/const mut fixed-binding same-scope redeclaration also fails. Mixed qualifier collision and nested scope policy beyond the existing contract need explicit reconciliation rather than silently changing scope behavior.
+- Bare variable assignment `x = e` is not a declaration or legal reassignment. Explicit `set` / `set!` retain their separate contract; neither may replace fixed bindings. Do not change named arguments, record fields, constructor initialization or pair-forming `:=`.
+- Support prefix/colon/name-first-as type annotations on explicit const, const mut, val and let. Generic, nominal, tuple and other valid resolved types use the existing type grammar. Colon whitespace is insignificant. A postfix initializer `expr as T` is the ordinary expression-level cast, not a token rewrite into an annotation: infer its result type, preserve conversion checks, evaluation order and failures. For an already-T literal the result is equivalent to the explicit T annotation. Distinct casts and incompatible annotations must not be erased.
+- Evaluate the initializer exactly once before installing the new binding. Resolve a shadowing initializer against the preceding environment. Do not silently default-initialize, leak mutation authority through aliases, bypass sealed actor state, or introduce runtime storage/dispatch merely because of syntax.
+- Type-first shorthand applies to local declaration positions only; no change to fields, parameters, module declarations, destructuring, or contextual match/if bindings. Ambiguous type/expression prefixes must be resolved with the real parser, not regular-expression source rewriting.
+
+### Explicit local replacement and expression boundaries
+
+Owner-confirmed syntax: a repeated same-scope `let` is fresh lexical shadowing, not a write to the previous binding; duplicate same-scope `const` is rejected. Ordinary `x = e;` is invalid as a local assignment, while `set x = e;` and `set! x = e;` explicitly replace the existing reassignable binding. Resolve the nearest lexical identity first; do not skip a fixed binding to find an outer writable name. An unknown target or incompatible replacement type is rejected; neither form widens referent write permission.
+
+```atto
+let x = 5;
+let x = x + 1; // new lexical identity, previous x visible in initializer
+set x = 7;
+set! x = 8;
+// x = 9; // rejected
+let Record r = {x = 4};
+foo(x = 4, y = 8);   // two named arguments
+foo({x = 4, y = 8}); // one positional Record
+foo(data = {x = 4, y = 8}); // one named Record argument
+```
+
+**Call-boundary clarification (2026-11-27):** `foo((x = 4, y = 8))` is not yet well-defined for the new profile; do not silently interpret it as a Record, flattened named arguments, or assignment. `foo((x : 4, y : 8))` is a clearer candidate, not a ratified portable call spelling. Use `foo({x = 4, y = 8})` for an unambiguous positional anonymous Record. Pending resolution, new-profile implementations may reject/defer ambiguous grouped-call syntax with a targeted diagnostic; existing legacy-profile behavior and standalone parenthesized Record proposals remain separately tracked. No expected-type or overload-based guessing, no implicit expansion, and no local writes from field labels. Preserve source-order once-only evaluation.
+
+The assignment grammar must distinguish bare-name writes from named labels and record fields by syntactic position, without consulting the existence of a local with that name. Preserve the separate Pair `:=` and record `:` / `:=` proposals (#299 and its parent #246); ordinary field and indexed writes retain independent ownership/access rules. Do not change the existing parameter `rebind` eligibility contract (#223); coordinate any migration of its legacy assignment spelling separately.
+
+**Provisional implementation profile, pending explicit semantic review:** `set` is statement-only; `set!` also admits expression position, initially only if its consumed result is statically Copy. The two complete forms `set! x = e` and `set! (x = e)` are equivalent; `(set! x) = e` is invalid. Reject `foo(let x = e)` and `foo(set x = e)`; `foo(set! x = e)` is a positional argument. Discarded-result set! does not require Copy. Reject mixed fixed/let same-scope collisions provisionally; keep nested lexical shadowing legal. Do not infer permanent restrictions on non-Copy expression results or compound assignments from this slice.
+
+**Lifetime and lowering:** evaluate replacement once and before publishing; failed RHS retains old binding, valid replacement releases the previous owned value exactly once, and live invalidated loans reject. Never copy an exclusive owner to return a result. Capture by lexical identity rather than spelling; existing capture rules govern aliasing. SSA versions/phi nodes for non-addressable scalars need no heap box; preserve cleanup on control-flow joins, exceptions and suspension. No actor isolation, AOT or zero-GC guarantees may be inferred from syntax acceptance alone.
+
+### Explicit counter and compound updates (implementation extension, 2026-11-27)
+
+The next migration profile uses `set` for updates of an existing binding, including the update clause of a regular loop. Both parenthesized and unparenthesized headers are equivalent.
+
+```atto
+for let i = 0; i < 10; set i++ { }
+for (let i = 10; i > 0; set --i) { }
+for let i = 0; i < 10; set i += 2 { }
+let x = 5;
+set x++;
+set --x;
+set x += 2;
+set x -= 2;
+set x *= 3;
+```
+
+Prefix and postfix increments are equivalent when the result is discarded. Each operation resolves one existing local, reads its old value once, evaluates any RHS once, applies existing typed checked arithmetic, and publishes only on success. Fixed, missing, incompatible or invalidated bindings reject. No implicit allocation, wraparound, field/index expansion, or additional referent-write permission. In the strict profile bare `i++`, `i--`, `i += e`, and `i = e` reject, including in loop clauses; `let i++` rejects in every profile. Continue targets the update clause; break does not execute it. Loop initialization declares a fresh scoped binding; loop updates do not shadow it.
+
+The first implementation slice covers scalar integer ++/-- and supported arithmetic compound operators. Division, bitwise and shifts require the backend's existing checked operation and grammar; unsupported operations remain fail closed. Do not resurrect removed `%` merely to support `%=`. The expression result of `set!` (old value for postfix, new for prefix/compound) and multiple counters remain proposals, not portable positive test oracles. Legacy migration mode is temporary and does not certify strict default behavior. Actor-loop cooperation, full ownership, and all alternate frontends remain separately gated.
+
+### Backend and tooling gates
+
+Normalize aliases in typed AST/HIR while retaining spans and any real cast. Require equivalent diagnostics, typed IR and observable outputs; preserve formatter round-trip/idempotence and no semantic rewrite of casts. Test all eight compiler lanes (Java/GraalVM, LLVM, .NET NativeAOT, Rust, independent Wasm, JS, Forge, Cranelift), including actual guest execution, explicit rejection diagnostics, no illegal artifact, ownership/borrow and actor isolation, and AOT where applicable. No source-only test or zero-step Actions run constitutes compiler execution. Keep the older v1 descriptions below as historical implementation context until each dependent contract and compiler is reconciled.
+
 ## Decision and terminology
 
 A **local** declaration whose first syntax constituent is a resolved type and whose binding qualifier is omitted has exactly the meaning of an explicit `const` declaration. Omission changes spelling only, never evaluation time, ownership, storage, or mutability. In particular, the compiler **MUST NOT** recover from a non-constant initializer by silently choosing `val`.
