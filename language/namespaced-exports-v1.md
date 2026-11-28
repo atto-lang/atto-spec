@@ -140,8 +140,8 @@ equivalent to linked package visibility proof.
 
 ## Diagnostics and reproducible evidence
 
-Required failures: unresolved local module, explicit wrong kind, duplicate
-module exports, malformed `pub[pkg]`, nested export, namespace header in the
+Required failures: unresolved local module, explicit wrong kind, conflicting
+duplicate module exports (identical resolved bindings are idempotent), malformed `pub[pkg]`, nested export, namespace header in the
 middle of the file, exporting a namespace header, dotted/private-member
 export, unqualified imported re-export, two namespaces with the same leaf
 name, cross-package `pub[pkg]`, private module member through a public
