@@ -1,0 +1,515 @@
+{
+  "contract": "parametric-bundles-inference-v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "prerequisite": "Array declaration admits type and size formals; diagnostic names are semantic categories, not prescribed backend strings",
+  "cases": [
+    {
+      "id": "seed-refinement",
+      "outcome": "accept",
+      "source": "type T = <type=int, size=5>; type X = T with {size=6}; const Array<X> x = [1,2,3,4,5,6];",
+      "expected": "X.type=int; X.size=6; T.size=5",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "seed-infer",
+      "outcome": "accept",
+      "source": "type T = <type=int, size=5>; const Array<infer X from T> x = [1,2,3,4,5,6] with {size=6};",
+      "expected": "X.size=6; T.size=5",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "initializer-infer",
+      "outcome": "accept",
+      "source": "type T = <type=int, size=5>; const Array<X extends T> x = infer [1,2,3,4,5,6] with {size=6};",
+      "expected": "X.size=6; T.size=5",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "capture",
+      "outcome": "accept",
+      "source": "const Array<infer X> x = [1,2,3]; const Array<X> y = [4,5,6];",
+      "expected": "X.type=int; X.size=3",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "individual",
+      "outcome": "accept",
+      "source": "const Array<type=infer E,size=infer N> x = [1,2,3];",
+      "expected": "E=int; N=3",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "with-inline",
+      "outcome": "accept",
+      "source": "const Array x = [1,2] with {type=int,size=2};",
+      "expected": "Array<type=int,size=2>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "as-inline",
+      "outcome": "accept",
+      "source": "const Array<type=int,size=2> x = [1,2] as <type=int,size=2>;",
+      "expected": "Array<type=int,size=2>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "as-bundle",
+      "outcome": "accept",
+      "source": "type X = <type=int,size=2>; const Array<X> x = [1,2] as X;",
+      "expected": "Array<X>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "with-bundle",
+      "outcome": "accept",
+      "source": "type X = <type=int,size=2>; const Array<X> x = [1,2] with X;",
+      "expected": "Array<X>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "prefix",
+      "outcome": "accept",
+      "source": "type X = <type=int,size=2>; const Array<X> x = X[1,2];",
+      "expected": "Array<X>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "full-prefix",
+      "outcome": "accept",
+      "source": "type X = <type=int,size=2>; const x = Array<X>[1,2];",
+      "expected": "Array<X>",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "order",
+      "outcome": "accept",
+      "source": "type X = <size=2,type=int>; const Array<X> x = [1,2] as <type=int,size=2>;",
+      "expected": "same canonical specialization",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "zero-size",
+      "outcome": "accept",
+      "source": "const Array<type=int,size=0> x = [];",
+      "expected": "length 0",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "missing-init",
+      "outcome": "reject",
+      "source": "const Array<type=int,size=6> x = [];",
+      "expected": "incomplete_initialization",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "no-implicit-replacement",
+      "outcome": "reject",
+      "source": "type T = <type=int,size=5>; const Array<infer X from T> x = [1,2,3,4,5,6];",
+      "expected": "size_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "duplicate-override",
+      "outcome": "reject",
+      "source": "type T = <type=int,size=5>; type X = T with {size=6,size=6};",
+      "expected": "duplicate_argument",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "unknown",
+      "outcome": "reject",
+      "source": "type X = <type=int,sz=2>; const Array<X> x = [1,2];",
+      "expected": "unknown_formal",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "wrong-kind",
+      "outcome": "reject",
+      "source": "const Array<type=int,size=string> x = [1];",
+      "expected": "argument_kind",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "negative-size",
+      "outcome": "reject",
+      "source": "const Array<type=int,size=-1> x = [];",
+      "expected": "argument_bound",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "dynamic-size",
+      "outcome": "reject",
+      "source": "fnc f(int n) -> int { const Array<type=int,size=n> x = [1]; return 1; }",
+      "expected": "nonconstant_argument",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "mismatch",
+      "outcome": "reject",
+      "source": "const Array<type=int,size=2> x = [1,2] as <type=int,size=3>;",
+      "expected": "conflicting_argument",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "ordinary-collision",
+      "outcome": "reject",
+      "source": "type T = <type=int,size=2>; const Array<T,size=2> x = [1,2];",
+      "expected": "duplicate_argument",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "mixed-with",
+      "outcome": "reject",
+      "source": "const Array x = [1,2] with {type=int,size:2};",
+      "expected": "mixed_clause",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "alias-cycle",
+      "outcome": "reject",
+      "source": "type X = Y with {size=2}; type Y = X with {size=3};",
+      "expected": "alias_cycle",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "unbound-element",
+      "outcome": "reject",
+      "source": "const Array<infer X> x = [];",
+      "expected": "unresolved_inference",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "duplicate-binding",
+      "outcome": "reject",
+      "source": "type X = <type=int,size=2>; const Array<infer X> x = [1,2];",
+      "expected": "duplicate_binding",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "runtime-retype",
+      "outcome": "reject",
+      "source": "type T = <type=int,size=2>; const Array<T> x = [1,2]; const y = x with {size=3};",
+      "expected": "not_literal",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "bundle-value-type",
+      "outcome": "reject",
+      "source": "type X = <type=int,size=2>; const X x = 1;",
+      "expected": "argument_kind",
+      "status": "AUTHORED_NOT_EXECUTED"
+    },
+    {
+      "id": "infer-replacement",
+      "outcome": "accept",
+      "source": "type Base = <type=int,size=5>; const Array<infer X from Base> x = [1,2,3] with {size=infer};",
+      "expected": "X.size=3; Base.size=5",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "infer-zero",
+      "outcome": "accept",
+      "source": "type Base = <type=int,size=5>; const Array<infer X from Base> x = [] with {size=infer};",
+      "expected": "X.size=0; Base.size=5",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "infer-retains-type",
+      "outcome": "reject",
+      "source": "type Base = <type=int,size=5>; const Array<infer X from Base> x = [\"a\"] with {size=infer};",
+      "expected": "element_type_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "infer-without-seed",
+      "outcome": "reject",
+      "source": "const Array x = [1,2] with {size=infer};",
+      "expected": "invalid_inference_context",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "infer-conflict",
+      "outcome": "reject",
+      "source": "type Base = <type=int,size=5>; const Array<infer X from Base,size=6> x = [1,2] with {size=infer};",
+      "expected": "conflicting_argument",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "compose-disjoint",
+      "outcome": "accept",
+      "source": "type E = <type=int>; type S = <size=3>; const Array<E,S> x = [1,2,3];",
+      "expected": "Array<type=int,size=3>",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "compose-overlap",
+      "outcome": "reject",
+      "source": "type E = <type=int,size=3>; type S = <size=3>; const Array<E,S> x = [1,2,3];",
+      "expected": "duplicate_argument",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "projection",
+      "outcome": "accept",
+      "source": "const Array<type=int,size=3> a = [1,2,3]; type P = params_of(a); const Array<P> b = [4,5,6];",
+      "expected": "P.type=int; P.size=3",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "projection-type",
+      "outcome": "accept",
+      "source": "type P = params_of(Array<type=int,size=3>); const Array<P> b = [4,5,6];",
+      "expected": "P.size=3",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "projection-unspecialized",
+      "outcome": "reject",
+      "source": "type P = params_of(Array);",
+      "expected": "unresolved_inference",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "projection-scalar",
+      "outcome": "reject",
+      "source": "type P = params_of(int);",
+      "expected": "not_parametric_specialization",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "derived-guest-result",
+      "outcome": "accept",
+      "source": "type Base = <type=int,size=5>; fnc main(): int { const Array<infer X from Base> x = [1,2,3] with {size=infer}; type Y = X with {size=2}; const Array<Y> y = [10,20]; return X.size + Y.size + Base.size; }",
+      "expected": "exit 10",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "candidate_extension"
+    },
+    {
+      "id": "contextual-make-seeded",
+      "outcome": "accept",
+      "source": "define struct Particle { x:int; y:int; velocity:int; } type Base = <type=Particle,size=5,layout=soa>; let a: Array<infer X from Base> = [make {x:10,y:20,velocity:1},make {x:30,y:40,velocity:2}] with {size=infer};",
+      "expected": "X.size=2; Base.size=5; X.type=Particle; X.layout=soa",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-array",
+      "outcome": "accept",
+      "source": "define struct P { x:int; } let a: Array<P,layout=soa> = [make {x:1},make {x:2}] with {size=2};",
+      "expected": "two inline values",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-return",
+      "outcome": "accept",
+      "source": "define struct P { x:int; } fnc f() -> P { return make {x:42}; }",
+      "expected": "value result",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-typed",
+      "outcome": "accept",
+      "source": "define struct P { x:int; } let p: P = make P {x:42};",
+      "expected": "same nominal value",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-nested",
+      "outcome": "accept",
+      "source": "define struct P { x:int; } define struct Scene { origin:P; } let s: Scene = make {origin:make {x:42}};",
+      "expected": "nested expected nominal type",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-unknown",
+      "outcome": "reject",
+      "source": "let p = make {x:42};",
+      "expected": "missing_expected_nominal",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-duplicate",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let p: P = make {x:1,x:2};",
+      "expected": "duplicate_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-missing",
+      "outcome": "reject",
+      "source": "define struct P { x:int; y:int; } let p: P = make {x:1};",
+      "expected": "missing_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-extra",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let p: P = make {x:1,y:2};",
+      "expected": "unknown_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-kind",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let p: P = make {x:\"a\"};",
+      "expected": "field_type_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-new-value-slot",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let a: Array<P,layout=soa> = [new {x:1}] with {size=1};",
+      "expected": "reference_value_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-mixed-array",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let a: Array<P,layout=soa> = [make {x:1},new {x:2}] with {size=2};",
+      "expected": "reference_value_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-size-mismatch",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let a: Array<P,layout=soa> = [make {x:1}] with {size=2};",
+      "expected": "incomplete_initialization",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-separators",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } let p: P = make {x=1};",
+      "expected": "invalid_field_initializer",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-unresolved-seed",
+      "outcome": "reject",
+      "source": "let a: Array<infer X> = [make {x:1}];",
+      "expected": "missing_expected_nominal",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-make-wrong-nominal",
+      "outcome": "reject",
+      "source": "define struct P { x:int; } define struct Q { x:int; } let p: P = make Q {x:1};",
+      "expected": "nominal_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_construction"
+    },
+    {
+      "id": "contextual-new-typed-local",
+      "outcome": "accept",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {x:40,y:2}; return p.sum(); }",
+      "expected": "exit 42; ordinary reference construction",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-type-first",
+      "outcome": "accept",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let Point p = new {x:40,y:2}; return p.sum(); }",
+      "expected": "exit 42; same nominal constructor",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-missing-owner",
+      "outcome": "reject",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p = new {x:40,y:2}; return 0; }",
+      "expected": "missing_expected_nominal",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-missing-field",
+      "outcome": "reject",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {x:40}; return 0; }",
+      "expected": "missing_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-duplicate-field",
+      "outcome": "reject",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {x:40,x:2}; return 0; }",
+      "expected": "duplicate_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-field-kind",
+      "outcome": "reject",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {x:true,y:2}; return 0; }",
+      "expected": "field_type_mismatch",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-private-field",
+      "outcome": "reject",
+      "source": "define class Point as private final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {x:40,y:2}; return 0; }",
+      "expected": "inaccessible_field",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-reordered-fields",
+      "outcome": "accept",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {y:2,x:40}; return p.sum(); }",
+      "expected": "exit 42; source evaluation order must be preserved",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-source-order-effects",
+      "outcome": "accept",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc mark(int n):int { stdio.println(n); return n; } fnc main():int { let p: Point = new {y:mark(2),x:mark(40)}; return p.sum(); }",
+      "expected": "stdout lines 2 then 40 exactly once; exit 42; constructor argument order x,y",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-initializer-overflow-order",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc mark(int n):int { stdio.println(n); return n; } fnc main():int { let p: Point = new {y:mark(9223372036854775807)+1,x:mark(40)}; return p.sum(); }",
+      "expected": "compile succeeds; checked integer overflow panics; stdout only 9223372036854775807; later initializer never executes; no successfully published Point",
+      "outcome": "accept",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    },
+    {
+      "id": "contextual-new-two-independent-allocations",
+      "source": "define class Point as pub final int x; pub final int y; constructor(int a,int b) { self.x=a; self.y=b; } pub sum():int { return self.x+self.y; } end fnc main():int { let p: Point = new {x:40,y:2}; let q: Point = new {x:40,y:2}; return p.sum()+q.sum(); }",
+      "expected": "exit 84; two successful distinct reference constructions; physical storage verification is backend-specific",
+      "outcome": "accept",
+      "status": "AUTHORED_NOT_EXECUTED",
+      "edition": "contextual_reference_construction"
+    }
+  ]
+}
