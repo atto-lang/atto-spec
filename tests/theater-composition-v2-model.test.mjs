@@ -2,8 +2,8 @@
 function planComposition(descriptor, authorizedTenant) {
   const fail=code=>({ok:false,code,order:[],rollback:[]});
   const plain=x=>x!==null&&typeof x==="object"&&!Array.isArray(x)&&Object.getPrototypeOf(x)===Object.prototype;
-  const ident=x=>typeof x==="string"&&/^[A-Za-z_][A-Za-z0-9_]*$/.test(x);
-  const dense=x=>Array.isArray(x)&&Array.from({length:x.length},(_,i)=>Object.hasOwn(x,i)).every(Boolean);
+  const ident=x=>typeof x==="string"&&x.length<=128&&/^[A-Za-z_][A-Za-z0-9_]*$/.test(x);
+  const dense=x=>Array.isArray(x)&&x.length<=1024&&Array.from({length:x.length},(_,i)=>Object.hasOwn(x,i)).every(Boolean);
   if(!plain(descriptor)||!ident(descriptor.tenant)||!dense(descriptor.members)||descriptor.members.length===0||descriptor.members.length>1024)return fail("INVALID_DESCRIPTOR");
   // Host model only: authorizedTenant stands for a prevalidated capability, not a capability API.
   if(!ident(authorizedTenant)||descriptor.tenant!==authorizedTenant)return fail("UNAUTHORIZED_TENANT");
@@ -23,12 +23,23 @@ function planComposition(descriptor, authorizedTenant) {
     for(const d of ds)if(!byId.has(d))return fail("UNKNOWN_DEPENDENCY");
     dependencies.set(m.id,ds);
   }
-  const done=new Set(),order=[];
-  while(order.length<byId.size){
-    const ready=[...byId.keys()].filter(id=>!done.has(id)&&[...dependencies.get(id)].every(d=>done.has(d))).sort();
-    if(!ready.length)return fail("DEPENDENCY_CYCLE");
-    const id=ready[0];done.add(id);order.push(id);
+  const indegree=new Map(),dependents=new Map([...byId.keys()].map(id=>[id,[]]));
+  for(const [id,ds] of dependencies){
+    indegree.set(id,ds.size);
+    for(const dep of ds)dependents.get(dep).push(id);
   }
+  const ready=[...byId.keys()].filter(id=>indegree.get(id)===0).sort();
+  const order=[];
+  while(ready.length){
+    const id=ready.shift();order.push(id);
+    for(const child of dependents.get(id)){
+      const count=indegree.get(child)-1;
+      indegree.set(child,count);
+      if(count===0)ready.push(child);
+    }
+    ready.sort();
+  }
+  if(order.length!==byId.size)return fail("DEPENDENCY_CYCLE");
   return {ok:true,order,rollback:[...order].reverse()};
 }
 function rollbackPrefix(plan, started) {
@@ -66,7 +77,11 @@ function cases() {
     ["sparse startup ledger denied",()=>{const x=["Root","Nested"];delete x[1];return rollbackPrefix(ok,x).code==="INVALID_START_PREFIX";}],
     ["failed plan cannot authorize retirement",()=>rollbackPrefix(p({}),[]).code==="INVALID_START_PREFIX"],
     ["prototype-like identifier is treated as data",()=>p({tenant:"T",members:[S("__proto__"),A("constructor","__proto__")]}).ok],
-    ["descriptor resource bound",()=>p({tenant:"T",members:Array.from({length:1025},(_,i)=>S("S"+i))}).code==="INVALID_DESCRIPTOR"]
+    ["descriptor resource bound",()=>p({tenant:"T",members:Array.from({length:1025},(_,i)=>S("S"+i))}).code==="INVALID_DESCRIPTOR"],
+    ["oversized sparse array rejected before traversal",()=>p({tenant:"T",members:new Array(4294967295)}).code==="INVALID_DESCRIPTOR"],
+    ["oversized dependency list rejected",()=>p({tenant:"T",members:[S("Root",null,new Array(4294967295))]}).code==="INVALID_MEMBER"],
+    ["long identifier rejected",()=>p({tenant:"T",members:[S("S".repeat(129))]}).code==="INVALID_MEMBER"],
+    ["maximum bounded chain plans without recursion",()=>{const members=Array.from({length:1024},(_,i)=>S("S"+i,i===0?null:"S"+(i-1)));const x=p({tenant:"T",members});return x.ok&&x.order.length===1024&&x.order[1023]==="S1023";}]
   ];
   return entries;
 }
