@@ -2,6 +2,53 @@
 
 **Status: TARGET / NOT_VERIFIED.** This is a normative language contract, not proof of Java, LLVM, .NET, Wasm or Forge guest execution. See [chapter 03](03-functions-and-effects.md) for named-call dispatch and [chapter 11](11-conformance.md) for evidence standards.
 
+
+## V2 proposed migration: independent None and omission defaults (2026-11-27)
+
+**Status: TARGET / NOT_VERIFIED.** Language-owner decisions recorded here; integration rules below are proposed and require independent review. The remainder of this chapter is the V1 contract, retained for legacy modules. V2 supersedes V1 default syntax and provenance only after an explicit profile/ABI migration. Do not reinterpret old compiled signatures.
+
+| Type-first | Name-first | Meaning |
+| --- | --- | --- |
+| `int? x` | `x: int?` | Required Option<int> |
+| `int? x?` | `x?: int?` | Omittable Option<int>, implicit omitted value None |
+| `int x? ??= 10` | `x?: int ??= 10` | Omittable scalar |
+| `int? x ?= 3` | `x: int? ?= 3` | Required Option with None fallback (`??` alias) |
+| `int? x? ?= 3 ??= 4` | `x?: int? ?= 3 ??= 4` | Independent None and omission defaults |
+
+`T?` is exactly `Option<T>`; formal-name `?` marks omittability. Both declaration orders are canonical and mixed order is legal. `?=` is the preferred formal-default spelling for explicitly supplied outer None; `??` remains a semantically identical alias in formal clauses. `??=` handles absent/omitted input. These are not assignments. Match contiguous operators; never split `?=`, `??` or `??=` across whitespace/comments. A mixed `?=` and `??` clause is a duplicate None fallback, not two distinct defaults. Preserve type-position `T?`, formal-name `x?`, postfix expression propagation `value?`, optional member access `?.`, optional checked cast `as?` and ternary `? :`. Existing `P ?= expr` fallible pattern bindings in structured `maybe` bodies retain their distinct meaning and failure/cleanup contract; see [maybe V1](../language/maybe-else-defer-v1.md). V2 adds only a formal-default context for this existing atomic token. A standalone nonmutating `?=` expression alias is a separate, unresolved proposal; reject general expression and assignment uses rather than reinterpret a fallible binding. In V2 formal declarations, require explicit name-level omission marker for `??=` (proposed integration rule); reject bare `=` as a default delimiter, duplicate clauses, reverse clause order, non-Option None fallback and scalar omittable declarations without an omission default. Legacy `Option[T]` is a compiler warning with a suggested `Option<T>` fix, not a distinct type. Contextual payload-to-Some lifting in a default clause is proposed only when the expected Option type is unambiguous; no implicit lifting at call boundaries, no recursive/nested coercion. Explicit Some/None defaults remain legal. Parenthesize nested top-level fallback expressions to avoid delimiter ambiguity.
+
+```atto
+define fnc Option<int> • foo(x?: int? ?= 3 ??= 4) {
+    if x is omitted do
+        stdio.out.write("omitted");
+    fi
+    return x;
+}
+```
+
+| Input | Bound value | x is omitted |
+| --- | --- | --- |
+| omitted, omit, _ | Some(4) | true |
+| supplied None | Some(3) | false |
+| supplied Some(0) | Some(0) | false |
+| supplied Some(4) | Some(4) | false |
+
+Exactly one branch is selected from the ORIGINAL input. If the omission default yields None, it does not trigger the None fallback. An omitted Option with no omission clause binds None, without invoking the None fallback. Only outer None triggers the None default. `Some(None)`, zero, false and empty values are not None. Preserve syntactic absence versus explicit hole in checked call metadata. `x is omitted` is a boolean predicate on original formal binding provenance, even after default resolution; proposed V2 boundary: permit on omittable formals, reject on unrelated locals/fields or out-of-scope bindings. No extra Option variant, no mutation, no undeclared-variable fallback. Forwarding resolved x normally supplies its value; omission does not silently propagate. Explicit capture/forwarding of provenance requires separate proof.
+
+Standalone `const x = y ?? Some(3) ??= Some(4);` uses the same independent branches where y has proven presence information; ordinary Option alone cannot represent omission. Reject omission fallback on an ordinary value without presence information, and reject undeclared y. General presence-bearing values and provenance escape are separate implementation gates.
+
+### Overload resolution
+
+Normalize source spelling and types before duplicate signature checking. Same owner/name/type vector (and existing generic signature identity) cannot be distinguished by labels, defaults, omittability, return type alone or declaration spelling. Keep receiver separate from caller-visible arity. First determine compatible candidates using checked slot binding and actual supplied types, ignoring default values; no implicit Some. A unique type-compatible complete-arity candidate wins over omission-dependent candidates, subject to existing nominal specificity rules (proposed V2 ranking: complete-arity tier first, then ordinary specificity within tier). If no complete candidate, require a unique compatible winner under ordinary specificity; do not rank by default value or number of omitted slots. Labels bind slots, not overload keys; never use labels alone to rescue an otherwise ambiguous family. No positional shifting. Preserve named-call source order; this chapter retains V1 runtime labels `name: expr` pending reconciliation with any separate equals-label proposal.
+
+Overlapping arity ranges may coexist when normalized signatures differ; reject ambiguous CALLS rather than blanket-rejecting every overlapping interval (V2 proposed refinement). For `foo(x?: int? ?? 3 ??= 4)` and `foo(x?: string? ?? "bar" ??= "star")`, foo() and untyped foo(None) are ambiguous; typed None and Some select their nominal Option type. A type-incompatible exact-arity candidate cannot win. Reject duplicates even when only one is omittable. Reject nontrailing omissions without explicit hole or correct named binding.
+
+### Lowering and evidence
+
+Select overload statically before evaluation. Evaluate receiver then supplied expressions once in source order; resolve selected defaults once in formal order under the correct declaration execution/ownership context. Initial executable slice retains V1 closed, pure, non-suspending defaults. Computed earlier-formal defaults and suspension/actor defaults require independent effect/ownership gates; forward/self references reject. Keep original presence and outer Option discriminant distinct until branch selection; retain provenance only where observed or required by stable dispatch ABI. Do not fabricate an Option payload, implicitly move an omitted slot, allocate a dictionary, or block scheduler threads. ABI versioning must cover function references, virtual/trait/interface methods, actor messages, native exports and hot reload; no silent fallback on unsupported surfaces.
+
+All fnc/mtd/routine, constructor, lambda, mixed formal order and return-signature forms need positive/negative compiled guest tests. Preserve v1 fixtures and version new ones. Exact-head/tree, stepful execution, independent review and identical guest inputs are required; reference models are not compiler parity.
+
 ## Independent question-mark positions
 
 | Formal | Callee type | Required at call? | Absent-slot value |

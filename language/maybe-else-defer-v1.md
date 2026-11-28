@@ -60,8 +60,12 @@ maybe_arms = ["on"], pattern, ["when", guard], "->", arm_body,
   `let maybe = 7;` and `return maybe;` are legal where identifiers are
   otherwise legal. A parser must unambiguously recognize the structured
   `do maybe` or `return maybe` form before treating it as a block.
-- `?=` is atomic and **only** legal as a fallible body item. It is not
-  an alias for `=`, `?` early-exit, or the ternary operator.
+- `?=` is atomic. In a structured `maybe` body it denotes a fallible
+  pattern binding; this meaning is unchanged by the V2 optional-parameter
+  contract, which additionally admits `?=` as a None fallback delimiter
+  only in formal default-clause position. See [chapter 27](../spec/27-optional-and-named-arguments.md).
+  It is not an alias for `=`, `?` early-exit, or the ternary operator.
+  General expression/writeback uses remain rejected.
 - For v1, `else` is **mandatory** and its possible failure alternatives
   must be exhaustively covered. Implicit propagation without `else`
   is deferred to a separately reviewed future version.
@@ -150,7 +154,7 @@ and an early function return performs eligible `finally` once. See
 - Positive and negative compiler tests: first/middle/last failed bind,
   eval-once, no later calls after failure, result/option exhaustiveness,
   distinct error types, user variable named `maybe`, `Never` return,
-  and `?=` outside structured maybe.
+  and `?=` outside structured maybe or an explicitly admitted formal default clause.
 - Real cleanup trace from guest programs: body-local defer **before**
   `else`, handler cleanup afterward, function defer and outer finally;
   ordinary throw skips else and reaches catch, raise skips catch.
