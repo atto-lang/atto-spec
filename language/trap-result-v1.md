@@ -12,6 +12,80 @@ New canonical Atto source uses `trap! expression` and `throw! Error(...)`; `rais
 
 `Err` is a returned value, not an exception. `None` is absence, not an exception. A function can return either without invoking the trap handler.
 
+## Checked unwrap failures (proposed November 25 amendment)
+
+The built-in `Option<T>.unwrap()` returns the Some payload, and `Result<T,E>.unwrap()` returns the Ok payload. On None or Err, respectively, these operations issue an ordinary guest Throw, not a Panic. Consequently `trap! option.unwrap()` and `trap! result.unwrap()` produce a checked Result. This changes the historical unwrap-panic contract; preserve historical receipts, but do not use them as current conformance expectations.
+
+Proposed nominal Error subtype names are `OptionUnwrapError` and `ResultUnwrapError`. A Result unwrap failure must retain the original E payload (including non-Error values, and object identity for reference values) in its typed error representation, without stringification or unsafe alias transfer. The representation and stable ABI codes require shared registration before backend publication. A backend unable to represent this contract must fail closed. Neither failure is a host exception, fatal machine trap, cancellation, raise, or panic. Outside a trap/catch the ordinary unhandled-Throw escalation policy applies. The existing effect checker must account for the possible Throw unless sound flow/ownership analysis proves success. This amendment never authorizes trapping arbitrary panic, host fatal, or cancellation.
+
+The operand executes once. `trap! None` (with a known Option type) returns Ok(None), and trapping an existing Err returns that Err unchanged; neither performs unwrap. A trapping unwrap whose success payload itself has Result type follows the existing one-layer result-aware trap rule. Both trap spellings remain equivalent.
+
+For an inline `sync task<T>`, an escaping unwrap Throw reaches the dynamically enclosing caller trap after normal exceptional cleanup. No new scheduler identity, implicit rollback, retry or cancellation is introduced. Effects already performed remain visible according to the language's ownership/writeback rules; later statements do not execute. For an independently scheduled task, test the ordinary error at the actual join/await boundary separately; do not turn terminal task failures into ordinary errors. Optimizations may eliminate checks only with a stable proof, including guard narrowing, alias mutation, task writeback and suspension invalidation.
+
+### Pipelined typed match (November 26 user decision)
+
+```atto
+declare type Bounded = int where self >= 1 and self <= 42;
+
+pub fnc main() -> int {
+    val Option<int> x = None;
+
+    return trap! x.unwrap() |> match<int>  over
+        on Ok(n): int -> n,
+        on Err(): int -> 42,
+    end;
+}
+```
+
+The exact source is a required positive fixture returning 42. The `declare type` refinement declaration is admitted in addition to the already-supported bare declaration spelling. Its presence does not refine unrelated int expressions. A typed subjectless match stage takes the preceding pipeline value, evaluated once, as its subject. The parse is `(trap! x.unwrap()) |> match<int> over ... end`: trap ends before entering the match arms. An ordinary throw in the selected arm is not caught by that upstream trap; panic/raise/cancellation remain terminal according to their own rules. Only the selected arm runs. `match<int>` denotes the arm result type, not the subject type; `Err()` discards its payload without changing its type or weakening ownership rules. Require positive None and Some (distinct fallback), bare trap migration spelling, effectful receiver evaluated once, arm throw outside the upstream trap, and rejection of wrong receiver/arity or nonexhaustive/ill-typed match. Compile-time folding is valid only if all observable effects and cleanup are preserved. Parser/host-only evidence does not establish backend parity.
+
+### Required compiled guest cases (authored expectations, not executed evidence)
+
+```atto
+fnc and_case(bool run): int {
+    let int count = 0;
+    let Option<int> state = None;
+    val bool result = run && sync task<bool> {
+        count = count + 2;
+        state = Some(40);
+        return true;
+    };
+    if run do
+        guard result, state.is_some() { return 1; }
+        return count + state.unwrap();
+    fi
+    guard !result, state.is_none() { return 2; }
+    return count + 42;
+}
+```
+
+Both calls return 42, but also use separate observable counters to establish that the false path never executes the task and the true path writes back exactly once. The original source alone cannot distinguish all incorrect implementations from the final scalar result.
+
+```atto
+fnc unwrap_case(bool present): Result<int, Error> {
+    let Option<int> state = None;
+    if present do
+        state = Some(42);
+    fi
+    return trap! state.unwrap();
+}
+```
+
+| Case | Expected |
+| --- | --- |
+| Some(42).unwrap, Ok(42).unwrap under trap | Ok(42) |
+| runtime None.unwrap under trap | Err with Option unwrap identity |
+| runtime Err.unwrap under trap | Err with Result unwrap identity and original E |
+| trap without unwrap on None / existing Err | Ok(None) / unchanged Err |
+| inline task with dynamic None.unwrap | outer trap Err; cleanup once; no post-failure work |
+| nested traps and subsequent independent traps | correct one-layer Result and handler retirement |
+| short-circuited RHS containing unwrap or task | no evaluation, no failure or side effect |
+| unwrap failure with defer/finally | exact cleanup order, original error unless existing cleanup precedence supersedes |
+| explicit panic, raise, cancellation and host fatal | bypass trap unchanged |
+| incompatible trap error join / invalid unwrap receiver | semantic rejection, no artifact |
+
+Require compiled .atto guest receipts on Java JVM and Native Image, .NET CoreCLR and NativeAOT, LLVM native, Wasm, Rust, Forge/Cranelift and JS where applicable. Do not count parser rejection, host-model assertions, historical panic fixtures, or zero-step CI as success. Reconcile [historical conformance #446](https://github.com/atto-lang/atto-platform-conformance/pull/446), [v5 #520](https://github.com/atto-lang/atto-platform-conformance/pull/520) and [Java #1177](https://github.com/atto-lang/atto-source.java/pull/1177) explicitly before promotion.
+
 ## Static result type
 
 Let `F` denote the statically permitted ordinary thrown Error type of the operand (normally `Error`, or a narrower declared `throws(F)` upper bound). Let `join_error(E,F)` be a type able to represent *both* returned `Err(E)` values and caught `throw(F)` values without losing their discriminants or payloads.
