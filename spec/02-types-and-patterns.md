@@ -145,7 +145,88 @@ The singleton declaration keyword is `singleton`, not Scala-style `object`. Sing
 
 `match` destructures values/patterns, `switch` dispatches on equality/constant cases, and `if x is type Dog dog` performs nominal refinement. `x as T` is a checked cast; `x as? T` returns `Option<T>` on mismatch. No dynamic reflection is required merely to implement a source-level type test when static metadata is enough.
 
+### Match arm introducers
+
+Ordinary patterns require `on`, including literals, constructor patterns without `is`, and the wildcard `on _`. A type-test pattern may begin directly with `is`; `on is` remains equivalent input syntax. This rule applies to statement and value matches, with explicit or piped subjects, and either outer delimiter. The formatter prefers `is` for a type-test arm and must preserve comments and arm boundaries. It must not remove `on` from any other pattern.
+
+```atto
+const int x = match value over {
+    on 42 -> 100;
+    is int -> -20;
+    on _ -> 0;
+};
+```
+
+A literal arm followed by a type-test arm is an ordered specialization: the literal is tried first, then the type test, then the remaining fallback. This narrow overlap is permitted without `match first`; other overlapping explicit patterns retain the existing proof rules. Unreachable arms remain diagnosable, and the fallback is needed only where the subject domain is not already exhausted. Both spellings of the type-test arm have identical binding, guard, ownership and evaluation semantics. Use an explicit semicolon or comma after an expression arm before a bare `is` arm so that an infix type test inside the expression is not confused with the next arm. No change to switch or select syntax is implied.
+
 Overlap, priority (`match first`), exhaustiveness, numeric equality (`1` versus `1.0`), wildcard arms and Symbol identity must be specified and tested consistently; their unsettled edges are catalogued in [open questions](12-open-questions.md).
+
+
+### Value and type membership arms (v1 target)
+
+The canonical arm heads are `on pattern`, `in collection_expression`, `is type_ref`, and `is in [type_ref, ...]`. Keep legacy `on is T` as input compatibility; no new `ons` keyword. For switch, preserve existing case/on/default spellings and admit the same membership and type heads in the typed over form. Existing result annotations, guards, and arm body delimiters remain independent.
+
+```atto
+return match value over
+    on 42 -> 100,
+    in [0, 1, 2] -> 10,
+    in allowed_values -> 20,
+    is in [int, long] -> 30,
+    is String -> 40,
+    on _ -> 0
+end;
+```
+
+- Evaluate the subject once. Attempt arms in source order, evaluate a collection expression once only when reached, and evaluate its guard only after membership succeeds. Execute exactly one selected body; no fallthrough. Membership is the existing checked value-equality relation, not conversion, pointer identity, or pattern destructuring. `on [1, 2]` tests the whole array where supported; `in [1, 2]` tests its elements. Empty value collections match nothing. Finite arrays, sets, lists and ranges are targets; runtime iteration must preserve effects, borrowing, bounds and termination constraints. No implicit copying or allocation for constant lists.
+- `is in [T, U]` is a disjunction of ordinary type tests, not an array of runtime values. Resolve every member as a type, require a reifiable or statically provable test, preserve nominal/generic identity, and reject unknown or duplicate canonical types and empty type lists. No automatic conversion or dynamic reflection. Type-list bindings narrow to the union of admitted alternatives, with the same capture qualifiers, scope, ownership and guard rules as single-type tests. Runtime type descriptor collections and comma-only type shorthand are deferred pending separate contracts.
+- An earlier unguarded literal or membership arm may specialize a later broad type arm. Diagnose statically provable fully unreachable arms, duplicate constant alternatives and partial redundancy; guarded arms do not establish unconditional coverage. Dynamic collections do not establish exhaustiveness without a proof. Type-check even unreachable bodies before optimization; reject unsupported representations rather than emit misleading artifacts. No blanket exemption for unrelated overlapping structural patterns.
+- In ordinary expressions the equivalent predicates are `x in values` and `x is in [T, U]`; preserve existing negation and identity syntax. This proposal does not introduce a new spelling for negation.
+- Formatter preserves the distinction between value arrays and type lists and the bracket/comma boundaries, including nested generic type arguments. Require explicit separators between expression arms. Canonicalize legacy syntax only with verified equivalent parsing. No change to select.
+- Verify exact-head real guest compilation/execution, negative no-artifact diagnostics, once-only evaluation, guard fallback, overlap, and formatter round trips independently on every backend. This is a language target, not an implementation receipt.
+
+
+### Compile-time Pattern constants and collections (v1 target)
+
+```atto
+const Pattern p1 = on 5;
+const Pattern p2 = is int;
+const Pattern p3 = in [5, 6, 7];
+const Pattern[] z = [on true, on "x", is Foo, in [1, 2, 4, 5]];
+type X = int | bool;
+const Pattern[] type_patterns = [is int, is bool];
+
+match value over
+    on p1 -> 1,
+    in z -> 2,
+    is in type_patterns -> 3,
+    on _ -> 0
+end
+```
+
+- `Pattern` is a compiler-intrinsic compile-time category, not a runtime object, class descriptor, callable or erased Any value. `Pattern[]` is a finite immutable compile-time sequence. The type of a pattern expression is distinct from the type of the values it matches. Neither category has a runtime representation, ABI, heap allocation, reflection, serialization, actor message or runtime function parameter/result. Ordinary arrays of values keep their existing meaning.
+- Pattern constructors reuse arm heads `on P`, `is T`, `is in [T, U]`, and `in C`. In pattern constants all captured operands, collection contents and type references must resolve at compile time. Binding-free structural and constructor patterns are targets; binding patterns, guards on stored patterns, effectful expressions and runtime captures are deferred, not silently discarded. An arm using a stored pattern may have an ordinary guard evaluated only after the pattern succeeds.
+- `on p` applies a resolved Pattern constant; `in z` applies the ordered disjunction of a Pattern collection; `in [on 1, is Foo, in [2, 3]]` is an inline pattern set. `is in z` requires a statically known collection containing only type-test patterns; mixed value/type collections are rejected in this context. `is X` uses a transparent type alias through the ordinary type resolver. Types themselves are not runtime values or ordinary array elements. Mixed Pattern/value arrays are rejected rather than coerced.
+- Resolve names lexically and check all alternatives against the subject domain, using canonical type identity and the existing value-equality relation; never interpret source strings as patterns. A Pattern name must not be confused with a new binding pattern. Unknown names, cyclic dependencies, ambiguous shadowing, mutable declarations, escaping uses and runtime construction fail closed. Initial compiler slices may reject unsupported scopes or alternatives explicitly. Finite implementation budgets must diagnose expansion overflow rather than truncate or duplicate effects.
+- Flatten statically known pattern sets into typed pattern IR before exhaustiveness/reachability analysis and optimization. Evaluate the subject once, retain source order across arms and short-circuit alternatives; execute one arm body. Diagnose duplicate or completely shadowed alternatives where provable; guards do not add unconditional coverage. AOT code may use direct comparisons, tagged-union discriminants, closed-world nominal type tests or eliminate statically proven checks. No runtime type collection or pattern interpreter is required.
+- Named sets, inline sets, aliases and single pattern constants share the same checking and lowering rules as equivalent direct patterns. Formatter must preserve constructors, delimiters, comments and names. Conditional/switch integration is a target; no change to select. Require exact-source positive guest executions and negative no-artifact tests independently for each backend.
+
+
+#### Shared typed pattern representation (compiler contract)
+
+All frontends resolve reusable pattern declarations to the same semantic nodes as direct arm syntax. Backend-specific AST spelling is unrestricted; the following tagged representation defines the information that must survive resolution, not a new public runtime ABI:
+
+| Node | Required checked information |
+| --- | --- |
+| Literal | Canonical value type and value identity (including portable Symbol identity) |
+| TypeTest | Canonical resolved type identity, including generic arguments and nominal/structural distinction |
+| ValueMembership | Compile-time literal members, or a typed collection expression with evaluation/effect and borrowing facts for an ordinary runtime arm |
+| AnyOf | Nonempty ordered alternatives, with no implicit variable capture |
+| Constructor / Structural | Resolved constructor or shape identity, field paths, child patterns, and checked binding information |
+| Wildcard | Whole subject domain; explicit bindings require hygienic lexical scope |
+
+During compile-time resolution, Pattern references and Pattern[] references are distinct categories; aliases resolve to canonical type identity, and named patterns are expanded with bounded cycle detection. Stored pattern nodes contain only compile-time-known operands. Mixed scalar pattern sets remain valid declarations even when some alternatives cannot match a particular subject; the checker must validate the entire set, diagnose proven redundant alternatives as appropriate, and never coerce one scalar type into another. An entirely impossible arm is rejected. Integer and boolean literal equality remain distinct.
+
+Every checked arm has a single body, optional guard, subject domain, and source provenance sufficient for diagnostics. Lower to a once-evaluated subject temporary, checked decision branches, then a shared guard and body. Coverage derives only from unguarded arms. Direct and named equivalent patterns must produce observationally equivalent guest behavior; canonical IR equality is a useful stronger backend-local regression, not a substitute for execution. No Pattern/Pattern[] value survives into guest ABI or storage. Reject unknown node kinds, unresolved references, malformed/cyclic imported data, incompatible captures, and exceeded expansion limits before artifact emission. The initial 64-alternative/32-nesting/128-declaration budgets in restricted compiler candidates are profile restrictions, not language-wide maxima. Future structural/binding nodes require their own execution evidence.
 
 ## Wire portability
 
