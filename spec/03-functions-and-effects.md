@@ -141,7 +141,7 @@ incomplete lowering or emit a false successful parity receipt.
 
 ## Parameter binding and reassignment (v1 target)
 
-In the opt-in borrow-default profile, parameters have fixed local bindings unless marked `rebind`. `mut` requests writable referent access and `take!` specifies transfer at entry; `rebind` does not alter the caller's binding or signature dispatch. Owned replacement values have separate proven origin, cleanup and lifetime. See [explicit parameter rebinding](../language/implicit-argument-borrow-v1.md#explicit-parameter-rebinding-v1).
+In the opt-in borrow-default profile, parameters have fixed local bindings unless marked `rebind`. Reassign only using `set p = value;`; bare assignment and a `rebind` statement are invalid. Default nonprimitive arguments borrow; reuse the incoming reference when safe, materialize independent local reference storage only where necessary, and preserve caller binding and loan provenance. Opt-in profiles are migration gates, not the permanent language default. `mut` requests writable referent access and `take!` specifies transfer at entry; `rebind` does not alter the caller's binding or signature dispatch. Owned replacement values have separate proven origin, cleanup and lifetime. See [explicit parameter rebinding](../language/implicit-argument-borrow-v1.md#explicit-parameter-rebinding-v1).
 
 ## Named function, method and constructor arguments (v1 target)
 
