@@ -32,7 +32,7 @@ define module Internal as
 end
 ```
 
-The namespace header, when admitted, MUST occur before imports and declarations.
+The [namespace modes v2 amendment](namespace-modes-v2.md) governs scope identity and aggregation for all five spellings; the namespace header, when admitted, MUST occur before imports and declarations.
 It identifies the owning namespace, and MUST NOT inject imported names into
 unqualified lookup. The module export may precede or follow its declaration.
 
@@ -62,7 +62,10 @@ does not prove cross-file import/link support.
 export_decl       = "export", "pub", [ "[", "pkg", "]" ],
                     [ export_kind ], identifier, ";" ;
 export_kind       = "fnc" | "class" | "actor" | "enum" | "module" ;
-namespace_header  = "use", "namespace", identifier, ";" ;
+namespace_header  = "use", "namespace", qualified_name, ";"
+                  | "use", "default", "namespace", [ "(", positive_integer, ")" ], ";"
+                  | "use", "file", "namespace", ";"
+                  | "use", "folder", "namespace", ";" ;
 ```
 
 A file export is resolved only against declarations **owned by that source
@@ -116,7 +119,7 @@ module is public.
 ## Linkage, identity, and AOT requirements
 
 The canonical exported symbol key is the tuple
-`(package_identity, source_namespace, owning_module_path, declaration_kind,
+`(package_identity, tagged_source_scope_key, owning_module_path, declaration_kind,
 declaration_name, overload_signature)` where applicable. Names are compared
 case-sensitively and cannot be deduplicated using leaf spelling alone.
 Module/file exports and imports must use the exact canonical source-unit

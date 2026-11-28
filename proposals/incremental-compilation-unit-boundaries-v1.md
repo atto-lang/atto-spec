@@ -7,15 +7,15 @@ Related implementation contract: [atto-common-source #133](https://github.com/at
 ## Semantic identities
 
 - A package instance is a pinned manifest/dependency-lock identity. Package ownership, import provenance and visibility must be verified before compiler cache reuse.
-- A file with one explicit `use namespace N;` belongs to exactly `(PackageInstanceId, N)`. Multiple validated files may contribute to that one namespace within the same package, independent of directory. Namespace membership **never spans packages**.
-- A file with **no explicit namespace header** is a distinct `(PackageInstanceId, SourceUnitId)` compilation unit. No compiler may implicitly merge such source files into one global/default namespace just to form a cache group. Files in the same package remain separate units, regardless of folder. A source added to or removed from a namespace changes compilation identity and requires appropriate invalidation.
+- A file with one explicit `use namespace N;` belongs to exactly `(PackageInstanceId, NAMED, N)`. Multiple validated files may contribute to that one namespace within the same package, independent of directory. Namespace membership **never spans packages**.
+- Under [namespace modes v2](../language/namespace-modes-v2.md), omitted/default/file headers are the same tagged file scope. Named and explicit folder modes may aggregate only verified participants with the same exact scope key. A source added to or removed from a shared scope changes membership and requires invalidation; changing among file spellings does not change identity. No ambient folder grouping for cache convenience.
 - `define module` remains a separate source-language construct and does not implicitly join a namespace aggregate. Import resolution, runtime initialization and actor state rules are not changed by the build cache.
 
 ## Required build guarantee
 
 Incremental compilation is permitted only when the resulting program is **observationally equivalent to a clean compilation** of the same verified snapshot with the same target, flags and toolchain: type/borrow/effect/actor admission, errors, public ABI, required artifact provenance and executable guest behavior must agree.
 
-The minimum optimizable dirty set is the owning compilation unit (unnamespaced file or explicit namespace). Finer-grained function/declaration reuse is permitted if dependencies are proven. The compiler may re-link/repackage an output after regenerating only one source unit; linking is **not** the same as recompilation. Global optimizations may require more codegen work, which must be reported accurately.
+The minimum optimizable dirty set is the owning compilation unit (file scope or explicit named/folder scope). Finer-grained function/declaration reuse is permitted if dependencies are proven. The compiler may re-link/repackage an output after regenerating only one source unit; linking is **not** the same as recompilation. Global optimizations may require more codegen work, which must be reported accurately.
 
 Public interface/effects/ownership/actor protocol changes can invalidate importers. Implementation-body changes invalidate embedding/inlining/specialization consumers as needed. Negative symbol lookups, source membership changes, package/version/alias rebinding, compile-time macro expansion, target/toolchain/runtime profile changes and hot-load generations must also be covered. An invalid, missing, stale or untrusted cache witness must never bypass semantic admission or silently reuse old code.
 

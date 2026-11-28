@@ -301,21 +301,12 @@ must not declare multiple namespaces, even if the names are identical.
 ```ebnf
 source_unit     = [ namespace_decl ], { import_decl }, { top_level_decl } ;
 namespace_decl  = "use", "namespace", identifier, { ".", identifier }, ";"
-                | "use", "default", "namespace", [ "(", positive_integer, ")" ], ";" ;
+                | "use", "default", "namespace", [ "(", positive_integer, ")" ], ";"
+                | "use", "file", "namespace", ";"
+                | "use", "folder", "namespace", ";" ;
 ```
 
-The explicit header uses a fixed, potentially dotted namespace, e.g.
-`use namespace commerce.storefront;`. The derived header takes source-path
-components: `use default namespace;` is the containing folder and
-`use default namespace(2);` is `parent.folder`. Depth must be an integer
-from 1 to 32. Resolution is compile-time, requires a **logical package-relative
-source path** ending in `.atto`, and must never include an absolute host path,
-parent-traversal component or symlink-resolved machine path. Reject insufficient
-depth and invalid/reserved folder identifiers; never sanitize them silently.
-The host source-only API (including browser snippets without a virtual file path)
-must diagnose missing context instead of guessing. The resulting namespace has
-the same static identity as its explicit spelling; it is not a runtime global.
-The file position rule applies equally to explicit and derived headers.
+The [namespace modes v2 amendment](namespace-modes-v2.md) governs this grammar in the new profile. Omission, explicit default and file mode identify the current source file; named and folder modes are distinct opt-in shared scopes. Folder mode derives the complete logical parent path, not the leaf/suffix name. Explicit numeric default(N) keeps the existing bounded suffix-derived named identity; only the previous bare-default folder-derived meaning is legacy-profile only.
 
 Valid:
 
@@ -328,18 +319,7 @@ import sleep from "std.time";
 pub fnc main(): int { return 0; }
 ```
 
-For `src/commerce/storefront/main.atto` under the source root, the following
-headers resolve to `storefront`, `commerce.storefront`, and
-`src.commerce.storefront`, respectively:
-
-```atto
-use default namespace;
-use default namespace(2);
-use default namespace(3);
-```
-
-These are alternative headers in **separate** files, not declarations that
-can appear together in one source file.
+For `src/commerce/storefront/main.atto`, `use folder namespace;` selects the tagged folder key `src/commerce/storefront`; `use default namespace;` and `use file namespace;` select that file's own key. These are alternative headers, never multiple headers in one file.
 
 A source file without a namespace is also valid. An import before the namespace,
 a repeated namespace, or a namespace after any declaration is a compile-time
@@ -405,10 +385,7 @@ any of these forms.
   `use namespace http;` and with no explicit namespace header.
 
 
-- Parse zero or one explicit or folder-derived namespace header before imports
-  and declarations; reject duplicates and declarations appearing after an import
-  or other declaration. Derivation is deterministic from a package-relative
-  logical path; reject missing path, reserved components, invalid/deep depths.
+- Parse all five namespace spellings; reject duplicates, misplaced headers and invalid logical identities. Test numeric depth and equivalent named identities in the new profile, and legacy bare-default meaning only in its explicitly selected legacy profile.
 - Parse namespace and named imports with and without `pkg`.
 - Admit `import pkg 'z';` and `import pkg 'z' as alias;` as canonical forms;
   enforce deterministic implicit basenames, reserved-name/invalid-name
