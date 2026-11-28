@@ -1,0 +1,86 @@
+{
+  "profile": "dynrecord-computed-keys-symbol-construction-v1",
+  "evidence": "TARGET_NOT_EXECUTED",
+  "vectors": [
+    {
+      "id": "computed-const",
+      "source": "const key=\"first name\"; val r=([key]=42);",
+      "expect": "accept"
+    },
+    {
+      "id": "computed-concat",
+      "source": "const prefix=\"content-\"; val r=([prefix+\"type\"]:42);",
+      "expect": "accept"
+    },
+    {
+      "id": "computed-record-denied",
+      "source": "val r={[\"x\"]:42};",
+      "expect": "reject"
+    },
+    {
+      "id": "computed-duplicate",
+      "source": "val r=([\"x\"]=1,\"x\":2);",
+      "expect": "reject"
+    },
+    {
+      "id": "computed-int",
+      "source": "val r=([1]=42);",
+      "expect": "reject"
+    },
+    {
+      "id": "computed-runtime",
+      "source": "fnc f(string key): DynRecord {return ([key]=42);}",
+      "expect": "candidate_runtime"
+    },
+    {
+      "id": "runtime-duplicate",
+      "source": "fnc f(string key): DynRecord {return ([key]=1,\"x\":2);}",
+      "expect": "candidate_runtime_checked"
+    },
+    {
+      "id": "symbol-single",
+      "source": "const Symbol a=Symbol('x y z zzz');",
+      "expect": "accept"
+    },
+    {
+      "id": "symbol-double",
+      "source": "const Symbol a=Symbol(\"x y z zzz\");",
+      "expect": "accept"
+    },
+    {
+      "id": "symbol-literal",
+      "source": "const Symbol a=#'x y z zzz';",
+      "expect": "accept"
+    },
+    {
+      "id": "symbol-runtime",
+      "source": "fnc f(string key): Symbol {return Symbol(key);}",
+      "expect": "accept"
+    },
+    {
+      "id": "symbol-int",
+      "source": "const Symbol a=Symbol(123);",
+      "expect": "reject"
+    },
+    {
+      "id": "symbol-arity",
+      "source": "const Symbol a=Symbol(\"x\",\"y\");",
+      "expect": "reject"
+    },
+    {
+      "id": "symbol-string-domain",
+      "source": "const string a=Symbol(\"x\");",
+      "expect": "reject"
+    },
+    {
+      "id": "symbol-as-record-key",
+      "source": "val r=([Symbol(\"x\")]=42);",
+      "expect": "reject"
+    },
+    {
+      "id": "symbol-normalization",
+      "source": "Symbol(\"e\\u0301\") eq Symbol(\"é\");",
+      "expect": "decision_required"
+    }
+  ]
+}
