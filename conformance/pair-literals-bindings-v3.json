@@ -264,8 +264,8 @@
     {
       "id": "spread-pairs",
       "kind": "accept",
-      "source": "fnc foo(string name,int age,bool active): int { return age; } const t=(active:=true,name:=\"Alice\",age:=42); foo(...t);",
-      "expect": "named payloads in reordered parameter slots, exit 42"
+      "source": "fnc foo(Pair<bool> a,Pair<string> b,Pair<int> c): int { return c.value; } const t=(active:=true,name:=\"Alice\",age:=42); foo(...t);",
+      "expect": "positional whole Pairs, exit 42"
     },
     {
       "id": "spread-tuple",
@@ -282,8 +282,8 @@
     {
       "id": "spread-two",
       "kind": "accept",
-      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name=\"Alice\"),...(age:=42,active:=true));",
-      "expect": "two named spreads, exit 42"
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...{name:\"Alice\"},...{age:42,active:true});",
+      "expect": "two named Record spreads, exit 42"
     },
     {
       "id": "spread-empty",
@@ -294,8 +294,8 @@
     {
       "id": "spread-pos-before-named",
       "kind": "accept",
-      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(\"Alice\",...(age:=42,active:=true));",
-      "expect": "positional then named, exit 42"
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(\"Alice\",...{age:42,active:true});",
+      "expect": "positional then named Record, exit 42"
     },
     {
       "id": "spread-duplicate",
@@ -312,8 +312,8 @@
     {
       "id": "spread-unknown",
       "kind": "reject",
-      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(wrong:=\"Alice\",age:=42,active:=true));",
-      "expect": "unknown parameter"
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...{wrong:\"Alice\",age:42,active:true});",
+      "expect": "unknown Record field name"
     },
     {
       "id": "spread-missing",
@@ -347,21 +347,21 @@
     },
     {
       "id": "spread-dynamic-key",
-      "kind": "reject",
-      "source": "fnc foo(string name,int age,bool active): int { return age; } val key=read_name(); foo(...(Pair.of(key,\"Alice\"),age:=42,active:=true));",
-      "expect": "unproved key, no fallback"
+      "kind": "accept",
+      "source": "fnc foo(Pair<int> a): int { return a.value; } fnc key(): string { return \"runtime\"; } val t=(Pair.of(key(),42),); foo(...t);",
+      "expect": "runtime Pair key is irrelevant to positional binding, exit 42"
     },
     {
       "id": "spread-invalid-key",
-      "kind": "reject",
-      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(\"5\":=\"Alice\",age:=42,active:=true));",
-      "expect": "invalid parameter name"
+      "kind": "accept",
+      "source": "fnc foo(Pair<int> a): int { return a.value; } foo(...(\"5\":=42,));",
+      "expect": "nonidentifier Pair key accepted positionally, exit 42"
     },
     {
       "id": "spread-pair-duplicate",
-      "kind": "reject",
-      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name:=\"Alice\",\"name\":=\"Bob\",age:=42,active:=true));",
-      "expect": "duplicate Pair keys"
+      "kind": "accept",
+      "source": "fnc foo(Pair<int> a,Pair<int> b): int { return a.value*10+b.value; } foo(...(x:=4,x:=2));",
+      "expect": "duplicate Pair keys accepted positionally, exit 42"
     },
     {
       "id": "spread-scalar",
@@ -384,7 +384,7 @@
     {
       "id": "spread-effect-order",
       "kind": "accept",
-      "source": "fnc join(int a,int b): int { return a*10+b; } join(...(b:=tick(2),a:=tick(4)));",
+      "source": "fnc join(int a,int b): int { return a*10+b; } join(...{b:tick(2),a:tick(4)});",
       "expect": "tick(2), then tick(4), exactly once, result 42"
     },
     {
@@ -492,8 +492,8 @@
     {
       "id": "projection-spread-explicit",
       "kind": "accept",
-      "source": "const x:=5; const y:=37; const foo=|int x,int y| -> x+y; foo(...(x,y));",
-      "expect": "42"
+      "source": "const x:=5; const y:=37; const foo=|int x,int y| -> x+y; foo(...(x.value,y.value));",
+      "expect": "explicit projections, 42"
     },
     {
       "id": "projection-apply-no-unwrapping",
@@ -848,6 +848,30 @@
       "kind": "reject",
       "source": "let x=5; x=4;",
       "expect": "bare local reassignment rejected under strict binding profile; no artifact"
+    },
+    {
+      "id": "spread-pair-no-unwrapping",
+      "kind": "reject",
+      "source": "fnc bar(string y,string x): string { return y+x; } const t=(x:=\"foo\",y:=\"stew\"); bar(...t);",
+      "expect": "Pair<string> is not string; no named fallback"
+    },
+    {
+      "id": "spread-record-reverse",
+      "kind": "accept",
+      "source": "fnc bar(string y,string x): string { return y+x; } const r={x:\"foo\",y:\"stew\"}; bar(...r);",
+      "expect": "stewfoo"
+    },
+    {
+      "id": "spread-record-pair-field",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> a): int { return a.value; } f(...{a:(z:=42)});",
+      "expect": "whole Pair field, exit 42"
+    },
+    {
+      "id": "spread-record-pair-field-no-unwrapping",
+      "kind": "reject",
+      "source": "fnc f(int a): int { return a; } f(...{a:(z:=42)});",
+      "expect": "Pair<int> is not int"
     }
   ],
   "pending_call_syntax": [
