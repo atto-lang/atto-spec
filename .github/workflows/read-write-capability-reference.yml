@@ -1,0 +1,19 @@
+name: Read/write capability reference model (host only)
+on:
+  pull_request:
+    paths:
+      - 'language/read-write-capability-dispatch-v1.md'
+      - 'tests/read-write-capability-reference.test.mjs'
+      - '.github/workflows/read-write-capability-reference.yml'
+permissions:
+  contents: read
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node --version
+      - run: node --test tests/read-write-capability-reference.test.mjs
