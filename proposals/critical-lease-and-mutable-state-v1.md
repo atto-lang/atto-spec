@@ -6,34 +6,49 @@ This candidate refines the existing [state-container contract](../spec/state-con
 
 ## Syntax and admission
 
-A state container owns its mutable fields. The canonical spelling is:
+A state container owns its mutable fields. The canonical proposed spelling is `state_ro` / `state_w`:
 
 ```atto
 define state container Counter as
   state { let int count: 0; }
 
   pub increment(int amount): void {
-    handle_state(critical-write |s| -> {
+    state_w(|s| -> {
       s.count = s.count + amount;
     });
   }
 
   pub read_count(): int {
-    return handle_state(critical-read |s| -> s.count);
+    return state_ro(|s| -> s.count);
   }
 end
 ```
 
+* `state_ro(callback)` and `handle_state_ro(callback)` normalize to `handle_state(critical-read callback)`.
+* `state_w(callback)` and `handle_state_w(callback)` normalize to `handle_state(critical-write callback)`.
+* All five intrinsic names are sealed in protected actor and state-container methods. Exact direct `self.` qualification is equivalent to a bare invocation; ordinary method dispatch, first-class references, overrides, and indirect calls cannot mint lease authority. The short names are contextual, not new globally reserved keywords. Reject lexical shadowing that would obscure an intrinsic in a protected method.
+* A short or long alias already specifies its authority: a second critical-mode keyword is invalid. Binder mutability is inferred from the mode. Aliases must share typed IR, admission, cleanup, diagnostics and AOT/runtime behavior; no extra dynamic dispatch is permitted.
 * `critical-write` requests an exclusive write loan for one receiver instance.
 * `critical` is an alias for **exclusive write**, not a shared read.
 * `critical-read` requests read-only authority. It must never create a write
   ticket or mutate fields; on restricted scalar profiles the only admitted
-  syntax is a by-value `s.field` projection. Read blocks in such profiles
-  are an error, including empty blocks.
+  syntax may be limited to a by-value `s.field` projection, including the equivalent single-return block if implemented. Empty or effectful read blocks must not be admitted as write regions. Multi-field owned snapshots under one lease are the general target, not an implied property of restricted scalar implementations.
 * Compound keyword tokens use contiguous ASCII spelling: `critical-read`,
   `critical-write`; `critical -read` is never a synonym.
 * Direct mutable-state field access, including same-class access on another
   instance, is not a substitute for the checked lexical loan.
+
+## General target: consistent snapshots and typed results
+
+```atto
+pub snapshot(): Tuple[int, int] {
+    return state_ro(|s| -> {
+        return (s.balance, s.transactions);
+    });
+}
+```
+
+Both projections must occur under a single shared lease, and the returned tuple must contain independently owned scalar values. No split acquisitions or borrowed state may escape. The same names and semantics apply to actors and mutable state containers; unsupported actor, tuple, graph, or expression-position profiles must reject rather than simulate. Direct method-return scalar write results must be snapshotted before release and returned only after release. General binding-position write expressions are a target obligation, not evidence of implementation.
 
 ## Safety and ownership obligations
 
@@ -91,6 +106,22 @@ arbitrary mutable collection fields. Java/LLVM/other backend claims require
 their own executable guest artifacts, successful exact-commit tests and
 host-lifecycle evidence. Rust-native compile-only fixtures are not runtime
 or cross-backend proof.
+
+
+## Actor and protected-container execution invariants (hardening amendment)
+
+These obligations apply equally to the short aliases, their compatibility aliases and the explicit long-form modes. They extend, not replace, the attached actor/class state contracts. A state declaration remains `state { ... }`; a plain struct or unprotected class does not acquire these intrinsics just by declaring a field named state.
+
+* **Owner authentication:** resolve the intrinsic from the nominal protected receiver, not identifier text. Preserve owner/domain identity through generic specialization, out-of-line receivers, inheritance, imports and lowering. A remote actor reference, arbitrary receiver expression, function value, or ordinary same-named callable cannot acquire another actor's state. In protected scopes reject intrinsic shadowing rather than silently changing dispatch; ordinary names outside such scopes keep their normal meaning.
+* **Transitive readonly:** the read binder and every derived projection, iterator, element, slice, method receiver and captured reference must remain read-only. Reject mutable reborrows and calls with unproven effects, including through generic or dynamic dispatch. A read callback may return a deeply independent owned value, never a mutable reference into the region. A single-lease tuple snapshot observes one consistent region version.
+* **Control flow:** a callback-local result is not an enclosing-method return. Evaluate each invocation at most once, in source evaluation order; a skipped short-circuit operand acquires no lease. A result is evaluated while the lease is valid, proved independent, then released before any surrounding computation observes it. All callback exits share cleanup, including early result, checked arithmetic failure, throw, raise, panic and supported cancellation. No automatic rollback of committed writes is implied.
+* **Reentrancy and suspension:** for the non-suspending baseline reject nested acquisitions (including mixed spellings and helper-mediated reacquisition) unless a separately specified ordered multi-region protocol proves safety. Reject await, select, yield, spawn, send, blocking I/O, and unknown transitive effects while the lease is live. An implementation must not unlock and reacquire implicitly, or infer safety from a serial actor or carrier-thread identity.
+* **Actor lifecycle:** initialize each instance before ready/receive, admit only authorized lifecycle or receive turns, and bind each lease to the owning domain, exact region, incarnation and logical task. Stop/cancel closes new admission; cleanup and physical retirement are ordered after outstanding leases retire or are safely revoked. A stale lease cannot observe, modify or release a new incarnation's state. Panic still follows supervisor CONTROL policy; cleanup must not let the actor intercept panic. Standalone container close follows the same quiescence rule without inventing an actor mailbox.
+* **Concurrency and storage:** shared readers may overlap, but no writer overlaps any reader/writer of the same region. Use one region-wide invariant boundary by default. Contended acquisition must not park a scheduler carrier; target-specific fairness and cancellation guarantees require evidence. Exclusive ownership or serial admission can eliminate locking only with a mechanical lifetime/exclusivity proof. No mandatory per-access allocation or hidden snapshot is required, and no allocation-free/zero-GC claim follows from this optimization.
+
+### Additional execution and rejection gates
+
+A portable suite must separately track standalone containers, ordinary concurrent actors, serial actors, virtual actors and protected attached-class state; an unsupported profile is not a pass. Require exact positive outputs for independent instances, read-after-write, atomic write-result copy-out, single-lease correlated-field snapshot, evaluation order and skipped operands. Require diagnostic-specific no-artifact negatives for transitive mutation, alias escape through nested aggregate/capture, helper-mediated reacquisition, remote receiver, forged/duplicate mode and suspension through indirect calls. Runtime traces must establish reader overlap where supported, writer exclusion, balanced normal and exceptional exits, no publication on failed initialization, stop/cancel retirement and stale-incarnation refusal. Count actual compiled guest executions separately from parser, host, model and compile-only tests. A failing negative must have reached the intended admission phase rather than merely failing unrelated syntax. Do not claim transactional rollback, cross-worker synchronization or full actor support from a scalar fixture.
 
 ## Acceptance requirements
 
