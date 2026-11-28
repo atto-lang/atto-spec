@@ -6,7 +6,7 @@ gated. Acceptance does **not** imply executable parity across backends.
 ## Effectful header extension (2026-11-17)
 
 The grammar below describes the **unchanged legacy callable body families**.
-When a signature contains inline `throws`/`raises`/`panics` clauses,
+When a signature contains inline `throws`/`raises`/`panics` clauses or structured `effects { ... }` / `budget { ... }` contracts,
 the more specific
 [java-style failure signature and body rules](java-style-failure-signature-bodies-v1.md)
 apply: return-before-effects requires `{`, `begin` or `::`; a trailing

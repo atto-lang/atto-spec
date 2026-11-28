@@ -22,6 +22,10 @@ Explicit `infer` is already part of the target return annotation contract. The s
 
 See [canonical lambdas and AOT closure semantics](../language/canonical-lambdas-and-closures-v1.md) for capture provenance, effect checks and full-AOT code-plus-environment lowering. Existing typed inline annotations, braced bodies and separately gated comma-body profiles remain intact.
 
+## Flexible inline callable contracts
+
+A named callable may place its mandatory result annotation before or after the entire inline `effects`, `budget`, `throws`, `raises`, and `panics` sequence. Brace and `begin`/`end` statement bodies work for either placement; a final result annotation following the clauses also admits newline-started statements terminated by `end` without `begin`. The five equivalent spellings, parser boundaries and conformance requirements are specified in [flexible contract headers](../language/java-style-failure-signature-bodies-v1.md#flexible-contract-headers-effects-budget-and-result-placement-2026-11-26). This is a syntax target, not backend execution evidence.
+
 ## Signatures and visibility
 
 ```atto
