@@ -623,3 +623,43 @@ Copying data into another actor's arena requires a **destination-aware allocatio
 - atto-platform-conformance PR #45 currently assumes the earlier deep-default profile; its fixtures must be revised, not recorded as passing for this change.
 
 This remains a design and reference-test proposal. No cross-backend runtime support is claimed.
+
+## Explicit binding ownership arrow (owner decision 2026-11-27)
+
+This is a target language contract, not a backend implementation receipt.
+
+| Form | Binding operation | Ownership operation |
+| --- | --- | --- |
+| `let a = b;` | Fresh binding or lexical shadow | Ordinary initialization |
+| `let a <- b;` | Fresh binding or lexical shadow | Explicit transfer |
+| `set a = b;` | Existing writable binding only | Ordinary assignment |
+| `set a <- b;` | Existing writable binding only | Explicit transfer |
+
+Typed `let T a <- b;` is admitted under the same checks. No `const a <- b;`, typed const, implicit-const arrow, `val` or `set!` extension in this phase. Moving a non-Copy source out of a const binding is deferred; reject until its policy is specified. Bare `a <- b;` is not reassignment. The arrow is contextual to the admitted binding grammar; it does not alter comparisons, method separators, channels or actor sends.
+
+The first implementation profile is a whole named local binding or an already-owned fresh RHS result. Resolve the destination by binding identity, not spelling; check type, writability, source ownership and live loans before committing. For a shadowing declaration resolve the RHS in the pre-declaration environment. Evaluate RHS once. Non-Copy named sources are consumed via the same checked ownership operation as `take!` / `move!`; intrinsic by-value Copy sources remain usable. Ordinary assignment must never implicitly clone or duplicate mutable ownership. A new destination may not accidentally capture an old source by name.
+
+No raw aliasing, actor-private escape, implicit share, serialization, messaging, scheduling effect, heap allocation or copying is implied by the arrow. Reject unknown ownership, partial/projected moves, self-move of the same binding and overlapping active loans in the initial profile. Unproved tuple/parallel moves fail closed pending a separate simultaneous-commit specification. Do not treat the existing nominal shallow-copy capability as an intrinsic Copy witness.
+
+On successful replacement, retire the old destination exactly once according to its lifetime contract and install the incoming value; mark a consumed source uninitialized. Reads and subsequent moves from a consumed place reject on every reachable path until legal reinitialization. A failed RHS must not overwrite/drop the old destination; any effects already performed by RHS evaluation retain their own semantics. Cleanup/unwind/cancellation must not double-drop or leak a moved owner. A backend lacking proof for these obligations must reject that profile instead of treating it as ordinary assignment.
+
+### Required compiler and guest conformance
+
+| Case | Expected |
+| --- | --- |
+| `let a <- b;` with live intrinsic int source | Both values readable |
+| `set a <- b;` with existing writable destination and intrinsic int | Destination updated; source readable |
+| Whole uniquely owned non-Copy local move | Same logical identity; source inaccessible |
+| Move then read / move again / capture source | Compile rejection |
+| Move then legally reinitialize source | Pass |
+| Move with an active incompatible loan | Compile rejection |
+| Missing destination / immutable destination / bare arrow | Compile rejection |
+| Explicit const, implicit const or val arrow | Compile rejection in this phase |
+| Same-name let shadow with RHS resolving outer/previous binding | Fresh identity; correct source resolution |
+| Non-Copy self-move / foreign actor / opaque ownership | Compile rejection |
+| RHS error before replacement | Old destination remains valid |
+| Drop counting through success and unwind | Exactly-once destruction |
+| Branch join / loop backedge with possibly moved binding | Reject unproved reads; legal reinitialization passes |
+| Comments, strings, comparisons, existing signature arrows | No grammar regression |
+
+For each backend record exact source head and root tree, actual build/test steps, compiled positive guests and diagnostic-exact negatives; host-model or parser-only tests are not guest parity. Zero-step/runnerless CI is not evidence. No merge without independent review and the applicable execution gates.
