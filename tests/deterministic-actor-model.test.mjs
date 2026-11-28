@@ -123,3 +123,102 @@ test('mailbox does not reorder admitted messages to the same serial actor',()=>{
   assert.deepEqual(delivered.map(e=>e.choice),['deliver:m1','deliver:m2']);
  }
 });
+
+test('empty tasks retire without a bogus step and duplicate empty ids still reject',()=>{
+ const s={actors:[],tasks:[{id:'empty',steps:[]}]};
+ const t=schedule(s);
+ assert.equal(t.status,'completed');
+ assert.equal(t.events.length,0);
+ assert.deepEqual(Object.keys(t.final_state.tasks),[]);
+ assert.throws(()=>schedule({...s,tasks:[s.tasks[0],s.tasks[0]]}),/duplicate/);
+});
+
+test('terminal sleep retains actor turn until virtual wake, preserving serial admission',()=>{
+ const s={actors:[{id:'worker',handlers:{first:[{op:'sleep',after:7}],second:[{op:'add',key:'count'}]}}],shared:{count:0},tasks:[{id:'p',steps:[{op:'send',to:'worker',tag:'first'},{op:'send',to:'worker',tag:'second'}]}]};
+ for(let seed=1;seed<=20;seed++){
+  const t=schedule(s,{seed});
+  assert.equal(t.status,'completed');
+  assert.equal(t.final_state.shared.count,1);
+  assert.equal(t.final_state.clock,7);
+  const second=t.events.find(e=>e.choice==='deliver:m2');
+  assert.equal(second.time,7);
+  assert.deepEqual(schedule(s,{seed,replay:t}),t);
+ }
+});
+
+test('terminal sleep is cancellable and stale wake is not dispatched',()=>{
+ const s={actors:[],tasks:[{id:'sleeper',steps:[{op:'sleep',after:9}]},{id:'killer',steps:[{op:'cancel',target:'sleeper'}]}]};
+ const t=schedule(s,{prefix:['step:sleeper','step:killer']});
+ assert.equal(t.status,'completed');
+ assert.equal(t.final_state.cancelled,1);
+ assert.equal(t.final_state.clock,0);
+ assert.equal(t.events.length,2);
+});
+
+test('replay refuses forged evidence class and unused forced choices',()=>{
+ const s={actors:[],tasks:[{id:'x',steps:[{op:'yield'}]}]};
+ const t=schedule(s);
+ assert.throws(()=>schedule(s,{replay:{...t,evidence:'GUEST_EXECUTION'}}),/header mismatch/);
+ assert.throws(()=>schedule(s,{prefix:['step:x','step:x']}),/unused forced choices/);
+});
+
+test('bounded exploration cannot certify exhaustion when alternative prefixes remain',()=>{
+ const s={actors:[],tasks:Array.from({length:20},(_,i)=>({id:'task'+i,steps:[{op:'yield'}]}))};
+ const t=explore(s,{maxSchedules:1});
+ assert.equal(t.explored,1);
+ assert.equal(t.exhausted,false);
+ assert.equal(explore({actors:[],tasks:[]},{maxSchedules:1}).exhausted,true);
+});
+
+
+test('assertions require a real counter and an explicit safe integer expectation',()=>{
+ const scenario={actors:[],tasks:[{id:'p',steps:[{op:'assert',key:'absent'}]}]};
+ assert.throws(()=>schedule(scenario),/invalid assertion/);
+ assert.throws(()=>schedule({actors:[],tasks:[{id:'p',steps:[{op:'assert',value:0}]}]}),/invalid assertion/);
+ assert.equal(schedule({actors:[],tasks:[{id:'p',steps:[{op:'assert',key:'absent',value:0}]}]}).status,'failed');
+ assert.equal(schedule({actors:[],shared:{count:0},tasks:[{id:'p',steps:[{op:'assert',key:'count',value:0}]}]}).status,'completed');
+});
+test('exploration detects a real lost update and replays both outcomes',()=>{
+ const scenario={actors:[],shared:{count:0},tasks:[
+  {id:'a',steps:[{op:'load',key:'count',as:'x'},{op:'store',key:'count',local:'x'}]},
+  {id:'b',steps:[{op:'add',key:'count'}]}
+ ]};
+ const result=explore(scenario,{maxSchedules:32});
+ assert.deepEqual([...new Set(result.traces.map(t=>t.final_state.shared.count))].sort(),[0,1]);
+ for(const trace of result.traces) assert.deepEqual(schedule(scenario,{replay:trace}),trace);
+});
+test('delivery cannot exceed the live task cap or consume the refused message',()=>{
+ const scenario={actors:[worker],shared:{count:0,ticks:0},tasks:[
+  {id:'sender',steps:[{op:'send',to:'worker',tag:'increment'},{op:'yield'}]},
+  ...Array.from({length:255},(_,i)=>({id:'task'+i,steps:[{op:'yield'}]}))
+ ]};
+ const failed=schedule(scenario,{prefix:['step:sender','deliver:m1']});
+ assert.equal(failed.status,'failed');
+ assert.match(failed.failure.message,/live task budget/);
+ assert.equal(Object.keys(failed.final_state.tasks).length,256);
+ assert.equal(failed.final_state.mailbox.length,1);
+ assert.equal(failed.final_state.consumed,0);
+ assert.deepEqual(schedule(scenario,{replay:failed}),failed);
+ const allowed=schedule(scenario,{prefix:['step:sender','step:sender','deliver:m1']});
+ assert.equal(allowed.status,'completed');
+ assert.equal(allowed.final_state.shared.count,1);
+});
+
+
+test('a due timer rejected by full mailbox admission remains accounted for',()=>{
+ const scenario={actors:[{id:'worker',handlers:{hold:[{op:'sleep',after:10}],tick:[]}}],
+  tasks:[{id:'p',steps:[{op:'send',to:'worker',tag:'hold'},{op:'timer_send',to:'worker',tag:'tick',after:1},
+   ...Array.from({length:1024},()=>({op:'send',to:'worker',tag:'tick'}))]}]};
+ const prefix=['step:p','deliver:m1','step:delivery.m1',...Array(1025).fill('step:p'),'timer:t2'];
+ const failed=schedule(scenario,{prefix});
+ assert.equal(failed.status,'failed');
+ assert.match(failed.failure.message,/mailbox budget exceeded/);
+ assert.equal(failed.final_state.clock,1);
+ assert.equal(failed.final_state.mailbox.length,1024);
+ assert.equal(failed.final_state.timers.length,1);
+ assert.equal(failed.final_state.timers[0].id,'t2');
+ assert.equal(failed.final_state.consumed,1);
+ assert.equal(failed.final_state.fenced,0);
+ assert.equal(failed.final_state.cancelled,0);
+ assert.equal(schedule(scenario,{replay:failed}).final_hash,failed.final_hash);
+});

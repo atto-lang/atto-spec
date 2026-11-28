@@ -27,6 +27,7 @@ function validateSteps(steps) {
     }
     if (['sleep','timer_send'].includes(s.op)) demand(safeInteger(s.after, 1), 'invalid timer delay');
     if (s.op === 'add') demand(safeInteger(s.by ?? 1), 'invalid delta');
+    if (s.op === 'assert') demand(validId(s.key) && safeInteger(s.value), 'invalid assertion');
   }
 }
 function build(scenario) {
@@ -40,10 +41,12 @@ function build(scenario) {
     actors[a.id] = {generation:1, version:1, serial:a.serial !== false, handlers:a.handlers};
   }
   const tasks = Object.create(null);
+  const taskIds = new Set();
   for (const t of scenario.tasks) {
-    demand(validId(t.id) && !tasks[t.id] && !t.id.startsWith('delivery.'), 'duplicate or invalid task');
+    demand(validId(t.id) && !taskIds.has(t.id) && !t.id.startsWith('delivery.'), 'duplicate or invalid task');
+    taskIds.add(t.id);
     validateSteps(t.steps);
-    tasks[t.id] = {pc:0, steps:t.steps, locals:{}, wake:null, actor:null, generation:null};
+    if (t.steps.length) tasks[t.id] = {pc:0, steps:t.steps, locals:Object.create(null), wake:null, actor:null, generation:null};
   }
   const shared = scenario.shared ?? {};
   demand(shared && typeof shared === 'object' && !Array.isArray(shared), 'invalid shared state');
@@ -80,25 +83,36 @@ function execute(s, choice) {
   if (kind === 'deliver') {
     const index = s.mailbox.findIndex(m => m.id === id);
     demand(index >= 0, 'nonexistent mailbox entry');
-    const [m] = s.mailbox.splice(index,1);
+    const m = s.mailbox[index];
     const a = s.actors[m.to];
     demand(a.generation === m.generation, 'stale mailbox admission');
     const steps = a.handlers[m.tag];
     demand(steps, 'unknown message handler');
     const tid = 'delivery.'+m.id;
     demand(!s.tasks[tid], 'duplicate handler task');
-    if (steps.length) s.tasks[tid] = {pc:0, steps, locals:{}, wake:null, actor:m.to, generation:a.generation};
+    if (steps.length) demand(Object.keys(s.tasks).length < MAX_TASKS, 'live task budget exceeded');
+    s.mailbox.splice(index,1);
+    if (steps.length) s.tasks[tid] = {pc:0, steps, locals:Object.create(null), wake:null, actor:m.to, generation:a.generation};
     s.consumed++;
   } else if (kind === 'timer') {
     const i = s.timers.findIndex(t => t.id === id);
     demand(i >= 0, 'unknown timer');
-    const [timer] = s.timers.splice(i,1);
+    const timer = s.timers[i];
+    // Keep a due timer represented until delivery admission or generation fencing succeeds.
     if (s.actors[timer.to].generation !== timer.generation) s.fenced++;
     else enqueue(s,timer.to,timer.tag);
+    s.timers.splice(i,1);
   } else {
     demand(kind === 'step', 'unknown choice');
-    const t = s.tasks[id]; demand(t && t.pc < t.steps.length, 'unknown task step');
+    const t = s.tasks[id]; demand(t && t.pc <= t.steps.length, 'unknown task step');
     if (t.actor) demand(s.actors[t.actor].generation === t.generation, 'stale actor task');
+    if (t.pc === t.steps.length) {
+      demand(t.wake !== null && t.wake <= s.clock, 'invalid terminal wake');
+      delete s.tasks[id];
+      s.transitions++;
+      return;
+    }
+    t.wake = null;
     const op = t.steps[t.pc++];
     const actor = id;
     switch(op.op) {
@@ -149,11 +163,11 @@ function execute(s, choice) {
         const prev=s.shared[op.key];demand(safeInteger(prev) && safeInteger(prev+(op.by??1)), 'invalid counter addition');
         s.shared[op.key]=prev+(op.by??1);break;
       }
-      case 'assert': demand(s.shared[op.key]===op.value,'property failed: '+op.key);break;
+      case 'assert': demand(Object.hasOwn(s.shared,op.key) && s.shared[op.key]===op.value,'property failed: '+op.key);break;
       case 'yield': break;
       default: throw Error('unsupported operation');
     }
-    if (s.tasks[id] && t.pc >= t.steps.length) delete s.tasks[id];
+    if (s.tasks[id] && t.pc >= t.steps.length && t.wake === null) delete s.tasks[id];
   }
   s.transitions++;
 }
@@ -172,7 +186,7 @@ export function schedule(scenarioInput,{seed=1,replay=null,prefix=[],maxSteps=MA
   const scenario = jsonCopy(scenarioInput), scenarioHash=hash(scenario);
   const state = build(scenario), choices = [], random = rng(seed);
   let failure = null;
-  if (replay) demand(replay.schema === SCHEMA && replay.seed === seed &&
+  if (replay) demand(replay.schema === SCHEMA && replay.evidence === 'REFERENCE_MODEL_ONLY_NOT_GUEST_EXECUTION' && replay.seed === seed &&
     replay.scenario_hash === scenarioHash && Array.isArray(replay.events), 'replay header mismatch');
   for(let count=0; ; count++) {
     demand(count <= maxSteps,'schedule step budget exhausted');
@@ -196,6 +210,7 @@ export function schedule(scenarioInput,{seed=1,replay=null,prefix=[],maxSteps=MA
     choices.push(event);
     if (failure) break;
   }
+  demand(prefix.length <= choices.length, 'unused forced choices');
   const result={schema:SCHEMA,evidence:'REFERENCE_MODEL_ONLY_NOT_GUEST_EXECUTION',seed,scenario_hash:scenarioHash,status:failure?'failed':'completed',failure,events:choices,final_hash:hash(state),final_state:state};
   if (replay) demand(replay.events.length===choices.length && replay.final_hash===result.final_hash &&
     JSON.stringify(replay.final_state)===JSON.stringify(result.final_state) &&
@@ -207,6 +222,7 @@ export function schedule(scenarioInput,{seed=1,replay=null,prefix=[],maxSteps=MA
 export function explore(scenario,{seed=1,maxSchedules=128,maxSteps=MAX_STEPS}={}) {
   demand(safeInteger(maxSchedules,1)&&maxSchedules<=1024,'invalid exploration budget');
   const pending=[[]],seen=new Set(['[]']),traces=[];
+  let truncated=false;
   while(pending.length && traces.length<maxSchedules) {
     const prefix=pending.shift();
     const trace=schedule(scenario,{seed,prefix,maxSteps});
@@ -217,9 +233,12 @@ export function explore(scenario,{seed=1,maxSchedules=128,maxSteps=MAX_STEPS}={}
         if(alternative===event.choice)continue;
         const path=[...trace.events.slice(0,i).map(e=>e.choice),alternative];
         const key=JSON.stringify(path);
-        if(!seen.has(key)&&pending.length+traces.length<maxSchedules*16) {seen.add(key);pending.push(path);}
+        if (!seen.has(key)) {
+          if (pending.length+traces.length<maxSchedules*16) {seen.add(key);pending.push(path);}
+          else truncated=true;
+        }
       }
     }
   }
-  return {schema:SCHEMA,evidence:'REFERENCE_MODEL_ONLY_NOT_GUEST_EXECUTION',explored:traces.length,exhausted:pending.length===0,traces};
+  return {schema:SCHEMA,evidence:'REFERENCE_MODEL_ONLY_NOT_GUEST_EXECUTION',explored:traces.length,exhausted:!truncated&&pending.length===0,traces};
 }
