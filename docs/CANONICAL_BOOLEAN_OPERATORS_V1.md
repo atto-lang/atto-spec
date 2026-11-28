@@ -42,3 +42,7 @@ Backends without the relevant aggregate/lifetime lowering must diagnose unsuppor
 ## Verification
 
 Run `node tests/boolean-operator-reference.mjs` for typed truth tables, short-circuit traces, eager Xor and negative coercion checks. This is a host reference model, not an Atto parser, compiler or runtime proof. For each backend require exact source head/tree, executed positive and negative guest tests, effect order and formatter evidence; record PASS/FAIL/UNSUPPORTED/NOT_EXECUTED without treating historical proposals as executed evidence.
+
+### Independent execution profiles
+
+The exact shared witnesses in `contracts/boolean-call-reductions-v1/` distinguish scalar reductions (`scalar-positive.atto`), bounded literal packs (`literal-packs-positive.atto`), observable scalar evaluation order (`scalar-order-positive.atto`), and full typed-array reuse (`positive.atto`). All four require guest result 42; the order witness additionally requires stdout lines 1, 3, 5, 6, 7, 8 in precisely that order. The first two require empty stdout. Run each unchanged at the exact backend head, with separate receipts. An unsupported full array profile cannot erase a verified scalar result, and a literal-pack pass cannot certify array borrowing or effectful construction. The existing negative cases remain required; no host emulation, silent fixture rewriting, or unsupported-as-PASS conversion. Explicit core imports, user shadowing and effectful array materialization remain separately required for full parity. These new witnesses are candidates, not executed guest evidence.

@@ -1,0 +1,13 @@
+// Scalar effect-order target. Expected process exit 42; stdout 1\n3\n5\n6\n7\n8\n.
+// Every reached operand must be executed exactly once.
+fnc mark(bool value, int n): bool {
+  stdio.println(n);
+  return value;
+}
+pub fnc main(): int {
+  if And(mark(false, 1), mark(true, 2)) then return 1; fi
+  if !Or(mark(true, 3), mark(false, 4)) then return 2; fi
+  if !Xor(mark(false, 5), mark(true, 6), mark(false, 7)) then return 3; fi
+  if And(mark(true, 8), false) then return 4; fi
+  return 42;
+}
