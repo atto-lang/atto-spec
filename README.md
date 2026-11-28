@@ -190,6 +190,8 @@ Define normative syntax and semantics; document actor isolation, effects, owners
 
 - [File/module `define const` v1](language/file-module-const-v1.md): unconditional static immutable bindings using `=` or `as`; constexpr folds at compile time, direct `os.read_env("KEY")` is evaluated exactly once at runtime initialization. **Proposal; backend guest execution not yet verified.**
 
+- [Callable aggregate parameter patterns v1](language/callable-aggregate-patterns-v1.md): draft unary tuple and named-field patterns, nominal visibility, nested projections, root arity and ownership gates; compiler parity unverified.
+
 - [Tuple destructuring, mutability and aliasing v1](language/tuple-destructuring-v1.md): accepted target syntax for mixed per-element `let`/`val`/`const`/`mut` bindings, explicit binder lists and `as foo` root aliases; compiler/guest support not yet verified.
 - [Typed std.pattern fragments v1](language/typed-pattern-fragments-v1.md): additive compile-time-only pattern.of<T> proposal, safe literal grammar, contextual typing, borrowed rest captures and separate runtime parse design; host-only reference checks, compiled guest and backend parity NOT_VERIFIED.
 - [Structural sequence matching v2](language/sequence-pattern-matching-v2.md): proposed canonical bare `...` rests, counted `...(3 of int, 3 of bool)` segments, type/value tests and anchored bindings. Its checked-in tests are **host-only**; guest compilation and cross-backend parity are **not verified**.
