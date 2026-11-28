@@ -1,0 +1,21 @@
+# Struct and class construction, identity, and ownership (proposed contract)
+
+Status: design target, not blanket compiler support. Extends #280 (attached constructors), #98 (receiver constructors), #170 (explicit initialization), #60 (value class proposal), #248 (const generic array profile). Reconcile these before normative merge. Ordinary classes have identity; the separate proposed value-class modifier is not silently reinterpreted.
+
+## Common construction
+For a resolved nominal owner T with an accessible constructor, T(args), T.make(args), and T.new(args) resolve the same constructor overload and lower to the same typed construction operation. Neither qualified alias is an arbitrary static method or heap allocation directive. Reserve the two names for this operation in the proposed profile; reject conflicting declarations rather than silently choosing a factory. Receiver expressions, unknown owners, inaccessible constructors, wrong argument arity/types, ambiguous overloads, and partial initialization must fail before executable output. Evaluate arguments once in source order, including named arguments subject to the existing named-call rules. Do not introduce an implicit default constructor that bypasses invariants.
+
+For structs, direct construction yields a nominal value. Class construction yields a fresh logical identity, regardless of storage placement. Preserve existing class prefix new C(args) where supported; explicit new T(args) at storage is a separate placement operation using the same initialization invariants. Do not admit prefix new T(args) for structs without explicit placement. Constructor aliases are ordinary value expressions, not a replacement spelling for the placement grammar itself. No change to binding const/val/let rules.
+
+## Identity and ownership
+Structs are nominal values without intrinsic object identity; classes are nominal identity-bearing owned objects. Both may implement methods, static methods, interfaces, traits, generics, explicit mutable access, and destructors. Structs use composition, not implementation inheritance. Class inheritance remains a separate proposed feature; no implicit dynamic dispatch or boxing. Equality of comparable structs is structural within the same nominal type; class identity is logically separate from optional value equality. Concrete identity API spelling remains open.
+
+Copy trivial values when permitted by the existing ownership rules. Do not make ordinary class assignment an unrestricted mutable alias. copy! produces independent top-level slots with transitive read-only shared field values; copy!! duplicates mutable state where copyable. Reject duplicating exclusive resources and enforce all outstanding aliases. Moves transfer ownership; borrows are scoped and generation-checked where required. No new permission to share across actor domains.
+
+## Initialization and storage
+Require complete definite initialization before self escapes, a usable value is published, or an identity is observable. On construction failure, reclaim successfully initialized owned fields once in reverse initialization order. No implicit zero initialization or destructor bypass. Deterministic destruction must preserve cleanup on normal and exceptional exits, cancellation, and actor termination subject to runtime isolation. Nontrivial destructor semantics require separate executable tests.
+
+Storage is a compiler/runtime choice: inline, stack, actor-owned heap, arena, or explicit placement. No mandatory GC or heap allocation from .make/.new; no address-based identity. Full AOT and safe escape analysis, scalar replacement, destination-passing and copy elimination are targets, not guarantees. JS host GC is not evidence of native zero-GC execution.
+
+## Qualification
+The first native implementation slice only admits qualified aliases for already-resolved nested struct constructor expressions in the closed physical placement profile. It does NOT establish general standalone class/struct construction, overload resolution, zero-argument construction, arbitrary user methods or fallible constructors. All eight backends must eventually prove those independently, with source-level positive and negative guests, exact-tree evidence, and native/AOT evidence where applicable.
