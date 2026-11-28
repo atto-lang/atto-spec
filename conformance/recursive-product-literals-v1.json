@@ -1,0 +1,997 @@
+{
+  "schema": "atto.recursive-product-literals-v1",
+  "status": "TARGET_NOT_EXECUTED",
+  "notes": "User-approved declaration-local Record syntax; independent fragments, expected targets only. Effect harness must supply tick; unsupported-feature diagnostics do not count as semantic negative passes.",
+  "vectors": [
+    {
+      "id": "pair-tuple",
+      "kind": "accept",
+      "source": "const p = coordinates := (10,20);",
+      "expect": "Pair key coordinates; tuple arity 2 values 10,20"
+    },
+    {
+      "id": "tuple-pair",
+      "kind": "accept",
+      "source": "const t = (x:=10,y:=20);",
+      "expect": "Tuple arity 2; distinct Pair keys x,y and values 10,20"
+    },
+    {
+      "id": "pair-pair",
+      "kind": "accept",
+      "source": "const p = outer := (inner := 42);",
+      "expect": "Pair<Pair<int>>; outer and inner keys preserved"
+    },
+    {
+      "id": "tuple-tuple",
+      "kind": "accept",
+      "source": "const t = ((1,2),(3,4));",
+      "expect": "Tuple arity 2; each element tuple arity 2"
+    },
+    {
+      "id": "brace-record-pair",
+      "kind": "accept",
+      "source": "const r = {first:x:=10,second:(y:=20)};",
+      "expect": "Brace Record of Pairs, not Map"
+    },
+    {
+      "id": "brace-record-tuple",
+      "kind": "accept",
+      "source": "const r = {position:(10,20)};",
+      "expect": "Brace Record of Tuple"
+    },
+    {
+      "id": "pair-brace-record",
+      "kind": "accept",
+      "source": "const p = position := {x:10,y:20};",
+      "expect": "Pair of brace Record"
+    },
+    {
+      "id": "tuple-brace-record",
+      "kind": "accept",
+      "source": "const t = ({x:10},{x:20});",
+      "expect": "Tuple of brace Records"
+    },
+    {
+      "id": "grouped-pair",
+      "kind": "accept",
+      "source": "const p = (x:=1);",
+      "expect": "Pair<int>, not Tuple"
+    },
+    {
+      "id": "singleton-pair-tuple",
+      "kind": "accept",
+      "source": "const t = (x:=1,);",
+      "expect": "Tuple arity 1 containing Pair"
+    },
+    {
+      "id": "singleton-tuple-tuple",
+      "kind": "accept",
+      "source": "const t = ((1,2),);",
+      "expect": "Tuple arity 1 containing Tuple"
+    },
+    {
+      "id": "singleton-tuple-pair",
+      "kind": "accept",
+      "source": "const p = x := (1,);",
+      "expect": "Pair of singleton Tuple"
+    },
+    {
+      "id": "empty-tuple-pair",
+      "kind": "accept",
+      "source": "const p = x := ();",
+      "expect": "Pair of empty Tuple"
+    },
+    {
+      "id": "duplicate-pair-keys-positional",
+      "kind": "accept",
+      "source": "const t = (x:=1,x:=2);",
+      "expect": "Tuple arity 2 retaining both pairs"
+    },
+    {
+      "id": "name-derived-pair-tuple",
+      "kind": "accept",
+      "source": "const coords := (10,20);",
+      "expect": "Binding coords is Pair with tuple payload"
+    },
+    {
+      "id": "positional-pair-tuple",
+      "kind": "accept",
+      "source": "fnc f(Tuple t) {} f((x:=1,y:=2));",
+      "expect": "One positional Tuple of Pairs"
+    },
+    {
+      "id": "nested-type-annotation",
+      "kind": "accept",
+      "source": "const Pair<Tuple[int,int]> p = x := (1,2);",
+      "expect": "Exact recursive payload type, not contextual reclassification"
+    },
+    {
+      "id": "pair-chain",
+      "kind": "reject",
+      "source": "const p = x:=y:=42;",
+      "expect": "nonassociative ungrouped Pair chain"
+    },
+    {
+      "id": "pair-entry-chain",
+      "kind": "reject",
+      "source": "const p = x:=1=>42;",
+      "expect": "nonassociative mixed association chain"
+    },
+    {
+      "id": "entry-pair-chain",
+      "kind": "reject",
+      "source": "const p = 1=>x:=42;",
+      "expect": "nonassociative mixed association chain"
+    },
+    {
+      "id": "wrong-nested-pair-type",
+      "kind": "reject",
+      "source": "const Pair<Tuple[int,bool]> p = x := (1,2);",
+      "expect": "wrong nested payload type"
+    },
+    {
+      "id": "quoted-call-two",
+      "kind": "accept",
+      "source": "fnc foo(int x,int y) {} foo(\"x\"=1,\"y\"=2);",
+      "expect": "two named scalar arguments"
+    },
+    {
+      "id": "quoted-call-no-coalesce",
+      "kind": "reject",
+      "source": "fnc foo(Record r) {} foo(\"x\"=1,\"y\"=2);",
+      "expect": "unknown named labels; never coalesce"
+    },
+    {
+      "id": "quoted-call-invalid-label",
+      "kind": "reject",
+      "source": "fnc foo(Record r) {} foo(\"x-y\"=1);",
+      "expect": "invalid identifier label"
+    },
+    {
+      "id": "quoted-pair-control",
+      "kind": "accept",
+      "source": "const p = \"x-y\" := 1;",
+      "expect": "Pair with unrestricted string key"
+    },
+    {
+      "id": "quoted-call-not-named",
+      "kind": "reject",
+      "source": "fnc foo(Record r) {} foo(\"x\"=42);",
+      "expect": "unknown named argument x; no positional Record fallback"
+    },
+    {
+      "id": "quoted-call-bare-variable",
+      "kind": "accept",
+      "source": "let x=7; fnc f(int x) {} f(\"x\"=42); val int n=x;",
+      "expect": "caller x remains 7; named argument not assignment"
+    },
+    {
+      "id": "quoted-call-no-map-coercion",
+      "kind": "reject",
+      "source": "const m=Map.of(\"x\"=42);",
+      "expect": "named fields not Map inputs"
+    },
+    {
+      "id": "quoted-call-pair-control",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> x) {} f(\"x\":=42);",
+      "expect": "positional Pair not Record"
+    },
+    {
+      "id": "quoted-call-entry-control",
+      "kind": "accept",
+      "source": "fnc f(Entry<string,int> x) {} f(\"x\"=>42);",
+      "expect": "positional Entry not Record"
+    },
+    {
+      "id": "quoted-colon-call",
+      "kind": "reject",
+      "source": "fnc f(int x) {} f(\"x\":42);",
+      "expect": "quoted label not named argument"
+    },
+    {
+      "id": "quoted-free-assignment",
+      "kind": "reject",
+      "source": "\"x\"=42;",
+      "expect": "no free-standing quoted assignment"
+    },
+    {
+      "id": "quoted-call-double-comma",
+      "kind": "reject",
+      "source": "fnc f(Record r) {} f(\"x\"=42,,);",
+      "expect": "empty argument"
+    },
+    {
+      "id": "quoted-label-record-of-pair",
+      "kind": "accept",
+      "source": "const r=Record.of(\"x\":=42);",
+      "expect": "explicit Pair constructor input remains accepted"
+    },
+    {
+      "id": "quoted-call-named-scalar",
+      "kind": "accept",
+      "source": "fnc f(int x) {} f(\"x\"=42);",
+      "expect": "same named argument as f(x=42)"
+    },
+    {
+      "id": "quoted-call-mixed-named",
+      "kind": "accept",
+      "source": "fnc f(int x,int y) {} f(x=1,\"y\"=2);",
+      "expect": "two named arguments"
+    },
+    {
+      "id": "quoted-call-duplicate-bare",
+      "kind": "reject",
+      "source": "fnc f(int x) {} f(x=1,\"x\"=2);",
+      "expect": "duplicate decoded parameter label"
+    },
+    {
+      "id": "quoted-call-duplicate-escaped",
+      "kind": "reject",
+      "source": "fnc f(int x) {} f(\"x\"=1,\"\\u0078\"=2);",
+      "expect": "duplicate decoded parameter label"
+    },
+    {
+      "id": "quoted-call-positional-after-quoted",
+      "kind": "reject",
+      "source": "fnc f(int x,int y) {} f(\"x\"=1,2);",
+      "expect": "positional after named"
+    },
+    {
+      "id": "quoted-record-of-named",
+      "kind": "accept",
+      "source": "const r=Record.of(\"x\"=42);",
+      "expect": "same named field as Record.of(x=42)"
+    },
+    {
+      "id": "quoted-apply-named-reject",
+      "kind": "reject",
+      "source": "fnc f(int x) {} f.apply(\"x\"=(42,));",
+      "expect": "apply takes positional typed tuple, not named label"
+    },
+    {
+      "id": "quoted-call-named-after-quoted",
+      "kind": "accept",
+      "source": "fnc f(int x,int y) {} f(\"x\"=1,y=2);",
+      "expect": "both named"
+    },
+    {
+      "id": "record-tuple",
+      "kind": "accept",
+      "source": "const r={position:(10,20),velocity:(30,40)};",
+      "expect": "Record with tuple fields"
+    },
+    {
+      "id": "tuple-record",
+      "kind": "accept",
+      "source": "const t=({x:1},{y:2});",
+      "expect": "Tuple of Records"
+    },
+    {
+      "id": "record-pair",
+      "kind": "accept",
+      "source": "const r={first:(x:=10),second:(y:=20)};",
+      "expect": "Record of Pairs"
+    },
+    {
+      "id": "pair-record",
+      "kind": "accept",
+      "source": "const p=position:={x:10,y:20};",
+      "expect": "Pair with Record payload"
+    },
+    {
+      "id": "record-record",
+      "kind": "accept",
+      "source": "const r={outer:{inner:42}};",
+      "expect": "Record of Record"
+    },
+    {
+      "id": "deep",
+      "kind": "accept",
+      "source": "const p=root:={items:((id:=42),),info:{ok:true}};",
+      "expect": "nested shape and key identity"
+    },
+    {
+      "id": "same-label-different-levels",
+      "kind": "accept",
+      "source": "const r={x:{x:42}};",
+      "expect": "independent field scopes"
+    },
+    {
+      "id": "empty-tuple",
+      "kind": "accept",
+      "source": "const x=();",
+      "expect": "empty Tuple"
+    },
+    {
+      "id": "typed-empty-record-paren",
+      "kind": "accept",
+      "source": "const Record x=();",
+      "expect": "empty Record, not Tuple"
+    },
+    {
+      "id": "typed-empty-record-brace",
+      "kind": "accept",
+      "source": "const Record x={};",
+      "expect": "same empty Record AST"
+    },
+    {
+      "id": "typed-empty-map",
+      "kind": "accept",
+      "source": "const Map<string,int> x={};",
+      "expect": "typed empty Map"
+    },
+    {
+      "id": "inferred-colon",
+      "kind": "accept",
+      "source": "const x=(five:5,six:8);",
+      "expect": "inferred Record"
+    },
+    {
+      "id": "inferred-single-colon",
+      "kind": "accept",
+      "source": "const x=(five:5);",
+      "expect": "one-field Record"
+    },
+    {
+      "id": "inferred-colon-trailing",
+      "kind": "accept",
+      "source": "const x=(five:5,);",
+      "expect": "one-field Record"
+    },
+    {
+      "id": "typed-pair-fields",
+      "kind": "accept",
+      "source": "const Record x=(five:=5,six:=8);",
+      "expect": "Record of ints, not Tuple of Pairs"
+    },
+    {
+      "id": "typed-colon-fields",
+      "kind": "accept",
+      "source": "const Record x=(five:5,six:8);",
+      "expect": "same Record"
+    },
+    {
+      "id": "typed-equals-fields",
+      "kind": "accept",
+      "source": "const Record x=(five=5,six=8);",
+      "expect": "same Record"
+    },
+    {
+      "id": "typed-mixed-fields",
+      "kind": "accept",
+      "source": "const Record x=(a:1,b=2,c:=3);",
+      "expect": "three fields"
+    },
+    {
+      "id": "brace-equals",
+      "kind": "accept",
+      "source": "const x={a=5};",
+      "expect": "Record"
+    },
+    {
+      "id": "brace-colon",
+      "kind": "accept",
+      "source": "const x={a:5};",
+      "expect": "Record"
+    },
+    {
+      "id": "brace-colonequals",
+      "kind": "accept",
+      "source": "const x={a:=5};",
+      "expect": "Record"
+    },
+    {
+      "id": "brace-mixed",
+      "kind": "accept",
+      "source": "const x={a:1,b=2,c:=3};",
+      "expect": "three fields"
+    },
+    {
+      "id": "quoted-record-label",
+      "kind": "accept",
+      "source": "const x={\"name\":\"Alice\"};",
+      "expect": "Record, not Map"
+    },
+    {
+      "id": "quoted-record-equals",
+      "kind": "accept",
+      "source": "const x={\"name\"=\"Alice\"};",
+      "expect": "Record"
+    },
+    {
+      "id": "quoted-record-colonequals",
+      "kind": "accept",
+      "source": "const x={\"name\":=\"Alice\"};",
+      "expect": "Record"
+    },
+    {
+      "id": "quoted-map-control",
+      "kind": "accept",
+      "source": "const x={\"first-name\"=>\"Alice\"};",
+      "expect": "Map unrestricted key"
+    },
+    {
+      "id": "map-evaluated-key",
+      "kind": "accept",
+      "source": "const k=5; const x={k=>42};",
+      "expect": "evaluated key 5"
+    },
+    {
+      "id": "map-quoted-key",
+      "kind": "accept",
+      "source": "const x={\"name\"=>\"foo\"};",
+      "expect": "Map"
+    },
+    {
+      "id": "capture-brace",
+      "kind": "accept",
+      "source": "const x=1; const r={:x,y:=2};",
+      "expect": "Record capture and field"
+    },
+    {
+      "id": "capture-inferred",
+      "kind": "accept",
+      "source": "const x=1; const r=(:x,y:2);",
+      "expect": "inferred Record capture"
+    },
+    {
+      "id": "typed-nested-brace",
+      "kind": "accept",
+      "source": "const Record x=(outer:={inner:42});",
+      "expect": "nested Record"
+    },
+    {
+      "id": "typed-nested-pair",
+      "kind": "accept",
+      "source": "const Record x=(outer:=(inner:=42));",
+      "expect": "outer field contains Pair, no privilege propagation"
+    },
+    {
+      "id": "typed-nested-tuple",
+      "kind": "accept",
+      "source": "const Record x=(outer:=(a:=1,b:=2));",
+      "expect": "outer field contains Tuple of Pairs"
+    },
+    {
+      "id": "ordinary-pair-value",
+      "kind": "accept",
+      "source": "const p=x:=42;",
+      "expect": "Pair"
+    },
+    {
+      "id": "brace-pair-payload",
+      "kind": "accept",
+      "source": "const r={first:x:=42};",
+      "expect": "field holds Pair"
+    },
+    {
+      "id": "quoted-call-explicit-record",
+      "kind": "accept",
+      "source": "fnc f(Record r) {} f({\"x\":42});",
+      "expect": "positional Record"
+    },
+    {
+      "id": "named-vs-positional-record",
+      "kind": "accept",
+      "source": "fnc f(Record r) {} f({x:42});",
+      "expect": "one positional Record"
+    },
+    {
+      "id": "call-brace-equals",
+      "kind": "accept",
+      "source": "fnc f(Record r) {} f({x=42});",
+      "expect": "positional Record"
+    },
+    {
+      "id": "call-brace-colonequals",
+      "kind": "accept",
+      "source": "fnc f(Record r) {} f({x:=42});",
+      "expect": "positional Record"
+    },
+    {
+      "id": "call-two-records",
+      "kind": "accept",
+      "source": "fnc f(Record a,Record b) {} f({x:1},{y:2});",
+      "expect": "two positional Records"
+    },
+    {
+      "id": "call-one-record",
+      "kind": "accept",
+      "source": "fnc f(Record r) {} f({x:1,y:2});",
+      "expect": "one two-field Record"
+    },
+    {
+      "id": "call-nested-named",
+      "kind": "accept",
+      "source": "fnc f(Record outer) {} f(outer={inner:42});",
+      "expect": "named outer Record value"
+    },
+    {
+      "id": "quoted-call-mixed-order",
+      "kind": "accept",
+      "source": "fnc f(Record r,int n) {} f({\"x\":42},\"n\"=2);",
+      "expect": "positional Record then named"
+    },
+    {
+      "id": "call-grouped-pair",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p) {} f((x:=42));",
+      "expect": "Pair"
+    },
+    {
+      "id": "call-singleton-pair-tuple",
+      "kind": "accept",
+      "source": "fnc f(Tuple t) {} f((x:=42,));",
+      "expect": "singleton Tuple"
+    },
+    {
+      "id": "call-spread-brace",
+      "kind": "accept",
+      "source": "fnc f(int x) {} f(...{x:42});",
+      "expect": "explicit named spread"
+    },
+    {
+      "id": "call-apply-tuple",
+      "kind": "accept",
+      "source": "fnc f(Record r) {} f.apply(({x:42},));",
+      "expect": "single Tuple operand"
+    },
+    {
+      "id": "record-dot-projection",
+      "kind": "accept",
+      "source": "const r={outer:{inner:42}}; const int n=r.outer.inner;",
+      "expect": "n=42"
+    },
+    {
+      "id": "record-pair-projection",
+      "kind": "accept",
+      "source": "const r={first:x:=42}; const int n=r.first.value;",
+      "expect": "n=42"
+    },
+    {
+      "id": "pair-record-projection",
+      "kind": "accept",
+      "source": "const p=x:={inner:42}; const int n=p.value.inner;",
+      "expect": "n=42"
+    },
+    {
+      "id": "quoted-label-trivia",
+      "kind": "accept",
+      "source": "const r={\"x\" /* label */ : 42};",
+      "expect": "same field x"
+    },
+    {
+      "id": "quoted-label-underscore-digit",
+      "kind": "accept",
+      "source": "const r={\"outer_value2\":42};",
+      "expect": "valid identifier"
+    },
+    {
+      "id": "quoted-label-effect-order",
+      "kind": "accept",
+      "source": "fnc f(Record r,int n) {} f({\"x\":tick(1)},\"n\"=tick(2));",
+      "expect": "with harness, tick 1 then 2 once"
+    },
+    {
+      "id": "quoted-label-nested-effect-order",
+      "kind": "accept",
+      "source": "val r={\"z\":tick(1),\"a\":{\"k\":tick(2)}};",
+      "expect": "with harness, source order once"
+    },
+    {
+      "id": "tuple-string-control",
+      "kind": "accept",
+      "source": "const t=(\"x=1\",{y:2});",
+      "expect": "Tuple with string and Record"
+    },
+    {
+      "id": "comment-delimiter",
+      "kind": "accept",
+      "source": "const t=({x:1}, /* = := , ) */ {y:2});",
+      "expect": "Tuple of Records"
+    },
+    {
+      "id": "explicit-record-value",
+      "kind": "accept",
+      "source": "const r={x:1}; const Record s=r;",
+      "expect": "ordinary Record value binding"
+    },
+    {
+      "id": "untyped-empty-brace",
+      "kind": "reject",
+      "source": "const x={};",
+      "expect": "ambiguous empty literal"
+    },
+    {
+      "id": "anonymous-empty-brace",
+      "kind": "reject",
+      "source": "fnc f(Record r) {} f({});",
+      "expect": "no signature-driven empty kind"
+    },
+    {
+      "id": "inferred-equals",
+      "kind": "reject",
+      "source": "const x=(a=5);",
+      "expect": "inferred parentheses equals not Record"
+    },
+    {
+      "id": "mixed-colon-first",
+      "kind": "reject",
+      "source": "const x=(a:5,b:=8);",
+      "expect": "mixed inferred Record and Pair"
+    },
+    {
+      "id": "mixed-pair-first",
+      "kind": "reject",
+      "source": "const x=(a:=5,b:8);",
+      "expect": "mixed Tuple and Record"
+    },
+    {
+      "id": "mixed-record-tuple",
+      "kind": "reject",
+      "source": "const x=(a:5,8);",
+      "expect": "mixed Record and positional"
+    },
+    {
+      "id": "mixed-brace-record-map",
+      "kind": "reject",
+      "source": "const x={a:5,\"b\"=>8};",
+      "expect": "mixed kinds"
+    },
+    {
+      "id": "mixed-brace-map-record",
+      "kind": "reject",
+      "source": "const x={\"a\"=>5,b:=8};",
+      "expect": "mixed kinds reversed"
+    },
+    {
+      "id": "typed-record-map",
+      "kind": "reject",
+      "source": "const Record x={a=>5};",
+      "expect": "Map not Record"
+    },
+    {
+      "id": "typed-map-record",
+      "kind": "reject",
+      "source": "const Map<string,int> x={a:5};",
+      "expect": "Record not Map"
+    },
+    {
+      "id": "typed-record-tuple",
+      "kind": "reject",
+      "source": "const Record x=(5,8);",
+      "expect": "Tuple not Record"
+    },
+    {
+      "id": "typed-record-pair-value",
+      "kind": "reject",
+      "source": "const p=x:=5; const Record r=p;",
+      "expect": "no implicit conversion"
+    },
+    {
+      "id": "typed-record-tuple-value",
+      "kind": "reject",
+      "source": "const t=(x:=5,y:=8); const Record r=t;",
+      "expect": "no implicit conversion"
+    },
+    {
+      "id": "wrong-expected-tuple",
+      "kind": "reject",
+      "source": "const Tuple t={x:42};",
+      "expect": "Record not Tuple"
+    },
+    {
+      "id": "anonymous-parenthesized-colon",
+      "kind": "reject",
+      "source": "fnc f(Record r) {} f((x:42));",
+      "expect": "not anonymous Record syntax"
+    },
+    {
+      "id": "anonymous-parenthesized-equals",
+      "kind": "reject",
+      "source": "fnc f(Record r) {} f((x=42));",
+      "expect": "not anonymous Record syntax"
+    },
+    {
+      "id": "anonymous-parenthesized-pair",
+      "kind": "reject",
+      "source": "fnc f(Record r) {} f((x:=42));",
+      "expect": "Pair not Record"
+    },
+    {
+      "id": "anonymous-parenthesized-tuple",
+      "kind": "reject",
+      "source": "fnc f(Record r) {} f((x:=42,y:=5));",
+      "expect": "Tuple not Record"
+    },
+    {
+      "id": "nested-parenthesized-colon",
+      "kind": "reject",
+      "source": "const Record r=(outer:=(inner:42));",
+      "expect": "privilege cannot propagate"
+    },
+    {
+      "id": "nested-parenthesized-equals",
+      "kind": "reject",
+      "source": "const Record r=(outer:=(inner=42));",
+      "expect": "privilege cannot propagate"
+    },
+    {
+      "id": "quoted-record-duplicate",
+      "kind": "reject",
+      "source": "const r={\"x\":1,x:=2};",
+      "expect": "duplicate decoded field"
+    },
+    {
+      "id": "quoted-label-capture-duplicate",
+      "kind": "reject",
+      "source": "const x=1; const r={\"x\":2,:x};",
+      "expect": "duplicate capture"
+    },
+    {
+      "id": "quoted-label-escaped-duplicate",
+      "kind": "reject",
+      "source": "const r={\"x\":1,\"\\u0078\"=2};",
+      "expect": "duplicate decoded label"
+    },
+    {
+      "id": "duplicate-inner-fields",
+      "kind": "reject",
+      "source": "const r={outer:{x:1,x:=2}};",
+      "expect": "duplicate nested field"
+    },
+    {
+      "id": "quoted-record-hyphen",
+      "kind": "reject",
+      "source": "const r={\"outer-key\":1};",
+      "expect": "invalid identifier"
+    },
+    {
+      "id": "quoted-record-space",
+      "kind": "reject",
+      "source": "const r={\"outer key\":1};",
+      "expect": "invalid identifier"
+    },
+    {
+      "id": "quoted-record-punctuation",
+      "kind": "reject",
+      "source": "const r={\"x.y\":1};",
+      "expect": "invalid identifier"
+    },
+    {
+      "id": "quoted-record-digit",
+      "kind": "reject",
+      "source": "const r={\"2x\":1};",
+      "expect": "invalid identifier"
+    },
+    {
+      "id": "quoted-record-empty",
+      "kind": "reject",
+      "source": "const r={\"\":1};",
+      "expect": "invalid identifier"
+    },
+    {
+      "id": "quoted-record-keyword",
+      "kind": "reject",
+      "source": "const r={\"return\":1};",
+      "expect": "reserved identifier"
+    },
+    {
+      "id": "quoted-record-decoded-space",
+      "kind": "reject",
+      "source": "const r={\"x\\n\":1};",
+      "expect": "decoded control"
+    },
+    {
+      "id": "quoted-label-trailing-space",
+      "kind": "reject",
+      "source": "const r={\"x \":1};",
+      "expect": "full identifier validation"
+    },
+    {
+      "id": "quoted-label-comment-text",
+      "kind": "reject",
+      "source": "const r={\"x/*comment*/\":1};",
+      "expect": "no trivia inside label"
+    },
+    {
+      "id": "quoted-label-nul",
+      "kind": "reject",
+      "source": "const r={\"x\\u0000\":1};",
+      "expect": "decoded NUL"
+    },
+    {
+      "id": "quoted-label-alternate-string",
+      "kind": "reject",
+      "source": "const r={'x':1};",
+      "expect": "double quotes only"
+    },
+    {
+      "id": "quoted-computed-label",
+      "kind": "reject",
+      "source": "const r={(\"x\"):42};",
+      "expect": "computed label prohibited"
+    },
+    {
+      "id": "quoted-label-missing-rhs",
+      "kind": "reject",
+      "source": "const r={\"x\":};",
+      "expect": "missing RHS"
+    },
+    {
+      "id": "record-spaced-pair-separator",
+      "kind": "reject",
+      "source": "const r={x: =5};",
+      "expect": "not adjacent :="
+    },
+    {
+      "id": "call-record-after-named",
+      "kind": "reject",
+      "source": "fnc f(int x,Record r) {} f(x=1,{y:2});",
+      "expect": "positional after named"
+    },
+    {
+      "id": "call-slot-duplicate",
+      "kind": "reject",
+      "source": "fnc f(Record r) {} f({x:1},r={y:2});",
+      "expect": "duplicate slot"
+    },
+    {
+      "id": "record-no-scalar",
+      "kind": "reject",
+      "source": "fnc f(int x) {} f({x:42});",
+      "expect": "Record not scalar"
+    },
+    {
+      "id": "apply-not-tuple",
+      "kind": "reject",
+      "source": "fnc f(Record r) {} f.apply({x:42});",
+      "expect": "not typed tuple operand"
+    },
+    {
+      "id": "record-pair-no-unwrap",
+      "kind": "reject",
+      "source": "const r={first:x:=42}; const int n=r.first;",
+      "expect": "no implicit extraction"
+    },
+    {
+      "id": "pair-implicit-unwrap",
+      "kind": "reject",
+      "source": "const p=x:={y:42}; const Record r=p;",
+      "expect": "no implicit Pair extraction"
+    },
+    {
+      "id": "call-direct-pair",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p) {} f(a:=5);",
+      "expect": "one positional Pair key a value 5, same AST/value as grouped control"
+    },
+    {
+      "id": "call-two-direct-pairs",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p,Pair<int> q) {} f(a:=5,b:=8);",
+      "expect": "two positional Pair arguments in lexical order"
+    },
+    {
+      "id": "call-pair-then-named",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p,int n) {} f(a:=5,n=8);",
+      "expect": "one positional Pair then named scalar"
+    },
+    {
+      "id": "call-pair-after-named",
+      "kind": "reject",
+      "source": "fnc f(int n,Pair<int> p) {} f(n=8,a:=5);",
+      "expect": "positional Pair after named"
+    },
+    {
+      "id": "call-pair-to-scalar",
+      "kind": "reject",
+      "source": "fnc f(int a) {} f(a:=5);",
+      "expect": "Pair cannot become named scalar"
+    },
+    {
+      "id": "call-grouped-pair-to-scalar",
+      "kind": "reject",
+      "source": "fnc f(int a) {} f((a:=5));",
+      "expect": "grouped Pair cannot become scalar"
+    },
+    {
+      "id": "call-direct-pair-to-record",
+      "kind": "reject",
+      "source": "fnc f(Record r) {} f(a:=5);",
+      "expect": "no implicit Pair-to-Record"
+    },
+    {
+      "id": "call-two-pairs-not-tuple",
+      "kind": "reject",
+      "source": "fnc f(Tuple t) {} f(a:=5,b:=8);",
+      "expect": "two arguments, never coalesce"
+    },
+    {
+      "id": "call-one-tuple-not-two-pairs",
+      "kind": "reject",
+      "source": "fnc f(Pair<int> p,Pair<int> q) {} f((a:=5,b:=8));",
+      "expect": "one Tuple, never spread"
+    },
+    {
+      "id": "call-spaced-pair-token",
+      "kind": "reject",
+      "source": "fnc f(Pair<int> p) {} f(a: =5);",
+      "expect": "not adjacent :=; malformed named arg"
+    },
+    {
+      "id": "call-comment-separated-pair-token",
+      "kind": "reject",
+      "source": "fnc f(Pair<int> p) {} f(a:/* gap */=5);",
+      "expect": "not adjacent :=; malformed named arg"
+    },
+    {
+      "id": "call-quoted-pair-vs-named",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p) {} f(\"a\":=5);",
+      "expect": "lexical Pair key a, not named"
+    },
+    {
+      "id": "call-pair-with-spaces",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p) {} f(a := 5);",
+      "expect": "adjacent separator despite surrounding whitespace"
+    },
+    {
+      "id": "call-pair-effect-order",
+      "kind": "accept",
+      "source": "fnc f(Pair<int> p,Pair<int> q) {} f(a:=tick(1),(b:=tick(2)));",
+      "expect": "tick 1 then 2 exactly once, two distinct slots"
+    },
+    {
+      "id": "typed-record-prefix-reject",
+      "kind": "reject",
+      "source": "const Record r=(a:5).a;",
+      "expect": "declaration-only parenthesized Record cannot be postfix prefix"
+    },
+    {
+      "id": "typed-record-newline",
+      "kind": "accept",
+      "source": "const Record r = ()\nconst x = ()\n",
+      "expect": "typed empty Record and separate empty Tuple, existing newline terminator"
+    },
+    {
+      "id": "typed-record-duplicate-mixed-separators",
+      "kind": "reject",
+      "source": "const Record r=(a:1,a:=2);",
+      "expect": "duplicate static field despite separator difference"
+    },
+    {
+      "id": "record-of-invalid-quoted-colon",
+      "kind": "reject",
+      "source": "const r=Record.of(\"a-b\":5);",
+      "expect": "invalid static identifier"
+    },
+    {
+      "id": "record-of-invalid-quoted-equals",
+      "kind": "reject",
+      "source": "const r=Record.of(\"a-b\"=5);",
+      "expect": "invalid static identifier"
+    },
+    {
+      "id": "typed-record-empty-passed",
+      "kind": "accept",
+      "source": "const Record r=(); fnc f(Record x) {} f(r);",
+      "expect": "ordinary Record value; no anonymous empty inference"
+    },
+    {
+      "id": "inferred-record-mixed-equals",
+      "kind": "reject",
+      "source": "const r=(a:1,b=2);",
+      "expect": "inferred parens only colon/capture"
+    },
+    {
+      "id": "brace-separator-comment-gap",
+      "kind": "reject",
+      "source": "const r={a:/* gap */=5};",
+      "expect": "not adjacent :="
+    }
+  ]
+}

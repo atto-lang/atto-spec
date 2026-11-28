@@ -2,6 +2,8 @@
 
 **Status:** user-approved syntax; portable target, NOT_EXECUTED. This correction supersedes the contextual Pair arrow interpretation in contextual-collection-and-entry-literals-v1.md and the ordinary named-call restriction in the v2 aggregate constructor contract. Other v2 constructor and ownership requirements remain unchanged.
 
+> **Version boundary:** the [recursive-product-v1 revision](recursive-product-literals-v1.md) supersedes this historical profile's delimiter and quoted-label rules in its explicit target: declaration-local parenthesized Records, typed empty Record (), brace-only anonymous Records, quoted static Record labels and arrow Maps. Historical vectors remain historical; do not run them as revised expectations.
+
 ## Nominal types and syntax
 
 Pair<V> has a string key and a typed value. Entry<K,V> has an arbitrary typed key and a typed value. Tuple is positional, Record is identifier-field structural. Pair<string,V> is the v2 compatibility type spelling; other two-parameter Pair types reject. No implicit conversions between these kinds. Bare Pair in a heterogeneous collection or parameter denotes a checked existential value type, not unchecked Any; unsupported representation rejects.
