@@ -45,6 +45,119 @@ flush. A typed write result may not be discarded when the checker requires
 inspection. The existing channel `try` and `nb` variants retain their
 separate ownership/ready/Future contracts and must not be substituted.
 
+## Canonical stdout method spellings
+
+The canonical source-level stdout method calls are both:
+
+```atto
+stdio.out.write("Hello");
+process.stdout.write("Hello");
+```
+
+Both names resolve to the same authorized context-owned stdout endpoint.
+Neither is a shorthand for stderr or a new host capability. For the
+portable string-output profile, the same payload produces the same raw
+UTF-8 bytes without an implied newline, with the same ordering and
+failure behavior under the selected endpoint profile. Ordinary namespace
+resolution applies: a shadowed name must not be treated as a privileged
+host intrinsic. Preserve existing permission, cancellation, generation and ownership
+checks and apply the implicit runtime parking rules below. These spellings do not add implicit
+overloads, grant unrestricted host I/O, or establish the precise
+return type of every existing implementation's write method.
+
+New source examples and fixtures use one of these spellings, not
+`stdio.stdout.write(...)`. Any compatibility acceptance of that older
+spelling must remain explicit, not advertised as canonical. Historical
+hash-pinned fixtures and receipts must retain their original bytes.
+Formatter and LSP support must preserve either canonical spelling.
+
+[Canonical stdout conformance candidate #703](https://github.com/atto-lang/atto-platform-conformance/pull/703)
+adds independent raw-output, mixed-alias deferred cleanup, and trapped
+task fixtures. These are target examples, not claims of compiled guest
+parity. Unsupported profiles must fail closed and must not silently
+substitute an unrelated output adapter.
+
+## Default buffered output and implicit runtime parking
+
+**Accepted language direction (2026-11-27).** The canonical stdout methods
+and corresponding stderr methods use bounded runtime-owned buffered
+channels by default. When space is available, admit the encoded payload
+and return; when capacity is temporarily exhausted, park the logical
+producer cooperatively until admission is possible, or report terminal
+failure/cancellation. Fullness alone must not drop output, reject the
+write, spin, sleep a carrier, or create an unbounded overflow queue.
+
+Ordinary authorized `stdio.out.write(...)` and `process.stdout.write(...)`
+(and stderr equivalents) are callable from ordinary functions, methods,
+and routines without `suspends`, `susp`, `∂`, or `⧖`, directly and
+transitively. No explicit `await` is required. Implicit runtime parking
+is a compiler-known safepoint, not a language-level suspension effect.
+The four effect spellings grant permission for explicit suspension, not a
+requirement to suspend and not a return-type constructor. A suspendable
+callable preserves its declared result type `T` (including `void` or an
+explicitly declared `Future<T>`); an explicitly awaited direct call
+produces that declared result. No implicit Future wrapping, flattening,
+new task or mandatory Future allocation is implied. Runtime parking
+requires resumability of ordinary transitive callers, including indirect
+calls where a nonparking target cannot be proven. A missing suspension
+modifier is not a guarantee of non-yielding execution.
+
+This is not permission to call arbitrary explicit-suspending functions
+without their declared effect. Explicit checked `readch` / `writech`
+and other explicit suspension operations retain their existing rules.
+Do not change method result types or error ABI as part of this decision.
+
+Compiler implementation must preserve two independent facts: explicit
+source suspension and implicit runtime parking. Propagate both through
+resolved call edges, recursive components and specialized callback
+targets; ordinary error handlers must not erase either fact. Dynamic
+or unresolved calls cannot prove nonparking. Pure/effect-free admission
+must still reject output; an absent suspension annotation grants no
+I/O authority.
+
+Cancellation of a FIFO head must release its reservation and advance a
+fitting successor without waiting for an unrelated sink completion.
+Terminal shutdown failure must settle outstanding delivery/flush
+receipts without later reporting success for those failed receipts.
+Host bytes already written cannot be undone. Tests distinguish
+admission, physical delivery and continuation dispatch.
+
+Implementation requirements:
+- One ordered admission/consumer path per descriptor, shared across aliases
+  and all adapters. stdout and stderr have separate order; use finite
+  item, byte, in-flight and waiter budgets, including retained payloads.
+  A producer may retain a bounded owned payload while waiting; charge
+  all retained memory. Oversize records and permanent quota failures
+  are explicit errors, not waits that can never complete.
+- A consumer must be able to drain independently of parked guest producers.
+  Fair wakeups, cancellation and generation fencing must prevent duplicate
+  admission, stale resume, lost wakeups and permit leaks. Do not park
+  while holding a scheduler lock or a shared/critical borrow that makes
+  suspension unsafe; statically reject potentially parking calls in such
+  regions unless nonparking admission is proven. A runtime guard must
+  fail before committing output if parking would violate an invariant.
+- Compiler lowering must propagate internal resumability through ordinary
+  callers, preserve locals and cleanup across parking, and avoid actor
+  mailbox reentrancy. This is required even for AOT/NativeAOT and
+  stackless Wasm; a synchronous host import is not sufficient proof.
+  No mandatory GC, JIT or OS-thread-per-actor. Preserve per-actor stack
+  and heap ownership, isolation, existing host grants and error ABI.
+- Successful admission means acceptance, not durable delivery. A stalled
+  sink must not prevent unrelated authorized actors/tasks from progressing.
+  Broken/closed sinks, revocation, cancellation, flush and shutdown must
+  have bounded resource retention and observable failure; never silently
+  discard successfully admitted records during normal successful drain.
+
+Backend acceptance: run an ordinary unannotated direct and transitive
+caller with a deterministic tiny queue and gated consumer. Fill the
+queue; show the next write parks, unrelated guest work progresses,
+release the sink, and show exactly-once wake/admission and exact mixed-alias
+output. Repeat for stderr, cancellation, sink failure, unsafe critical
+regions and process shutdown. Measure item/byte/waiter high-water marks.
+Reject explicit suspension in unannotated callers as before. Include
+real compiled guests and actual scheduler traces on each supported
+backend, not merely a host queue model or parser acceptance.
+
 ## Text and frame portability
 
 The portable CLI text profile uses UTF-8 and LF-delimited stdin records;
@@ -182,7 +295,8 @@ typed, suspending, checked semantics above.
    unterminated line, CRLF, Unicode, and NUL, and assert status and
    exact stdout/stderr bytes. No implicit prompt newline.
 3. Reject writing the unread `Result<Option<string>,IoError>`,
-   wrong-direction endpoints, non-suspending callable, missing `io`
+   wrong-direction endpoints, explicit suspending channel operations in a
+   non-suspending callable, missing `io`
    permission, parallel stdin consumers, and wrong-tenant grants.
 4. Instrument blocked read/write registration to prove no parked
    carrier, no busy polling, bounded queue memory, exactly-once
