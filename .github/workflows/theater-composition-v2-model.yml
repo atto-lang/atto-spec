@@ -1,0 +1,26 @@
+name: Theater v2 composition model (host-only)
+on:
+  pull_request:
+    paths:
+      - 'tests/theater-composition-v2-model.test.mjs'
+      - 'proposals/theater-composition-vocabulary-v2.md'
+      - '.github/workflows/theater-composition-v2-model.yml'
+permissions:
+  contents: read
+jobs:
+  composition-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify exact PR head
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+      - name: Run host-only model checks
+        run: node --test tests/theater-composition-v2-model.test.mjs
+      - name: Preserve evidence boundary
+        run: echo 'HOST_MODEL_ONLY; all compiled guest targets NOT_EXECUTED'
