@@ -1,0 +1,277 @@
+{
+  "schema": "atto.contract-domain-fixtures.v1",
+  "status": "CANDIDATE_NOT_EXECUTED",
+  "backends": [
+    "java",
+    "llvm",
+    "net",
+    "wasm",
+    "forge",
+    "rs",
+    "js",
+    "cranelift",
+    "hdl",
+    "atto",
+    "realtime"
+  ],
+  "notes": "Complete candidate source inputs, not proven syntax or compiler results. Compile exactly selected source files in an isolated fresh output directory. Expected diagnostic families are targets, not established codes. Require semantic phase and no artifact for negative cases; unsupported syntax does not satisfy a semantic negative.",
+  "cases": [
+    {
+      "id": "module-dispatch",
+      "phase": "compile_run",
+      "files": [
+        "module-dispatch/main.atto"
+      ],
+      "entry": "module-dispatch/main.atto",
+      "expected": {
+        "return_int": 42
+      },
+      "inventory": null,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "module-private",
+      "phase": "compile_reject",
+      "files": [
+        "module-private/main.atto"
+      ],
+      "entry": "module-private/main.atto",
+      "expected": {
+        "diagnostic_family": "CONTRACT_VISIBILITY",
+        "no_artifact": true
+      },
+      "inventory": null,
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "module-binding-positive",
+      "phase": "compile_run",
+      "files": [
+        "module-binding-positive/main.atto"
+      ],
+      "entry": "module-binding-positive/main.atto",
+      "expected": {
+        "return_int": 42
+      },
+      "inventory": "module.readable_binding_kinds",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "module-binding-negative",
+      "phase": "compile_reject",
+      "files": [
+        "module-binding-negative/main.atto"
+      ],
+      "entry": "module-binding-negative/main.atto",
+      "expected": {
+        "diagnostic_family": "CONTRACT_BINDING",
+        "no_artifact": true
+      },
+      "inventory": "module.explicit_binding_mismatch",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "instance-unused-missing",
+      "phase": "compile_reject",
+      "files": [
+        "instance-unused-missing/main.atto"
+      ],
+      "entry": "instance-unused-missing/main.atto",
+      "expected": {
+        "diagnostic_family": "E_IMPL_MISSING",
+        "no_artifact": true
+      },
+      "inventory": "interface.unused_missing_slot",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "instance-static-not-method",
+      "phase": "compile_reject",
+      "files": [
+        "instance-static-not-method/main.atto"
+      ],
+      "entry": "instance-static-not-method/main.atto",
+      "expected": {
+        "diagnostic_family": "E_IMPL_MISSING",
+        "no_artifact": true
+      },
+      "inventory": "interface.static_or_free_callable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "instance-wrong-receiver",
+      "phase": "compile_reject",
+      "files": [
+        "instance-wrong-receiver/main.atto"
+      ],
+      "entry": "instance-wrong-receiver/main.atto",
+      "expected": {
+        "diagnostic_family": "E_IMPL_MISSING",
+        "no_artifact": true
+      },
+      "inventory": "interface.wrong_receiver",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait-conflict",
+      "phase": "compile_reject",
+      "files": [
+        "trait-conflict/main.atto"
+      ],
+      "entry": "trait-conflict/main.atto",
+      "expected": {
+        "diagnostic_family": "E_IMPL_CONFLICT",
+        "no_artifact": true
+      },
+      "inventory": "trait.conflicting_defaults",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait-explicit-resolution",
+      "phase": "compile_run",
+      "files": [
+        "trait-explicit-resolution/main.atto"
+      ],
+      "entry": "trait-explicit-resolution/main.atto",
+      "expected": {
+        "return_int": 42
+      },
+      "inventory": "trait.explicit_resolution",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait-unique-default",
+      "phase": "compile_run",
+      "files": [
+        "trait-unique-default/main.atto"
+      ],
+      "entry": "trait-unique-default/main.atto",
+      "expected": {
+        "return_int": 42
+      },
+      "inventory": "trait.unique_default",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "static-specialized",
+      "phase": "compile_run",
+      "files": [
+        "static-specialized/main.atto"
+      ],
+      "entry": "static-specialized/main.atto",
+      "expected": {
+        "return_int": 42
+      },
+      "inventory": "static_class.local_static",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "static-instance-only",
+      "phase": "compile_reject",
+      "files": [
+        "static-instance-only/main.atto"
+      ],
+      "entry": "static-instance-only/main.atto",
+      "expected": {
+        "diagnostic_family": "STATIC_CONTRACT_SLOT",
+        "no_artifact": true
+      },
+      "inventory": "static_class.instance_only",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "static-private",
+      "phase": "compile_reject",
+      "files": [
+        "static-private/main.atto"
+      ],
+      "entry": "static-private/main.atto",
+      "expected": {
+        "diagnostic_family": "STATIC_CONTRACT_VISIBILITY",
+        "no_artifact": true
+      },
+      "inventory": "static_class.private_static",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "namespace-complete",
+      "phase": "compile_run",
+      "files": [
+        "namespace/contract.atto",
+        "namespace/main.atto",
+        "namespace/tick.atto"
+      ],
+      "entry": "namespace/main.atto",
+      "expected": {
+        "return_int": 42,
+        "scope": "namespace admission only; main does not dispatch tick"
+      },
+      "inventory": "namespace.complete_multi_file",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "namespace-missing",
+      "phase": "compile_reject",
+      "files": [
+        "namespace/contract.atto",
+        "namespace/main.atto"
+      ],
+      "entry": "namespace/main.atto",
+      "expected": {
+        "diagnostic_family": "NAMESPACE_CONTRACT",
+        "no_artifact": true
+      },
+      "inventory": "namespace.partial_source_set",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "namespace-private",
+      "phase": "compile_reject",
+      "files": [
+        "namespace/contract.atto",
+        "namespace/main.atto",
+        "namespace/private.atto"
+      ],
+      "entry": "namespace/main.atto",
+      "expected": {
+        "diagnostic_family": "NAMESPACE_CONTRACT",
+        "no_artifact": true
+      },
+      "inventory": "namespace.private_or_wrong_owner",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "namespace-foreign",
+      "phase": "compile_reject",
+      "files": [
+        "namespace/contract.atto",
+        "namespace/main.atto",
+        "namespace/foreign.atto"
+      ],
+      "entry": "namespace/main.atto",
+      "expected": {
+        "diagnostic_family": "NAMESPACE_CONTRACT",
+        "no_artifact": true
+      },
+      "inventory": "namespace.private_or_wrong_owner",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "namespace-duplicate",
+      "phase": "compile_reject",
+      "files": [
+        "namespace/contract.atto",
+        "namespace/main.atto",
+        "namespace/tick.atto",
+        "namespace/duplicate.atto"
+      ],
+      "entry": "namespace/main.atto",
+      "expected": {
+        "diagnostic_family": "NAMESPACE_CONTRACT",
+        "no_artifact": true
+      },
+      "inventory": "namespace.duplicate_witness",
+      "status": "NOT_EXECUTED"
+    }
+  ]
+}

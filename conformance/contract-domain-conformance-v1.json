@@ -1,0 +1,317 @@
+{
+  "schema": "atto.contract-domain-conformance.v1",
+  "status": "PROPOSED_NOT_EXECUTED",
+  "authority": "language/contract-domain-conformance-v1.md",
+  "evidence_scope": "acceptance inventory only; not compiler fixtures or executable evidence",
+  "backends": {
+    "java": "NOT_EXECUTED",
+    "llvm": "NOT_EXECUTED",
+    "net": "NOT_EXECUTED",
+    "wasm": "NOT_EXECUTED",
+    "forge": "NOT_EXECUTED",
+    "rs": "NOT_EXECUTED",
+    "js": "NOT_EXECUTED",
+    "cranelift": "NOT_EXECUTED",
+    "hdl": "NOT_EXECUTED",
+    "atto": "NOT_EXECUTED",
+    "realtime": "NOT_EXECUTED"
+  },
+  "cases": [
+    {
+      "id": "namespace.complete_multi_file",
+      "domain": "namespace",
+      "phase": "compile_run",
+      "requirement": "All manifest-selected units satisfy one namespace contract; source order permutation preserves witness.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "namespace.partial_source_set",
+      "domain": "namespace",
+      "phase": "compile_reject",
+      "requirement": "An incomplete selected source set cannot certify a namespace.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "namespace.same_name_other_package",
+      "domain": "namespace",
+      "phase": "compile_reject",
+      "requirement": "A same-spelled namespace in a different canonical package cannot supply a witness.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "namespace.private_or_wrong_owner",
+      "domain": "namespace",
+      "phase": "compile_reject",
+      "requirement": "A private or differently owned member does not satisfy a public obligation.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "namespace.duplicate_witness",
+      "domain": "namespace",
+      "phase": "compile_reject",
+      "requirement": "Two declarations of one canonical slot must not be resolved by file order.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "namespace.peer_invalidation",
+      "domain": "namespace",
+      "phase": "incremental",
+      "requirement": "Contract or peer signature edit invalidates affected proofs without changing import initialization edges.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "module.readable_binding_kinds",
+      "domain": "module",
+      "phase": "compile_run",
+      "requirement": "Unqualified readable requirement accepts supported readable let/val/const members without exposing write authority.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "module.explicit_binding_mismatch",
+      "domain": "module",
+      "phase": "compile_reject",
+      "requirement": "Explicit let/val/const capability mismatch is rejected.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "module.foreign_contract_alias",
+      "domain": "module",
+      "phase": "compile_run",
+      "requirement": "Imported contract aliases retain canonical defining identity.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "module.unresolved_parent",
+      "domain": "module",
+      "phase": "compile_reject",
+      "requirement": "An unresolved inherited contract cannot discharge obligations.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "module.mutable_invariance",
+      "domain": "module",
+      "phase": "compile_reject",
+      "requirement": "Writable member type must be invariant.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "module.domain_mismatch",
+      "domain": "module",
+      "phase": "compile_reject",
+      "requirement": "A static or instance contract cannot substitute for a module contract.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.inline_and_external_receiver",
+      "domain": "interface",
+      "phase": "compile_run",
+      "requirement": "Unique compatible inline or linked receiver implementation dispatches correctly.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.wrong_receiver",
+      "domain": "interface",
+      "phase": "compile_reject",
+      "requirement": "Same-name callable on unrelated nominal owner cannot discharge an instance slot.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.static_or_free_callable",
+      "domain": "interface",
+      "phase": "compile_reject",
+      "requirement": "Static or free callable cannot discharge an instance slot.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.unused_missing_slot",
+      "domain": "interface",
+      "phase": "compile_reject",
+      "requirement": "Missing required method rejects an unused concrete definition before tree shaking.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.signature_effect_ownership",
+      "domain": "interface",
+      "phase": "compile_reject",
+      "requirement": "Incompatible types, receiver mutability, ownership or effects cannot satisfy a requirement.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "interface.marker_nominal",
+      "domain": "interface",
+      "phase": "compile_reject",
+      "requirement": "A structural shape cannot impersonate an empty nominal marker.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.unique_default",
+      "domain": "trait",
+      "phase": "compile_run",
+      "requirement": "Unique compatible inherited trait default is callable.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.conflicting_defaults",
+      "domain": "trait",
+      "phase": "compile_reject",
+      "requirement": "Ambiguous defaults cannot be chosen by source order.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.explicit_resolution",
+      "domain": "trait",
+      "phase": "compile_run",
+      "requirement": "A unique compatible explicit implementation resolves competing defaults.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.diamond_identity",
+      "domain": "trait",
+      "phase": "compile_run",
+      "requirement": "An identical canonical inherited obligation collapses once.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.cycle",
+      "domain": "trait",
+      "phase": "compile_reject",
+      "requirement": "Cyclic obligation graph rejects.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "trait.generic_specialization",
+      "domain": "trait",
+      "phase": "compile_run",
+      "requirement": "Resolved specialization preserves the full concrete signature.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "static_class.local_static",
+      "domain": "static_class",
+      "phase": "compile_run",
+      "requirement": "Local public static callable satisfies specialized static contract.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "static_class.instance_only",
+      "domain": "static_class",
+      "phase": "compile_reject",
+      "requirement": "Instance method is not a static-side implementation.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "static_class.private_static",
+      "domain": "static_class",
+      "phase": "compile_reject",
+      "requirement": "Private static method cannot meet a public static contract.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "static_class.inherited_static_floor",
+      "domain": "static_class",
+      "phase": "profile_reject",
+      "requirement": "Initial proposed portable floor rejects inherited-only static witnesses until extension specified.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "structural.all_members",
+      "domain": "structural",
+      "phase": "compile_run",
+      "requirement": "All accessible required members are checked with safe projection ABI.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "structural.missing_member",
+      "domain": "structural",
+      "phase": "compile_reject",
+      "requirement": "A partial shape cannot satisfy an all-member projection.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "structural.layout_mismatch",
+      "domain": "structural",
+      "phase": "profile_reject",
+      "requirement": "Backend lacking a safe projection ABI rejects instead of pointer reinterpretation.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "behavioral.substitution_proven",
+      "domain": "behavioral",
+      "phase": "compile_run",
+      "requirement": "An override with proven no-stronger preconditions and no-weaker postconditions is admitted.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "behavioral.stronger_precondition",
+      "domain": "behavioral",
+      "phase": "compile_reject",
+      "requirement": "Override cannot strengthen caller obligation.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "behavioral.weaker_postcondition",
+      "domain": "behavioral",
+      "phase": "compile_reject",
+      "requirement": "Override cannot weaken guarantee.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "behavioral.unknown_implication",
+      "domain": "behavioral",
+      "phase": "profile_reject",
+      "requirement": "Unproved behavioral substitutability fails closed in a profile claiming it.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "linkage.abi_invalidation",
+      "domain": "linkage",
+      "phase": "incremental",
+      "requirement": "Domain, identity, signature, binding, ancestry and effect changes invalidate affected cached witnesses.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "linkage.full_aot",
+      "domain": "linkage",
+      "phase": "full_aot",
+      "requirement": "Supported dispatch runs in guest full AOT without interpreter or runtime codegen fallback.",
+      "source_kind": "acceptance_intent_not_runnable",
+      "status": "NOT_EXECUTED"
+    }
+  ]
+}

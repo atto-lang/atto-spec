@@ -1,0 +1,7 @@
+define interface IPing as
+  ping(): int;
+end
+define class Missing implements IPing as end
+define class Other as end
+pub mtd (Other self) ping(): int { return 42; }
+pub fnc main(): int { return 42; }

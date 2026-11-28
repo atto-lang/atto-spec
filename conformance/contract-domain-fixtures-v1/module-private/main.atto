@@ -1,0 +1,7 @@
+define contract WorkerApi as
+  fnc run(int value): int;
+end
+define pub module Worker conforms WorkerApi as
+  fnc run(int value): int { return value + 1; }
+end
+pub fnc main(): int { return 42; }

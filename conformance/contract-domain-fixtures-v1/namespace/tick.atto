@@ -1,0 +1,2 @@
+namespace shop;
+pub fnc tick(int count): int { return count; }

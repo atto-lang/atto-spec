@@ -1,0 +1,5 @@
+define interface IPing as
+  ping(): int;
+end
+define class Missing implements IPing as end
+pub fnc main(): int { return 42; }

@@ -1,0 +1,7 @@
+define interface IPing as
+  ping(): int;
+end
+define class Wrong implements IPing as
+  pub static fnc ping(): int { return 42; }
+end
+pub fnc main(): int { return 42; }

@@ -1,0 +1,8 @@
+define trait DefaultPing as
+  pub ping(): int { return 42; }
+end
+define class C implements DefaultPing as end
+pub fnc main(): int {
+  val C obj = new C();
+  return obj.ping();
+}

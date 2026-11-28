@@ -1,0 +1,13 @@
+define contract Readable as
+  value: int;
+end
+define pub module Mutable conforms Readable as
+  pub let int value = 14;
+end
+define pub module Stable conforms Readable as
+  pub val int value = 14;
+end
+define pub module Constant conforms Readable as
+  pub const int value = 14;
+end
+pub fnc main(): int { return Mutable.value + Stable.value + Constant.value; }

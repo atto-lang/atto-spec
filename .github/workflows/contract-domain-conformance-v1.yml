@@ -1,0 +1,33 @@
+name: Contract domain conformance host reference
+on:
+  pull_request:
+    paths:
+      - 'language/contract-domain-conformance-v1.md'
+      - 'conformance/contract-domain-conformance-v1.json'
+      - 'tests/contract-domain-conformance-v1.test.mjs'
+      - 'tests/contract-domain-fixtures-v1.test.mjs'
+      - 'tests/nominal-method-spelling-v1.test.mjs'
+      - 'conformance/nominal-method-spelling-v1.json'
+      - 'tests/contract-instance-witness-v1.test.mjs'
+      - 'reference-checks/contract-instance-witness-v1.mjs'
+      - 'conformance/contract-domain-fixtures-v1/**'
+      - '.github/workflows/contract-domain-conformance-v1.yml'
+permissions:
+  contents: read
+jobs:
+  host-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Verify head and run host-only regression
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          node --test tests/contract-domain-conformance-v1.test.mjs tests/contract-domain-fixtures-v1.test.mjs tests/contract-instance-witness-v1.test.mjs tests/nominal-method-spelling-v1.test.mjs
+          echo 'HOST_ONLY: no compiler or guest parity certification.'

@@ -1,0 +1,4 @@
+namespace shop conforms ShopApi;
+define contract ShopApi for namespace as
+  fnc tick(int count): int;
+end

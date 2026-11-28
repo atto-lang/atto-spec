@@ -1,0 +1,7 @@
+define contract StableApi as
+  val value: int;
+end
+define module Broken conforms StableApi as
+  pub let int value = 42;
+end
+pub fnc main(): int { return 42; }

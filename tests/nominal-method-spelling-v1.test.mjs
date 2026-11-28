@@ -1,0 +1,122 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const m=JSON.parse(readFileSync(new URL('../conformance/nominal-method-spelling-v1.json',import.meta.url),'utf8'));
+test('method spelling corpus covers every backend without certifying execution',()=>{
+  assert.equal(m.status,'CANDIDATE_NOT_EXECUTED');
+  assert.deepEqual(Object.keys(m.compiler_targets).sort(),['atto','cranelift','forge','hdl','java','js','llvm','net','realtime','rs','wasm']);
+  assert.ok(Object.values(m.compiler_targets).every(v=>v==='NOT_EXECUTED'));
+  assert.equal(m.cases.length,120);
+  assert.equal(new Set(m.cases.map(c=>c.id)).size,120);
+  for(const kind of ['interface','trait']){
+    for(const spelling of ['bare','fnc','mtd']){
+      const p=m.cases.find(c=>c.id===kind+'.'+spelling+'.positive');
+      const n=m.cases.find(c=>c.id===kind+'.'+spelling+'.missing');
+      assert.equal(p.expected_return_int,42);
+      assert.equal(n.expect,'semantic_reject');
+      assert.equal(n.no_artifact,true);
+      assert.equal(n.diagnostic_family,'MISSING_INSTANCE_OBLIGATION');
+      assert.equal(p.source.split('\n')[0],n.source.split('\n')[0]);
+      assert.equal(p.status,'NOT_EXECUTED');
+      assert.equal(n.status,'NOT_EXECUTED');
+    }
+  }
+});
+
+test('contextual class method names dispatch and collide across spellings',()=>{
+  const declaration=(name,spelling)=>`pub ${spelling==='bare'?'':spelling+' '}${name}(): int { return 42; }`;
+  for(const name of ['ping','mtd','method']){
+    for(const spelling of ['bare','fnc','mtd']){
+      const c=m.cases.find(c=>c.id===`class.${name}.${spelling}.positive`);
+      assert.equal(c.expect,'compile_and_run');
+      assert.equal(c.expected_return_int,42);
+      assert.equal(c.source,`define class C as ${declaration(name,spelling)} end\npub fnc main(): int { return new C().${name}(); }\n`);
+    }
+    for(const [first,second] of [['bare','mtd'],['mtd','fnc'],['fnc','bare']]){
+      const c=m.cases.find(c=>c.id===`class.${name}.${first}-${second}.duplicate`);
+      assert.equal(c.expect,'semantic_reject');
+      assert.equal(c.no_artifact,true);
+      assert.equal(c.diagnostic_family,'DUPLICATE_INSTANCE_METHOD');
+      assert.equal(c.source,`define class C as ${declaration(name,first)} ${declaration(name,second)} end\npub fnc main(): int { return 0; }\n`);
+    }
+  }
+});
+
+test('every candidate remains unexecuted and has a disjoint outcome contract',()=>{
+  for(const c of m.cases){
+    assert.equal(c.status,'NOT_EXECUTED');
+    assert.equal(c.entry,'main.atto');
+    if(c.expect==='compile_and_run'){
+      assert.equal(c.expected_return_int,42);
+      assert.ok(!Object.hasOwn(c,'diagnostic_family')&&!Object.hasOwn(c,'no_artifact'));
+    }else{
+      assert.ok(['semantic_reject','syntax_reject'].includes(c.expect));
+      assert.equal(c.no_artifact,true);
+      assert.ok(!Object.hasOwn(c,'expected_return_int'));
+    }
+  }
+});
+
+test('obsolete method introducer is rejected, not normalized',()=>{
+  assert.equal(m.formatting.obsolete_method_introducer,'reject_not_rewrite');
+  for(const kind of ['class','actor','struct','interface','trait']){
+    const c=m.cases.find(c=>c.id===kind+'.obsolete-method.reject');
+    const body=['interface','trait'].includes(kind)?'method ping(): int;':'method ping(): int { return 42; }';
+    assert.equal(c.source,`define ${kind} C as ${body} end\npub fnc main(): int { return 0; }\n`);
+    assert.equal(c.expect,'syntax_reject');
+    assert.equal(c.diagnostic_family,'OBSOLETE_METHOD_INTRODUCER');
+    assert.equal(c.no_artifact,true);
+  }
+});
+
+test('obsolete introducer cannot be disguised as a contextual name or by comments',()=>{
+  for(const name of ['mtd','method']){
+    for(const form of ['plain','comment']){
+      const c=m.cases.find(c=>c.id==='class.obsolete-method.'+name+'.'+form+'.reject');
+      const marker=form==='plain'?'method ':'method /* obsolete */ ';
+      assert.equal(c.source,'define class C as '+marker+name+'(): int { return 42; } end\npub fnc main(): int { return 0; }\n');
+      assert.equal(c.expect,'syntax_reject');
+      assert.equal(c.diagnostic_family,'OBSOLETE_METHOD_INTRODUCER');
+      assert.equal(c.no_artifact,true);
+      assert.equal(c.status,'NOT_EXECUTED');
+    }
+  }
+});
+
+function extendedCases(){
+  const cases=[];
+  const base={entry:'main.atto',status:'NOT_EXECUTED'};
+  for(const kind of ['class','actor','struct','interface','trait']){
+    for(const name of ['ping','mtd','method']){
+      for(const [form,marker] of [['public','pub method '],['tab','method\t'],['newline','method\n'],['block-comment','method /* declaration marker */ ']]){
+        const body=['interface','trait'].includes(kind)?';':' { return 42; }';
+        cases.push({id:kind+'.obsolete-matrix.'+name+'.'+form,expect:'syntax_reject',...base,source:'define '+kind+' C as '+marker+name+'(): int'+body+' end\npub fnc main(): int { return 0; }\n',diagnostic_family:'OBSOLETE_METHOD_INTRODUCER',no_artifact:true});
+      }
+    }
+  }
+  for(const spelling of ['bare','fnc','mtd']){
+    const prefix=spelling==='bare'?'':spelling+' ';
+    for(const [form,header,body,call] of [
+      ['trivia',prefix+'/* declaration */ ping()', '42', 'ping()'],
+      ['multiline',prefix+'ping(\n)', '42', 'ping()'],
+      ['self',prefix+'ping(self)', '42', 'ping()'],
+      ['value',prefix+'ping(int n)', 'n + 2', 'ping(40)'],
+      ['self-value',prefix+'ping(self, int n)', 'n + 2', 'ping(40)'],
+      ['split-self',prefix+'ping(self)(int n)', 'n + 2', 'ping(40)'],
+      ['formal-comment',prefix+'ping(/* formal */ int n)', 'n + 2', 'ping(40)']
+    ]){
+      cases.push({id:'class.accept-matrix.'+spelling+'.'+form,expect:'compile_and_run',...base,source:'define class C as pub '+header+': int { return '+body+'; } end\npub fnc main(): int { return new C().'+call+'; }\n',expected_return_int:42});
+    }
+  }
+  return cases;
+}
+
+test('extended trivia and receiver matrix has exact source and expected outcomes',()=>{
+  const expected=extendedCases();
+  assert.equal(expected.length,81);
+  assert.equal(expected.filter(c=>c.expect==='syntax_reject').length,60);
+  assert.equal(expected.filter(c=>c.expect==='compile_and_run').length,21);
+  const actual=m.cases.filter(c=>c.id.includes('.obsolete-matrix.')||c.id.includes('.accept-matrix.'));
+  assert.deepEqual(actual,expected);
+  assert.equal(new Set(m.cases.map(c=>c.source)).size,m.cases.length);
+});
