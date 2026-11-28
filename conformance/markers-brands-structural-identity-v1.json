@@ -1,0 +1,440 @@
+{
+  "contract": "markers-brands-structural-identity-v1",
+  "status": "PROPOSED_NOT_EXECUTED",
+  "evidence": "Target descriptions only; not guest fixtures or an execution oracle.",
+  "backends": [
+    "java",
+    "llvm",
+    "forge",
+    "wasm",
+    "net",
+    "rs",
+    "cranelift",
+    "js",
+    "hdl",
+    "atto",
+    "realtime"
+  ],
+  "cases": [
+    {
+      "id": "MB001",
+      "kind": "static",
+      "scenario": "same nominal UserId; required shape and brand present",
+      "expected": "ACCEPT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB002",
+      "kind": "static",
+      "scenario": "authorized unrelated struct; same brand and compatible shape",
+      "expected": "ACCEPT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB003",
+      "kind": "static",
+      "scenario": "OrderId same shape but different brand",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB004",
+      "kind": "static",
+      "scenario": "unbranded value with identical public field",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB005",
+      "kind": "static",
+      "scenario": "branded value to anonymous readonly shape",
+      "expected": "ACCEPT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB006",
+      "kind": "static",
+      "scenario": "rebrand erased shape through cast",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB007",
+      "kind": "static",
+      "scenario": "all required markers and extra fields present",
+      "expected": "ACCEPT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB008",
+      "kind": "static",
+      "scenario": "one of two required markers absent",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB009",
+      "kind": "static",
+      "scenario": "correct brand but missing member",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB010",
+      "kind": "static",
+      "scenario": "same spelled brand in unrelated packages",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB011",
+      "kind": "static",
+      "scenario": "import alias resolves to original brand",
+      "expected": "ACCEPT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB012",
+      "kind": "static",
+      "scenario": "attach foreign public brand without delegation",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB013",
+      "kind": "static",
+      "scenario": "reference public foreign brand in constraint",
+      "expected": "ACCEPT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB014",
+      "kind": "static",
+      "scenario": "attach public ordinary marker from another module",
+      "expected": "ACCEPT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB015",
+      "kind": "static",
+      "scenario": "private marker outside defining visibility",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB016",
+      "kind": "static",
+      "scenario": "ordinary Symbol value supplied as tag proof",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB017",
+      "kind": "static",
+      "scenario": "duplicate tag in constraint",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB018",
+      "kind": "static",
+      "scenario": "marker used where brand required",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB019",
+      "kind": "static",
+      "scenario": "same-name user Sendable marker grants transport",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB020",
+      "kind": "static",
+      "scenario": "branded view accesses sealed actor field",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB021",
+      "kind": "static",
+      "scenario": "escape borrowed branded view",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB022",
+      "kind": "static",
+      "scenario": "write via readonly branded view",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB023",
+      "kind": "static",
+      "scenario": "brand cast via raw equal layout",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB024",
+      "kind": "static",
+      "scenario": "generic preserves concrete type and brand",
+      "expected": "ACCEPT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB025",
+      "kind": "static",
+      "scenario": "with update bypasses brand invariant",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB026",
+      "kind": "static",
+      "scenario": "unproved inherited brand",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB027",
+      "kind": "static",
+      "scenario": "structural and tilde type AST equivalence",
+      "expected": "EQUAL",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB028",
+      "kind": "static",
+      "scenario": "integer expression ~12",
+      "expected": "VALUE:-13",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB029",
+      "kind": "static",
+      "scenario": "ambiguous tilde argument requires explicit spelling",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB030",
+      "kind": "static",
+      "scenario": "explicit structural argument with authorized brand",
+      "expected": "ACCEPT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB031",
+      "kind": "runtime",
+      "scenario": "match correct reified brand and shape",
+      "expected": "MATCH",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB032",
+      "kind": "runtime",
+      "scenario": "match wrong reified brand and same shape",
+      "expected": "NO_MATCH",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB033",
+      "kind": "runtime",
+      "scenario": "unreified erased shape used for brand test",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB034",
+      "kind": "runtime",
+      "scenario": "first matching branded arm wins; subject evaluated once",
+      "expected": "MATCH_FIRST_ONCE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB035",
+      "kind": "runtime",
+      "scenario": "same live object through alias",
+      "expected": "EQUAL",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB036",
+      "kind": "runtime",
+      "scenario": "separately allocated equal class objects",
+      "expected": "NOT_EQUAL",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB037",
+      "kind": "runtime",
+      "scenario": "move or relocation preserves instance identity",
+      "expected": "EQUAL",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB038",
+      "kind": "runtime",
+      "scenario": "copied class instance gets fresh identity",
+      "expected": "NOT_EQUAL",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB039",
+      "kind": "runtime",
+      "scenario": "retired slot reused for another object",
+      "expected": "NOT_EQUAL",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB040",
+      "kind": "static",
+      "scenario": "instance ID requested for ordinary value struct",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB041",
+      "kind": "runtime",
+      "scenario": "ID generation exhausted",
+      "expected": "CHECKED_FAILURE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB042",
+      "kind": "runtime",
+      "scenario": "forged wire brand without validated constructor",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB043",
+      "kind": "runtime",
+      "scenario": "authenticated compatible descriptor hot reload invalidates witness cache",
+      "expected": "INVALIDATE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB044",
+      "kind": "runtime",
+      "scenario": "incompatible hot reload changes brand authority",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB045",
+      "kind": "static",
+      "scenario": "canonical shape field order independent",
+      "expected": "EQUAL",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB046",
+      "kind": "static",
+      "scenario": "same shape but distinct tag constraint cache key",
+      "expected": "NOT_EQUAL",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB047",
+      "kind": "static",
+      "scenario": "descriptor hash collision with different identities",
+      "expected": "NOT_EQUAL",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB048",
+      "kind": "layout",
+      "scenario": "statically branded i64 struct payload size unchanged",
+      "expected": "SAME_SIZE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB049",
+      "kind": "layout",
+      "scenario": "static marker/brand admission emits no tag check",
+      "expected": "NO_TAG_CHECK",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB050",
+      "kind": "static",
+      "scenario": "untrusted map field name cannot manufacture a brand",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB051",
+      "kind": "runtime",
+      "scenario": "ObjectId cannot dereference or extend lifetime",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB052",
+      "kind": "static",
+      "scenario": "brand does not grant permission or effect escalation",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB053",
+      "kind": "static",
+      "scenario": "ordinary Symbol UUID identical to a tag identifier cannot satisfy typed brand membership",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB054",
+      "kind": "static",
+      "scenario": "same shape and brand but changed ownership mode or member effect upper bound",
+      "expected": "NOT_EQUAL",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB055",
+      "kind": "static",
+      "scenario": "generic containing an actor-local borrow cannot derive Send from attached user marker",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB056",
+      "kind": "static",
+      "scenario": "opaque newtype with matching representation cannot gain another brand by conversion without validated construction",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB057",
+      "kind": "runtime",
+      "scenario": "descriptor with matching UUID but wrong declaration kind or package authority",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB058",
+      "kind": "runtime",
+      "scenario": "brand attachment policy change invalidates dependent structural witness and importer proof caches",
+      "expected": "INVALIDATE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB059",
+      "kind": "runtime",
+      "scenario": "implementation-only method body change preserves public brand witness when its verified effects and dependencies are unchanged",
+      "expected": "PRESERVE",
+      "status": "NOT_EXECUTED"
+    },
+    {
+      "id": "MB060",
+      "kind": "runtime",
+      "scenario": "wire payload contains valid Symbol UUID but missing trusted brand schema and construction proof",
+      "expected": "REJECT",
+      "status": "NOT_EXECUTED"
+    }
+  ]
+}
