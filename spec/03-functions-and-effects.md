@@ -22,6 +22,10 @@ Explicit `infer` is already part of the target return annotation contract. The s
 
 See [canonical lambdas and AOT closure semantics](../language/canonical-lambdas-and-closures-v1.md) for capture provenance, effect checks and full-AOT code-plus-environment lowering. Existing typed inline annotations, braced bodies and separately gated comma-body profiles remain intact.
 
+## Callable invocation intrinsics (v1 target)
+
+Statically typed callable values expose `.call(args...)` and `.apply(product)` through compiler intrinsic lowering, not runtime methods. `.call` preserves ordinary argument boundaries. `.apply` accepts a fixed Tuple positionally or a closed Record by statically verified formal names; no spread is required. No intrinsic `bind`, receiver substitution or implicit partial application. See the [callable invocation and runtime footprint contract](../language/callable-invocation-intrinsics-v1.md). Backend execution and allocation evidence remain separately gated.
+
 ## Flexible inline callable contracts
 
 A named callable may place its mandatory result annotation before or after the entire inline `effects`, `budget`, `throws`, `raises`, and `panics` sequence. Brace and `begin`/`end` statement bodies work for either placement; a final result annotation following the clauses also admits newline-started statements terminated by `end` without `begin`. The five equivalent spellings, parser boundaries and conformance requirements are specified in [flexible contract headers](../language/java-style-failure-signature-bodies-v1.md#flexible-contract-headers-effects-budget-and-result-placement-2026-11-26). This is a syntax target, not backend execution evidence.
