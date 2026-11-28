@@ -1,0 +1,297 @@
+{
+  "profile": "record-mixed-entries-extension-v1",
+  "evidence": "TARGET_NOT_EXECUTED",
+  "note": "Fragments and expected semantic observations, not standalone executable programs. Backend adapters must supply callable declarations and guest assertions, and must not rewrite syntax under test.",
+  "vectors": [
+    {
+      "id": "pair-decl",
+      "source": "const x := 5; const y = x := 5;",
+      "expect": "accept",
+      "oracle": "x and y Pair<int>, literal key x, value 5"
+    },
+    {
+      "id": "brace-pair-newline",
+      "source": "const r = {name := \"Alice\"\nage := 30\nactive := true\nscore := 95};",
+      "expect": "accept",
+      "oracle": "closed Record name:string age:int active:bool score:int"
+    },
+    {
+      "id": "brace-pair-comma",
+      "source": "const r = {name := \"Alice\", age := 30, active := true, score := 95};",
+      "expect": "accept",
+      "oracle": "same shape and values as brace-pair-newline"
+    },
+    {
+      "id": "brace-equals",
+      "source": "const r = {name = \"Alice\", age = 30, active = true, score = 95};",
+      "expect": "accept",
+      "oracle": "same shape and values"
+    },
+    {
+      "id": "brace-colon",
+      "source": "const r = {name : \"Alice\", age : 30, active : true, score : 95};",
+      "expect": "accept",
+      "oracle": "same shape and values"
+    },
+    {
+      "id": "mixed-newline",
+      "source": "const r = {x := 1\ny = 2, z : 3};",
+      "expect": "accept",
+      "oracle": "closed Record x:int y:int z:int"
+    },
+    {
+      "id": "mixed-paren",
+      "source": "const Record r = (bar := 6, foo = 5);",
+      "expect": "accept",
+      "oracle": "Record bar:int foo:int"
+    },
+    {
+      "id": "mixed-paren-reverse",
+      "source": "const r = (foo : 5, bar := 6);",
+      "expect": "accept",
+      "oracle": "same shape as mixed-paren"
+    },
+    {
+      "id": "anonymous-brace-colon",
+      "source": "process({name : \"Alice\", age : 30});",
+      "expect": "accept",
+      "oracle": "one positional Record argument; fragment assumes process exists"
+    },
+    {
+      "id": "anonymous-brace-pair",
+      "source": "process({name := \"Alice\", age := 30});",
+      "expect": "accept",
+      "oracle": "one positional Record argument"
+    },
+    {
+      "id": "anonymous-brace-equals",
+      "source": "process({x = 5, y = 6});",
+      "expect": "accept",
+      "oracle": "one positional Record argument"
+    },
+    {
+      "id": "call-named",
+      "source": "process(x = 5);",
+      "expect": "accept",
+      "oracle": "named argument, not Record"
+    },
+    {
+      "id": "call-pair",
+      "source": "process(x := 5);",
+      "expect": "accept",
+      "oracle": "positional Pair argument"
+    },
+    {
+      "id": "pair-group",
+      "source": "const p = (x := 5);",
+      "expect": "accept",
+      "oracle": "Pair, not Record"
+    },
+    {
+      "id": "pair-tuple",
+      "source": "const t = (x := 5, y := 6);",
+      "expect": "accept",
+      "oracle": "Tuple of Pair values"
+    },
+    {
+      "id": "pair-singleton-tuple",
+      "source": "const t = (x := 5,);",
+      "expect": "accept",
+      "oracle": "singleton Tuple of Pair"
+    },
+    {
+      "id": "nested-pair",
+      "source": "const r = {p : (x := 5)};",
+      "expect": "accept",
+      "oracle": "p holds Pair, no x field"
+    },
+    {
+      "id": "nested-delimiter",
+      "source": "const t = (1, {x : 2});",
+      "expect": "accept",
+      "oracle": "Tuple of scalar and Record"
+    },
+    {
+      "id": "newline-rhs",
+      "source": "const r = {x := (1 +\n2)\ny := 4};",
+      "expect": "accept",
+      "oracle": "x=3 y=4"
+    },
+    {
+      "id": "trailing-comma",
+      "source": "const r = {x := 1, y = 2, z : 3,};",
+      "expect": "accept",
+      "oracle": "closed Record"
+    },
+    {
+      "id": "equals-missing-comma",
+      "source": "const r = {x = 1\ny = 2};",
+      "expect": "reject",
+      "oracle": "missing separator"
+    },
+    {
+      "id": "colon-missing-comma",
+      "source": "const r = {x : 1\ny : 2};",
+      "expect": "reject",
+      "oracle": "missing separator"
+    },
+    {
+      "id": "pair-same-line",
+      "source": "const r = {x := 1 y := 2};",
+      "expect": "reject",
+      "oracle": "missing separator"
+    },
+    {
+      "id": "paren-missing-comma",
+      "source": "const r = (x : 1\ny := 2);",
+      "expect": "reject",
+      "oracle": "missing separator"
+    },
+    {
+      "id": "duplicate-mixed",
+      "source": "const r = {x := 1, x : 2};",
+      "expect": "reject",
+      "oracle": "duplicate field"
+    },
+    {
+      "id": "positional-first",
+      "source": "const r = (1, x : 2);",
+      "expect": "reject",
+      "oracle": "mixed field and scalar"
+    },
+    {
+      "id": "positional-last",
+      "source": "const r = (x : 2, 1);",
+      "expect": "reject",
+      "oracle": "mixed field and scalar"
+    },
+    {
+      "id": "double-comma",
+      "source": "const r = {x : 1,, y : 2};",
+      "expect": "reject",
+      "oracle": "invalid separator"
+    },
+    {
+      "id": "semicolon",
+      "source": "const r = {x : 1; y : 2};",
+      "expect": "reject",
+      "oracle": "invalid separator"
+    },
+    {
+      "id": "missing-rhs",
+      "source": "const r = {x := , y : 2};",
+      "expect": "reject",
+      "oracle": "missing RHS"
+    },
+    {
+      "id": "with-add",
+      "source": "const r = {x : 1}; const v = r with {bar : true};",
+      "expect": "accept",
+      "oracle": "new Record x:int bar:bool; r unchanged"
+    },
+    {
+      "id": "spread-add",
+      "source": "const r = {x : 1}; const v = {...r, bar : true};",
+      "expect": "accept",
+      "oracle": "same as with-add"
+    },
+    {
+      "id": "shape-infer",
+      "source": "const r = {x : 1}; const Record<T> v = infer {...r, bar : true};",
+      "expect": "accept",
+      "oracle": "T lexical inferred shape"
+    },
+    {
+      "id": "with-type-change",
+      "source": "const r = {x : 1}; const v = r with {x : \"s\"};",
+      "expect": "accept",
+      "oracle": "v.x string, r.x int"
+    },
+    {
+      "id": "spread-override",
+      "source": "const r = {x : 1}; const v = {...r, x : 2};",
+      "expect": "accept",
+      "oracle": "v.x=2, r.x=1"
+    },
+    {
+      "id": "spread-conflict",
+      "source": "const a = {x : 1}; const b = {x : 2}; const v = {...a, ...b};",
+      "expect": "reject",
+      "oracle": "unresolved overlap"
+    },
+    {
+      "id": "spread-resolved",
+      "source": "const a = {x : 1}; const b = {x : 2}; const v = {...a, ...b, x : 3};",
+      "expect": "accept",
+      "oracle": "v.x=3"
+    },
+    {
+      "id": "spread-reverse",
+      "source": "const r = {x : 1}; const v = {x : 2, ...r};",
+      "expect": "reject",
+      "oracle": "spread overwrites earlier explicit field"
+    },
+    {
+      "id": "spread-missing-comma",
+      "source": "const r = {x : 1}; const v = {...r\nbar : true};",
+      "expect": "reject",
+      "oracle": "missing separator"
+    },
+    {
+      "id": "with-duplicate",
+      "source": "const r = {x : 1}; const v = r with {x : 2, x := 3};",
+      "expect": "reject",
+      "oracle": "duplicate explicit field"
+    },
+    {
+      "id": "scalar-spread",
+      "source": "const v = {...5, x : 1};",
+      "expect": "reject",
+      "oracle": "non-Record spread"
+    },
+    {
+      "id": "assignment-shadow",
+      "source": "let mut x = 9; const r = {x = 1};",
+      "expect": "accept",
+      "oracle": "outer x unchanged (fragment assumes ordinary mutable declaration grammar)"
+    },
+    {
+      "id": "call-two-named-equals",
+      "source": "foo(x = 4, y = 8);",
+      "expect": "accept",
+      "oracle": "two named slots, no local writes"
+    },
+    {
+      "id": "call-one-brace-record-equals",
+      "source": "foo({x = 4, y = 8});",
+      "expect": "accept",
+      "oracle": "one positional Record, no flattening or local writes"
+    },
+    {
+      "id": "call-named-brace-record",
+      "source": "foo(data = {x = 4, y = 8});",
+      "expect": "accept",
+      "oracle": "one named slot with Record value"
+    },
+    {
+      "id": "call-brace-record-duplicate",
+      "source": "foo({x = 4, x = 8});",
+      "expect": "reject",
+      "oracle": "duplicate Record label; not duplicate call slot"
+    }
+  ],
+  "pending_call_syntax": [
+    {
+      "id": "anonymous-paren-colon",
+      "source": "process((name : \"Alice\", age : 30));",
+      "expect": "UNRESOLVED_CANDIDATE",
+      "oracle": "Not a portable positive or negative test pending owner ratification."
+    },
+    {
+      "id": "anonymous-paren-equals",
+      "source": "process((x = 4, y = 8));",
+      "expect": "UNRESOLVED",
+      "oracle": "Do not classify as positional Record or named-call flattening until resolved."
+    }
+  ]
+}
