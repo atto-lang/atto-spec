@@ -100,7 +100,9 @@ logger.info("Request completed", {:request_id, :status, :elapsed_ms});
 
 These logging calls require a logger API that explicitly accepts structured Records; no implicit call argument expansion or logging API change is claimed here. Runtime UUID generation uses val rather than const unless constexpr is established. Pair-based logging likewise requires a compatible Pair overload. The capture syntax is accepted; it does not imply runtime reflection. Explicit Struct capture construction is specified below.
 
-## Static call spread and positional apply (approved extension)
+## Static call spread and positional apply (approved extension, revised 2026-11-27)
+
+Owner decision superseding the former all-Pair Tuple exception: Tuple is always positional; Record alone spreads by field name. Neither spread implicitly unwraps a Pair.
 
 Call argument grammar adds a distinct spread node: `call_arg = named_arg | "...", expression | expression ;`. The adjacent ellipsis is recognized only in the existing call-argument context; this extension does not add general collection spread, variadic parameter declarations or reflection.
 
@@ -109,7 +111,8 @@ fnc foo(string name, int age, bool active) { }
 const r = (name = "Alice", age = 42, active = true);
 const t = (active := true, name := "Alice", age := 42);
 foo(...r);
-foo(...t);
+foo(...Record.of(active := true, name := "Alice", age := 42));
+// foo(...t) rejects: Pair elements are not scalar parameters.
 foo(...("Alice", 42, true));
 foo(...{:name, :age}, active = true); // with accessible name and age bindings
 fnc bar(Pair<string> x, Pair<int> y) { }
@@ -119,8 +122,7 @@ bar.apply(pairs);
 
 Classification is based on the resolved operand shape, before overload selection, never on the target's willingness to accept a particular interpretation:
 - Closed structural Record: named arguments, preserving its proven field names and types.
-- Nonempty fixed Tuple consisting entirely of nominal Pair values: named arguments by compile-time-proven string keys, using payload values. Unknown, invalid, duplicate or reserved keys reject; there is no positional fallback for an all-Pair tuple.
-- Empty Tuple, or a Tuple with at least one non-Pair element: positional arguments preserving every element, including any Pair elements. Empty Tuple contributes zero arguments.
+- Every fixed Tuple: positional arguments in index order, preserving each complete element, including nominal Pair values. Empty Tuple contributes zero arguments. Pair keys are never inspected, validated as parameter names, or used to unwrap payloads.
 - Open Record without a proven closed shape, dynamic Array/List (including arrays of Pair), Map, Entry, scalar, and unresolved shapes reject. A generic instantiation may qualify only after the relevant shape and key proofs succeed.
 
 `fnc.apply(tuple)` remains strictly positional, even for an all-Pair tuple. It passes actual Pair objects without key inspection or payload extraction. `.call(...)` and ordinary invocation use the resolved callable's normal argument rules; apply is not a route around ownership, effect, arity or visibility checks. Function values must retain trustworthy parameter names to admit named spread; otherwise reject rather than invent names.
@@ -129,11 +131,11 @@ Resolve all static spread slots, explicit labels, duplicates, unknown names, mis
 
 Lower to an ordered argument evaluation plan, then to the resolved ABI slot order. Evaluate the receiver/callable and each written argument or spread operand once, in lexical order. Evaluate a Record initializer or Tuple element expression once in its original construction order; projecting an already-materialized aggregate never reruns those expressions. Canonical Record layout order is not evaluation order. Materialize temporaries or proven equivalent SSA values; map payload/field projections to parameter slots without reevaluation. A failing evaluation prevents later operands and callee execution and cleans already-owned temporaries. Reject illegal partial moves, repeated consumption, loan escapes, conflicting borrows and any spread that would need implicit copy/transfer beyond normal call rules. Do not invent an allocation or drop order observable to the program.
 
-Key proof for a Tuple of Pairs uses authenticated Pair identity, compile-time name provenance and ordinary flow analysis; a string-typed key alone is insufficient. A mutable rebind, unknown function result, divergent key at a join or unverified generic cannot establish a name. Do not execute user code to discover shape. The callee receives only payloads for named Pair spreading, not the Pair metadata; a mixed positional tuple or apply passes Pair values as-is. Bound aggregate arity and recursion by existing resource limits. Unsupported lowering must fail without guest artifacts. Formatter must retain the distinction between ... and .apply(), and preserve parenthesis/tuple/Record classification.
+No Tuple key proof exists or is needed: Tuple elements are positional, regardless of nominal element types, duplicate Pair keys, arbitrary strings or runtime key values. Record fields alone supply names for named spread; never implicitly convert a Tuple to a Record. Bound aggregate arity and recursion by existing resource limits. Unsupported lowering must fail without guest artifacts. Formatter must preserve spread and .apply() syntax and parenthesis/tuple/Record classification.
 
 ### Conformance and implementation order
 
-First implement a shared call-planning contract, typed operand classification and diagnostic negatives; then actual parser + typed IR, ordered lowering and compiled guests for each backend. Cover nonliteral argument effects in reverse parameter order, prebuilt tuples and Records, empty and mixed tuples, explicit/default/duplicate slots, dynamic keys, unknown names, generic instantiations, .apply preservation, and no-artifact ownership failures. Host/reference checks are not evidence of guest execution.
+First implement a shared call-planning contract, typed operand classification and diagnostic negatives; then actual parser + typed IR, ordered lowering and compiled guests for each backend. Cover nonliteral argument effects in reverse parameter order, prebuilt tuples and Records, empty and mixed tuples, explicit/default/duplicate slots, arbitrary/dynamic/duplicate Pair keys in positional tuples, unknown Record field names, generic instantiations, .apply preservation, and no-artifact ownership failures. Host/reference checks are not evidence of guest execution.
 
 ## Intrinsic read-only key and value projections (accepted)
 
@@ -153,9 +155,9 @@ foo(x.value); // valid
 
 The projection evaluates the receiver exactly once, preserves checked effects, and denotes a read-only component place with normal static ownership and lifetime information. Copy-safe payload reads may produce a copy; non-Copy payload reads do not implicitly clone, move, extend loans or acquire mutable access. Explicit transfer/borrowing is subject to existing component-place rules; if unsupported, reject before guest emission. No direct assignment, compound assignment or mutable loan replacing either slot, even through a mut binding. Rebinding an eligible let to a new Pair remains distinct. Read-only slots do not imply deep freezing of nested referents; applicable ownership and referent permissions govern nested access. An erased existential Pair has an existential payload, not an implicitly inferred concrete V; require checked narrowing under the existing type system.
 
-No implicit extraction of .key or .value during assignment, return, arithmetic, comparison with a scalar, normal argument passing, generic inference, overload resolution, or positional .apply(). A function accepting Pair<int> receives the Pair intact. A Record field of Pair type likewise stores the whole Pair; a scalar field requires the explicit compatible projection. Named calls such as foo(x = p) do not extract a payload. Explicit named aggregate spread is the specified separate operation that projects Pair payloads by proved names. Record.of and Map.of consume association components only through their own checked explicit constructor contracts. No extra allocation or runtime reflection is required for ordinary projections.
+No implicit extraction of .key or .value during assignment, return, arithmetic, comparison with a scalar, normal argument passing, generic inference, overload resolution, or positional .apply(). A function accepting Pair<int> receives the Pair intact. A Record field of Pair type likewise stores the whole Pair; a scalar field requires the explicit compatible projection. Named calls such as foo(x = p) do not extract a payload. Record spread binds whole field values by field name; it does not extract a Pair payload from a field. Tuple spread preserves each entire element. Record.of and Map.of consume association components only through their own checked explicit constructor contracts. No extra allocation or runtime reflection is required for ordinary projections.
 
-Test literal, factory, name-derived binding and already-materialized receiver equivalence; concrete static key/value types, both nominal kinds, receiver effects once, immutable slot negatives, explicit scalar argument versus direct Pair mismatch, preservation of Pair arguments, .apply versus named spread, shadowed nominal types, moved and borrowed receivers, and constexpr projections. No backend may claim support without actual typed checking and executed guest cases.
+Test literal, factory, name-derived binding and already-materialized receiver equivalence; concrete static key/value types, both nominal kinds, receiver effects once, immutable slot negatives, explicit scalar argument versus direct Pair mismatch, preservation of Pair arguments, .apply versus positional Tuple spread and named Record spread, shadowed nominal types, moved and borrowed receivers, and constexpr projections. No backend may claim support without actual typed checking and executed guest cases.
 
 ## Record and Struct lexical capture constructors (accepted extension)
 
