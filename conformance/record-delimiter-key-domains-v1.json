@@ -1,0 +1,162 @@
+{
+  "profile": "record-delimiter-key-domains-v1",
+  "evidence": "TARGET_NOT_EXECUTED",
+  "vectors": [
+    {
+      "id": "brace-int-array",
+      "source": "const Record r = {x:[1,2,3]};",
+      "expect": "accept",
+      "oracle": "r.x is array<int>, ordered 1,2,3"
+    },
+    {
+      "id": "brace-heterogeneous-record-array",
+      "source": "const Record r = {x:[{a:1},{b:2},{c:3}]};",
+      "expect": "accept",
+      "oracle": "array of three records with original distinct shapes"
+    },
+    {
+      "id": "paren-int-array",
+      "source": "const Record r = (\"x\":[1,2,3]);",
+      "expect": "accept",
+      "oracle": "same field value and type as brace-int-array"
+    },
+    {
+      "id": "paren-nested",
+      "source": "const Record r = (\"x\":[{a:1},(\"b\":2),{c:3}]);",
+      "expect": "accept",
+      "oracle": "three distinct ordered record shapes"
+    },
+    {
+      "id": "nested-mixed",
+      "source": "const Record r = {meta:(\"content-type\":\"json\"),x:[1,2,3]};",
+      "expect": "accept",
+      "oracle": "nested field meta and array x"
+    },
+    {
+      "id": "empty-paren",
+      "source": "const Record r = ();",
+      "expect": "accept",
+      "oracle": "empty Record"
+    },
+    {
+      "id": "empty-brace",
+      "source": "const Record r = {};",
+      "expect": "accept",
+      "oracle": "empty Record"
+    },
+    {
+      "id": "brace-quoted-record",
+      "source": "const Record r = {\"x\":1};",
+      "expect": "reject",
+      "oracle": "quoted brace label not Record; do not coerce Map"
+    },
+    {
+      "id": "paren-unquoted-record",
+      "source": "const Record r = (x:1);",
+      "expect": "reject",
+      "oracle": "unquoted parenthesized Record key"
+    },
+    {
+      "id": "mixed-paren",
+      "source": "const Record r = (\"x\":1,y:2);",
+      "expect": "reject",
+      "oracle": "key domain violation"
+    },
+    {
+      "id": "mixed-brace",
+      "source": "const Record r = {x:1,\"y\":2};",
+      "expect": "reject",
+      "oracle": "key domain violation in Record"
+    },
+    {
+      "id": "nested-invalid",
+      "source": "const Record r = {x:[(\"a\":1,b:2)]};",
+      "expect": "reject",
+      "oracle": "nested key domain independently checked"
+    },
+    {
+      "id": "duplicate-brace",
+      "source": "const Record r = {x:1,x:2};",
+      "expect": "reject",
+      "oracle": "duplicate field"
+    },
+    {
+      "id": "duplicate-paren",
+      "source": "const Record r = (\"x\":1,\"x\":2);",
+      "expect": "reject",
+      "oracle": "duplicate field"
+    },
+    {
+      "id": "duplicate-decoded",
+      "source": "const Record r = (\"x\":1,\"\\u0078\":2);",
+      "expect": "reject",
+      "oracle": "duplicate decoded field where escape is valid"
+    },
+    {
+      "id": "anonymous-paren",
+      "source": "process((\"x\":[1,2,3]));",
+      "expect": "accept",
+      "oracle": "one positional Record argument, assumed callable"
+    },
+    {
+      "id": "anonymous-brace",
+      "source": "process({x:[1,2,3]});",
+      "expect": "accept",
+      "oracle": "one positional Record argument"
+    },
+    {
+      "id": "quoted-special",
+      "source": "const Record r = (\"content-type\":\"json\");",
+      "expect": "accept",
+      "oracle": "checked string-key projection"
+    },
+    {
+      "id": "missing-field",
+      "source": "const Record r = {x:[{a:1}]}; r.x[0].b;",
+      "expect": "reject",
+      "oracle": "statically impossible field"
+    },
+    {
+      "id": "tuple-pair-control",
+      "source": "const t = (x := 1,y := 2);",
+      "expect": "accept",
+      "oracle": "Tuple of Pairs, not Record"
+    },
+    {
+      "id": "named-argument-control",
+      "source": "process(x=1);",
+      "expect": "accept",
+      "oracle": "named argument, not Record"
+    },
+    {
+      "id": "brace-pair-control",
+      "source": "const Record r = {x := 1};",
+      "expect": "accept",
+      "oracle": "identifier-key inline Record entry"
+    },
+    {
+      "id": "untyped-empty-control",
+      "source": "const t = ();",
+      "expect": "decision_required",
+      "oracle": "preserve contextual Product contract #323; not forced Record"
+    },
+    {
+      "id": "quoted-pair-candidate",
+      "source": "const Record r = (\"x\" := 1);",
+      "expect": "decision_required",
+      "oracle": "quoted := admission to be reconciled with Pair"
+    },
+    {
+      "id": "quoted-equals-candidate",
+      "source": "const Record r = (\"x\" = 1);",
+      "expect": "decision_required",
+      "oracle": "quoted = admission reconciliation"
+    },
+    {
+      "id": "dynamic-projection",
+      "source": "const Record r = {x:[{a:1},{b:2}]}; r.x[i].a;",
+      "expect": "decision_required",
+      "oracle": "must not permit unchecked access; exact checked API unspecified"
+    }
+  ]
+}
