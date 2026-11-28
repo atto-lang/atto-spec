@@ -1,5 +1,7 @@
 # AttoLang local binding mutability v1
 
+> **v3 syntax correction (2026-11-27):** [Pair literals and name-derived bindings](pair-literals-and-bindings-v3.md) governs the new profile: `Pair<V>` is string-keyed, `:=` always constructs Pair, `=>` constructs Entry in key/value expressions, and `const y := 5;` declares a Pair. Named calls accept `=` and `:`. Conflicting older examples below are historical-profile only.
+
 Status: **accepted design; partial implementation** (2026-11-14).
 This document defines the target semantics, not a claim of cross-backend conformance.
 

@@ -1,0 +1,865 @@
+{
+  "schema": "atto.pair-literals-bindings-v3",
+  "status": "TARGET_NOT_EXECUTED",
+  "notes": "Independent source fragments; compile in the appropriate local scope. Not executable evidence.",
+  "vectors": [
+    {
+      "id": "binding-const",
+      "kind": "accept",
+      "source": "const y := 5;",
+      "expect": "Pair<int>, key y, value 5"
+    },
+    {
+      "id": "binding-equivalence",
+      "kind": "accept",
+      "source": "const y := 5; const Pair<int> z = Pair.of(\"y\",5);",
+      "expect": "equal key and value"
+    },
+    {
+      "id": "literal-not-lookup",
+      "kind": "accept",
+      "source": "const string x = \"other\"; const p = x := 5;",
+      "expect": "key x, not other"
+    },
+    {
+      "id": "entry-lookup",
+      "kind": "accept",
+      "source": "const string x = \"other\"; const e = x => 5;",
+      "expect": "Entry<string,int>, key other"
+    },
+    {
+      "id": "tuple",
+      "kind": "accept",
+      "source": "const Tuple t = (x := 5, y := true);",
+      "expect": "Tuple<Pair<int>,Pair<bool>>"
+    },
+    {
+      "id": "group",
+      "kind": "accept",
+      "source": "const p = (x := 5);",
+      "expect": "Pair<int>"
+    },
+    {
+      "id": "one-tuple",
+      "kind": "accept",
+      "source": "const Tuple t = (x := 5,);",
+      "expect": "one-element Tuple"
+    },
+    {
+      "id": "record",
+      "kind": "accept",
+      "source": "const Record r = (x = 5, y = true);",
+      "expect": "closed Record"
+    },
+    {
+      "id": "record-from-binding",
+      "kind": "accept",
+      "source": "const x := 5; const Record r = Record.of(x);",
+      "expect": "field x:int"
+    },
+    {
+      "id": "heterogeneous",
+      "kind": "accept",
+      "source": "const Array<Pair> a = [age:=42,bop:=\"zzz\",genr:=true];",
+      "expect": "checked existential Pair elements"
+    },
+    {
+      "id": "named-pair",
+      "kind": "accept",
+      "source": "fnc foo(Pair<int> x,int m) {} foo(x=\"x\":=5,m=3);",
+      "expect": "two named arguments"
+    },
+    {
+      "id": "positional-pair",
+      "kind": "accept",
+      "source": "fnc foo(Pair<int> x,int m) {} foo(x:=5,3);",
+      "expect": "two positional arguments"
+    },
+    {
+      "id": "named-binding",
+      "kind": "accept",
+      "source": "fnc foo(Pair<int> x,int m) {} const y:=5; foo(x=y,m=3);",
+      "expect": "x receives Pair keyed y"
+    },
+    {
+      "id": "named-colon",
+      "kind": "accept",
+      "source": "fnc foo(Pair<int> x,int m) {} foo(x: y:=5,m:3);",
+      "expect": "compatibility alias"
+    },
+    {
+      "id": "let-rebind",
+      "kind": "accept",
+      "source": "let y:=5; y = z:=6;",
+      "expect": "Pair<int> now keyed z"
+    },
+    {
+      "id": "invalid-key-type",
+      "kind": "reject",
+      "source": "const p = 5 := 42;",
+      "expect": "Pair literal key syntax"
+    },
+    {
+      "id": "invalid-quoted-equals",
+      "kind": "reject",
+      "source": "const Tuple t = (\"x\"=5,\"y\"=true);",
+      "expect": "quoted equals not a Pair"
+    },
+    {
+      "id": "record-tuple-mismatch",
+      "kind": "reject",
+      "source": "const Record r = (x:=5,y:=true);",
+      "expect": "no expected type reinterpretation"
+    },
+    {
+      "id": "record-nonidentifier",
+      "kind": "reject",
+      "source": "const Record r = Record.of(\"5\":=42);",
+      "expect": "invalid field name"
+    },
+    {
+      "id": "record-duplicate",
+      "kind": "reject",
+      "source": "const Record r = Record.of(x:=1,\"x\":=2);",
+      "expect": "duplicate field"
+    },
+    {
+      "id": "pair-arrow-mismatch",
+      "kind": "reject",
+      "source": "const Pair<int> p = \"x\" => 5;",
+      "expect": "Entry not Pair"
+    },
+    {
+      "id": "pair-arity",
+      "kind": "reject",
+      "source": "const Pair<int,bool> p = x:=true;",
+      "expect": "non-string key type"
+    },
+    {
+      "id": "scalar-rebind",
+      "kind": "reject",
+      "source": "let y:=5; y=6;",
+      "expect": "Pair not scalar"
+    },
+    {
+      "id": "const-rebind",
+      "kind": "reject",
+      "source": "const y:=5; y = z:=6;",
+      "expect": "const immutable binding"
+    },
+    {
+      "id": "const-runtime",
+      "kind": "reject",
+      "source": "fnc f(int x) { const y:=x; }",
+      "expect": "not constexpr"
+    },
+    {
+      "id": "chain",
+      "kind": "reject",
+      "source": "const p = x:=y:=5;",
+      "expect": "nonassociative"
+    },
+    {
+      "id": "named-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(Pair<int> x,int m) {} foo(x=x:=5,x=y:=5,m=3);",
+      "expect": "duplicate parameter"
+    },
+    {
+      "id": "mixed-record-tuple",
+      "kind": "reject",
+      "source": "const r = (x=5,y:=true);",
+      "expect": "mixed field and positional item"
+    },
+    {
+      "id": "record-inferred",
+      "kind": "accept",
+      "source": "const r = (name=\"Alice\",age=42,active=true);",
+      "expect": "closed Record, no expected type"
+    },
+    {
+      "id": "record-standalone",
+      "kind": "accept",
+      "source": "(name=\"Alice\",age=42,active=true)",
+      "expect": "standalone Record expression"
+    },
+    {
+      "id": "tuple-quoted-pairs",
+      "kind": "accept",
+      "source": "const t = (\"name\":=\"Alice\",\"age\":=42);",
+      "expect": "Tuple of Pairs, not Record"
+    },
+    {
+      "id": "record-payload-dot",
+      "kind": "accept",
+      "source": "const name2:=\"Alice Wong\"; let mut Record r=(name=\"Alice\"); r.name=name2.value;",
+      "expect": "string field updated"
+    },
+    {
+      "id": "record-payload-index",
+      "kind": "accept",
+      "source": "const name2:=\"Alice Wong\"; let mut Record r=(name=\"Alice\"); r[\"name\"]=name2.value;",
+      "expect": "same checked write"
+    },
+    {
+      "id": "record-pair-assignment",
+      "kind": "reject",
+      "source": "const name2:=\"Alice Wong\"; let mut Record r=(name=\"Alice\"); r.name=name2;",
+      "expect": "Pair not string"
+    },
+    {
+      "id": "record-const-write",
+      "kind": "reject",
+      "source": "const name2:=\"Alice Wong\"; const r=(name=\"Alice\"); r.name=name2.value;",
+      "expect": "read-only Record"
+    },
+    {
+      "id": "capture-one",
+      "kind": "accept",
+      "source": "const status=200; const r={:status};",
+      "expect": "closed Record status:int"
+    },
+    {
+      "id": "capture-multiple",
+      "kind": "accept",
+      "source": "const status=200; const elapsed=45; const r={:status,:elapsed};",
+      "expect": "closed Record with both fields"
+    },
+    {
+      "id": "capture-mixed-field",
+      "kind": "accept",
+      "source": "const status=200; const r={:status,success:true};",
+      "expect": "closed Record"
+    },
+    {
+      "id": "capture-duplicate",
+      "kind": "reject",
+      "source": "const status=200; const r={:status,status:201};",
+      "expect": "duplicate field"
+    },
+    {
+      "id": "capture-unresolved",
+      "kind": "reject",
+      "source": "const r={:missing};",
+      "expect": "unresolved binding"
+    },
+    {
+      "id": "capture-map-mixed",
+      "kind": "reject",
+      "source": "const status=200; const r={:status,\"foo\"=>1};",
+      "expect": "mixed Record and Map"
+    },
+    {
+      "id": "capture-path",
+      "kind": "reject",
+      "source": "const a=(status=200); const r={:a.status};",
+      "expect": "capture requires identifier"
+    },
+    {
+      "id": "spread-record",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } const r=(name=\"Alice\",age=42,active=true); foo(...r);",
+      "expect": "named payloads, exit 42"
+    },
+    {
+      "id": "spread-pairs",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } const t=(active:=true,name:=\"Alice\",age:=42); foo(...t);",
+      "expect": "named payloads in reordered parameter slots, exit 42"
+    },
+    {
+      "id": "spread-tuple",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(\"Alice\",42,true));",
+      "expect": "positional, exit 42"
+    },
+    {
+      "id": "spread-capture",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } const name=\"Alice\"; const age=42; foo(...{:name,:age},active=true);",
+      "expect": "named spread plus explicit named, exit 42"
+    },
+    {
+      "id": "spread-two",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name=\"Alice\"),...(age:=42,active:=true));",
+      "expect": "two named spreads, exit 42"
+    },
+    {
+      "id": "spread-empty",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(),\"Alice\",42,true);",
+      "expect": "zero slots, exit 42"
+    },
+    {
+      "id": "spread-pos-before-named",
+      "kind": "accept",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(\"Alice\",...(age:=42,active:=true));",
+      "expect": "positional then named, exit 42"
+    },
+    {
+      "id": "spread-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name=\"Alice\",age=42),age=5,active=true);",
+      "expect": "duplicate parameter"
+    },
+    {
+      "id": "spread-pos-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(\"Alice\",...(name=\"Bob\",age=42,active=true));",
+      "expect": "duplicate slot"
+    },
+    {
+      "id": "spread-unknown",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(wrong:=\"Alice\",age:=42,active:=true));",
+      "expect": "unknown parameter"
+    },
+    {
+      "id": "spread-missing",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name=\"Alice\",age=42));",
+      "expect": "missing active"
+    },
+    {
+      "id": "spread-type",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name=\"Alice\",age=\"42\",active=true));",
+      "expect": "wrong payload type"
+    },
+    {
+      "id": "spread-after-named",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(name=\"Alice\",...(42,true));",
+      "expect": "positional after named"
+    },
+    {
+      "id": "spread-array",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...[name:=\"Alice\",age:=42,active:=true]);",
+      "expect": "dynamic array/list unsupported"
+    },
+    {
+      "id": "spread-map",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...{\"name\"=>\"Alice\"});",
+      "expect": "Map not spreadable"
+    },
+    {
+      "id": "spread-dynamic-key",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } val key=read_name(); foo(...(Pair.of(key,\"Alice\"),age:=42,active:=true));",
+      "expect": "unproved key, no fallback"
+    },
+    {
+      "id": "spread-invalid-key",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(\"5\":=\"Alice\",age:=42,active:=true));",
+      "expect": "invalid parameter name"
+    },
+    {
+      "id": "spread-pair-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...(name:=\"Alice\",\"name\":=\"Bob\",age:=42,active:=true));",
+      "expect": "duplicate Pair keys"
+    },
+    {
+      "id": "spread-scalar",
+      "kind": "reject",
+      "source": "fnc foo(string name,int age,bool active): int { return age; } foo(...42);",
+      "expect": "not aggregate"
+    },
+    {
+      "id": "apply-pair-positional",
+      "kind": "accept",
+      "source": "fnc bar(Pair<string> x,Pair<int> y): int { return y.value; } const t=(name:=\"Alice\",age:=42); bar.apply(t);",
+      "expect": "actual Pair objects, exit 42"
+    },
+    {
+      "id": "spread-mixed-tuple",
+      "kind": "accept",
+      "source": "fnc bar(Pair<int> x,bool y): int { return x.value; } bar(...(age:=42,true));",
+      "expect": "positional mixed tuple, exit 42"
+    },
+    {
+      "id": "spread-effect-order",
+      "kind": "accept",
+      "source": "fnc join(int a,int b): int { return a*10+b; } join(...(b:=tick(2),a:=tick(4)));",
+      "expect": "tick(2), then tick(4), exactly once, result 42"
+    },
+    {
+      "id": "spread-default",
+      "kind": "accept",
+      "source": "fnc f(int a,int b=2): int { return a*10+b; } f(...(a=4));",
+      "expect": "default slot, exit 42"
+    },
+    {
+      "id": "spread-reuse",
+      "kind": "reject",
+      "source": "fnc consume(take! Payload a,take! Payload b) {} val p=make_payload(); consume(...(a=p,b=p));",
+      "expect": "reject double consumption under ordinary ownership rules"
+    },
+    {
+      "id": "projection-pair-value",
+      "kind": "accept",
+      "source": "const x:=5; const int n=x.value;",
+      "expect": "n=5"
+    },
+    {
+      "id": "projection-pair-key",
+      "kind": "accept",
+      "source": "const x:=5; const string k=x.key;",
+      "expect": "k=\"x\""
+    },
+    {
+      "id": "projection-entry-types",
+      "kind": "accept",
+      "source": "const e=5=>\"hello\"; const int k=e.key; const string v=e.value;",
+      "expect": "k=5, v=hello"
+    },
+    {
+      "id": "projection-factory",
+      "kind": "accept",
+      "source": "const p=Pair.of(\"x\",5); const int n=p.value;",
+      "expect": "n=5"
+    },
+    {
+      "id": "projection-call-explicit",
+      "kind": "accept",
+      "source": "const x:=5; const foo=|int x| -> x+37; foo(x.value);",
+      "expect": "42"
+    },
+    {
+      "id": "projection-call-pair",
+      "kind": "accept",
+      "source": "const x:=5; const foo=|Pair<int> p| -> p.value+37; foo(x);",
+      "expect": "42"
+    },
+    {
+      "id": "projection-call-direct",
+      "kind": "reject",
+      "source": "const x:=5; const foo=|int x| -> x+37; foo(x);",
+      "expect": "E_TYPE: no implicit extraction"
+    },
+    {
+      "id": "projection-named-direct",
+      "kind": "reject",
+      "source": "const x:=5; const foo=|int x| -> x+37; foo(x=x);",
+      "expect": "E_TYPE: no implicit extraction"
+    },
+    {
+      "id": "projection-scalar-init",
+      "kind": "reject",
+      "source": "const x:=5; const int n=x;",
+      "expect": "Pair is not int"
+    },
+    {
+      "id": "projection-arithmetic",
+      "kind": "reject",
+      "source": "const x:=5; const n=x+37;",
+      "expect": "Pair is not numeric"
+    },
+    {
+      "id": "projection-return",
+      "kind": "reject",
+      "source": "fnc f(): int { const x:=5; return x; }",
+      "expect": "Pair is not int"
+    },
+    {
+      "id": "projection-key-write",
+      "kind": "reject",
+      "source": "let mut x = x:=5; x.key=\"other\";",
+      "expect": "read-only key"
+    },
+    {
+      "id": "projection-value-write",
+      "kind": "reject",
+      "source": "let mut x = x:=5; x.value=6;",
+      "expect": "read-only value"
+    },
+    {
+      "id": "projection-entry-write",
+      "kind": "reject",
+      "source": "let mut e=5=>\"hello\"; e.value=\"other\";",
+      "expect": "read-only value"
+    },
+    {
+      "id": "projection-pair-record",
+      "kind": "accept",
+      "source": "const x:=5; const r=(p=x); const int n=r.p.value;",
+      "expect": "Pair retained in Record"
+    },
+    {
+      "id": "projection-spread-explicit",
+      "kind": "accept",
+      "source": "const x:=5; const y:=37; const foo=|int x,int y| -> x+y; foo(...(x,y));",
+      "expect": "42"
+    },
+    {
+      "id": "projection-apply-no-unwrapping",
+      "kind": "reject",
+      "source": "const x:=5; const foo=|int x| -> x; foo.apply((x,));",
+      "expect": "Pair is not int"
+    },
+    {
+      "id": "projection-apply-preserve",
+      "kind": "accept",
+      "source": "const x:=5; const foo=|Pair<int> p| -> p.value; foo.apply((x,));",
+      "expect": "5"
+    },
+    {
+      "id": "projection-existential",
+      "kind": "reject",
+      "source": "fnc f(Pair p): int { return p.value; }",
+      "expect": "existential payload requires checked narrowing"
+    },
+    {
+      "id": "projection-unknown",
+      "kind": "reject",
+      "source": "const x:=5; const n=x.payload;",
+      "expect": "unknown property"
+    },
+    {
+      "id": "capture-name-age",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z={:name,:age};",
+      "expect": "closed Record; name:string Alice, age:int 42"
+    },
+    {
+      "id": "capture-record-dot",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z={:name,:age}; const int n=z.age;",
+      "expect": "42"
+    },
+    {
+      "id": "capture-record-index",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z={:name,:age}; const int n=z[\"age\"];",
+      "expect": "42"
+    },
+    {
+      "id": "capture-struct",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=struct{:name,:age}; const int n=z.age;",
+      "expect": "anonymous fixed-layout Struct, 42"
+    },
+    {
+      "id": "capture-struct-mixed",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=struct{:name,age:age};",
+      "expect": "anonymous Struct, both fields"
+    },
+    {
+      "id": "capture-nominal-struct",
+      "kind": "accept",
+      "source": "define struct Person as string name; int age; end const name=\"Alice\"; const age=42; const Person z=Person{:name,:age};",
+      "expect": "declared Person identity, correct fields"
+    },
+    {
+      "id": "capture-struct-duplicate",
+      "kind": "reject",
+      "source": "const age=42; const z=struct{:age,age:5};",
+      "expect": "duplicate field"
+    },
+    {
+      "id": "capture-struct-unbound",
+      "kind": "reject",
+      "source": "const z=struct{:age};",
+      "expect": "unresolved binding"
+    },
+    {
+      "id": "capture-struct-map",
+      "kind": "reject",
+      "source": "const age=42; const z=struct{:age,\"name\"=>\"Alice\"};",
+      "expect": "Map item not Struct field"
+    },
+    {
+      "id": "capture-struct-index",
+      "kind": "reject",
+      "source": "const age=42; const z=struct{:age}; const n=z[\"age\"];",
+      "expect": "Struct uses dot access"
+    },
+    {
+      "id": "capture-nominal-type",
+      "kind": "reject",
+      "source": "define struct Person as string name; int age; end const name=\"Alice\"; const age=\"42\"; const z=Person{:name,:age};",
+      "expect": "wrong nominal field type"
+    },
+    {
+      "id": "capture-nominal-missing",
+      "kind": "reject",
+      "source": "define struct Person as string name; int age; end const name=\"Alice\"; const z=Person{:name};",
+      "expect": "missing required age"
+    },
+    {
+      "id": "capture-anonymous-not-nominal",
+      "kind": "reject",
+      "source": "define struct Person as string name; int age; end const name=\"Alice\"; const age=42; const Person z=struct{:name,:age};",
+      "expect": "no implicit conversion"
+    },
+    {
+      "id": "capture-logging-separate",
+      "kind": "accept",
+      "source": "val request_id=generate_uuid(); const status=200; const elapsed_ms=45; logger.info(\"Request completed\",{:request_id},{:status},{:elapsed_ms});",
+      "expect": "with structured logger and capturing sink: one event, exact typed fields, UUID once"
+    },
+    {
+      "id": "capture-logging-combined",
+      "kind": "accept",
+      "source": "val request_id=generate_uuid(); const status=200; const elapsed_ms=45; logger.info(\"Request completed\",{:request_id,:status,:elapsed_ms});",
+      "expect": "same structured event as separate bundles"
+    },
+    {
+      "id": "capture-logging-duplicate",
+      "kind": "reject",
+      "source": "const status=200; logger.info(\"Request completed\",{:status},{status:201});",
+      "expect": "duplicate field in structured logging profile; static rejection when proved"
+    },
+    {
+      "id": "capture-mixed-leading",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z={foo:5,:name,:age};",
+      "expect": "closed Record foo:int,name:string,age:int"
+    },
+    {
+      "id": "capture-parens",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=(:name,:age);",
+      "expect": "closed Record identical to braces"
+    },
+    {
+      "id": "capture-parens-mixed",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=(foo=5,:name,:age);",
+      "expect": "closed Record all three fields"
+    },
+    {
+      "id": "capture-parens-mixed-reverse",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=(:name,foo=5,:age);",
+      "expect": "same shape; source-order evaluation"
+    },
+    {
+      "id": "capture-parens-single",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=(:age);",
+      "expect": "one-field Record"
+    },
+    {
+      "id": "capture-parens-trailing",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; const z=(:age,);",
+      "expect": "one-field Record, not Tuple"
+    },
+    {
+      "id": "capture-parens-duplicate",
+      "kind": "reject",
+      "source": "const name=\"Alice\"; const age=42; const z=(:age,age=5);",
+      "expect": "duplicate field"
+    },
+    {
+      "id": "capture-parens-positional",
+      "kind": "reject",
+      "source": "const name=\"Alice\"; const age=42; const z=(:age,5);",
+      "expect": "mixed Record and Tuple"
+    },
+    {
+      "id": "capture-parens-unknown",
+      "kind": "reject",
+      "source": "const name=\"Alice\"; const age=42; const z=(:missing);",
+      "expect": "unbound capture"
+    },
+    {
+      "id": "capture-parens-path",
+      "kind": "reject",
+      "source": "const name=\"Alice\"; const age=42; const z=(:name.value);",
+      "expect": "capture requires identifier"
+    },
+    {
+      "id": "capture-anonymous-brace-call",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; fnc f(Record r) { } f({:name,:age});",
+      "expect": "one positional Record argument, fields retained; no implicit spread"
+    },
+    {
+      "id": "capture-anonymous-paren-call",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; fnc f(Record r) { } f((:name,:age));",
+      "expect": "one positional Record argument, fields retained; no implicit spread"
+    },
+    {
+      "id": "capture-call-no-inner",
+      "kind": "reject",
+      "source": "const name=\"Alice\"; const age=42; fnc f(Record r) {} f(:name,:age);",
+      "expect": "call delimiters do not construct Record"
+    },
+    {
+      "id": "capture-logging-parens",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; logger.info(\"request info:\",(:name,:age));",
+      "expect": "one event with same typed fields as brace Record under compatible logger"
+    },
+    {
+      "id": "capture-logging-struct",
+      "kind": "accept",
+      "source": "const name=\"Alice\"; const age=42; logger.info(\"request info:\",struct{:name,:age});",
+      "expect": "one event under explicit Struct logger overload"
+    },
+    {
+      "id": "same-name-short",
+      "kind": "accept",
+      "source": "const x := 5; const Pair<int> p = x; const string k = p.key; const int v = p.value;",
+      "expect": "Pair<int>; k=x, v=5"
+    },
+    {
+      "id": "same-name-expanded",
+      "kind": "accept",
+      "source": "const x = x := 5; const Pair<int> p = x; const string k = p.key; const int v = p.value;",
+      "expect": "same as same-name-short: Pair<int>; k=x, v=5"
+    },
+    {
+      "id": "same-name-factory",
+      "kind": "accept",
+      "source": "const x = Pair.of(\"x\", 5); const Pair<int> p = x; const string k = p.key; const int v = p.value;",
+      "expect": "same as same-name-short"
+    },
+    {
+      "id": "different-binder-key",
+      "kind": "accept",
+      "source": "const x = y := 5; const string k = x.key; const int v = x.value;",
+      "expect": "k=y, v=5; no lookup of y"
+    },
+    {
+      "id": "same-name-payload-unbound",
+      "kind": "reject",
+      "source": "const x = x := x;",
+      "expect": "unresolved payload x; key x is not a read"
+    },
+    {
+      "id": "same-name-short-unbound",
+      "kind": "reject",
+      "source": "const x := x;",
+      "expect": "unresolved payload x; same as expanded"
+    },
+    {
+      "id": "same-name-expanded-scalar",
+      "kind": "reject",
+      "source": "const x = x := 5; const int n = x;",
+      "expect": "Pair is not int"
+    },
+    {
+      "id": "same-name-duplicate",
+      "kind": "reject",
+      "source": "const x := 5; const x = x := 5;",
+      "expect": "duplicate local declaration"
+    },
+    {
+      "id": "same-name-runtime-short",
+      "kind": "accept",
+      "source": "fnc f(int n): int { val x := n; return x.value; }",
+      "expect": "f(42) returns 42; stored Pair"
+    },
+    {
+      "id": "same-name-runtime-expanded",
+      "kind": "accept",
+      "source": "fnc f(int n): int { val x = x := n; return x.value; }",
+      "expect": "same as same-name-runtime-short"
+    },
+    {
+      "id": "same-name-constexpr-short",
+      "kind": "reject",
+      "source": "fnc f(int n) { const x := n; }",
+      "expect": "runtime operand not constexpr"
+    },
+    {
+      "id": "same-name-constexpr-expanded",
+      "kind": "reject",
+      "source": "fnc f(int n) { const x = x := n; }",
+      "expect": "same constexpr rejection"
+    },
+    {
+      "id": "same-name-expanded-key-write",
+      "kind": "reject",
+      "source": "let mut x = x := 5; x.key = \"other\";",
+      "expect": "read-only key"
+    },
+    {
+      "id": "same-name-short-key-write",
+      "kind": "reject",
+      "source": "let mut x := 5; x.key = \"other\";",
+      "expect": "read-only key"
+    },
+    {
+      "id": "call-brace-v4-named",
+      "kind": "accept",
+      "source": "fnc foo(int x,int y): int { return x*10+y; } let x=100; foo(x=4,y=8);",
+      "expect": "two named scalar arguments; return 48; outer x remains 100"
+    },
+    {
+      "id": "call-brace-v4-positional",
+      "kind": "accept",
+      "source": "fnc foo(Record data): int { return data.x*10+data.y; } let x=100; foo({x=4,y=8});",
+      "expect": "one positional Record, closed inferred shape; return 48; outer x remains 100"
+    },
+    {
+      "id": "call-brace-v4-named-record",
+      "kind": "accept",
+      "source": "fnc foo(Record data): int { return data.x*10+data.y; } foo(data={x=4,y=8});",
+      "expect": "one named Record argument; return 48"
+    },
+    {
+      "id": "call-brace-v4-no-flatten",
+      "kind": "reject",
+      "source": "fnc foo(int x,int y): int { return x+y; } foo({x=4,y=8});",
+      "expect": "arity/type rejection; never implicitly expands Record"
+    },
+    {
+      "id": "call-brace-v4-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(Record data): int { return data.x; } foo({x=4,x=8});",
+      "expect": "duplicate static Record field; no artifact"
+    },
+    {
+      "id": "call-brace-v4-named-duplicate",
+      "kind": "reject",
+      "source": "fnc foo(Record data): int { return data.x; } foo(data={x=4},data={x=8});",
+      "expect": "duplicate named parameter; no artifact"
+    },
+    {
+      "id": "call-brace-v4-eval-order",
+      "kind": "accept",
+      "source": "fnc foo(Record data): int { return data.x*10+data.y; } foo({y=tick(8),x=tick(4)});",
+      "expect": "tick(8), then tick(4), once each; return 48"
+    },
+    {
+      "id": "call-brace-v4-pair-field",
+      "kind": "accept",
+      "source": "fnc foo(Record data): int { return data.x.value; } foo({x=(k:=42)});",
+      "expect": "one Record containing Pair intact; return 42"
+    },
+    {
+      "id": "call-brace-v4-no-type-context",
+      "kind": "accept",
+      "source": "let r={x=4,y=8};",
+      "expect": "closed Record inferred independently of expected type"
+    },
+    {
+      "id": "call-brace-v4-local-write",
+      "kind": "reject",
+      "source": "let x=5; x=4;",
+      "expect": "bare local reassignment rejected under strict binding profile; no artifact"
+    }
+  ],
+  "pending_call_syntax": [
+    {
+      "source": "foo((x = 4, y = 8));",
+      "status": "UNRESOLVED",
+      "note": "Not a portable positive or negative oracle."
+    },
+    {
+      "source": "foo((x : 4, y : 8));",
+      "status": "CANDIDATE_NOT_RATIFIED",
+      "note": "Not a portable positive or negative oracle."
+    }
+  ]
+}
