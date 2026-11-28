@@ -111,25 +111,26 @@ fnc foo(string name, int age, bool active) { }
 const r = (name = "Alice", age = 42, active = true);
 const t = (active := true, name := "Alice", age := 42);
 foo(...r);
-foo(...Record.of(active := true, name := "Alice", age := 42));
+foo(...Record.of(active := true, name := "Alice", age := 42)); // explicit Record conversion
 // foo(...t) rejects: Pair elements are not scalar parameters.
 foo(...("Alice", 42, true));
 foo(...{:name, :age}, active = true); // with accessible name and age bindings
 fnc bar(Pair<string> x, Pair<int> y) { }
 const pairs = (name := "Alice", age := 42);
-bar.apply(pairs);
+bar(...pairs);     // positional, whole Pair values
+bar.apply(pairs);  // same positional binding
 ```
 
 Classification is based on the resolved operand shape, before overload selection, never on the target's willingness to accept a particular interpretation:
 - Closed structural Record: named arguments, preserving its proven field names and types.
 - Every fixed Tuple: positional arguments in index order, preserving each complete element, including nominal Pair values. Empty Tuple contributes zero arguments. Pair keys are never inspected, validated as parameter names, or used to unwrap payloads.
-- Open Record without a proven closed shape, dynamic Array/List (including arrays of Pair), Map, Entry, scalar, and unresolved shapes reject. A generic instantiation may qualify only after the relevant shape and key proofs succeed.
+- Open Record without a proven closed shape, dynamic Array/List (including arrays of Pair), Map, Entry, scalar, and unresolved shapes reject. A generic instantiation may qualify only after the fixed shape and, for Records only, static field-name proofs succeed.
 
 `fnc.apply(tuple)` remains strictly positional, even for an all-Pair tuple. It passes actual Pair objects without key inspection or payload extraction. `.call(...)` and ordinary invocation use the resolved callable's normal argument rules; apply is not a route around ownership, effect, arity or visibility checks. Function values must retain trustworthy parameter names to admit named spread; otherwise reject rather than invent names.
 
 Resolve all static spread slots, explicit labels, duplicates, unknown names, missing required parameters and type compatibility using ordinary call rules, including defaulted parameters and overload ambiguity. Positional arguments/spreads may precede named ones, not follow them; a zero-element spread contributes no slots and does not reset the phase. Duplicate slot assignment from any source rejects (including positional followed by named targeting that slot). A named spread can be followed by another named spread or explicit named argument. No last-wins behavior. Defaults follow the existing call semantics; spread introduces no extra evaluation of defaults.
 
-Lower to an ordered argument evaluation plan, then to the resolved ABI slot order. Evaluate the receiver/callable and each written argument or spread operand once, in lexical order. Evaluate a Record initializer or Tuple element expression once in its original construction order; projecting an already-materialized aggregate never reruns those expressions. Canonical Record layout order is not evaluation order. Materialize temporaries or proven equivalent SSA values; map payload/field projections to parameter slots without reevaluation. A failing evaluation prevents later operands and callee execution and cleans already-owned temporaries. Reject illegal partial moves, repeated consumption, loan escapes, conflicting borrows and any spread that would need implicit copy/transfer beyond normal call rules. Do not invent an allocation or drop order observable to the program.
+Lower to an ordered argument evaluation plan, then to the resolved ABI slot order. Evaluate the receiver/callable and each written argument or spread operand once, in lexical order. Evaluate a Record initializer or Tuple element expression once in its original construction order; projecting an already-materialized aggregate never reruns those expressions. Canonical Record layout order is not evaluation order. Materialize temporaries or proven equivalent SSA values; map whole-element/whole-field projections to parameter slots without reevaluation. A failing evaluation prevents later operands and callee execution and cleans already-owned temporaries. Reject illegal partial moves, repeated consumption, loan escapes, conflicting borrows and any spread that would need implicit copy/transfer beyond normal call rules. Do not invent an allocation or drop order observable to the program.
 
 No Tuple key proof exists or is needed: Tuple elements are positional, regardless of nominal element types, duplicate Pair keys, arbitrary strings or runtime key values. Record fields alone supply names for named spread; never implicitly convert a Tuple to a Record. Bound aggregate arity and recursion by existing resource limits. Unsupported lowering must fail without guest artifacts. Formatter must preserve spread and .apply() syntax and parenthesis/tuple/Record classification.
 
