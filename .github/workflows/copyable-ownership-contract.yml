@@ -5,6 +5,7 @@ on:
       - 'language/copyable-ownership-v1.md'
       - 'tests/copyable-ownership-contract.test.mjs'
       - 'tests/copy-shallow-deep-v2.test.mjs'
+      - 'tests/copy-readonly-sharing-v1.test.mjs'
       - 'tests/copy-actor-aot-v1.test.mjs'
       - 'language/fresh-return-types-v1.md'
       - 'tests/fresh-return-contract.test.mjs'
@@ -14,6 +15,7 @@ on:
       - 'language/copyable-ownership-v1.md'
       - 'tests/copyable-ownership-contract.test.mjs'
       - 'tests/copy-shallow-deep-v2.test.mjs'
+      - 'tests/copy-readonly-sharing-v1.test.mjs'
       - 'tests/copy-actor-aot-v1.test.mjs'
       - 'language/fresh-return-types-v1.md'
       - 'tests/fresh-return-contract.test.mjs'
@@ -41,5 +43,6 @@ jobs:
           node --version
           node --check tests/copyable-ownership-contract.test.mjs
           node --check tests/copy-shallow-deep-v2.test.mjs
+          node --check tests/copy-readonly-sharing-v1.test.mjs
           node --check tests/copy-actor-aot-v1.test.mjs
-          node --test tests/copyable-ownership-contract.test.mjs tests/copy-shallow-deep-v2.test.mjs tests/copy-actor-aot-v1.test.mjs tests/fresh-return-contract.test.mjs
+          node --test tests/copy-readonly-sharing-v1.test.mjs tests/copyable-ownership-contract.test.mjs tests/copy-shallow-deep-v2.test.mjs tests/copy-actor-aot-v1.test.mjs tests/fresh-return-contract.test.mjs
